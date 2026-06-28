@@ -12,8 +12,10 @@ import { AGENT_PROTOCOL_VERSION } from '@pairdock/shared-contracts';
 import { AgentCommandRouterService } from '../../../../../apps/api/src/agent-gateway/agent-command-router.service.js';
 import { AppModule } from '../../../../../apps/api/src/app.module.js';
 import { DatabaseClient } from '../../../../../apps/api/src/persistence/client.js';
+import type { SandboxPort, SandboxRef } from '../../../../../packages/local-agent/src/docker/sandbox.port.js';
 import { WorktreeService } from '../../../../../packages/local-agent/src/git/worktree.service.js';
 import { SessionRunner } from '../../../../../packages/local-agent/src/session/session-runner.js';
+import type { PreviewTunnelPort } from '../../../../../packages/local-agent/src/tunnel/preview-tunnel.port.js';
 import { AgentClient } from '../../../../../packages/local-agent/src/websocket/agent-client.js';
 
 const execFileAsync = promisify(execFile);
@@ -90,7 +92,7 @@ test.beforeEach(async () => {
   await resetDatabase();
 });
 
-test('Task 7: backend command routing reaches the local agent for prepare and cleanup', async () => {
+test('Task 8: backend command routing persists preview progress, preview URL, and cleanup events', async () => {
   const repositoryPath = await createTempRepository();
   const managedRoot = await createManagedWorktreeRoot();
   const sessionId = randomUUID();
@@ -160,6 +162,8 @@ test('Task 7: backend command routing reaches the local agent for prepare and cl
         },
         {
           worktreeService: new WorktreeService(managedRoot),
+          sandboxPort: new ReadySandboxPort(),
+          previewTunnelPort: new ReadyPreviewTunnelPort(),
         },
       ),
     },
@@ -184,24 +188,48 @@ test('Task 7: backend command routing reaches the local agent for prepare and cl
       },
     });
 
-    const preparedEvent = await waitFor(
+    const readyEvent = await waitFor(
       async () =>
         prisma.agentEvent.findFirst({
           where: {
             sessionId,
-            type: 'session.progress',
+            type: 'session.ready',
           },
           orderBy: { createdAt: 'desc' },
         }),
-      'Expected backend persistence to record session.progress after routing session.prepare.',
+      'Expected backend persistence to record session.ready after routing session.prepare.',
     );
 
-    assert.deepEqual(preparedEvent.payload, {
-      sessionId,
-      status: 'WORKTREE_CREATING',
-      message: `Prepared branch ${branchName} in ${worktreePath}.`,
+    const progressEvents = await prisma.agentEvent.findMany({
+      where: {
+        sessionId,
+        type: 'session.progress',
+      },
+      orderBy: { createdAt: 'asc' },
     });
+    const preparedSession = await prisma.session.findUnique({ where: { id: sessionId } });
+
+    assert.deepEqual(
+      progressEvents.map((event) => event.payload),
+      [
+        { sessionId, status: 'AGENT_CONNECTING' },
+        { sessionId, status: 'WORKTREE_CREATING' },
+        { sessionId, status: 'DOCKER_STARTING' },
+        { sessionId, status: 'PREVIEW_STARTING' },
+      ],
+    );
+    assert.deepEqual(readyEvent.payload, {
+      sessionId,
+      previewUrl: 'https://preview.pairdock.test',
+    });
+    assert.equal(preparedSession?.status, 'READY');
+    assert.equal(preparedSession?.previewUrl, 'https://preview.pairdock.test');
     assert.equal(await execGit(worktreePath, ['branch', '--show-current']), branchName);
+
+    await prisma.session.update({
+      where: { id: sessionId },
+      data: { status: 'CLOSING' },
+    });
 
     await router.routeToOwningAgent(sessionId, {
       protocolVersion: AGENT_PROTOCOL_VERSION,
@@ -237,6 +265,37 @@ test('Task 7: backend command routing reaches the local agent for prepare and cl
     await client.stop();
   }
 });
+
+class ReadySandboxPort implements SandboxPort {
+  async start(input: { sessionId: string }): Promise<SandboxRef> {
+    return {
+      id: `sandbox-${input.sessionId}`,
+      sessionId: input.sessionId,
+      healthcheckUrl: 'http://127.0.0.1:3100/health',
+    };
+  }
+
+  async stop(): Promise<void> {}
+
+  async check(ref: SandboxRef) {
+    return {
+      ready: true,
+      url: ref.healthcheckUrl,
+    };
+  }
+}
+
+class ReadyPreviewTunnelPort implements PreviewTunnelPort {
+  async open(input: { sessionId: string }) {
+    return {
+      id: `tunnel-${input.sessionId}`,
+      sessionId: input.sessionId,
+      publicUrl: 'https://preview.pairdock.test',
+    };
+  }
+
+  async close(): Promise<void> {}
+}
 
 async function execGit(cwd: string, args: string[]): Promise<string> {
   const { stdout } = await execFileAsync('git', args, { cwd });

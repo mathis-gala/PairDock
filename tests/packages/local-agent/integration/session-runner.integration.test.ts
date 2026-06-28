@@ -10,8 +10,10 @@ import {
   type SessionCloseCommandEnvelope,
   type SessionPrepareCommandEnvelope,
 } from '@pairdock/shared-contracts';
+import type { SandboxPort, SandboxRef } from '../../../../packages/local-agent/src/docker/sandbox.port.js';
 import { WorktreeService } from '../../../../packages/local-agent/src/git/worktree.service.js';
 import { SessionRunner } from '../../../../packages/local-agent/src/session/session-runner.js';
+import type { PreviewTunnelPort } from '../../../../packages/local-agent/src/tunnel/preview-tunnel.port.js';
 
 const execFileAsync = promisify(execFile);
 
@@ -100,6 +102,8 @@ test('BT-015: SessionRunner.close is idempotent after local cleanup already ran'
   const repositoryPath = await createTempRepository();
   const managedRoot = await createManagedWorktreeRoot();
   const sessionId = '55555555-5555-4555-8555-555555555555';
+  const fakeSandbox = new FakeSandboxPort();
+  const fakeTunnel = new FakePreviewTunnelPort();
   const runner = new SessionRunner(
     {
       projectPaths: {
@@ -108,6 +112,8 @@ test('BT-015: SessionRunner.close is idempotent after local cleanup already ran'
     },
     {
       worktreeService: new WorktreeService(managedRoot),
+      sandboxPort: fakeSandbox,
+      previewTunnelPort: fakeTunnel,
     },
   );
 
@@ -131,6 +137,86 @@ test('BT-015: SessionRunner.close is idempotent after local cleanup already ran'
   assert.equal(await execGit(repositoryPath, ['rev-parse', '--is-inside-work-tree']), 'true');
   await assert.rejects(() => execGit(workspace.worktreePath, ['rev-parse', '--is-inside-work-tree']));
 });
+
+test('BT-016: SessionRunner.prepare returns a preview URL after the sandbox passes healthcheck', async () => {
+  const repositoryPath = await createTempRepository();
+  const managedRoot = await createManagedWorktreeRoot();
+  const fakeSandbox = new FakeSandboxPort();
+  const fakeTunnel = new FakePreviewTunnelPort();
+  const sessionId = '66666666-6666-4666-8666-666666666666';
+  const runner = new SessionRunner(
+    {
+      projectPaths: {
+        pairdock: repositoryPath,
+      },
+    },
+    {
+      worktreeService: new WorktreeService(managedRoot),
+      sandboxPort: fakeSandbox,
+      previewTunnelPort: fakeTunnel,
+    },
+  );
+
+  const workspace = await runner.prepare(
+    buildPrepareCommand({
+      sessionId,
+      payload: {
+        sessionId,
+        projectKey: 'pairdock',
+        branchName: 'pairdock/session-6666',
+        modelId: 'codex-cli/gpt-5.4',
+      },
+    }),
+  );
+
+  assert.equal(workspace.previewUrl, 'https://preview.pairdock.test');
+  assert.equal(workspace.sandboxRef?.healthcheckUrl, 'http://127.0.0.1:3100/health');
+  assert.equal(workspace.tunnelRef?.publicUrl, 'https://preview.pairdock.test');
+  assert.equal(fakeSandbox.startCalls.length, 1);
+  assert.equal(fakeSandbox.checkCalls.length, 1);
+  assert.equal(fakeTunnel.openCalls.length, 1);
+  assert.equal(fakeTunnel.openCalls[0]?.localUrl, 'http://127.0.0.1:3100/health');
+  assert.equal(runner.findWorkspace(sessionId)?.previewUrl, 'https://preview.pairdock.test');
+});
+
+class FakeSandboxPort implements SandboxPort {
+  readonly startCalls: Array<{ sessionId: string; worktreePath: string }> = [];
+  readonly checkCalls: SandboxRef[] = [];
+
+  async start(input: { sessionId: string; worktreePath: string }): Promise<SandboxRef> {
+    this.startCalls.push({ sessionId: input.sessionId, worktreePath: input.worktreePath });
+    return {
+      id: `sandbox-${input.sessionId}`,
+      sessionId: input.sessionId,
+      healthcheckUrl: 'http://127.0.0.1:3100/health',
+    };
+  }
+
+  async stop(): Promise<void> {}
+
+  async check(ref: SandboxRef) {
+    this.checkCalls.push(ref);
+    return {
+      ready: true,
+      url: ref.healthcheckUrl,
+    };
+  }
+}
+
+class FakePreviewTunnelPort implements PreviewTunnelPort {
+  readonly openCalls: Array<{ sessionId: string; localUrl: string }> = [];
+
+  async open(input: { sessionId: string; localUrl: string }) {
+    this.openCalls.push({ sessionId: input.sessionId, localUrl: input.localUrl });
+    return {
+      id: `tunnel-${input.sessionId}`,
+      sessionId: input.sessionId,
+      publicUrl: 'https://preview.pairdock.test',
+    };
+  }
+
+  async close(): Promise<void> {}
+}
 
 async function execGit(cwd: string, args: string[]): Promise<string> {
   const { stdout } = await execFileAsync('git', args, { cwd });

@@ -12,8 +12,14 @@ import {
   agentProtocolMessageEventName,
 } from '@pairdock/shared-contracts';
 import { Server, type Socket } from 'socket.io';
+import {
+  HealthcheckService,
+  HealthcheckTimeoutError,
+} from '../../../../packages/local-agent/src/docker/healthcheck.service.js';
+import type { SandboxPort, SandboxRef } from '../../../../packages/local-agent/src/docker/sandbox.port.js';
 import { WorktreeService } from '../../../../packages/local-agent/src/git/worktree.service.js';
 import { SessionRunner } from '../../../../packages/local-agent/src/session/session-runner.js';
+import type { PreviewTunnelPort } from '../../../../packages/local-agent/src/tunnel/preview-tunnel.port.js';
 import { AgentClient } from '../../../../packages/local-agent/src/websocket/agent-client.js';
 
 const execFileAsync = promisify(execFile);
@@ -46,7 +52,14 @@ async function createAgentServer() {
   }
 
   const socketPromise = new Promise<Socket>((resolve) => {
-    io.of('/agent').once('connection', (socket) => resolve(socket));
+    io.of('/agent').once('connection', (socket) => {
+      socket.on(agentProtocolMessageEventName, (_payload, acknowledge) => {
+        if (typeof acknowledge === 'function') {
+          acknowledge({ accepted: true });
+        }
+      });
+      resolve(socket);
+    });
   });
 
   return {
@@ -99,7 +112,22 @@ function waitForAgentEvent(socket: Socket, eventType: AgentEventEnvelope['type']
   });
 }
 
-test('Task 7: AgentClient executes session.prepare and session.close commands through SessionRunner', async () => {
+function waitForAgentEvents(socket: Socket, count: number) {
+  return new Promise<AgentEventEnvelope[]>((resolve) => {
+    const events: AgentEventEnvelope[] = [];
+    const listener = (event: AgentEventEnvelope) => {
+      events.push(event);
+      if (events.length === count) {
+        socket.off(agentProtocolMessageEventName, listener);
+        resolve(events);
+      }
+    };
+
+    socket.on(agentProtocolMessageEventName, listener);
+  });
+}
+
+test('BT-016: AgentClient emits preview progress and session.ready after session.prepare succeeds', async () => {
   const repositoryPath = await createTempRepository();
   const managedRoot = await createManagedWorktreeRoot();
   const { backendUrl, io, socketPromise } = await createAgentServer();
@@ -130,6 +158,8 @@ test('Task 7: AgentClient executes session.prepare and session.close commands th
         },
         {
           worktreeService: new WorktreeService(managedRoot),
+          sandboxPort: new ReadySandboxPort(),
+          previewTunnelPort: new ReadyPreviewTunnelPort(),
         },
       ),
     },
@@ -138,14 +168,25 @@ test('Task 7: AgentClient executes session.prepare and session.close commands th
   try {
     await client.start();
     const socket = await socketPromise;
+    await waitForAgentEvent(socket, 'agent.connected');
 
-    const preparedEventPromise = waitForAgentEvent(socket, 'session.progress');
+    const eventsPromise = waitForAgentEvents(socket, 5);
     socket.emit(agentProtocolMessageEventName, buildPrepareCommand(sessionId, branchName));
-    const preparedEvent = await preparedEventPromise;
+    const [connectingEvent, worktreeEvent, dockerEvent, previewEvent, readyEvent] = await eventsPromise;
 
-    assert.equal(preparedEvent.sessionId, sessionId);
-    assert.equal(preparedEvent.type, 'session.progress');
-    assert.equal(preparedEvent.payload.status, 'WORKTREE_CREATING');
+    assert.equal(connectingEvent.type, 'session.progress');
+    assert.equal(connectingEvent.payload.status, 'AGENT_CONNECTING');
+    assert.equal(worktreeEvent.type, 'session.progress');
+    assert.equal(worktreeEvent.payload.status, 'WORKTREE_CREATING');
+    assert.equal(dockerEvent.type, 'session.progress');
+    assert.equal(dockerEvent.payload.status, 'DOCKER_STARTING');
+    assert.equal(previewEvent.type, 'session.progress');
+    assert.equal(previewEvent.payload.status, 'PREVIEW_STARTING');
+    assert.equal(readyEvent.type, 'session.ready');
+    assert.deepEqual(readyEvent.payload, {
+      sessionId,
+      previewUrl: 'https://preview.pairdock.test',
+    });
     assert.equal(await execGit(worktreePath, ['branch', '--show-current']), branchName);
 
     const closedEventPromise = waitForAgentEvent(socket, 'session.closed');
@@ -167,6 +208,128 @@ test('Task 7: AgentClient executes session.prepare and session.close commands th
     });
   }
 });
+
+test('BT-017: AgentClient emits a retryable error when preview healthcheck times out', async () => {
+  const repositoryPath = await createTempRepository();
+  const managedRoot = await createManagedWorktreeRoot();
+  const { backendUrl, io, socketPromise } = await createAgentServer();
+  const sessionId = '88888888-8888-4888-8888-888888888888';
+  const client = new AgentClient(
+    {
+      agentId: 'agent-local-1',
+      authToken: 'secret-token',
+      backendUrl,
+      capabilities: ['session.prepare'],
+      projectPaths: {
+        pairdock: repositoryPath,
+      },
+    },
+    {
+      error() {},
+      info() {},
+      warn() {},
+    },
+    {
+      sessionRunner: new SessionRunner(
+        {
+          projectPaths: {
+            pairdock: repositoryPath,
+          },
+        },
+        {
+          worktreeService: new WorktreeService(managedRoot),
+          sandboxPort: new TimeoutSandboxPort(),
+          healthcheckService: new ImmediateTimeoutHealthcheckService(),
+          previewTunnelPort: new ReadyPreviewTunnelPort(),
+        },
+      ),
+    },
+  );
+
+  try {
+    await client.start();
+    const socket = await socketPromise;
+    await waitForAgentEvent(socket, 'agent.connected');
+
+    const errorEventPromise = waitForAgentEvent(socket, 'error');
+    socket.emit(agentProtocolMessageEventName, buildPrepareCommand(sessionId, 'pairdock/session-8888'));
+    const errorEvent = await errorEventPromise;
+
+    assert.equal(errorEvent.type, 'error');
+    assert.deepEqual(errorEvent.payload, {
+      sessionId,
+      code: 'session.preview.failed',
+      message: `Preview healthcheck did not become ready for session ${sessionId} within 30000ms.`,
+      retryable: true,
+    });
+  } finally {
+    await client.stop();
+    await new Promise<void>((resolve) => {
+      io.close(() => resolve());
+    });
+  }
+});
+
+class ReadySandboxPort implements SandboxPort {
+  async start(input: { sessionId: string }): Promise<SandboxRef> {
+    return {
+      id: `sandbox-${input.sessionId}`,
+      sessionId: input.sessionId,
+      healthcheckUrl: 'http://127.0.0.1:3100/health',
+    };
+  }
+
+  async stop(): Promise<void> {}
+
+  async check(ref: SandboxRef) {
+    return {
+      ready: true,
+      url: ref.healthcheckUrl,
+    };
+  }
+}
+
+class TimeoutSandboxPort implements SandboxPort {
+  async start(input: { sessionId: string }): Promise<SandboxRef> {
+    return {
+      id: `sandbox-${input.sessionId}`,
+      sessionId: input.sessionId,
+      healthcheckUrl: 'http://127.0.0.1:3200/health',
+    };
+  }
+
+  async stop(): Promise<void> {}
+
+  async check(ref: SandboxRef) {
+    return {
+      ready: false,
+      url: ref.healthcheckUrl,
+      message: 'still starting',
+    };
+  }
+}
+
+class ReadyPreviewTunnelPort implements PreviewTunnelPort {
+  async open(input: { sessionId: string }) {
+    return {
+      id: `tunnel-${input.sessionId}`,
+      sessionId: input.sessionId,
+      publicUrl: 'https://preview.pairdock.test',
+    };
+  }
+
+  async close(): Promise<void> {}
+}
+
+class ImmediateTimeoutHealthcheckService extends HealthcheckService {
+  override waitUntilReady(input: { sandboxRef: SandboxRef }): Promise<{ ready: boolean; url: string }> {
+    return Promise.reject(
+      new HealthcheckTimeoutError(
+        `Preview healthcheck did not become ready for session ${input.sandboxRef.sessionId} within 30000ms.`,
+      ),
+    );
+  }
+}
 
 async function execGit(cwd: string, args: string[]): Promise<string> {
   const { stdout } = await execFileAsync('git', args, { cwd });

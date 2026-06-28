@@ -7,6 +7,7 @@ import {
   type ErrorEventEnvelope,
   type SessionClosedEventEnvelope,
   type SessionProgressEventEnvelope,
+  type SessionReadyEventEnvelope,
 } from '@pairdock/shared-contracts';
 
 export function buildAgentConnectedEvent(input: {
@@ -34,6 +35,17 @@ export function buildSessionProgressEvent(input: {
       sessionId: input.sessionId,
       status: input.status,
       ...(input.message ? { message: input.message } : {}),
+    },
+  });
+}
+
+export function buildSessionReadyEvent(input: { sessionId: string; previewUrl: string }): SessionReadyEventEnvelope {
+  return buildEnvelope({
+    sessionId: input.sessionId,
+    type: 'session.ready',
+    payload: {
+      sessionId: input.sessionId,
+      previewUrl: input.previewUrl,
     },
   });
 }

@@ -13,6 +13,7 @@ import {
   buildErrorEvent,
   buildSessionClosedEvent,
   buildSessionProgressEvent,
+  buildSessionReadyEvent,
   parseAgentCommandEnvelope,
 } from './message-codecs.js';
 
@@ -161,17 +162,34 @@ export class AgentClient {
 
   private async handleSessionPrepare(command: SessionPrepareCommandEnvelope): Promise<void> {
     try {
-      const workspace = await this.sessionRunner.prepare(command);
-
-      this.emitEvent(
+      await this.emitEvent(
         buildSessionProgressEvent({
           sessionId: command.sessionId,
-          status: 'WORKTREE_CREATING',
-          message: `Prepared branch ${workspace.branchName} in ${workspace.worktreePath}.`,
+          status: 'AGENT_CONNECTING',
+        }),
+      );
+
+      const workspace = await this.sessionRunner.prepare(command, {
+        onProgress: async (status, message) => {
+          await this.emitEvent(
+            buildSessionProgressEvent({
+              sessionId: command.sessionId,
+              status,
+              ...(message ? { message } : {}),
+            }),
+          );
+        },
+      });
+
+      await this.emitEvent(
+        buildSessionReadyEvent({
+          previewUrl: workspace.previewUrl ?? '',
+          sessionId: command.sessionId,
         }),
       );
     } catch (error) {
-      this.emitError('session.prepare.failed', command.sessionId, error, false);
+      const retryable = isRetryableError(error);
+      await this.emitError('session.preview.failed', command.sessionId, error, retryable);
     }
   }
 
@@ -179,20 +197,25 @@ export class AgentClient {
     try {
       const result = await this.sessionRunner.close(command);
 
-      this.emitEvent(
+      await this.emitEvent(
         buildSessionClosedEvent({
           sessionId: command.sessionId,
           cleaned: result.cleaned,
         }),
       );
     } catch (error) {
-      this.emitError('session.close.failed', command.sessionId, error, false);
+      await this.emitError('session.close.failed', command.sessionId, error, false);
     }
   }
 
-  private emitError(code: string, sessionId: string | undefined, error: unknown, retryable: boolean): void {
+  private async emitError(
+    code: string,
+    sessionId: string | undefined,
+    error: unknown,
+    retryable: boolean,
+  ): Promise<void> {
     const message = error instanceof Error ? error.message : String(error);
-    this.emitEvent(
+    await this.emitEvent(
       buildErrorEvent({
         code,
         message,
@@ -202,13 +225,19 @@ export class AgentClient {
     );
   }
 
-  private emitEvent(event: AgentEventEnvelope): void {
+  private async emitEvent(event: AgentEventEnvelope): Promise<void> {
     if (!this.socket) {
       throw new Error('AgentClient socket is not connected.');
     }
 
-    this.socket.emit(agentProtocolMessageEventName, event);
+    await this.socket.emitWithAck(agentProtocolMessageEventName, event);
   }
+}
+
+function isRetryableError(error: unknown): boolean {
+  return Boolean(
+    error && typeof error === 'object' && 'retryable' in error && (error as { retryable?: unknown }).retryable === true,
+  );
 }
 
 export type { AgentConnectedEventEnvelope };

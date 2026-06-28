@@ -1,8 +1,13 @@
+import type { SandboxRef } from '../docker/sandbox.port.js';
 import type { PreparedWorktree } from '../git/worktree.service.js';
+import type { PreviewTunnelRef } from '../tunnel/preview-tunnel.port.js';
 
 export interface SessionWorkspace extends PreparedWorktree {
   sessionId: string;
   projectKey: string;
+  sandboxRef?: SandboxRef;
+  tunnelRef?: PreviewTunnelRef;
+  previewUrl?: string;
 }
 
 export class SessionRegistry {
