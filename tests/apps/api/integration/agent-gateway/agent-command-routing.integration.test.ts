@@ -9,12 +9,12 @@ import { promisify } from 'node:util';
 import type { INestApplication } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
 import { AGENT_PROTOCOL_VERSION } from '@pairdock/shared-contracts';
+import { AgentCommandRouterService } from '../../../../../apps/api/src/agent-gateway/agent-command-router.service.js';
+import { AppModule } from '../../../../../apps/api/src/app.module.js';
+import { DatabaseClient } from '../../../../../apps/api/src/persistence/client.js';
 import { WorktreeService } from '../../../../../packages/local-agent/src/git/worktree.service.js';
 import { SessionRunner } from '../../../../../packages/local-agent/src/session/session-runner.js';
 import { AgentClient } from '../../../../../packages/local-agent/src/websocket/agent-client.js';
-import { AgentCommandRouterService } from '../../../src/agent-gateway/agent-command-router.service.js';
-import { AppModule } from '../../../src/app.module.js';
-import { DatabaseClient } from '../../../src/persistence/client.js';
 
 const execFileAsync = promisify(execFile);
 const prisma = new DatabaseClient();

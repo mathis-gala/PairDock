@@ -10,8 +10,8 @@ import {
   type SessionCloseCommandEnvelope,
   type SessionPrepareCommandEnvelope,
 } from '@pairdock/shared-contracts';
-import { WorktreeService } from '../../src/git/worktree.service.js';
-import { SessionRunner } from '../../src/session/session-runner.js';
+import { WorktreeService } from '../../../../packages/local-agent/src/git/worktree.service.js';
+import { SessionRunner } from '../../../../packages/local-agent/src/session/session-runner.js';
 
 const execFileAsync = promisify(execFile);
 

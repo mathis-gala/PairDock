@@ -1,15 +1,15 @@
 import assert from 'node:assert/strict';
 import { randomUUID } from 'node:crypto';
 import test from 'node:test';
-import { AgentEventsRepositoryAdapter } from '../../../src/persistence/adapters/agent-events.repository.js';
-import { ExternalIdentitiesRepositoryAdapter } from '../../../src/persistence/adapters/external-identities.repository.js';
-import { ProjectsRepositoryAdapter } from '../../../src/persistence/adapters/projects.repository.js';
-import { SessionMembersRepositoryAdapter } from '../../../src/persistence/adapters/session-members.repository.js';
-import { SessionsRepositoryAdapter } from '../../../src/persistence/adapters/sessions.repository.js';
-import { SourceControlConnectionsRepositoryAdapter } from '../../../src/persistence/adapters/source-control-connections.repository.js';
-import { PersistenceUnitOfWorkAdapter } from '../../../src/persistence/adapters/unit-of-work.js';
-import { UsersRepositoryAdapter } from '../../../src/persistence/adapters/users.repository.js';
-import { DatabaseClient } from '../../../src/persistence/client.js';
+import { AgentEventsRepositoryAdapter } from '../../../../../apps/api/src/persistence/adapters/agent-events.repository.js';
+import { ExternalIdentitiesRepositoryAdapter } from '../../../../../apps/api/src/persistence/adapters/external-identities.repository.js';
+import { ProjectsRepositoryAdapter } from '../../../../../apps/api/src/persistence/adapters/projects.repository.js';
+import { SessionMembersRepositoryAdapter } from '../../../../../apps/api/src/persistence/adapters/session-members.repository.js';
+import { SessionsRepositoryAdapter } from '../../../../../apps/api/src/persistence/adapters/sessions.repository.js';
+import { SourceControlConnectionsRepositoryAdapter } from '../../../../../apps/api/src/persistence/adapters/source-control-connections.repository.js';
+import { PersistenceUnitOfWorkAdapter } from '../../../../../apps/api/src/persistence/adapters/unit-of-work.js';
+import { UsersRepositoryAdapter } from '../../../../../apps/api/src/persistence/adapters/users.repository.js';
+import { DatabaseClient } from '../../../../../apps/api/src/persistence/client.js';
 
 const prisma = new DatabaseClient();
 

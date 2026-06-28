@@ -12,9 +12,9 @@ import {
   agentProtocolMessageEventName,
 } from '@pairdock/shared-contracts';
 import { Server, type Socket } from 'socket.io';
-import { WorktreeService } from '../../src/git/worktree.service.js';
-import { SessionRunner } from '../../src/session/session-runner.js';
-import { AgentClient } from '../../src/websocket/agent-client.js';
+import { WorktreeService } from '../../../../packages/local-agent/src/git/worktree.service.js';
+import { SessionRunner } from '../../../../packages/local-agent/src/session/session-runner.js';
+import { AgentClient } from '../../../../packages/local-agent/src/websocket/agent-client.js';
 
 const execFileAsync = promisify(execFile);
 

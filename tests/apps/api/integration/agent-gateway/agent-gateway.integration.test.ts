@@ -12,8 +12,8 @@ import {
   uiSessionSubscribeEventName,
 } from '@pairdock/shared-contracts';
 import { io, type Socket } from 'socket.io-client';
-import { AppModule } from '../../../src/app.module.js';
-import { DatabaseClient } from '../../../src/persistence/client.js';
+import { AppModule } from '../../../../../apps/api/src/app.module.js';
+import { DatabaseClient } from '../../../../../apps/api/src/persistence/client.js';
 
 interface AuthResponseBody {
   created: boolean;

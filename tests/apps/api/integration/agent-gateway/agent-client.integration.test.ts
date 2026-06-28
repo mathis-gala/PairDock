@@ -2,10 +2,10 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import type { INestApplication } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
+import { ConnectedAgentsRegistry } from '../../../../../apps/api/src/agent-gateway/connected-agents.registry.js';
+import { AppModule } from '../../../../../apps/api/src/app.module.js';
+import { DatabaseClient } from '../../../../../apps/api/src/persistence/client.js';
 import { AgentClient } from '../../../../../packages/local-agent/src/websocket/agent-client.js';
-import { ConnectedAgentsRegistry } from '../../../src/agent-gateway/connected-agents.registry.js';
-import { AppModule } from '../../../src/app.module.js';
-import { DatabaseClient } from '../../../src/persistence/client.js';
 
 const prisma = new DatabaseClient();
 

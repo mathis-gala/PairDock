@@ -2,14 +2,13 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import path from 'node:path';
 import test from 'node:test';
-import { fileURLToPath } from 'node:url';
 
-const currentDirectory = path.dirname(fileURLToPath(import.meta.url));
-const appRoot = path.resolve(currentDirectory, '..', '..', '..');
+const cwd = process.cwd();
+const appRoot = cwd.endsWith(path.join('apps', 'api')) ? cwd : path.join(cwd, 'apps', 'api');
+const repoRoot = cwd.endsWith(path.join('apps', 'api')) ? path.resolve(cwd, '..', '..') : cwd;
 const apiSourceRoot = path.join(appRoot, 'src');
 const persistenceRoot = path.join(apiSourceRoot, 'persistence');
 const generatedPrismaRoot = path.join(apiSourceRoot, 'generated', 'prisma');
-const repoRoot = path.resolve(appRoot, '..', '..');
 const domainContractFile = path.join(repoRoot, 'packages', 'domain', 'src', 'index.ts');
 const persistencePortRoot = path.join(persistenceRoot, 'ports');
 const persistenceAdapterRoot = path.join(persistenceRoot, 'adapters');
