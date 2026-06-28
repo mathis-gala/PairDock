@@ -1,12 +1,12 @@
-import { Injectable } from '@nestjs/common';
+import { Inject, Injectable } from '@nestjs/common';
 import type { Session } from '@pairdock/domain';
-import type { DatabaseExecutor } from '../client.js';
+import { DatabaseClient, type DatabaseExecutor } from '../client.js';
 import type { CreateSessionInput, SessionsRepository } from '../ports/sessions.repository.js';
 import { mapSession } from './mappers.js';
 
 @Injectable()
 export class SessionsRepositoryAdapter implements SessionsRepository {
-  constructor(private readonly prisma: DatabaseExecutor) {}
+  constructor(@Inject(DatabaseClient) private readonly prisma: DatabaseExecutor) {}
 
   async create(input: CreateSessionInput): Promise<Session> {
     const record = await this.prisma.session.create({
