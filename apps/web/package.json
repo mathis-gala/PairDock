@@ -5,6 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
+    "build": "vite build",
     "typecheck": "tsc --noEmit -p tsconfig.json"
   },
   "dependencies": {
@@ -12,9 +13,11 @@
     "react-dom": "^19.1.1"
   },
   "devDependencies": {
+    "@tailwindcss/vite": "^4.1.12",
     "@types/react": "^19.1.10",
     "@types/react-dom": "^19.1.7",
     "@vitejs/plugin-react": "^5.0.2",
+    "tailwindcss": "^4.1.12",
     "vite": "^7.1.3"
   }
 }

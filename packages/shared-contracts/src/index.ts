@@ -5,16 +5,16 @@ export const protocolVersionSchema = z.literal('1.0');
 export const codexPromptCommandSchema = z.object({
   protocolVersion: protocolVersionSchema,
   type: z.literal('codex.prompt'),
-  sessionId: z.string().uuid(),
+  sessionId: z.uuid(),
   prompt: z.string().min(1),
-  requestedByUserId: z.string().uuid(),
+  requestedByUserId: z.uuid(),
 });
 
 export const sessionPrepareCommandSchema = z.object({
   protocolVersion: protocolVersionSchema,
   type: z.literal('session.prepare'),
-  sessionId: z.string().uuid(),
-  projectId: z.string().uuid(),
+  sessionId: z.uuid(),
+  projectId: z.uuid(),
   branchName: z.string().min(1),
 });
 
@@ -32,20 +32,14 @@ export const agentConnectedEventSchema = z.object({
 export const codexOutputEventSchema = z.object({
   protocolVersion: protocolVersionSchema,
   type: z.literal('codex.output'),
-  sessionId: z.string().uuid(),
+  sessionId: z.uuid(),
   stream: z.enum(['stdout', 'stderr']),
   chunk: z.string(),
 });
 
-export const agentCommandSchema = z.discriminatedUnion('type', [
-  codexPromptCommandSchema,
-  sessionPrepareCommandSchema,
-]);
+export const agentCommandSchema = z.discriminatedUnion('type', [codexPromptCommandSchema, sessionPrepareCommandSchema]);
 
-export const agentEventSchema = z.discriminatedUnion('type', [
-  agentConnectedEventSchema,
-  codexOutputEventSchema,
-]);
+export const agentEventSchema = z.discriminatedUnion('type', [agentConnectedEventSchema, codexOutputEventSchema]);
 
 export type ProtocolVersion = z.infer<typeof protocolVersionSchema>;
 export type CodexPromptCommand = z.infer<typeof codexPromptCommandSchema>;

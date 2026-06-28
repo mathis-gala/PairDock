@@ -1,0 +1,64 @@
+import { Module } from '@nestjs/common';
+import { AgentEventsRepositoryAdapter } from './adapters/agent-events.repository.js';
+import { ExternalIdentitiesRepositoryAdapter } from './adapters/external-identities.repository.js';
+import { ProjectsRepositoryAdapter } from './adapters/projects.repository.js';
+import { ReviewRequestsRepositoryAdapter } from './adapters/review-requests.repository.js';
+import { SessionMembersRepositoryAdapter } from './adapters/session-members.repository.js';
+import { SessionsRepositoryAdapter } from './adapters/sessions.repository.js';
+import { SourceControlConnectionsRepositoryAdapter } from './adapters/source-control-connections.repository.js';
+import { PersistenceUnitOfWorkAdapter } from './adapters/unit-of-work.js';
+import { UsersRepositoryAdapter } from './adapters/users.repository.js';
+import { ValidationRunsRepositoryAdapter } from './adapters/validation-runs.repository.js';
+import { DatabaseClient } from './client.js';
+import {
+  AGENT_EVENTS_REPOSITORY,
+  EXTERNAL_IDENTITIES_REPOSITORY,
+  PERSISTENCE_UNIT_OF_WORK,
+  PROJECTS_REPOSITORY,
+  REVIEW_REQUESTS_REPOSITORY,
+  SESSION_MEMBERS_REPOSITORY,
+  SESSIONS_REPOSITORY,
+  SOURCE_CONTROL_CONNECTIONS_REPOSITORY,
+  USERS_REPOSITORY,
+  VALIDATION_RUNS_REPOSITORY,
+} from './persistence.tokens.js';
+
+@Module({
+  providers: [
+    DatabaseClient,
+    UsersRepositoryAdapter,
+    ExternalIdentitiesRepositoryAdapter,
+    SourceControlConnectionsRepositoryAdapter,
+    ProjectsRepositoryAdapter,
+    SessionsRepositoryAdapter,
+    SessionMembersRepositoryAdapter,
+    AgentEventsRepositoryAdapter,
+    ValidationRunsRepositoryAdapter,
+    ReviewRequestsRepositoryAdapter,
+    PersistenceUnitOfWorkAdapter,
+    { provide: USERS_REPOSITORY, useExisting: UsersRepositoryAdapter },
+    { provide: EXTERNAL_IDENTITIES_REPOSITORY, useExisting: ExternalIdentitiesRepositoryAdapter },
+    { provide: SOURCE_CONTROL_CONNECTIONS_REPOSITORY, useExisting: SourceControlConnectionsRepositoryAdapter },
+    { provide: PROJECTS_REPOSITORY, useExisting: ProjectsRepositoryAdapter },
+    { provide: SESSIONS_REPOSITORY, useExisting: SessionsRepositoryAdapter },
+    { provide: SESSION_MEMBERS_REPOSITORY, useExisting: SessionMembersRepositoryAdapter },
+    { provide: AGENT_EVENTS_REPOSITORY, useExisting: AgentEventsRepositoryAdapter },
+    { provide: VALIDATION_RUNS_REPOSITORY, useExisting: ValidationRunsRepositoryAdapter },
+    { provide: REVIEW_REQUESTS_REPOSITORY, useExisting: ReviewRequestsRepositoryAdapter },
+    { provide: PERSISTENCE_UNIT_OF_WORK, useExisting: PersistenceUnitOfWorkAdapter },
+  ],
+  exports: [
+    DatabaseClient,
+    USERS_REPOSITORY,
+    EXTERNAL_IDENTITIES_REPOSITORY,
+    SOURCE_CONTROL_CONNECTIONS_REPOSITORY,
+    PROJECTS_REPOSITORY,
+    SESSIONS_REPOSITORY,
+    SESSION_MEMBERS_REPOSITORY,
+    AGENT_EVENTS_REPOSITORY,
+    VALIDATION_RUNS_REPOSITORY,
+    REVIEW_REQUESTS_REPOSITORY,
+    PERSISTENCE_UNIT_OF_WORK,
+  ],
+})
+export class PersistenceModule {}
