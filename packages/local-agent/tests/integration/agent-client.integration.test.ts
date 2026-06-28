@@ -54,6 +54,7 @@ test('BT-012: AgentClient announces configured capabilities when it connects', a
       authToken: 'secret-token',
       backendUrl,
       capabilities: ['session.prepare', 'agent.prompt'],
+      projectPaths: {},
     },
     {
       error() {},

@@ -75,6 +75,7 @@ test('BT-012: a started local agent is visible from the backend after it announc
       authToken: 'secret-token',
       backendUrl: baseUrl,
       capabilities: ['session.prepare', 'agent.prompt'],
+      projectPaths: {},
     },
     {
       error() {},
