@@ -3,8 +3,20 @@
   "private": true,
   "version": "0.1.0",
   "type": "module",
+  "bin": {
+    "pairdock-agent": "./src/main.ts"
+  },
   "scripts": {
     "dev": "tsx watch src/main.ts start",
+    "test": "bun run test:integration",
+    "test:integration": "sh -c 'files=$(find tests/integration -name \"*.test.ts\" -print); if [ -z \"$files\" ]; then echo \"No integration tests found\"; else node --import tsx --test --test-concurrency=1 $files; fi'",
     "typecheck": "tsc --noEmit -p tsconfig.json"
+  },
+  "dependencies": {
+    "@pairdock/shared-contracts": "0.1.0",
+    "socket.io-client": "^4.8.1"
+  },
+  "devDependencies": {
+    "socket.io": "^4.8.1"
   }
 }
