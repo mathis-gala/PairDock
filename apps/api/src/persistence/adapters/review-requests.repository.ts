@@ -1,12 +1,12 @@
-import { Injectable } from '@nestjs/common';
+import { Inject, Injectable } from '@nestjs/common';
 import type { ReviewRequestRecord } from '@pairdock/domain';
-import type { DatabaseExecutor } from '../client.js';
+import { DatabaseClient, type DatabaseExecutor } from '../client.js';
 import type { CreateReviewRequestInput, ReviewRequestsRepository } from '../ports/review-requests.repository.js';
 import { mapReviewRequest } from './mappers.js';
 
 @Injectable()
 export class ReviewRequestsRepositoryAdapter implements ReviewRequestsRepository {
-  constructor(private readonly prisma: DatabaseExecutor) {}
+  constructor(@Inject(DatabaseClient) private readonly prisma: DatabaseExecutor) {}
 
   async create(input: CreateReviewRequestInput): Promise<ReviewRequestRecord> {
     const record = await this.prisma.pullRequest.create({

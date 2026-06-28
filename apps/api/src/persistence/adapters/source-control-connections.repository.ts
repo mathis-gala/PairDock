@@ -1,6 +1,6 @@
-import { Injectable } from '@nestjs/common';
+import { Inject, Injectable } from '@nestjs/common';
 import type { SourceControlConnection } from '@pairdock/domain';
-import type { DatabaseExecutor } from '../client.js';
+import { DatabaseClient, type DatabaseExecutor } from '../client.js';
 import type {
   CreateSourceControlConnectionInput,
   SourceControlConnectionsRepository,
@@ -9,7 +9,7 @@ import { mapSourceControlConnection } from './mappers.js';
 
 @Injectable()
 export class SourceControlConnectionsRepositoryAdapter implements SourceControlConnectionsRepository {
-  constructor(private readonly prisma: DatabaseExecutor) {}
+  constructor(@Inject(DatabaseClient) private readonly prisma: DatabaseExecutor) {}
 
   async create(input: CreateSourceControlConnectionInput): Promise<SourceControlConnection> {
     const record = await this.prisma.sourceControlConnection.create({

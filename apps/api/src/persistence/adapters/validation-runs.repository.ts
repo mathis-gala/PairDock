@@ -1,12 +1,12 @@
-import { Injectable } from '@nestjs/common';
+import { Inject, Injectable } from '@nestjs/common';
 import type { ValidationRun } from '@pairdock/domain';
-import type { DatabaseExecutor } from '../client.js';
+import { DatabaseClient, type DatabaseExecutor } from '../client.js';
 import type { CreateValidationRunInput, ValidationRunsRepository } from '../ports/validation-runs.repository.js';
 import { mapValidationRun } from './mappers.js';
 
 @Injectable()
 export class ValidationRunsRepositoryAdapter implements ValidationRunsRepository {
-  constructor(private readonly prisma: DatabaseExecutor) {}
+  constructor(@Inject(DatabaseClient) private readonly prisma: DatabaseExecutor) {}
 
   async create(input: CreateValidationRunInput): Promise<ValidationRun> {
     const record = await this.prisma.validationRun.create({

@@ -35,6 +35,7 @@ export class SessionsRepositoryAdapter implements SessionsRepository {
     id: string;
     status: Session['status'];
     lastError?: string | null;
+    previewUrl?: string | null;
     closedAt?: Date | null;
   }): Promise<Session> {
     const record = await this.prisma.session.update({
@@ -42,6 +43,7 @@ export class SessionsRepositoryAdapter implements SessionsRepository {
       data: {
         status: input.status,
         ...(input.lastError !== undefined ? { lastError: input.lastError } : {}),
+        ...(input.previewUrl !== undefined ? { previewUrl: input.previewUrl } : {}),
         ...(input.closedAt !== undefined ? { closedAt: input.closedAt } : {}),
       },
     });
