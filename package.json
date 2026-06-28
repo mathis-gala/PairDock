@@ -2,17 +2,26 @@
   "name": "pairdock",
   "private": true,
   "version": "0.1.0",
+  "packageManager": "bun@1.3.13",
   "workspaces": [
     "apps/*",
     "packages/*"
   ],
   "scripts": {
-    "typecheck": "npm run typecheck --workspaces --if-present",
-    "dev:web": "npm run dev --workspace @pairdock/web",
-    "dev:api": "npm run dev --workspace @pairdock/api",
-    "dev:agent": "npm run dev --workspace @pairdock/local-agent"
+    "lint": "biome check .",
+    "lint:fix": "biome check --write .",
+    "typecheck": "bun run --workspaces --if-present typecheck",
+    "prisma:generate": "bun run --filter @pairdock/api prisma:generate",
+    "db:migrate": "bun run --filter @pairdock/api db:migrate",
+    "db:migrate:dev": "bun run --filter @pairdock/api db:migrate:dev",
+    "db:reset": "bun run --filter @pairdock/api db:reset",
+    "db:status": "bun run --filter @pairdock/api db:status",
+    "dev:web": "bun run --filter @pairdock/web dev",
+    "dev:api": "bun run --filter @pairdock/api dev",
+    "dev:agent": "bun run --filter @pairdock/local-agent dev"
   },
   "devDependencies": {
+    "@biomejs/biome": "^2.2.4",
     "@types/node": "^24.3.0",
     "tsx": "^4.20.6",
     "typescript": "^5.9.2"
