@@ -124,12 +124,22 @@ export interface PairDockIdentity {
   kind: UserKind;
 }
 
+export interface NormalizedIdentity {
+  provider: ExternalIdentityProvider;
+  providerUserId: string;
+  providerTeamId: string | null;
+  email: string;
+  displayName: string | null;
+  kind: UserKind;
+  metadata: Record<string, unknown>;
+}
+
 export interface DeveloperIdentityPort {
-  getDeveloperIdentity(accessToken: string): Promise<PairDockIdentity>;
+  getDeveloperIdentity(accessToken: string): Promise<NormalizedIdentity>;
 }
 
 export interface PmIdentityPort {
-  getPmIdentity(accessToken: string): Promise<PairDockIdentity>;
+  getPmIdentity(accessToken: string): Promise<NormalizedIdentity>;
 }
 
 export interface SourceControlPort {

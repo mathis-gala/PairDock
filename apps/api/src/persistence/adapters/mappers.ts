@@ -6,12 +6,14 @@ import type {
   ReviewRequestRecord,
   Session,
   SessionMember,
+  SessionMessage,
   SourceControlConnection,
   ValidationRun,
 } from '@pairdock/domain';
 import type {
   AgentEvent,
   ExternalIdentity as PrismaExternalIdentity,
+  Message as PrismaMessage,
   Project as PrismaProject,
   PullRequest as PrismaPullRequest,
   Session as PrismaSession,
@@ -89,6 +91,17 @@ export function mapSessionMember(record: PrismaSessionMember): SessionMember {
     sessionId: record.sessionId,
     userId: record.userId,
     role: record.role,
+  };
+}
+
+export function mapMessage(record: PrismaMessage): SessionMessage {
+  return {
+    id: record.id,
+    sessionId: record.sessionId,
+    userId: record.userId,
+    role: record.role,
+    content: record.content,
+    createdAt: record.createdAt,
   };
 }
 

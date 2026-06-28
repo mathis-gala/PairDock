@@ -9,4 +9,5 @@ export interface CreateUserInput {
 export interface UsersRepository {
   create(input: CreateUserInput): Promise<PairDockUser>;
   findById(id: string): Promise<PairDockUser | null>;
+  findByEmail(email: string): Promise<PairDockUser | null>;
 }

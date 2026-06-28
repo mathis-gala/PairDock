@@ -1,0 +1,2 @@
+export const DEVELOPER_IDENTITY_PORT = Symbol('DEVELOPER_IDENTITY_PORT');
+export const PM_IDENTITY_PORT = Symbol('PM_IDENTITY_PORT');
