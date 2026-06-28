@@ -19,6 +19,7 @@ export interface SessionsRepository {
     id: string;
     status: SessionStatus;
     lastError?: string | null;
+    previewUrl?: string | null;
     closedAt?: Date | null;
   }): Promise<Session>;
 }

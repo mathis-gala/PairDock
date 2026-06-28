@@ -1,5 +1,5 @@
-import { Injectable } from '@nestjs/common';
-import type { DatabaseClient, DatabaseExecutor } from '../client.js';
+import { Inject, Injectable } from '@nestjs/common';
+import { DatabaseClient, type DatabaseExecutor } from '../client.js';
 import type { PersistenceRepositories, PersistenceUnitOfWork } from '../ports/persistence-unit-of-work.js';
 import { AgentEventsRepositoryAdapter } from './agent-events.repository.js';
 import { ExternalIdentitiesRepositoryAdapter } from './external-identities.repository.js';
@@ -27,7 +27,7 @@ function createPersistenceRepositories(prisma: DatabaseExecutor): PersistenceRep
 
 @Injectable()
 export class PersistenceUnitOfWorkAdapter implements PersistenceUnitOfWork {
-  constructor(private readonly prisma: DatabaseClient) {}
+  constructor(@Inject(DatabaseClient) private readonly prisma: DatabaseClient) {}
 
   async execute<T>(work: (repositories: PersistenceRepositories) => Promise<T>): Promise<T> {
     return this.prisma.$transaction(async (transaction) => work(createPersistenceRepositories(transaction)));

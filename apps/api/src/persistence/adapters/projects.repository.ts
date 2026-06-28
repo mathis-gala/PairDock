@@ -1,12 +1,12 @@
-import { Injectable } from '@nestjs/common';
+import { Inject, Injectable } from '@nestjs/common';
 import type { Project } from '@pairdock/domain';
-import type { DatabaseExecutor } from '../client.js';
+import { DatabaseClient, type DatabaseExecutor } from '../client.js';
 import type { CreateProjectInput, ProjectsRepository } from '../ports/projects.repository.js';
 import { mapProject } from './mappers.js';
 
 @Injectable()
 export class ProjectsRepositoryAdapter implements ProjectsRepository {
-  constructor(private readonly prisma: DatabaseExecutor) {}
+  constructor(@Inject(DatabaseClient) private readonly prisma: DatabaseExecutor) {}
 
   async create(input: CreateProjectInput): Promise<Project> {
     const record = await this.prisma.project.create({

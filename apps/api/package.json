@@ -13,7 +13,7 @@
     "db:status": "prisma migrate status",
     "test": "bun run test:unit && bun run test:integration && bun run test:e2e",
     "test:unit": "sh -c 'files=$(find tests/unit -name \"*.test.ts\" -print); if [ -z \"$files\" ]; then echo \"No unit tests found\"; else node --import tsx --test $files; fi'",
-    "test:integration": "sh -c 'files=$(find tests/integration -name \"*.test.ts\" -print); if [ -z \"$files\" ]; then echo \"No integration tests found\"; else node --import tsx --test $files; fi'",
+    "test:integration": "sh -c 'files=$(find tests/integration -name \"*.test.ts\" -print); if [ -z \"$files\" ]; then echo \"No integration tests found\"; else node --import tsx --test --test-concurrency=1 $files; fi'",
     "test:e2e": "sh -c 'files=$(find tests/e2e -name \"*.test.ts\" -print); if [ -z \"$files\" ]; then echo \"No e2e tests found\"; else node --import tsx --test $files; fi'",
     "typecheck": "tsc --noEmit -p tsconfig.json"
   },
