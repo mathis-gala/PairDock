@@ -1,8 +1,8 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import type { Session } from '@pairdock/domain';
-import type { SessionsRepository } from '../../../src/persistence/ports/sessions.repository.js';
-import { SessionCloseService } from '../../../src/sessions/session-close.service.js';
+import type { SessionsRepository } from '../../../../../apps/api/src/persistence/ports/sessions.repository.js';
+import { SessionCloseService } from '../../../../../apps/api/src/sessions/session-close.service.js';
 
 function buildSession(status: Session['status']): Session {
   return {

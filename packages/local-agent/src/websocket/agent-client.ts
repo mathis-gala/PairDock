@@ -1,16 +1,27 @@
 import {
   type AgentCommandEnvelope,
   type AgentConnectedEventEnvelope,
+  type AgentEventEnvelope,
   agentProtocolMessageEventName,
+  type SessionCloseCommandEnvelope,
+  type SessionPrepareCommandEnvelope,
 } from '@pairdock/shared-contracts';
 import { io, type Socket } from 'socket.io-client';
-import { buildAgentConnectedEvent, parseAgentCommandEnvelope } from './message-codecs.js';
+import { SessionRunner } from '../session/session-runner.js';
+import {
+  buildAgentConnectedEvent,
+  buildErrorEvent,
+  buildSessionClosedEvent,
+  buildSessionProgressEvent,
+  parseAgentCommandEnvelope,
+} from './message-codecs.js';
 
 export interface AgentClientConfig {
   backendUrl: string;
   agentId: string;
   authToken?: string;
   capabilities: string[];
+  projectPaths: Record<string, string>;
 }
 
 export interface AgentClientLogger {
@@ -21,11 +32,21 @@ export interface AgentClientLogger {
 
 export class AgentClient {
   private socket: Socket | null = null;
+  private readonly sessionRunner: SessionRunner;
 
   constructor(
     private readonly config: AgentClientConfig,
     private readonly logger: AgentClientLogger = console,
-  ) {}
+    dependencies: {
+      sessionRunner?: SessionRunner;
+    } = {},
+  ) {
+    this.sessionRunner =
+      dependencies.sessionRunner ??
+      new SessionRunner({
+        projectPaths: config.projectPaths,
+      });
+  }
 
   async start(): Promise<void> {
     if (this.socket) {
@@ -59,7 +80,10 @@ export class AgentClient {
       this.logger.warn(`Disconnected from PairDock backend: ${reason}.`);
     });
     socket.on(agentProtocolMessageEventName, (payload: unknown) => {
-      this.handleProtocolMessage(payload);
+      void this.handleProtocolMessage(payload).catch((error: unknown) => {
+        const message = error instanceof Error ? error.message : String(error);
+        this.logger.error(`Agent command handling failed: ${message}`);
+      });
     });
 
     await new Promise<void>((resolve, reject) => {
@@ -106,7 +130,7 @@ export class AgentClient {
     });
   }
 
-  private handleProtocolMessage(payload: unknown): void {
+  private async handleProtocolMessage(payload: unknown): Promise<void> {
     let command: AgentCommandEnvelope;
 
     try {
@@ -118,10 +142,72 @@ export class AgentClient {
     }
 
     this.logger.info(this.describeCommand(command));
+
+    switch (command.type) {
+      case 'session.prepare':
+        await this.handleSessionPrepare(command);
+        return;
+      case 'session.close':
+        await this.handleSessionClose(command);
+        return;
+      default:
+        return;
+    }
   }
 
   private describeCommand(command: AgentCommandEnvelope): string {
     return `Received backend command ${command.type} for session ${command.sessionId}.`;
+  }
+
+  private async handleSessionPrepare(command: SessionPrepareCommandEnvelope): Promise<void> {
+    try {
+      const workspace = await this.sessionRunner.prepare(command);
+
+      this.emitEvent(
+        buildSessionProgressEvent({
+          sessionId: command.sessionId,
+          status: 'WORKTREE_CREATING',
+          message: `Prepared branch ${workspace.branchName} in ${workspace.worktreePath}.`,
+        }),
+      );
+    } catch (error) {
+      this.emitError('session.prepare.failed', command.sessionId, error, false);
+    }
+  }
+
+  private async handleSessionClose(command: SessionCloseCommandEnvelope): Promise<void> {
+    try {
+      const result = await this.sessionRunner.close(command);
+
+      this.emitEvent(
+        buildSessionClosedEvent({
+          sessionId: command.sessionId,
+          cleaned: result.cleaned,
+        }),
+      );
+    } catch (error) {
+      this.emitError('session.close.failed', command.sessionId, error, false);
+    }
+  }
+
+  private emitError(code: string, sessionId: string | undefined, error: unknown, retryable: boolean): void {
+    const message = error instanceof Error ? error.message : String(error);
+    this.emitEvent(
+      buildErrorEvent({
+        code,
+        message,
+        retryable,
+        sessionId,
+      }),
+    );
+  }
+
+  private emitEvent(event: AgentEventEnvelope): void {
+    if (!this.socket) {
+      throw new Error('AgentClient socket is not connected.');
+    }
+
+    this.socket.emit(agentProtocolMessageEventName, event);
   }
 }
 

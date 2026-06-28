@@ -7,6 +7,7 @@ export interface AgentConfig {
   agentId: string;
   authToken?: string;
   capabilities: string[];
+  projectPaths: Record<string, string>;
 }
 
 export interface SaveAgentConfigInput {
@@ -14,6 +15,7 @@ export interface SaveAgentConfigInput {
   agentId: string;
   authToken?: string;
   capabilities?: string[];
+  projectPaths?: Record<string, string>;
 }
 
 const DEFAULT_CONFIG_PATH = resolve(homedir(), '.pairdock', 'agent.json');
@@ -28,12 +30,14 @@ export function normalizeAgentConfig(input: SaveAgentConfigInput): AgentConfig {
   const agentId = normalizeRequiredValue(input.agentId, 'agentId');
   const authToken = normalizeOptionalValue(input.authToken);
   const capabilities = normalizeCapabilities(input.capabilities ?? []);
+  const projectPaths = normalizeProjectPaths(input.projectPaths ?? {});
 
   return {
     backendUrl,
     agentId,
     authToken,
     capabilities,
+    projectPaths,
   };
 }
 
@@ -59,6 +63,7 @@ export function summarizeAgentConfig(config: AgentConfig) {
     agentId: config.agentId,
     backendUrl: config.backendUrl,
     capabilities: [...config.capabilities],
+    projectCount: Object.keys(config.projectPaths).length,
     tokenConfigured: Boolean(config.authToken),
   };
 }
@@ -80,6 +85,15 @@ function normalizeBackendUrl(value: string): string {
 
 function normalizeCapabilities(capabilities: string[]): string[] {
   return [...new Set(capabilities.map((capability) => normalizeRequiredValue(capability, 'capability')))];
+}
+
+function normalizeProjectPaths(projectPaths: Record<string, string>): Record<string, string> {
+  return Object.fromEntries(
+    Object.entries(projectPaths).map(([projectKey, projectPath]) => [
+      normalizeRequiredValue(projectKey, 'projectKey'),
+      normalizeRequiredValue(projectPath, `projectPath for ${projectKey}`),
+    ]),
+  );
 }
 
 function normalizeRequiredValue(value: string, fieldName: string): string {

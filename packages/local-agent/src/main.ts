@@ -33,16 +33,20 @@ async function runLogin() {
       'agent-id': { type: 'string' },
       'backend-url': { type: 'string' },
       capability: { type: 'string', multiple: true },
+      project: { type: 'string', multiple: true },
       token: { type: 'string' },
     },
     strict: true,
   });
+
+  const projectPaths = parseProjectMappings(values.project);
 
   const { config, path } = await saveAgentConfig({
     agentId: values['agent-id'] ?? '',
     authToken: values.token,
     backendUrl: values['backend-url'] ?? '',
     capabilities: values.capability,
+    projectPaths,
   });
 
   const summary = summarizeAgentConfig(config);
@@ -50,6 +54,7 @@ async function runLogin() {
   console.log(`Backend URL: ${summary.backendUrl}`);
   console.log(`Agent ID: ${summary.agentId}`);
   console.log(`Capabilities: ${summary.capabilities.length}`);
+  console.log(`Projects configured: ${summary.projectCount}`);
   console.log(`Token configured: ${summary.tokenConfigured ? 'yes' : 'no'}`);
 }
 
@@ -70,6 +75,7 @@ async function runStatus() {
   console.log(`Backend URL: ${summary.backendUrl}`);
   console.log(`Agent ID: ${summary.agentId}`);
   console.log(`Capabilities: ${summary.capabilities.join(', ') || '(none)'}`);
+  console.log(`Projects configured: ${summary.projectCount}`);
   console.log(`Token configured: ${summary.tokenConfigured ? 'yes' : 'no'}`);
 }
 
@@ -92,6 +98,20 @@ async function waitForShutdownSignal(onShutdown: () => Promise<void>): Promise<v
     process.on('SIGINT', handleSignal);
     process.on('SIGTERM', handleSignal);
   });
+}
+
+function parseProjectMappings(projectMappings: string[] | undefined): Record<string, string> {
+  return Object.fromEntries((projectMappings ?? []).map(parseProjectMapping));
+}
+
+function parseProjectMapping(projectMapping: string): [string, string] {
+  const separatorIndex = projectMapping.indexOf('=');
+
+  if (separatorIndex <= 0 || separatorIndex === projectMapping.length - 1) {
+    throw new Error(`Invalid --project value "${projectMapping}". Expected <project-key>=<repository-path>.`);
+  }
+
+  return [projectMapping.slice(0, separatorIndex), projectMapping.slice(separatorIndex + 1)];
 }
 
 await main();

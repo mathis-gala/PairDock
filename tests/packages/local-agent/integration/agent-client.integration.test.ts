@@ -7,7 +7,7 @@ import {
   agentProtocolMessageEventName,
 } from '@pairdock/shared-contracts';
 import { Server } from 'socket.io';
-import { AgentClient } from '../../src/websocket/agent-client.js';
+import { AgentClient } from '../../../../packages/local-agent/src/websocket/agent-client.js';
 
 interface RecordedHandshake {
   authorizationHeader: string | undefined;
@@ -54,6 +54,7 @@ test('BT-012: AgentClient announces configured capabilities when it connects', a
       authToken: 'secret-token',
       backendUrl,
       capabilities: ['session.prepare', 'agent.prompt'],
+      projectPaths: {},
     },
     {
       error() {},

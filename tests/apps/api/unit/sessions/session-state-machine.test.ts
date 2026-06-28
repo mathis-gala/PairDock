@@ -1,7 +1,10 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import type { Session } from '@pairdock/domain';
-import { InvalidSessionTransitionError, SessionStateMachine } from '../../../src/sessions/session-state-machine.js';
+import {
+  InvalidSessionTransitionError,
+  SessionStateMachine,
+} from '../../../../../apps/api/src/sessions/session-state-machine.js';
 
 function buildSession(status: Session['status']): Session {
   return {
