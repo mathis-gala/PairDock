@@ -1,0 +1,12 @@
+import type { PairDockUser } from '@pairdock/domain';
+
+export interface CreateUserInput {
+  email: string;
+  displayName?: string | null;
+  kind: PairDockUser['kind'];
+}
+
+export interface UsersRepository {
+  create(input: CreateUserInput): Promise<PairDockUser>;
+  findById(id: string): Promise<PairDockUser | null>;
+}

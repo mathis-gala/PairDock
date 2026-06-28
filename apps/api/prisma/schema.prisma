@@ -1,0 +1,188 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum UserKind {
+  developer
+  pm
+}
+
+enum SessionStatus {
+  CREATED
+  AGENT_CONNECTING
+  WORKTREE_CREATING
+  DOCKER_STARTING
+  PREVIEW_STARTING
+  READY
+  AGENT_RUNNING
+  CHECKS_RUNNING
+  AWAITING_PM_VALIDATION
+  REVIEW_REQUEST_CREATING
+  REVIEW_REQUEST_CREATED
+  CLOSING
+  CLOSED
+  FAILED
+}
+
+model User {
+  id                       String                    @id @default(uuid()) @db.Uuid
+  email                    String                    @unique
+  displayName              String?                   @map("display_name")
+  kind                     UserKind
+  createdAt                DateTime                  @default(now()) @map("created_at") @db.Timestamptz(6)
+  externalIdentities       ExternalIdentity[]
+  sourceControlConnections SourceControlConnection[] @relation("SourceControlConnectionOwner")
+  ownedProjects            Project[]                 @relation("ProjectOwner")
+  createdSessions          Session[]                 @relation("SessionCreatedBy")
+  sessionMemberships       SessionMember[]
+  messages                 Message[]
+
+  @@map("users")
+}
+
+model ExternalIdentity {
+  id             String   @id @default(uuid()) @db.Uuid
+  userId         String   @map("user_id") @db.Uuid
+  provider       String
+  providerUserId String   @map("provider_user_id")
+  providerTeamId String?  @map("provider_team_id")
+  metadata       Json     @default("{}")
+  createdAt      DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerUserId, providerTeamId])
+  @@index([userId])
+  @@index([provider, providerUserId, providerTeamId])
+  @@map("external_identities")
+}
+
+model SourceControlConnection {
+  id                   String    @id @default(uuid()) @db.Uuid
+  ownerUserId          String    @map("owner_user_id") @db.Uuid
+  providerConnectionId String    @map("github_installation_id")
+  accountLogin         String    @map("account_login")
+  createdAt            DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  ownerUser            User      @relation("SourceControlConnectionOwner", fields: [ownerUserId], references: [id], onDelete: Cascade, map: "github_installations_owner_user_id_fkey")
+  projects             Project[]
+
+  @@index([ownerUserId], map: "github_installations_owner_user_id_idx")
+  @@map("github_installations")
+}
+
+model Project {
+  id                        String                  @id @default(uuid()) @db.Uuid
+  ownerUserId               String                  @map("owner_user_id") @db.Uuid
+  sourceControlConnectionId String                  @map("github_installation_id") @db.Uuid
+  name                      String
+  repoFullName              String                  @map("repo_full_name")
+  defaultBranch             String                  @map("default_branch")
+  agentProjectKey           String                  @map("agent_project_key")
+  createdAt                 DateTime                @default(now()) @map("created_at") @db.Timestamptz(6)
+  ownerUser                 User                    @relation("ProjectOwner", fields: [ownerUserId], references: [id], onDelete: Cascade)
+  sourceControlConnection   SourceControlConnection @relation(fields: [sourceControlConnectionId], references: [id], onDelete: Cascade, map: "projects_github_installation_id_fkey")
+  sessions                  Session[]
+
+  @@index([ownerUserId])
+  @@index([sourceControlConnectionId], map: "projects_github_installation_id_idx")
+  @@map("projects")
+}
+
+model Session {
+  id              String         @id @default(uuid()) @db.Uuid
+  projectId       String         @map("project_id") @db.Uuid
+  createdByUserId String         @map("created_by_user_id") @db.Uuid
+  status          SessionStatus
+  modelId         String         @map("model_id")
+  branchName      String?        @map("branch_name")
+  worktreeRef     String?        @map("worktree_ref")
+  previewUrl      String?        @map("preview_url")
+  lastError       String?        @map("last_error")
+  createdAt       DateTime       @default(now()) @map("created_at") @db.Timestamptz(6)
+  closedAt        DateTime?      @map("closed_at") @db.Timestamptz(6)
+  project         Project        @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  createdByUser   User           @relation("SessionCreatedBy", fields: [createdByUserId], references: [id], onDelete: Cascade)
+  members         SessionMember[]
+  messages        Message[]
+  agentEvents     AgentEvent[]
+  validationRuns  ValidationRun[]
+  pullRequests    PullRequest[]
+
+  @@index([projectId])
+  @@index([createdByUserId])
+  @@map("sessions")
+}
+
+model SessionMember {
+  id        String   @id @default(uuid()) @db.Uuid
+  sessionId String   @map("session_id") @db.Uuid
+  userId    String   @map("user_id") @db.Uuid
+  role      String
+  session   Session  @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([sessionId, userId])
+  @@index([sessionId])
+  @@index([userId])
+  @@map("session_members")
+}
+
+model Message {
+  id        String   @id @default(uuid()) @db.Uuid
+  sessionId String   @map("session_id") @db.Uuid
+  userId    String?  @map("user_id") @db.Uuid
+  role      String
+  content   String
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  session   Session  @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  user      User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([sessionId])
+  @@map("messages")
+}
+
+model AgentEvent {
+  id        String   @id @default(uuid()) @db.Uuid
+  sessionId String?  @map("session_id") @db.Uuid
+  agentId   String?  @map("agent_id")
+  type      String
+  payload   Json
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  session   Session? @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+
+  @@index([sessionId])
+  @@map("agent_events")
+}
+
+model ValidationRun {
+  id            String   @id @default(uuid()) @db.Uuid
+  sessionId     String   @map("session_id") @db.Uuid
+  status        String
+  buildStatus   String?  @map("build_status")
+  testStatus    String?  @map("test_status")
+  lintStatus    String?  @map("lint_status")
+  previewStatus String?  @map("preview_status")
+  logsRef       String?  @map("logs_ref")
+  createdAt     DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  session       Session  @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+
+  @@index([sessionId])
+  @@map("validation_runs")
+}
+
+model PullRequest {
+  id             String   @id @default(uuid()) @db.Uuid
+  sessionId      String   @map("session_id") @db.Uuid
+  githubPrNumber Int?     @map("github_pr_number")
+  githubPrUrl    String?  @map("github_pr_url")
+  status         String
+  createdAt      DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  session        Session  @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+
+  @@index([sessionId])
+  @@map("pull_requests")
+}

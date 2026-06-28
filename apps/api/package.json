@@ -5,13 +5,30 @@
   "type": "module",
   "scripts": {
     "dev": "tsx watch src/main.ts",
+    "lint": "biome check .",
+    "prisma:generate": "prisma generate",
+    "db:migrate": "prisma migrate deploy",
+    "db:migrate:dev": "prisma migrate dev",
+    "db:reset": "prisma migrate reset --force",
+    "db:status": "prisma migrate status",
+    "test": "bun run test:unit && bun run test:integration && bun run test:e2e",
+    "test:unit": "sh -c 'files=$(find tests/unit -name \"*.test.ts\" -print); if [ -z \"$files\" ]; then echo \"No unit tests found\"; else node --import tsx --test $files; fi'",
+    "test:integration": "sh -c 'files=$(find tests/integration -name \"*.test.ts\" -print); if [ -z \"$files\" ]; then echo \"No integration tests found\"; else node --import tsx --test $files; fi'",
+    "test:e2e": "sh -c 'files=$(find tests/e2e -name \"*.test.ts\" -print); if [ -z \"$files\" ]; then echo \"No e2e tests found\"; else node --import tsx --test $files; fi'",
     "typecheck": "tsc --noEmit -p tsconfig.json"
   },
   "dependencies": {
+    "@pairdock/domain": "0.1.0",
+    "@prisma/adapter-pg": "^7.8.0",
+    "@prisma/client": "^7.8.0",
     "@nestjs/common": "^11.1.6",
     "@nestjs/core": "^11.1.6",
     "@nestjs/platform-express": "^11.1.6",
+    "dotenv": "^17.2.2",
     "reflect-metadata": "^0.2.2",
     "rxjs": "^7.8.2"
+  },
+  "devDependencies": {
+    "prisma": "^7.8.0"
   }
 }
