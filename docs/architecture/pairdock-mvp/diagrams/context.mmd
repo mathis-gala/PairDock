@@ -1,0 +1,24 @@
+flowchart LR
+  Dev[Developer] -->|configure/share project, close sessions| Web[React Web App]
+  PM[Product Manager] -->|start shared session, prompt, request review| Web
+
+  Web --> Api[NestJS API]
+  Web --> UiWs[UI WebSocket Gateway]
+  UiWs --> Api
+
+  Api --> Db[(PostgreSQL)]
+  Api --> Gh[GitHub App]
+  Api -->|PM identity + developer notifications| Slack[Slack App/OAuth]
+
+  Api <-->|Agent WebSocket Protocol| Agent[Local Agent CLI]
+
+  Agent --> Git[Local Git Repo]
+  Agent --> Worktree[Session Git Worktree]
+  Agent --> Docker[Docker Sandbox Adapter]
+  Agent --> Codex[Codex Harness Adapter]
+  Agent --> Tunnel[Cloudflare Tunnel Adapter]
+
+  Tunnel --> Preview[Preview URL]
+  Web --> Preview
+  Gh --> Repo[GitHub Repository]
+  Slack --> Workspace[Slack Workspace]

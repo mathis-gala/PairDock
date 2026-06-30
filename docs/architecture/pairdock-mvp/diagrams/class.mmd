@@ -1,0 +1,135 @@
+classDiagram
+  class AgentProtocolEnvelope~TPayload~ {
+    +string protocolVersion
+    +string messageId
+    +string? sessionId
+    +string type
+    +TPayload payload
+    +string sentAt
+  }
+
+  class SessionStateMachine {
+    +transition(currentStatus, eventType) SessionStatus
+    +canPrompt(status) boolean
+    +canCreateReviewRequest(status, validation) boolean
+    +canClose(status) boolean
+  }
+
+  class SessionStartPolicy {
+    +canStart(input) boolean
+    +failureReasons(input) string[]
+  }
+
+  class AgentCommandBus {
+    +send(agentId, command) Promise~void~
+    +routeToSession(sessionId, command) Promise~void~
+  }
+
+  class AgentEventHandler {
+    +handle(event) Promise~void~
+  }
+
+  class AiAgentAdapter {
+    <<interface>>
+    +runPrompt(input) AsyncIterable~AgentRunEvent~
+    +cancel(sessionId) Promise~void~
+  }
+
+  class DeveloperIdentityPort {
+    <<interface>>
+    +startLogin(input) Promise~LoginRedirect~
+    +completeLogin(input) Promise~ExternalIdentity~
+  }
+
+  class PmIdentityPort {
+    <<interface>>
+    +startLogin(input) Promise~LoginRedirect~
+    +completeLogin(input) Promise~ExternalIdentity~
+  }
+
+  class SourceControlPort {
+    <<interface>>
+    +verifyRepositoryAccess(input) Promise~RepositoryAccessResult~
+    +createDraftReviewRequest(input) Promise~ReviewRequestRef~
+  }
+
+  class NotificationPort {
+    <<interface>>
+    +send(input) Promise~NotificationRef~
+  }
+
+  class AgentHarnessPort {
+    <<interface>>
+    +runPrompt(input) AsyncIterable~AgentRunEvent~
+    +cancel(sessionId) Promise~void~
+  }
+
+  class SessionRepositoryPort {
+    <<interface>>
+    +create(input) Promise~Session~
+    +updateStatus(input) Promise~Session~
+    +findById(sessionId) Promise~Session~
+  }
+
+  class ProjectMembershipRepositoryPort {
+    <<interface>>
+    +grantAccess(input) Promise~ProjectMember~
+    +findMembership(projectId, userId) Promise~ProjectMember?~
+  }
+
+  class UnitOfWorkPort {
+    <<interface>>
+    +transaction(work) Promise~T~
+  }
+
+  class CodexCliAdapter {
+    +runPrompt(input) AsyncIterable~AgentRunEvent~
+    +cancel(sessionId) Promise~void~
+  }
+
+  class GithubDeveloperIdentityAdapter
+  class SlackPmIdentityAdapter
+  class GithubSourceControlAdapter
+  class SlackNotificationAdapter
+  class PrismaSessionRepositoryAdapter
+  class PrismaProjectMembershipRepositoryAdapter
+  class PrismaUnitOfWorkAdapter
+
+  class WorktreeService {
+    +prepare(sessionId, branchName) Promise~WorktreeRef~
+    +cleanup(worktreeRef) Promise~CleanupResult~
+  }
+
+  class ChecksRunner {
+    +run(sessionId, worktreeRef) Promise~ChecksResult~
+  }
+
+  class ValidationPolicy {
+    +canCreateDraftReviewRequest(validationRun, sessionStatus) boolean
+    +failureReasons(validationRun, sessionStatus) string[]
+  }
+
+  class ReviewRequestService {
+    +createDraftReviewRequest(input) Promise~ReviewRequestRef~
+  }
+
+  AiAgentAdapter <|.. CodexCliAdapter
+  AgentHarnessPort <|.. CodexCliAdapter
+  DeveloperIdentityPort <|.. GithubDeveloperIdentityAdapter
+  PmIdentityPort <|.. SlackPmIdentityAdapter
+  SourceControlPort <|.. GithubSourceControlAdapter
+  NotificationPort <|.. SlackNotificationAdapter
+  SessionRepositoryPort <|.. PrismaSessionRepositoryAdapter
+  ProjectMembershipRepositoryPort <|.. PrismaProjectMembershipRepositoryAdapter
+  UnitOfWorkPort <|.. PrismaUnitOfWorkAdapter
+  SessionStartPolicy --> ProjectMembershipRepositoryPort
+  SessionStartPolicy --> SessionRepositoryPort
+  AgentEventHandler --> SessionStateMachine
+  AgentEventHandler --> UnitOfWorkPort
+  AgentEventHandler --> SessionRepositoryPort
+  AgentEventHandler --> ValidationPolicy
+  SessionStateMachine --> AgentCommandBus
+  WorktreeService --> ChecksRunner
+  ValidationPolicy --> SourceControlPort
+  ReviewRequestService --> SourceControlPort
+  ReviewRequestService --> NotificationPort
