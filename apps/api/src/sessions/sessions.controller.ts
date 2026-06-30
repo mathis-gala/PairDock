@@ -4,6 +4,7 @@ import {
   Controller,
   ForbiddenException,
   Get,
+  HttpCode,
   Inject,
   InternalServerErrorException,
   NotFoundException,
@@ -15,10 +16,10 @@ import type { PairDockIdentity, Session } from '@pairdock/domain';
 import type { AuthenticatedRequest } from '../auth/authenticated-request.js';
 import { RequireAuth } from '../auth/require-auth.decorator.js';
 import { RequireSessionAccess } from '../auth/require-session-access.decorator.js';
-import { MESSAGES_REPOSITORY, SESSIONS_REPOSITORY } from '../persistence/persistence.tokens.js';
-import type { MessagesRepository } from '../persistence/ports/messages.repository.js';
+import { SESSIONS_REPOSITORY } from '../persistence/persistence.tokens.js';
 import type { SessionsRepository } from '../persistence/ports/sessions.repository.js';
 import { SessionCloseService } from './session-close.service.js';
+import { SessionPromptService } from './session-prompt.service.js';
 import type { SessionAgentEvent } from './session-state-machine.js';
 import { SessionsService } from './sessions.service.js';
 
@@ -36,12 +37,12 @@ export class SessionsController {
   constructor(
     @Inject(SESSIONS_REPOSITORY)
     private readonly sessionsRepository: SessionsRepository,
-    @Inject(MESSAGES_REPOSITORY)
-    private readonly messagesRepository: MessagesRepository,
     @Inject(SessionsService)
     private readonly sessionsService: SessionsService,
     @Inject(SessionCloseService)
     private readonly sessionCloseService: SessionCloseService,
+    @Inject(SessionPromptService)
+    private readonly sessionPromptService: SessionPromptService,
   ) {}
 
   @Get(':sessionId')
@@ -129,16 +130,30 @@ export class SessionsController {
       throw new InternalServerErrorException('Authenticated session membership was not resolved.');
     }
 
-    const message = await this.messagesRepository.create({
+    const message = await this.sessionPromptService.createPrompt(
       sessionId,
-      userId: user.id,
-      role: sessionMember.role,
+      {
+        userId: user.id,
+        role: sessionMember.role,
+      },
       content,
-    });
+    );
 
     return {
       ...message,
       createdAt: message.createdAt.toISOString(),
+    };
+  }
+
+  @Post(':sessionId/prompts/cancel')
+  @HttpCode(202)
+  @RequireSessionAccess()
+  async cancelPrompt(@Param('sessionId') sessionId: string) {
+    await this.sessionPromptService.cancelPrompt(sessionId);
+
+    return {
+      accepted: true,
+      sessionId,
     };
   }
 

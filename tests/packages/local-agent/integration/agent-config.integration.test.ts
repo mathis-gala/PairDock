@@ -81,3 +81,23 @@ test('BT-021: normalizeAgentConfig omits optional preview config sections when a
     },
   });
 });
+
+test('Task 9: normalizeAgentConfig trims and preserves agent harness command templates', () => {
+  const config = normalizeAgentConfig({
+    backendUrl: 'https://pairdock.test',
+    agentId: 'local-agent-1',
+    agentHarnessConfigs: {
+      ' pairdock ': {
+        command: ' node ',
+        args: [' /tmp/mock-harness.mjs ', ' {{prompt}} ', '{{modelId}} '],
+      },
+    },
+  });
+
+  assert.deepEqual(config.agentHarnessConfigs, {
+    pairdock: {
+      command: 'node',
+      args: ['/tmp/mock-harness.mjs', '{{prompt}}', '{{modelId}}'],
+    },
+  });
+});

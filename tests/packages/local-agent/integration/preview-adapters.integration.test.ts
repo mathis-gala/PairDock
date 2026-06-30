@@ -10,7 +10,7 @@ async function createTempWorkspace() {
   return mkdtemp(join(tmpdir(), 'pairdock-preview-'));
 }
 
-test('BT-018: DockerSandboxAdapter runs the stop command in the session worktree', async () => {
+test('Task 8: DockerSandboxAdapter runs the stop command in the session worktree', async () => {
   const worktreePath = await createTempWorkspace();
   const stopMarkerPath = join(worktreePath, 'sandbox-stopped.txt');
   const adapter = new DockerSandboxAdapter();
@@ -43,7 +43,7 @@ test('BT-018: DockerSandboxAdapter runs the stop command in the session worktree
   assert.equal(await readFile(stopMarkerPath, 'utf8'), 'done');
 });
 
-test('BT-019: CloudflarePreviewTunnelAdapter runs the close command in the session worktree', async () => {
+test('Task 8: CloudflarePreviewTunnelAdapter runs the close command in the session worktree', async () => {
   const worktreePath = await createTempWorkspace();
   const closeMarkerPath = join(worktreePath, 'tunnel-closed.txt');
   const adapter = new CloudflarePreviewTunnelAdapter();

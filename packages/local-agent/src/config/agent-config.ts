@@ -2,6 +2,7 @@ import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import { homedir } from 'node:os';
 import { dirname, resolve } from 'node:path';
 import type { ProjectPreviewConfig } from '../docker/sandbox.port.js';
+import type { ProjectAgentHarnessConfig } from '../harness/agent-harness.port.js';
 
 export interface AgentConfig {
   backendUrl: string;
@@ -10,6 +11,7 @@ export interface AgentConfig {
   capabilities: string[];
   projectPaths: Record<string, string>;
   previewConfigs: Record<string, ProjectPreviewConfig>;
+  agentHarnessConfigs?: Record<string, ProjectAgentHarnessConfig>;
 }
 
 export interface SaveAgentConfigInput {
@@ -19,6 +21,7 @@ export interface SaveAgentConfigInput {
   capabilities?: string[];
   projectPaths?: Record<string, string>;
   previewConfigs?: Record<string, ProjectPreviewConfig>;
+  agentHarnessConfigs?: Record<string, ProjectAgentHarnessConfig>;
 }
 
 const DEFAULT_CONFIG_PATH = resolve(homedir(), '.pairdock', 'agent.json');
@@ -35,6 +38,7 @@ export function normalizeAgentConfig(input: SaveAgentConfigInput): AgentConfig {
   const capabilities = normalizeCapabilities(input.capabilities ?? []);
   const projectPaths = normalizeProjectPaths(input.projectPaths ?? {});
   const previewConfigs = normalizePreviewConfigs(input.previewConfigs ?? {});
+  const agentHarnessConfigs = normalizeAgentHarnessConfigs(input.agentHarnessConfigs ?? {});
 
   return {
     backendUrl,
@@ -43,6 +47,7 @@ export function normalizeAgentConfig(input: SaveAgentConfigInput): AgentConfig {
     capabilities,
     projectPaths,
     previewConfigs,
+    ...(Object.keys(agentHarnessConfigs).length > 0 ? { agentHarnessConfigs } : {}),
   };
 }
 
@@ -71,6 +76,7 @@ export function summarizeAgentConfig(config: AgentConfig) {
     projectCount: Object.keys(config.projectPaths).length,
     tokenConfigured: Boolean(config.authToken),
     previewConfigCount: Object.keys(config.previewConfigs).length,
+    agentHarnessConfigCount: Object.keys(config.agentHarnessConfigs ?? {}).length,
   };
 }
 
@@ -113,6 +119,17 @@ function normalizePreviewConfigs(
   );
 }
 
+function normalizeAgentHarnessConfigs(
+  agentHarnessConfigs: Record<string, ProjectAgentHarnessConfig>,
+): Record<string, ProjectAgentHarnessConfig> {
+  return Object.fromEntries(
+    Object.entries(agentHarnessConfigs).map(([projectKey, harnessConfig]) => {
+      const normalizedProjectKey = normalizeRequiredValue(projectKey, 'agent harness projectKey');
+      return [normalizedProjectKey, normalizeAgentHarnessConfig(harnessConfig, normalizedProjectKey)];
+    }),
+  );
+}
+
 function normalizePreviewConfig(previewConfig: ProjectPreviewConfig, projectKey: string): ProjectPreviewConfig {
   const normalizedPreviewConfig: ProjectPreviewConfig = {};
 
@@ -143,6 +160,26 @@ function normalizePreviewConfig(previewConfig: ProjectPreviewConfig, projectKey:
   }
 
   return normalizedPreviewConfig;
+}
+
+function normalizeAgentHarnessConfig(
+  harnessConfig: ProjectAgentHarnessConfig,
+  projectKey: string,
+): ProjectAgentHarnessConfig {
+  const normalizedHarnessConfig: ProjectAgentHarnessConfig = {};
+
+  const command = normalizeOptionalConfigString(harnessConfig.command, `agentHarness.command for ${projectKey}`);
+  if (command !== undefined) {
+    normalizedHarnessConfig.command = command;
+  }
+
+  if (harnessConfig.args !== undefined) {
+    normalizedHarnessConfig.args = harnessConfig.args.map((arg, index) =>
+      normalizeRequiredValue(arg, `agentHarness.args[${index}] for ${projectKey}`),
+    );
+  }
+
+  return normalizedHarnessConfig;
 }
 
 function normalizeSandboxConfig(
