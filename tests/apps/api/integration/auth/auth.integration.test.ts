@@ -3,6 +3,12 @@ import { randomUUID } from 'node:crypto';
 import test from 'node:test';
 import type { INestApplication } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
+import {
+  AGENT_PROTOCOL_VERSION,
+  type AgentEventEnvelope,
+  agentProtocolMessageEventName,
+} from '@pairdock/shared-contracts';
+import { io, type Socket } from 'socket.io-client';
 import { AppModule } from '../../../../../apps/api/src/app.module.js';
 import { DatabaseClient } from '../../../../../apps/api/src/persistence/client.js';
 
@@ -112,7 +118,35 @@ async function createSessionFixture(pmUserId: string) {
     ],
   });
 
-  return session;
+  return {
+    session,
+    agentProjectKey: project.agentProjectKey,
+  };
+}
+
+function connectAgentSocket(): Socket {
+  return io(`${baseUrl}/agent`, { transports: ['websocket'] });
+}
+
+function waitForConnect(socket: Socket): Promise<void> {
+  return new Promise((resolve, reject) => {
+    socket.once('connect', () => resolve());
+    socket.once('connect_error', reject);
+  });
+}
+
+async function announceAgent(socket: Socket, agentId: string) {
+  await waitForConnect(socket);
+  socket.emit(agentProtocolMessageEventName, {
+    protocolVersion: AGENT_PROTOCOL_VERSION,
+    messageId: randomUUID(),
+    type: 'agent.connected',
+    payload: {
+      agentId,
+      capabilities: ['session.prepare', 'agent.prompt', 'agent.cancel', 'preview'],
+    },
+    sentAt: new Date().toISOString(),
+  } satisfies AgentEventEnvelope);
 }
 
 test.before(async () => {
@@ -167,52 +201,59 @@ test('BT-035: AuthModule normalizes GitHub and Slack callbacks into PairDock use
 
 test('BT-004: SessionAccessGuard allows an invited PM to read a session and send a prompt', async () => {
   const pmLogin = await authenticatePm();
-  const session = await createSessionFixture(pmLogin.body.user.id);
+  const fixture = await createSessionFixture(pmLogin.body.user.id);
+  const agentSocket = connectAgentSocket();
 
-  const sessionResponse = await fetch(`${baseUrl}/sessions/${session.id}`, {
-    headers: { authorization: `Bearer ${pmLogin.body.accessToken}` },
-  });
-  const promptResponse = await fetch(`${baseUrl}/sessions/${session.id}/prompts`, {
-    method: 'POST',
-    headers: {
-      authorization: `Bearer ${pmLogin.body.accessToken}`,
-      'content-type': 'application/json',
-    },
-    body: JSON.stringify({ content: 'Please tighten the empty-state copy.' }),
-  });
+  try {
+    await announceAgent(agentSocket, fixture.agentProjectKey);
 
-  assert.equal(sessionResponse.status, 200);
-  assert.equal(promptResponse.status, 201);
-  assert.deepEqual(await sessionResponse.json(), {
-    id: session.id,
-    status: 'READY',
-    projectId: session.projectId,
-    createdByUserId: session.createdByUserId,
-    modelId: 'codex-cli/gpt-5.4',
-    branchName: null,
-    worktreeRef: null,
-    previewUrl: null,
-    lastError: null,
-    createdAt: session.createdAt.toISOString(),
-    closedAt: null,
-  });
+    const sessionResponse = await fetch(`${baseUrl}/sessions/${fixture.session.id}`, {
+      headers: { authorization: `Bearer ${pmLogin.body.accessToken}` },
+    });
+    const promptResponse = await fetch(`${baseUrl}/sessions/${fixture.session.id}/prompts`, {
+      method: 'POST',
+      headers: {
+        authorization: `Bearer ${pmLogin.body.accessToken}`,
+        'content-type': 'application/json',
+      },
+      body: JSON.stringify({ content: 'Please tighten the empty-state copy.' }),
+    });
 
-  const storedMessages = await prisma.message.findMany({ where: { sessionId: session.id } });
-  assert.equal(storedMessages.length, 1);
-  assert.equal(storedMessages[0]?.userId, pmLogin.body.user.id);
-  assert.equal(storedMessages[0]?.role, 'pm');
-  assert.equal(storedMessages[0]?.content, 'Please tighten the empty-state copy.');
+    assert.equal(sessionResponse.status, 200);
+    assert.equal(promptResponse.status, 201);
+    assert.deepEqual(await sessionResponse.json(), {
+      id: fixture.session.id,
+      status: 'READY',
+      projectId: fixture.session.projectId,
+      createdByUserId: fixture.session.createdByUserId,
+      modelId: 'codex-cli/gpt-5.4',
+      branchName: null,
+      worktreeRef: null,
+      previewUrl: null,
+      lastError: null,
+      createdAt: fixture.session.createdAt.toISOString(),
+      closedAt: null,
+    });
+
+    const storedMessages = await prisma.message.findMany({ where: { sessionId: fixture.session.id } });
+    assert.equal(storedMessages.length, 1);
+    assert.equal(storedMessages[0]?.userId, pmLogin.body.user.id);
+    assert.equal(storedMessages[0]?.role, 'pm');
+    assert.equal(storedMessages[0]?.content, 'Please tighten the empty-state copy.');
+  } finally {
+    agentSocket.close();
+  }
 });
 
 test('BT-005: SessionAccessGuard denies non-members for session reads and prompts', async () => {
   const invitedPmLogin = await authenticatePm();
   const outsiderPmLogin = await authenticatePm();
-  const session = await createSessionFixture(invitedPmLogin.body.user.id);
+  const fixture = await createSessionFixture(invitedPmLogin.body.user.id);
 
-  const sessionResponse = await fetch(`${baseUrl}/sessions/${session.id}`, {
+  const sessionResponse = await fetch(`${baseUrl}/sessions/${fixture.session.id}`, {
     headers: { authorization: `Bearer ${outsiderPmLogin.body.accessToken}` },
   });
-  const promptResponse = await fetch(`${baseUrl}/sessions/${session.id}/prompts`, {
+  const promptResponse = await fetch(`${baseUrl}/sessions/${fixture.session.id}/prompts`, {
     method: 'POST',
     headers: {
       authorization: `Bearer ${outsiderPmLogin.body.accessToken}`,
@@ -223,15 +264,15 @@ test('BT-005: SessionAccessGuard denies non-members for session reads and prompt
 
   assert.equal(sessionResponse.status, 403);
   assert.equal(promptResponse.status, 403);
-  assert.equal(await prisma.message.count({ where: { sessionId: session.id } }), 0);
+  assert.equal(await prisma.message.count({ where: { sessionId: fixture.session.id } }), 0);
 });
 
 test('BT-034: authenticated session routes reject requests without a bearer token', async () => {
   const pmLogin = await authenticatePm();
-  const session = await createSessionFixture(pmLogin.body.user.id);
+  const fixture = await createSessionFixture(pmLogin.body.user.id);
 
-  const sessionResponse = await fetch(`${baseUrl}/sessions/${session.id}`);
-  const promptResponse = await fetch(`${baseUrl}/sessions/${session.id}/prompts`, {
+  const sessionResponse = await fetch(`${baseUrl}/sessions/${fixture.session.id}`);
+  const promptResponse = await fetch(`${baseUrl}/sessions/${fixture.session.id}/prompts`, {
     method: 'POST',
     headers: {
       'content-type': 'application/json',
@@ -241,5 +282,5 @@ test('BT-034: authenticated session routes reject requests without a bearer toke
 
   assert.equal(sessionResponse.status, 401);
   assert.equal(promptResponse.status, 401);
-  assert.equal(await prisma.message.count({ where: { sessionId: session.id } }), 0);
+  assert.equal(await prisma.message.count({ where: { sessionId: fixture.session.id } }), 0);
 });

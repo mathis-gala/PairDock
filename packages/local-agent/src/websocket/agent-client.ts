@@ -1,15 +1,21 @@
 import {
+  type AgentCancelCommandEnvelope,
   type AgentCommandEnvelope,
   type AgentConnectedEventEnvelope,
   type AgentEventEnvelope,
+  type AgentPromptCommandEnvelope,
   agentProtocolMessageEventName,
   type SessionCloseCommandEnvelope,
   type SessionPrepareCommandEnvelope,
 } from '@pairdock/shared-contracts';
 import { io, type Socket } from 'socket.io-client';
+import { CodexHarnessAdapter } from '../harness/codex-harness.adapter.js';
+import type { AgentHarnessPort } from '../harness/index.js';
 import { SessionRunner } from '../session/session-runner.js';
 import {
   buildAgentConnectedEvent,
+  buildAgentDoneEvent,
+  buildAgentOutputEvent,
   buildErrorEvent,
   buildSessionClosedEvent,
   buildSessionProgressEvent,
@@ -23,6 +29,8 @@ export interface AgentClientConfig {
   authToken?: string;
   capabilities: string[];
   projectPaths: Record<string, string>;
+  previewConfigs?: Record<string, import('../docker/sandbox.port.js').ProjectPreviewConfig>;
+  agentHarnessConfigs?: Record<string, import('../harness/agent-harness.port.js').ProjectAgentHarnessConfig>;
 }
 
 export interface AgentClientLogger {
@@ -34,19 +42,23 @@ export interface AgentClientLogger {
 export class AgentClient {
   private socket: Socket | null = null;
   private readonly sessionRunner: SessionRunner;
+  private readonly agentHarnessPort: AgentHarnessPort;
 
   constructor(
     private readonly config: AgentClientConfig,
     private readonly logger: AgentClientLogger = console,
     dependencies: {
       sessionRunner?: SessionRunner;
+      agentHarnessPort?: AgentHarnessPort;
     } = {},
   ) {
     this.sessionRunner =
       dependencies.sessionRunner ??
       new SessionRunner({
         projectPaths: config.projectPaths,
+        previewConfigs: config.previewConfigs,
       });
+    this.agentHarnessPort = dependencies.agentHarnessPort ?? new CodexHarnessAdapter(config.agentHarnessConfigs ?? {});
   }
 
   async start(): Promise<void> {
@@ -77,7 +89,7 @@ export class AgentClient {
         `Connected agent ${event.payload.agentId} to ${this.config.backendUrl} with ${event.payload.capabilities.length} capabilities.`,
       );
     });
-    socket.on('disconnect', (reason) => {
+    socket.on('disconnect', (reason: string) => {
       this.logger.warn(`Disconnected from PairDock backend: ${reason}.`);
     });
     socket.on(agentProtocolMessageEventName, (payload: unknown) => {
@@ -151,6 +163,12 @@ export class AgentClient {
       case 'session.close':
         await this.handleSessionClose(command);
         return;
+      case 'agent.prompt':
+        await this.handleAgentPrompt(command);
+        return;
+      case 'agent.cancel':
+        await this.handleAgentCancel(command);
+        return;
       default:
         return;
     }
@@ -205,6 +223,65 @@ export class AgentClient {
       );
     } catch (error) {
       await this.emitError('session.close.failed', command.sessionId, error, false);
+    }
+  }
+
+  private async handleAgentPrompt(command: AgentPromptCommandEnvelope): Promise<void> {
+    const workspace = this.sessionRunner.findWorkspace(command.sessionId);
+
+    if (!workspace) {
+      await this.emitError(
+        'agent.prompt.failed',
+        command.sessionId,
+        new Error(`Session ${command.sessionId} is not prepared on this agent.`),
+        false,
+      );
+      return;
+    }
+
+    try {
+      await this.emitEvent(
+        buildSessionProgressEvent({
+          sessionId: command.sessionId,
+          status: 'AGENT_RUNNING',
+        }),
+      );
+
+      for await (const event of this.agentHarnessPort.runPrompt({
+        sessionId: command.sessionId,
+        projectKey: workspace.projectKey,
+        prompt: command.payload.prompt,
+        modelId: command.payload.modelId,
+        worktreePath: workspace.worktreePath,
+      })) {
+        if (event.type === 'output') {
+          await this.emitEvent(
+            buildAgentOutputEvent({
+              sessionId: command.sessionId,
+              stream: event.stream,
+              text: event.text,
+            }),
+          );
+          continue;
+        }
+
+        await this.emitEvent(
+          buildAgentDoneEvent({
+            sessionId: command.sessionId,
+            exitCode: event.exitCode,
+          }),
+        );
+      }
+    } catch (error) {
+      await this.emitError('agent.prompt.failed', command.sessionId, error, false);
+    }
+  }
+
+  private async handleAgentCancel(command: AgentCancelCommandEnvelope): Promise<void> {
+    try {
+      await this.agentHarnessPort.cancel(command.sessionId);
+    } catch (error) {
+      await this.emitError('agent.cancel.failed', command.sessionId, error, false);
     }
   }
 

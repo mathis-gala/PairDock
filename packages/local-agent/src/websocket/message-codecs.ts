@@ -3,6 +3,8 @@ import {
   AGENT_PROTOCOL_VERSION,
   type AgentCommandEnvelope,
   type AgentConnectedEventEnvelope,
+  type AgentDoneEventEnvelope,
+  type AgentOutputEventEnvelope,
   agentCommandEnvelopeSchema,
   type ErrorEventEnvelope,
   type SessionClosedEventEnvelope,
@@ -46,6 +48,33 @@ export function buildSessionReadyEvent(input: { sessionId: string; previewUrl: s
     payload: {
       sessionId: input.sessionId,
       previewUrl: input.previewUrl,
+    },
+  });
+}
+
+export function buildAgentOutputEvent(input: {
+  sessionId: string;
+  stream: AgentOutputEventEnvelope['payload']['stream'];
+  text: string;
+}): AgentOutputEventEnvelope {
+  return buildEnvelope({
+    sessionId: input.sessionId,
+    type: 'agent.output',
+    payload: {
+      sessionId: input.sessionId,
+      stream: input.stream,
+      text: input.text,
+    },
+  });
+}
+
+export function buildAgentDoneEvent(input: { sessionId: string; exitCode: number }): AgentDoneEventEnvelope {
+  return buildEnvelope({
+    sessionId: input.sessionId,
+    type: 'agent.done',
+    payload: {
+      sessionId: input.sessionId,
+      exitCode: input.exitCode,
     },
   });
 }
