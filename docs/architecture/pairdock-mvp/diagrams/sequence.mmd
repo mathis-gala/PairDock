@@ -1,0 +1,71 @@
+sequenceDiagram
+  autonumber
+  actor Dev as Developer
+  actor PM as Product Manager
+  participant Web as React Web App
+  participant API as NestJS API
+  participant DB as PostgreSQL
+  participant Agent as Local Agent
+  participant Harness as Agent Harness
+  participant Docker as Docker Sandbox
+  participant Tunnel as Cloudflare Tunnel
+  participant SC as SourceControlPort
+  participant GH as GitHub Adapter
+  participant Notify as NotificationPort
+
+  Dev->>Web: Share/configure project
+  Web->>API: POST /projects/:id/members
+  API->>DB: persist project membership
+
+  PM->>Web: Start session from shared project
+  Web->>API: POST /sessions
+  API->>API: verify project membership + readiness + agent availability
+  API->>DB: persist session CREATED
+  API->>Agent: session.prepare
+  Agent->>Agent: create branch + worktree
+  Agent->>Docker: start project
+  Agent->>Tunnel: expose preview
+  Agent->>API: session.ready(previewUrl)
+  API->>DB: status READY + previewUrl
+  API-->>Web: session ready
+
+  PM->>Web: submit prompt
+  Web->>API: POST /sessions/:id/prompts
+  API->>DB: persist prompt
+  API->>Agent: agent.prompt(prompt, model)
+  Agent->>Harness: run in worktree
+  loop streaming
+    Harness-->>Agent: stdout/stderr chunk
+    Agent-->>API: agent.output
+    API-->>Web: stream event
+  end
+  Harness-->>Agent: exit
+  Agent->>Agent: collect git diff
+  Agent->>Agent: run build/test/lint + preview check
+  Agent->>API: git.diff + checks.result
+  API->>DB: persist diff/checks/status
+  API-->>Web: diff + validation status
+
+  PM->>Web: create draft review request
+  Web->>API: POST /sessions/:id/review-request
+  API->>API: verify validation policy
+  API->>Agent: git.pushBranch
+  Agent-->>API: git.branchPushed
+  API->>SC: createDraftReviewRequest
+  SC->>GH: map to GitHub draft PR
+  GH-->>SC: reviewRequestUrl
+  SC-->>API: ReviewRequestRef
+  API->>DB: persist REVIEW_REQUEST_CREATED
+  API->>Notify: send review-request-created to developer owner
+  API->>DB: persist notification status
+  API-->>Web: show review request URL
+
+  Dev->>Web: close session
+  Web->>API: POST /sessions/:id/close
+  API->>Agent: session.close(delete-local)
+  Agent->>Docker: stop sandbox
+  Agent->>Tunnel: stop tunnel
+  Agent->>Agent: remove worktree
+  Agent-->>API: session.closed
+  API->>DB: status CLOSED
+  API-->>Web: closed
