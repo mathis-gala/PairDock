@@ -7,6 +7,7 @@ import {
   type AgentOutputEventEnvelope,
   agentCommandEnvelopeSchema,
   type ErrorEventEnvelope,
+  type GitDiffEventEnvelope,
   type SessionClosedEventEnvelope,
   type SessionProgressEventEnvelope,
   type SessionReadyEventEnvelope,
@@ -75,6 +76,22 @@ export function buildAgentDoneEvent(input: { sessionId: string; exitCode: number
     payload: {
       sessionId: input.sessionId,
       exitCode: input.exitCode,
+    },
+  });
+}
+
+export function buildGitDiffEvent(input: {
+  sessionId: string;
+  diff: string;
+  changedFiles: string[];
+}): GitDiffEventEnvelope {
+  return buildEnvelope({
+    sessionId: input.sessionId,
+    type: 'git.diff',
+    payload: {
+      sessionId: input.sessionId,
+      diff: input.diff,
+      changedFiles: [...input.changedFiles],
     },
   });
 }

@@ -9,14 +9,17 @@ import {
   type SessionPrepareCommandEnvelope,
 } from '@pairdock/shared-contracts';
 import { io, type Socket } from 'socket.io-client';
+import { DiffService } from '../git/diff.service.js';
 import { CodexHarnessAdapter } from '../harness/codex-harness.adapter.js';
 import type { AgentHarnessPort } from '../harness/index.js';
+import { LogRedactor } from '../logging/redactor.js';
 import { SessionRunner } from '../session/session-runner.js';
 import {
   buildAgentConnectedEvent,
   buildAgentDoneEvent,
   buildAgentOutputEvent,
   buildErrorEvent,
+  buildGitDiffEvent,
   buildSessionClosedEvent,
   buildSessionProgressEvent,
   buildSessionReadyEvent,
@@ -43,6 +46,8 @@ export class AgentClient {
   private socket: Socket | null = null;
   private readonly sessionRunner: SessionRunner;
   private readonly agentHarnessPort: AgentHarnessPort;
+  private readonly diffService: DiffService;
+  private readonly logRedactor: LogRedactor;
 
   constructor(
     private readonly config: AgentClientConfig,
@@ -50,6 +55,8 @@ export class AgentClient {
     dependencies: {
       sessionRunner?: SessionRunner;
       agentHarnessPort?: AgentHarnessPort;
+      diffService?: DiffService;
+      logRedactor?: LogRedactor;
     } = {},
   ) {
     this.sessionRunner =
@@ -59,6 +66,8 @@ export class AgentClient {
         previewConfigs: config.previewConfigs,
       });
     this.agentHarnessPort = dependencies.agentHarnessPort ?? new CodexHarnessAdapter(config.agentHarnessConfigs ?? {});
+    this.diffService = dependencies.diffService ?? new DiffService();
+    this.logRedactor = dependencies.logRedactor ?? new LogRedactor();
   }
 
   async start(): Promise<void> {
@@ -240,6 +249,8 @@ export class AgentClient {
     }
 
     try {
+      let exitCode: number | null = null;
+
       await this.emitEvent(
         buildSessionProgressEvent({
           sessionId: command.sessionId,
@@ -259,16 +270,34 @@ export class AgentClient {
             buildAgentOutputEvent({
               sessionId: command.sessionId,
               stream: event.stream,
-              text: event.text,
+              text: this.logRedactor.redact(event.text),
             }),
           );
           continue;
         }
 
+        exitCode = event.exitCode;
+      }
+
+      if (exitCode === null) {
+        throw new Error(`Agent harness completed without a final done event for session ${command.sessionId}.`);
+      }
+
+      await this.emitEvent(
+        buildAgentDoneEvent({
+          sessionId: command.sessionId,
+          exitCode,
+        }),
+      );
+
+      const diff = await this.diffService.collect(workspace.worktreePath);
+
+      if (diff.changedFiles.length > 0) {
         await this.emitEvent(
-          buildAgentDoneEvent({
+          buildGitDiffEvent({
             sessionId: command.sessionId,
-            exitCode: event.exitCode,
+            diff: diff.diff,
+            changedFiles: diff.changedFiles,
           }),
         );
       }
@@ -291,7 +320,7 @@ export class AgentClient {
     error: unknown,
     retryable: boolean,
   ): Promise<void> {
-    const message = error instanceof Error ? error.message : String(error);
+    const message = this.logRedactor.redact(error instanceof Error ? error.message : String(error));
     await this.emitEvent(
       buildErrorEvent({
         code,

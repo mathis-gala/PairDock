@@ -16,6 +16,7 @@ import type { PairDockIdentity, Session } from '@pairdock/domain';
 import type { AuthenticatedRequest } from '../auth/authenticated-request.js';
 import { RequireAuth } from '../auth/require-auth.decorator.js';
 import { RequireSessionAccess } from '../auth/require-session-access.decorator.js';
+import { DiffService } from '../diff/diff.service.js';
 import { SESSIONS_REPOSITORY } from '../persistence/persistence.tokens.js';
 import type { SessionsRepository } from '../persistence/ports/sessions.repository.js';
 import { SessionCloseService } from './session-close.service.js';
@@ -37,6 +38,8 @@ export class SessionsController {
   constructor(
     @Inject(SESSIONS_REPOSITORY)
     private readonly sessionsRepository: SessionsRepository,
+    @Inject(DiffService)
+    private readonly diffService: DiffService,
     @Inject(SessionsService)
     private readonly sessionsService: SessionsService,
     @Inject(SessionCloseService)
@@ -54,7 +57,7 @@ export class SessionsController {
       throw new NotFoundException(`Session ${sessionId} was not found.`);
     }
 
-    return this.serializeSession(session);
+    return this.buildSessionResponse(session);
   }
 
   @Post()
@@ -74,7 +77,7 @@ export class SessionsController {
 
     const session = await this.sessionsService.createSession({ projectId, modelId }, user);
 
-    return this.serializeSession(session);
+    return this.buildSessionResponse(session);
   }
 
   @Post(':sessionId/events')
@@ -92,7 +95,7 @@ export class SessionsController {
 
     const session = await this.sessionsService.applyAgentEvent(sessionId, body, user);
 
-    return this.serializeSession(session);
+    return this.buildSessionResponse(session);
   }
 
   @Post(':sessionId/close')
@@ -107,7 +110,7 @@ export class SessionsController {
 
     const closedSession = await this.sessionCloseService.closeSession(sessionId);
 
-    return this.serializeSession(closedSession);
+    return this.buildSessionResponse(closedSession);
   }
 
   @Post(':sessionId/prompts')
@@ -165,9 +168,12 @@ export class SessionsController {
     return user;
   }
 
-  private serializeSession(session: Session) {
+  private async buildSessionResponse(session: Session) {
+    const latestDiff = await this.diffService.getLatestDiff(session.id);
+
     return {
       ...session,
+      latestDiff,
       createdAt: session.createdAt.toISOString(),
       closedAt: session.closedAt?.toISOString() ?? null,
     };
