@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { execFile } from 'node:child_process';
-import { mkdtemp } from 'node:fs/promises';
+import { mkdtemp, writeFile } from 'node:fs/promises';
 import { createServer } from 'node:http';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
@@ -318,6 +318,88 @@ test('Task 9: AgentClient forwards agent.cancel to the harness and emits the fin
   }
 });
 
+test('BT-021: AgentClient emits a masked git.diff after prompt execution when sensitive files changed', {
+  concurrency: false,
+}, async () => {
+  const repositoryPath = await createTempRepository();
+  const managedRoot = await createManagedWorktreeRoot();
+  const { backendUrl, io, socketPromise } = await createAgentServer();
+  const sessionId = 'c3c3c3c3-c3c3-43c3-83c3-c3c3c3c3c3c3';
+  const branchName = 'pairdock/session-c3c3';
+  const harnessPort = new MutatingHarnessPort();
+
+  await writeFile(join(repositoryPath, 'README.md'), 'Original README\n', 'utf8');
+  await execGit(repositoryPath, ['add', 'README.md']);
+  await execGit(repositoryPath, ['commit', '-m', 'seed readme']);
+
+  const client = new AgentClient(
+    {
+      agentId: 'agent-local-1',
+      authToken: 'secret-token',
+      backendUrl,
+      capabilities: ['session.prepare', 'session.close', 'agent.prompt', 'agent.cancel'],
+      projectPaths: {
+        pairdock: repositoryPath,
+      },
+    },
+    {
+      error() {},
+      info() {},
+      warn() {},
+    },
+    {
+      sessionRunner: new SessionRunner(
+        {
+          projectPaths: {
+            pairdock: repositoryPath,
+          },
+        },
+        {
+          worktreeService: new WorktreeService(managedRoot),
+          sandboxPort: new ReadySandboxPort(),
+          previewTunnelPort: new ReadyPreviewTunnelPort(),
+        },
+      ),
+      agentHarnessPort: harnessPort,
+    },
+  );
+
+  try {
+    await client.start();
+    const socket = await socketPromise;
+    await waitForAgentEvent(socket, 'agent.connected');
+
+    const prepareEventsPromise = waitForAgentEvents(socket, 5);
+    socket.emit(agentProtocolMessageEventName, buildPrepareCommand(sessionId, branchName));
+    await prepareEventsPromise;
+
+    const promptEventsPromise = waitForAgentEvents(socket, 4);
+    socket.emit(agentProtocolMessageEventName, buildPromptCommand(sessionId, 'Protect secrets.'));
+    const [runningEvent, outputEvent, doneEvent, diffEvent] = await promptEventsPromise;
+
+    assert.equal(runningEvent.type, 'session.progress');
+    assert.equal(runningEvent.payload.status, 'AGENT_RUNNING');
+    assert.equal(outputEvent.type, 'agent.output');
+    assert.match(outputEvent.payload.text, /Bearer \[REDACTED\]/);
+    assert.doesNotMatch(outputEvent.payload.text, /super-secret-token/);
+    assert.equal(doneEvent.type, 'agent.done');
+    assert.equal(doneEvent.payload.exitCode, 0);
+    assert.equal(diffEvent.type, 'git.diff');
+    assert.deepEqual(diffEvent.payload.changedFiles, ['README.md', '.env']);
+    assert.match(diffEvent.payload.diff, /Updated README/);
+    assert.match(diffEvent.payload.diff, /\[PAIRDOCK_REDACTED\] Sensitive file omitted: \.env/);
+    assert.doesNotMatch(diffEvent.payload.diff, /TOP_SECRET_VALUE/);
+
+    socket.emit(agentProtocolMessageEventName, buildCloseCommand(sessionId));
+    await waitForAgentEvent(socket, 'session.closed');
+  } finally {
+    await client.stop();
+    await new Promise<void>((resolve) => {
+      io.close(() => resolve());
+    });
+  }
+});
+
 class RecordingHarnessPort implements AgentHarnessPort {
   lastInput: RunPromptInput | null = null;
 
@@ -363,6 +445,25 @@ class CancellableHarnessPort implements AgentHarnessPort {
     this.cancellations.get(sessionId)?.();
     this.cancellations.delete(sessionId);
   }
+}
+
+class MutatingHarnessPort implements AgentHarnessPort {
+  async *runPrompt(input: RunPromptInput): AsyncIterable<AgentHarnessEvent> {
+    await writeFile(join(input.worktreePath, 'README.md'), 'Updated README\n', 'utf8');
+    await writeFile(join(input.worktreePath, '.env'), 'API_TOKEN=TOP_SECRET_VALUE\n', 'utf8');
+
+    yield {
+      type: 'output',
+      stream: 'stdout',
+      text: 'Bearer super-secret-token\n',
+    };
+    yield {
+      type: 'done',
+      exitCode: 0,
+    };
+  }
+
+  async cancel(): Promise<void> {}
 }
 
 class ReadySandboxPort {
