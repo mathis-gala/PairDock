@@ -4,5 +4,9 @@ apps/api/src/generated/prisma/
 npm-debug.log*
 dist/
 coverage/
-docs/
+docs/*
+!docs/architecture/
+!docs/architecture/**
+!docs/prototypes/
+!docs/prototypes/**
 *.tsbuildinfo

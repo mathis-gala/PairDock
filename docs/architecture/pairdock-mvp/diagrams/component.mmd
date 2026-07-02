@@ -1,0 +1,106 @@
+flowchart TB
+  subgraph Frontend[React Frontend]
+    LoginUI[Two-column Login: GitHub Developer + Slack PM]
+    DevUI[Developer Project + Session Control]
+    PmProjectsUI[PM Shared Projects]
+    PmUI[PM Prompt + Diff UI]
+    PreviewUI[Responsive Preview iframe]
+    Tailwind[Tailwind CSS Styling]
+    Shadcn[shadcn/ui Components]
+    UiContracts[Zod UI Contracts]
+  end
+
+  subgraph Backend[NestJS Backend]
+    Auth[AuthModule]
+    Slack[SlackModule]
+    Projects[ProjectsModule]
+    Sessions[SessionsModule]
+    Prompts[PromptsModule]
+    AgentGw[AgentGatewayModule]
+    UiGw[UiGatewayModule]
+    Diff[DiffModule]
+    Validation[ValidationModule]
+    Github[GithubModule]
+    Notifications[NotificationsModule]
+    Audit[AuditLogModule]
+    Persistence[PersistenceModule]
+    Prisma[Prisma Client Adapter]
+  end
+
+  subgraph Ports[Hexagonal Ports]
+    DevIdentityPort[DeveloperIdentityPort]
+    PmIdentityPort[PmIdentityPort]
+    SourceControlPort[SourceControlPort]
+    NotificationPort[NotificationPort]
+    RepositoryPorts[Repository Ports]
+    AgentHarnessPort[AgentHarnessPort]
+    SandboxPort[SandboxPort]
+    TunnelPort[PreviewTunnelPort]
+  end
+
+  subgraph Shared[Shared Contracts]
+    AgentProtocol[Agent Protocol Codecs]
+    SessionContracts[Session DTOs]
+    ModelContracts[Model Registry Contracts]
+  end
+
+  subgraph Agent[Local Agent]
+    AgentClient[Agent WebSocket Client]
+    Runner[SessionRunner]
+    Worktree[WorktreeService]
+    Docker[DockerSandboxAdapter]
+    Tunnel[CloudflarePreviewTunnelAdapter]
+    Codex[CodexHarnessAdapter]
+    Checks[ChecksRunner]
+    Redactor[Redactor + SensitiveFilesPolicy]
+  end
+
+  Frontend --> Shared
+  Backend --> Shared
+  Agent --> Shared
+
+  DevUI --> Sessions
+  PmProjectsUI --> Projects
+  PmProjectsUI --> Sessions
+  PmUI --> Prompts
+  PreviewUI --> Sessions
+  LoginUI --> Auth
+  DevUI --> Tailwind
+  DevUI --> Shadcn
+  PmUI --> Tailwind
+  PmUI --> Shadcn
+  PreviewUI --> Tailwind
+  PreviewUI --> Shadcn
+
+  Auth --> DevIdentityPort
+  Auth --> PmIdentityPort
+  Slack -.implements.-> PmIdentityPort
+  Github -.implements.-> DevIdentityPort
+  Github -.implements.-> SourceControlPort
+  Notifications -.implements.-> NotificationPort
+  Sessions --> RepositoryPorts
+  Projects --> RepositoryPorts
+  Auth --> RepositoryPorts
+  Persistence -.implements.-> RepositoryPorts
+  Persistence --> Prisma
+  Sessions --> AgentGw
+  Prompts --> AgentGw
+  AgentGw --> Audit
+  AgentGw --> Diff
+  AgentGw --> Validation
+  Github --> Sessions
+  Sessions --> Notifications
+  Notifications --> RepositoryPorts
+
+  AgentClient --> Runner
+  Runner --> Worktree
+  Runner --> SandboxPort
+  Runner --> TunnelPort
+  Runner --> AgentHarnessPort
+  Docker -.implements.-> SandboxPort
+  Tunnel -.implements.-> TunnelPort
+  Codex -.implements.-> AgentHarnessPort
+  Runner --> Checks
+  Runner --> Redactor
+
+  Codex -.implements.-> ModelContracts
