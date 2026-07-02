@@ -101,3 +101,25 @@ test('Task 9: normalizeAgentConfig trims and preserves agent harness command tem
     },
   });
 });
+
+test('Task 11: normalizeAgentConfig trims and preserves validation check commands', () => {
+  const config = normalizeAgentConfig({
+    backendUrl: 'https://pairdock.test',
+    agentId: 'local-agent-1',
+    checksConfigs: {
+      ' pairdock ': {
+        build: ' bun run build ',
+        test: ' bun test ',
+        lint: ' bun run lint ',
+      },
+    },
+  });
+
+  assert.deepEqual(config.checksConfigs, {
+    pairdock: {
+      build: 'bun run build',
+      test: 'bun test',
+      lint: 'bun run lint',
+    },
+  });
+});

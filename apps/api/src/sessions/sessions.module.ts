@@ -7,13 +7,14 @@ import { DiffService } from '../diff/diff.service.js';
 import { InvitationsModule } from '../invitations/invitations.module.js';
 import { PersistenceModule } from '../persistence/persistence.module.js';
 import { AGENT_EVENTS_REPOSITORY } from '../persistence/persistence.tokens.js';
+import { ValidationModule } from '../validation/validation.module.js';
 import { SessionCloseService } from './session-close.service.js';
 import { SessionPromptService } from './session-prompt.service.js';
 import { SessionsController } from './sessions.controller.js';
 import { SessionsService } from './sessions.service.js';
 
 @Module({
-  imports: [AuthModule, InvitationsModule, PersistenceModule, AgentGatewayModule],
+  imports: [AuthModule, InvitationsModule, PersistenceModule, AgentGatewayModule, ValidationModule],
   controllers: [SessionsController],
   providers: [
     AuthenticatedUserGuard,
