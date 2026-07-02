@@ -5,10 +5,12 @@ import {
   type AgentEventEnvelope,
   type AgentPromptCommandEnvelope,
   agentProtocolMessageEventName,
+  type ChecksResultEventEnvelope,
   type SessionCloseCommandEnvelope,
   type SessionPrepareCommandEnvelope,
 } from '@pairdock/shared-contracts';
 import { io, type Socket } from 'socket.io-client';
+import { type CheckResult, ChecksRunner, type ProjectChecksConfig } from '../checks/checks-runner.js';
 import { DiffService } from '../git/diff.service.js';
 import { CodexHarnessAdapter } from '../harness/codex-harness.adapter.js';
 import type { AgentHarnessPort } from '../harness/index.js';
@@ -18,6 +20,7 @@ import {
   buildAgentConnectedEvent,
   buildAgentDoneEvent,
   buildAgentOutputEvent,
+  buildChecksResultEvent,
   buildErrorEvent,
   buildGitDiffEvent,
   buildSessionClosedEvent,
@@ -33,6 +36,7 @@ export interface AgentClientConfig {
   capabilities: string[];
   projectPaths: Record<string, string>;
   previewConfigs?: Record<string, import('../docker/sandbox.port.js').ProjectPreviewConfig>;
+  checksConfigs?: Record<string, ProjectChecksConfig>;
   agentHarnessConfigs?: Record<string, import('../harness/agent-harness.port.js').ProjectAgentHarnessConfig>;
 }
 
@@ -47,6 +51,7 @@ export class AgentClient {
   private readonly sessionRunner: SessionRunner;
   private readonly agentHarnessPort: AgentHarnessPort;
   private readonly diffService: DiffService;
+  private readonly checksRunner: ChecksRunner;
   private readonly logRedactor: LogRedactor;
 
   constructor(
@@ -56,6 +61,7 @@ export class AgentClient {
       sessionRunner?: SessionRunner;
       agentHarnessPort?: AgentHarnessPort;
       diffService?: DiffService;
+      checksRunner?: ChecksRunner;
       logRedactor?: LogRedactor;
     } = {},
   ) {
@@ -67,6 +73,7 @@ export class AgentClient {
       });
     this.agentHarnessPort = dependencies.agentHarnessPort ?? new CodexHarnessAdapter(config.agentHarnessConfigs ?? {});
     this.diffService = dependencies.diffService ?? new DiffService();
+    this.checksRunner = dependencies.checksRunner ?? new ChecksRunner(config.checksConfigs ?? {});
     this.logRedactor = dependencies.logRedactor ?? new LogRedactor();
   }
 
@@ -301,6 +308,19 @@ export class AgentClient {
           }),
         );
       }
+
+      await this.emitEvent(
+        buildChecksResultEvent({
+          sessionId: command.sessionId,
+          result: this.redactChecksResult(
+            await this.checksRunner.run({
+              projectKey: workspace.projectKey,
+              previewUrl: workspace.previewUrl,
+              worktreePath: workspace.worktreePath,
+            }),
+          ),
+        }),
+      );
     } catch (error) {
       await this.emitError('agent.prompt.failed', command.sessionId, error, false);
     }
@@ -312,6 +332,26 @@ export class AgentClient {
     } catch (error) {
       await this.emitError('agent.cancel.failed', command.sessionId, error, false);
     }
+  }
+
+  private redactChecksResult(
+    checks: Awaited<ReturnType<ChecksRunner['run']>>,
+  ): Omit<ChecksResultEventEnvelope['payload'], 'sessionId'> {
+    return {
+      ok: checks.ok,
+      build: this.redactCheckResult(checks.build),
+      tests: this.redactCheckResult(checks.tests),
+      lint: this.redactCheckResult(checks.lint),
+      preview: this.redactCheckResult(checks.preview),
+    };
+  }
+
+  private redactCheckResult(check: CheckResult) {
+    return {
+      status: check.status,
+      ...(check.command ? { command: check.command } : {}),
+      ...(check.logs ? { logs: this.logRedactor.redact(check.logs) } : {}),
+    };
   }
 
   private async emitError(

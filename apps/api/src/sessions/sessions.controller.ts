@@ -19,6 +19,7 @@ import { RequireSessionAccess } from '../auth/require-session-access.decorator.j
 import { DiffService } from '../diff/diff.service.js';
 import { SESSIONS_REPOSITORY } from '../persistence/persistence.tokens.js';
 import type { SessionsRepository } from '../persistence/ports/sessions.repository.js';
+import { ValidationService } from '../validation/validation.service.js';
 import { SessionCloseService } from './session-close.service.js';
 import { SessionPromptService } from './session-prompt.service.js';
 import type { SessionAgentEvent } from './session-state-machine.js';
@@ -40,6 +41,8 @@ export class SessionsController {
     private readonly sessionsRepository: SessionsRepository,
     @Inject(DiffService)
     private readonly diffService: DiffService,
+    @Inject(ValidationService)
+    private readonly validationService: ValidationService,
     @Inject(SessionsService)
     private readonly sessionsService: SessionsService,
     @Inject(SessionCloseService)
@@ -169,11 +172,15 @@ export class SessionsController {
   }
 
   private async buildSessionResponse(session: Session) {
-    const latestDiff = await this.diffService.getLatestDiff(session.id);
+    const [latestDiff, latestValidation] = await Promise.all([
+      this.diffService.getLatestDiff(session.id),
+      this.validationService.getLatestValidation(session.id),
+    ]);
 
     return {
       ...session,
       latestDiff,
+      latestValidation,
       createdAt: session.createdAt.toISOString(),
       closedAt: session.closedAt?.toISOString() ?? null,
     };

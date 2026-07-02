@@ -1,6 +1,7 @@
 import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import { homedir } from 'node:os';
 import { dirname, resolve } from 'node:path';
+import type { ProjectChecksConfig } from '../checks/checks-runner.js';
 import type { ProjectPreviewConfig } from '../docker/sandbox.port.js';
 import type { ProjectAgentHarnessConfig } from '../harness/agent-harness.port.js';
 
@@ -11,6 +12,7 @@ export interface AgentConfig {
   capabilities: string[];
   projectPaths: Record<string, string>;
   previewConfigs: Record<string, ProjectPreviewConfig>;
+  checksConfigs?: Record<string, ProjectChecksConfig>;
   agentHarnessConfigs?: Record<string, ProjectAgentHarnessConfig>;
 }
 
@@ -21,6 +23,7 @@ export interface SaveAgentConfigInput {
   capabilities?: string[];
   projectPaths?: Record<string, string>;
   previewConfigs?: Record<string, ProjectPreviewConfig>;
+  checksConfigs?: Record<string, ProjectChecksConfig>;
   agentHarnessConfigs?: Record<string, ProjectAgentHarnessConfig>;
 }
 
@@ -38,6 +41,7 @@ export function normalizeAgentConfig(input: SaveAgentConfigInput): AgentConfig {
   const capabilities = normalizeCapabilities(input.capabilities ?? []);
   const projectPaths = normalizeProjectPaths(input.projectPaths ?? {});
   const previewConfigs = normalizePreviewConfigs(input.previewConfigs ?? {});
+  const checksConfigs = normalizeChecksConfigs(input.checksConfigs ?? {});
   const agentHarnessConfigs = normalizeAgentHarnessConfigs(input.agentHarnessConfigs ?? {});
 
   return {
@@ -47,6 +51,7 @@ export function normalizeAgentConfig(input: SaveAgentConfigInput): AgentConfig {
     capabilities,
     projectPaths,
     previewConfigs,
+    ...(Object.keys(checksConfigs).length > 0 ? { checksConfigs } : {}),
     ...(Object.keys(agentHarnessConfigs).length > 0 ? { agentHarnessConfigs } : {}),
   };
 }
@@ -76,6 +81,7 @@ export function summarizeAgentConfig(config: AgentConfig) {
     projectCount: Object.keys(config.projectPaths).length,
     tokenConfigured: Boolean(config.authToken),
     previewConfigCount: Object.keys(config.previewConfigs).length,
+    checksConfigCount: Object.keys(config.checksConfigs ?? {}).length,
     agentHarnessConfigCount: Object.keys(config.agentHarnessConfigs ?? {}).length,
   };
 }
@@ -130,6 +136,17 @@ function normalizeAgentHarnessConfigs(
   );
 }
 
+function normalizeChecksConfigs(
+  checksConfigs: Record<string, ProjectChecksConfig>,
+): Record<string, ProjectChecksConfig> {
+  return Object.fromEntries(
+    Object.entries(checksConfigs).map(([projectKey, checksConfig]) => {
+      const normalizedProjectKey = normalizeRequiredValue(projectKey, 'checks projectKey');
+      return [normalizedProjectKey, normalizeChecksConfig(checksConfig, normalizedProjectKey)];
+    }),
+  );
+}
+
 function normalizePreviewConfig(previewConfig: ProjectPreviewConfig, projectKey: string): ProjectPreviewConfig {
   const normalizedPreviewConfig: ProjectPreviewConfig = {};
 
@@ -180,6 +197,27 @@ function normalizeAgentHarnessConfig(
   }
 
   return normalizedHarnessConfig;
+}
+
+function normalizeChecksConfig(checksConfig: ProjectChecksConfig, projectKey: string): ProjectChecksConfig {
+  const normalizedChecksConfig: ProjectChecksConfig = {};
+
+  const build = normalizeOptionalConfigString(checksConfig.build, `checks.build for ${projectKey}`);
+  if (build !== undefined) {
+    normalizedChecksConfig.build = build;
+  }
+
+  const test = normalizeOptionalConfigString(checksConfig.test, `checks.test for ${projectKey}`);
+  if (test !== undefined) {
+    normalizedChecksConfig.test = test;
+  }
+
+  const lint = normalizeOptionalConfigString(checksConfig.lint, `checks.lint for ${projectKey}`);
+  if (lint !== undefined) {
+    normalizedChecksConfig.lint = lint;
+  }
+
+  return normalizedChecksConfig;
 }
 
 function normalizeSandboxConfig(

@@ -6,6 +6,7 @@ import {
   type AgentDoneEventEnvelope,
   type AgentOutputEventEnvelope,
   agentCommandEnvelopeSchema,
+  type ChecksResultEventEnvelope,
   type ErrorEventEnvelope,
   type GitDiffEventEnvelope,
   type SessionClosedEventEnvelope,
@@ -92,6 +93,20 @@ export function buildGitDiffEvent(input: {
       sessionId: input.sessionId,
       diff: input.diff,
       changedFiles: [...input.changedFiles],
+    },
+  });
+}
+
+export function buildChecksResultEvent(input: {
+  sessionId: string;
+  result: Omit<ChecksResultEventEnvelope['payload'], 'sessionId'>;
+}): ChecksResultEventEnvelope {
+  return buildEnvelope({
+    sessionId: input.sessionId,
+    type: 'checks.result',
+    payload: {
+      sessionId: input.sessionId,
+      ...input.result,
     },
   });
 }

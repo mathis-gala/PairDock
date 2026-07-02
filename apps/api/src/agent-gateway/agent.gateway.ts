@@ -22,6 +22,7 @@ import type { AgentEventsRepository } from '../persistence/ports/agent-events.re
 import type { PersistenceUnitOfWork } from '../persistence/ports/persistence-unit-of-work.js';
 import { type SessionAgentEvent, SessionStateMachine } from '../sessions/session-state-machine.js';
 import { UiGateway } from '../ui-gateway/ui.gateway.js';
+import { ValidationService } from '../validation/validation.service.js';
 import { ConnectedAgentsRegistry } from './connected-agents.registry.js';
 
 const lifecycleProgressStatuses = [
@@ -52,6 +53,8 @@ export class AgentGateway implements OnGatewayDisconnect {
     private readonly uiGateway: UiGateway,
     @Inject(ConnectedAgentsRegistry)
     private readonly connectedAgentsRegistry: ConnectedAgentsRegistry,
+    @Inject(ValidationService)
+    private readonly validationService: ValidationService,
   ) {}
 
   handleDisconnect(client: Socket): void {
@@ -93,6 +96,35 @@ export class AgentGateway implements OnGatewayDisconnect {
     sessionId: string | null,
     event: AgentEventEnvelope,
   ): Promise<void> {
+    if (sessionId && event.type === 'checks.result') {
+      await this.persistenceUnitOfWork.execute(async (repositories) => {
+        const currentSession = await repositories.sessions.findById(sessionId);
+
+        await repositories.agentEvents.create({
+          sessionId,
+          agentId,
+          type: event.type,
+          payload: event.payload,
+        });
+
+        if (!currentSession) {
+          return;
+        }
+
+        await repositories.validationRuns.create(this.validationService.toValidationRunInput(sessionId, event.payload));
+
+        const sessionUpdate = this.validationService.toSessionUpdate(event.payload);
+        await repositories.sessions.updateStatus({
+          id: sessionId,
+          status: sessionUpdate.status,
+          lastError: sessionUpdate.lastError,
+          previewUrl: currentSession.previewUrl,
+          closedAt: currentSession.closedAt,
+        });
+      });
+      return;
+    }
+
     const sessionEvent = sessionId ? toSessionAgentEvent(event) : null;
 
     if (!sessionId || !sessionEvent) {
@@ -214,6 +246,8 @@ function toSessionAgentEvent(event: AgentEventEnvelope): SessionAgentEvent | nul
     case 'checks.result':
     case 'git.branchPushed':
     case 'git.diff':
+      return null;
+    default:
       return null;
   }
 }

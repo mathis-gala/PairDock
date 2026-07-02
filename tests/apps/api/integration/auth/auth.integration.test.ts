@@ -232,6 +232,7 @@ test('BT-004: SessionAccessGuard allows an invited PM to read a session and send
       previewUrl: null,
       lastError: null,
       latestDiff: null,
+      latestValidation: null,
       createdAt: fixture.session.createdAt.toISOString(),
       closedAt: null,
     });
