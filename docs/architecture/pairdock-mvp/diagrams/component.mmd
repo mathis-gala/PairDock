@@ -6,6 +6,7 @@ flowchart TB
     PmUI[PM Prompt + Diff UI]
     PreviewUI[Responsive Preview iframe]
     Tailwind[Tailwind CSS Styling]
+    Shadcn[shadcn/ui Components]
     UiContracts[Zod UI Contracts]
   end
 
@@ -65,8 +66,11 @@ flowchart TB
   PreviewUI --> Sessions
   LoginUI --> Auth
   DevUI --> Tailwind
+  DevUI --> Shadcn
   PmUI --> Tailwind
+  PmUI --> Shadcn
   PreviewUI --> Tailwind
+  PreviewUI --> Shadcn
 
   Auth --> DevIdentityPort
   Auth --> PmIdentityPort

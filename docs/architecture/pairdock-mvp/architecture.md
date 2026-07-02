@@ -2,7 +2,9 @@
 
 ## Current repository context
 
-The repository is early-stage. Technical choices are defined by the provided product decisions: Bun workspaces, React/TanStack/Zod/Tailwind CSS, NestJS/zodValidatorPipe/PostgreSQL with Prisma ORM, local Node.js/TypeScript agent, Codex CLI, Docker, Cloudflare Tunnel, GitHub App, and Slack PM login.
+The repository is early-stage. Technical choices are defined by the provided product decisions: Bun workspaces, React/TanStack/Zod/Tailwind CSS with shadcn/ui components, NestJS/zodValidatorPipe/PostgreSQL with Prisma ORM, local Node.js/TypeScript agent, Codex CLI, Docker, Cloudflare Tunnel, GitHub App, and Slack PM login.
+
+Prototype reference: the collaborative developer/PM prototype is stored at `prototype/`; implementation notes live at `docs/prototypes/pairdock-collaborative-developer-pm.md`. Treat it as product evidence for role entry, project sharing, PM-started sessions, session workspace behavior, responsive preview presets, and review-request notification UX.
 
 ## Architecture style
 
@@ -21,7 +23,7 @@ Hexagonal rule: use-case modules never depend directly on a provider SDK, CLI, t
 
 ## Containers
 
-- React web app: two-column login screen, developer project/control dashboard, PM shared-project dashboard, chat, diff, validation, responsive preview, developer session controls, styled with Tailwind CSS.
+- React web app: two-column login screen, developer project/control dashboard, PM shared-project dashboard, chat, diff, validation, responsive preview, developer session controls, styled with Tailwind CSS and shadcn/ui components.
 - NestJS API: public REST, UI WebSocket, agent WebSocket, permissions, orchestration.
 - PostgreSQL: durable state for users, projects, sessions, events, validations, review requests.
 - Prisma ORM: schema, migrations, generated client, and persistence adapter implementation.
@@ -213,7 +215,9 @@ Responsibilities:
 ## Frontend styling
 
 - Tailwind CSS is the MVP styling system.
-- Shared layout primitives should use Tailwind utility classes and project-level design tokens/configuration, not ad hoc CSS frameworks.
+- shadcn/ui is the standard component foundation for reusable UI primitives such as buttons, cards, dialogs, forms, inputs, tabs, badges, alerts, and sheets.
+- Shared layout primitives should use shadcn/ui components plus Tailwind utility classes and project-level design tokens/configuration, not ad hoc CSS frameworks.
+- Generated shadcn/ui components are owned by the app codebase and may be adapted to PairDock design tokens; avoid wrapping every component in speculative abstractions before duplication proves it is needed.
 - Component behavior remains tested through public UI behavior; do not test Tailwind class strings except for project-level static checks that verify the Tailwind setup exists.
 
 ## Frontend product surfaces

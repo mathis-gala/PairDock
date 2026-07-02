@@ -9,7 +9,7 @@ Priority: P0
 Public interface: workspace commands
 Behavior: the Bun workspace installs and typechecks without runtime features.
 Given a clean checkout
-When `bun install`, `bun run typecheck`, Tailwind build integration, and `bun run prisma:generate` are executed
+When `bun install`, `bun run typecheck`, Tailwind/shadcn UI build integration, and `bun run prisma:generate` are executed
 Then they pass without errors
 Why: healthy foundation for implementation agents
 Do not test: package manager internals beyond the official Bun commands
@@ -421,16 +421,16 @@ Then the event and updated session status commit together or rollback together
 Why: prevent session state drift after partial writes
 Do not test: Prisma transaction implementation details beyond observable atomicity
 
-## BT-039 — Tailwind CSS is the web styling foundation
+## BT-039 — Tailwind CSS and shadcn/ui are the web styling foundation
 
 Level: unit/static architecture
 Priority: P0
 Public interface: web app build/configuration
 Given the web app workspace
-When its styling setup is inspected and built
-Then Tailwind CSS is configured and no alternate CSS framework is required for MVP screens
-Why: keep frontend styling consistent and avoid competing styling systems
-Do not test: individual Tailwind utility class strings in component behavior tests
+When its styling/component setup is inspected and built
+Then Tailwind CSS and shadcn/ui are configured, reusable UI primitives come from app-owned shadcn/ui components, and no alternate CSS framework is required for MVP screens
+Why: keep frontend styling consistent and avoid competing component/styling systems
+Do not test: individual Tailwind utility class strings or shadcn implementation internals in component behavior tests
 
 ## BT-040 — Prisma migration workflow uses Bun scripts
 

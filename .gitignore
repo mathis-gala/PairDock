@@ -7,4 +7,6 @@ coverage/
 docs/*
 !docs/architecture/
 !docs/architecture/**
+!docs/prototypes/
+!docs/prototypes/**
 *.tsbuildinfo

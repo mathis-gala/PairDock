@@ -15,6 +15,7 @@ Expected files/modules:
 - Bun workspace configuration with `packageManager: "bun@1.3.13"`
 - React web app
 - Tailwind CSS configuration for the web app
+- shadcn/ui setup for shared frontend components
 - NestJS API app
 - local agent Node.js/TypeScript package
 - shared Zod/TypeScript contracts package
@@ -37,6 +38,7 @@ Done criteria:
 - install OK
 - typecheck OK
 - Tailwind build integration OK
+- shadcn/ui base components available for MVP screens
 - Prisma generate command available from the API workspace
 - minimal developer README
 
@@ -327,6 +329,7 @@ Expected files/modules:
 - diff viewer
 - responsive iframe preview toolbar
 - Tailwind-based layout/styling
+- shadcn/ui components for reusable UI primitives
 
 Public behavior:
 - PM can start a session from an enabled shared-project card.
@@ -339,6 +342,7 @@ Related tests: BT-026, BT-027, BT-048
 Constraints:
 - no terminal control.
 - use Tailwind CSS for styling; do not introduce another CSS framework.
+- use shadcn/ui for reusable controls, dialogs, cards, and forms before creating custom one-off primitives.
 
 Done criteria:
 - PM flow usable locally
@@ -358,6 +362,7 @@ Expected files/modules:
 - session close action
 - model selector
 - Tailwind-based layout/styling
+- shadcn/ui components for reusable UI primitives
 
 Public behavior:
 - developer shares a project with PMs.
@@ -369,6 +374,7 @@ Related tests: BT-028, BT-029, BT-049
 Constraints:
 - close session requires UI confirmation.
 - use Tailwind CSS for styling; do not introduce another CSS framework.
+- use shadcn/ui for reusable controls, dialogs, cards, and forms before creating custom one-off primitives.
 
 Done criteria:
 - developer can create and close a session end-to-end

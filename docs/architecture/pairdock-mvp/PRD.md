@@ -4,6 +4,8 @@
 
 PairDock lets a developer open a working session on a local project, then invite a PM to drive a local development agent through a collaborative interface. The PM writes prompts, observes the running web app in a responsive iframe, reviews changes, validates the result, and triggers a draft review request. The developer keeps control of the repository, local machine, and session cleanup.
 
+The product/UI reference prototype is stored in `prototype/`, with notes in `docs/prototypes/pairdock-collaborative-developer-pm.md`.
+
 ## Goals
 
 - Let an authorized PM request fixes on an existing project without terminal access.
@@ -90,7 +92,7 @@ PairDock lets a developer open a working session on a local project, then invite
 
 ## Fixed constraints
 
-- Frontend: React + TanStack + Zod + Tailwind CSS.
+- Frontend: React + TanStack + Zod + Tailwind CSS + shadcn/ui components.
 - Backend: NestJS + zodValidatorPipe + PostgreSQL + Prisma ORM.
 - Package manager/runtime tooling: Bun, pinned through `packageManager` in root `package.json`.
 - Local agent: Node.js/TypeScript CLI.
