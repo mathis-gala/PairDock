@@ -33,6 +33,8 @@ async function resetDatabase() {
   await prisma.message.deleteMany();
   await prisma.sessionMember.deleteMany();
   await prisma.session.deleteMany();
+  await prisma.projectReadinessSnapshot.deleteMany();
+  await prisma.projectMember.deleteMany();
   await prisma.project.deleteMany();
   await prisma.sourceControlConnection.deleteMany();
   await prisma.externalIdentity.deleteMany();
@@ -122,6 +124,10 @@ function connectSocket(namespace: '/agent' | '/ui', accessToken?: string): Socke
 }
 
 function waitForConnect(socket: Socket): Promise<void> {
+  if (socket.connected) {
+    return Promise.resolve();
+  }
+
   return new Promise((resolve, reject) => {
     socket.once('connect', () => resolve());
     socket.once('connect_error', reject);

@@ -4,5 +4,11 @@
     "jsx": "react-jsx",
     "lib": ["DOM", "DOM.Iterable", "ES2022"]
   },
-  "include": ["src/**/*.ts", "src/**/*.tsx", "vite.config.ts"]
+  "include": [
+    "src/**/*.ts",
+    "src/**/*.tsx",
+    "vite.config.ts",
+    "../../tests/apps/web/**/*.ts",
+    "../../tests/apps/web/**/*.tsx"
+  ]
 }

@@ -24,6 +24,8 @@ async function resetDatabase() {
   await prisma.message.deleteMany();
   await prisma.sessionMember.deleteMany();
   await prisma.session.deleteMany();
+  await prisma.projectReadinessSnapshot.deleteMany();
+  await prisma.projectMember.deleteMany();
   await prisma.project.deleteMany();
   await prisma.sourceControlConnection.deleteMany();
   await prisma.externalIdentity.deleteMany();
@@ -99,7 +101,7 @@ async function createSessionFixture(pmUserId: string) {
     ],
   });
 
-  return { session };
+  return { developer, project, session };
 }
 
 test.before(async () => {
@@ -152,8 +154,38 @@ test('Task 10: session details include the latest persisted git diff snapshot', 
   assert.equal(sessionResponse.status, 200);
 
   const sessionPayload = (await sessionResponse.json()) as {
+    project: {
+      id: string;
+      name: string;
+      defaultBranch: string;
+      ownerDisplayName: string;
+      owningAgentId: string;
+      agentAvailability: 'online' | 'offline';
+    };
+    participants: Array<{ userId: string; role: string; displayName: string }>;
     latestDiff: { diff: string; changedFiles: string[] } | null;
   };
+
+  assert.deepEqual(sessionPayload.project, {
+    id: fixture.project.id,
+    name: fixture.project.name,
+    defaultBranch: fixture.project.defaultBranch,
+    ownerDisplayName: fixture.developer.displayName,
+    owningAgentId: fixture.project.agentProjectKey,
+    agentAvailability: 'offline',
+  });
+  assert.deepEqual(sessionPayload.participants, [
+    {
+      userId: fixture.developer.id,
+      role: 'developer',
+      displayName: fixture.developer.displayName,
+    },
+    {
+      userId: pmLogin.body.user.id,
+      role: 'pm',
+      displayName: pmLogin.body.user.displayName,
+    },
+  ]);
 
   assert.deepEqual(sessionPayload.latestDiff, {
     diff: 'diff --git a/README.md b/README.md\n+Updated README',

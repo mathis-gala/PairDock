@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { sessionEnvelope, uuidSchema } from './common.js';
+import { envelopeBaseSchema, sessionEnvelope, uuidSchema } from './common.js';
 
 const sessionIdConsistencyRule = {
   message: 'Envelope sessionId must match payload.sessionId.',
@@ -15,6 +15,14 @@ export const sessionPrepareCommandEnvelopeSchema = sessionEnvelope(
     modelId: z.string().min(1),
   }),
 ).refine(({ sessionId, payload }) => payload.sessionId === sessionId, sessionIdConsistencyRule);
+
+export const readinessCheckCommandEnvelopeSchema = envelopeBaseSchema.extend({
+  type: z.literal('readiness.check'),
+  payload: z.object({
+    projectKey: z.string().min(1),
+    sessionId: uuidSchema.optional(),
+  }),
+});
 
 export const agentPromptCommandEnvelopeSchema = sessionEnvelope(
   'agent.prompt',
@@ -63,6 +71,7 @@ export const sessionCloseCommandEnvelopeSchema = sessionEnvelope(
 
 export const agentCommandEnvelopeSchema = z.discriminatedUnion('type', [
   sessionPrepareCommandEnvelopeSchema,
+  readinessCheckCommandEnvelopeSchema,
   agentPromptCommandEnvelopeSchema,
   agentCancelCommandEnvelopeSchema,
   gitGetDiffCommandEnvelopeSchema,
@@ -72,6 +81,7 @@ export const agentCommandEnvelopeSchema = z.discriminatedUnion('type', [
 ]);
 
 export type SessionPrepareCommandEnvelope = z.infer<typeof sessionPrepareCommandEnvelopeSchema>;
+export type ReadinessCheckCommandEnvelope = z.infer<typeof readinessCheckCommandEnvelopeSchema>;
 export type AgentPromptCommandEnvelope = z.infer<typeof agentPromptCommandEnvelopeSchema>;
 export type AgentCancelCommandEnvelope = z.infer<typeof agentCancelCommandEnvelopeSchema>;
 export type GitGetDiffCommandEnvelope = z.infer<typeof gitGetDiffCommandEnvelopeSchema>;

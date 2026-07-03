@@ -3,6 +3,8 @@ import type {
   ExternalIdentity,
   PairDockUser,
   Project,
+  ProjectMembership,
+  ProjectReadinessSnapshot,
   ReviewRequestRecord,
   Session,
   SessionMember,
@@ -15,6 +17,8 @@ import type {
   ExternalIdentity as PrismaExternalIdentity,
   Message as PrismaMessage,
   Project as PrismaProject,
+  ProjectMember as PrismaProjectMember,
+  ProjectReadinessSnapshot as PrismaProjectReadinessSnapshot,
   PullRequest as PrismaPullRequest,
   Session as PrismaSession,
   SessionMember as PrismaSessionMember,
@@ -62,10 +66,34 @@ export function mapProject(record: PrismaProject): Project {
     ownerUserId: record.ownerUserId,
     sourceControlConnectionId: record.sourceControlConnectionId,
     name: record.name,
+    description: record.description,
     repoFullName: record.repoFullName,
     defaultBranch: record.defaultBranch,
+    defaultModelId: record.defaultModelId,
+    pmCanStartSessions: record.pmCanStartSessions,
     agentProjectKey: record.agentProjectKey,
     createdAt: record.createdAt,
+  };
+}
+
+export function mapProjectMembership(record: PrismaProjectMember): ProjectMembership {
+  return {
+    id: record.id,
+    projectId: record.projectId,
+    userId: record.userId,
+    role: record.role as ProjectMembership['role'],
+    createdAt: record.createdAt,
+  };
+}
+
+export function mapProjectReadinessSnapshot(record: PrismaProjectReadinessSnapshot): ProjectReadinessSnapshot {
+  return {
+    id: record.id,
+    projectId: record.projectId,
+    ok: record.ok,
+    checks: Array.isArray(record.checks) ? (record.checks as unknown as ProjectReadinessSnapshot['checks']) : [],
+    createdAt: record.createdAt,
+    updatedAt: record.updatedAt,
   };
 }
 

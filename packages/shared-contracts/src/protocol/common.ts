@@ -26,6 +26,23 @@ export const checkResultSchema = z.object({
   logs: z.string().optional(),
 });
 
+export const toolReadinessCheckSchema = z.object({
+  key: z.enum([
+    'agent',
+    'git',
+    'repository',
+    'source-control',
+    'agent-harness',
+    'docker',
+    'preview-tunnel',
+    'project-commands',
+  ]),
+  status: z.enum(['passed', 'failed', 'warning', 'skipped']),
+  required: z.boolean(),
+  message: z.string().min(1).nullable().optional(),
+  remediation: z.string().min(1).nullable().optional(),
+});
+
 export const envelopeBaseSchema = z.object({
   protocolVersion: z.literal(AGENT_PROTOCOL_VERSION),
   messageId: uuidSchema,

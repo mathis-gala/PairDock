@@ -7,7 +7,7 @@ import {
   WebSocketGateway,
   WebSocketServer,
 } from '@nestjs/websockets';
-import type { SessionStatus } from '@pairdock/domain';
+import type { SessionStatus, ToolReadinessCheck } from '@pairdock/domain';
 import {
   type AgentCommandEnvelope,
   type AgentConnectedEventEnvelope,
@@ -96,6 +96,36 @@ export class AgentGateway implements OnGatewayDisconnect {
     sessionId: string | null,
     event: AgentEventEnvelope,
   ): Promise<void> {
+    if (event.type === 'readiness.result') {
+      await this.persistenceUnitOfWork.execute(async (repositories) => {
+        const project = await repositories.projects.findByAgentProjectKey(event.payload.projectKey);
+
+        await repositories.agentEvents.create({
+          sessionId,
+          agentId,
+          type: event.type,
+          payload: event.payload,
+        });
+
+        if (!project) {
+          return;
+        }
+
+        await repositories.projectReadiness.upsert({
+          projectId: project.id,
+          ok: event.payload.ok,
+          checks: event.payload.checks.map<ToolReadinessCheck>((check) => ({
+            key: check.key,
+            status: check.status,
+            required: check.required,
+            message: check.message ?? null,
+            remediation: check.remediation ?? null,
+          })),
+        });
+      });
+      return;
+    }
+
     if (sessionId && event.type === 'checks.result') {
       await this.persistenceUnitOfWork.execute(async (repositories) => {
         const currentSession = await repositories.sessions.findById(sessionId);

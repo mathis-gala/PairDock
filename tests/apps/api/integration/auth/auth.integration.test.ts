@@ -30,6 +30,8 @@ async function resetDatabase() {
   await prisma.message.deleteMany();
   await prisma.sessionMember.deleteMany();
   await prisma.session.deleteMany();
+  await prisma.projectReadinessSnapshot.deleteMany();
+  await prisma.projectMember.deleteMany();
   await prisma.project.deleteMany();
   await prisma.sourceControlConnection.deleteMany();
   await prisma.externalIdentity.deleteMany();
@@ -119,6 +121,8 @@ async function createSessionFixture(pmUserId: string) {
   });
 
   return {
+    developer,
+    project,
     session,
     agentProjectKey: project.agentProjectKey,
   };
@@ -129,6 +133,10 @@ function connectAgentSocket(): Socket {
 }
 
 function waitForConnect(socket: Socket): Promise<void> {
+  if (socket.connected) {
+    return Promise.resolve();
+  }
+
   return new Promise((resolve, reject) => {
     socket.once('connect', () => resolve());
     socket.once('connect_error', reject);
@@ -231,6 +239,26 @@ test('BT-004: SessionAccessGuard allows an invited PM to read a session and send
       worktreeRef: null,
       previewUrl: null,
       lastError: null,
+      project: {
+        id: fixture.project.id,
+        name: fixture.project.name,
+        defaultBranch: fixture.project.defaultBranch,
+        ownerDisplayName: fixture.developer.displayName,
+        owningAgentId: fixture.project.agentProjectKey,
+        agentAvailability: 'online',
+      },
+      participants: [
+        {
+          userId: fixture.developer.id,
+          role: 'developer',
+          displayName: fixture.developer.displayName,
+        },
+        {
+          userId: pmLogin.body.user.id,
+          role: 'pm',
+          displayName: pmLogin.body.user.displayName,
+        },
+      ],
       latestDiff: null,
       latestValidation: null,
       createdAt: fixture.session.createdAt.toISOString(),

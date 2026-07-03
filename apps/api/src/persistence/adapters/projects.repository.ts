@@ -1,7 +1,7 @@
 import { Inject, Injectable } from '@nestjs/common';
 import type { Project } from '@pairdock/domain';
 import { DatabaseClient, type DatabaseExecutor } from '../client.js';
-import type { CreateProjectInput, ProjectsRepository } from '../ports/projects.repository.js';
+import type { CreateProjectInput, ProjectsRepository, SharedProjectRecord } from '../ports/projects.repository.js';
 import { mapProject } from './mappers.js';
 
 @Injectable()
@@ -14,8 +14,11 @@ export class ProjectsRepositoryAdapter implements ProjectsRepository {
         ownerUserId: input.ownerUserId,
         sourceControlConnectionId: input.sourceControlConnectionId,
         name: input.name,
+        description: input.description ?? null,
         repoFullName: input.repoFullName,
         defaultBranch: input.defaultBranch,
+        defaultModelId: input.defaultModelId,
+        pmCanStartSessions: input.pmCanStartSessions,
         agentProjectKey: input.agentProjectKey,
       },
     });
@@ -26,5 +29,36 @@ export class ProjectsRepositoryAdapter implements ProjectsRepository {
   async findById(id: string): Promise<Project | null> {
     const record = await this.prisma.project.findUnique({ where: { id } });
     return record ? mapProject(record) : null;
+  }
+
+  async findByAgentProjectKey(agentProjectKey: string): Promise<Project | null> {
+    const record = await this.prisma.project.findFirst({ where: { agentProjectKey } });
+    return record ? mapProject(record) : null;
+  }
+
+  async listSharedByUserId(userId: string): Promise<SharedProjectRecord[]> {
+    const records = await this.prisma.project.findMany({
+      where: {
+        projectMembers: {
+          some: {
+            userId,
+          },
+        },
+      },
+      include: {
+        ownerUser: {
+          select: {
+            email: true,
+            displayName: true,
+          },
+        },
+      },
+      orderBy: { createdAt: 'asc' },
+    });
+
+    return records.map((record) => ({
+      project: mapProject(record),
+      ownerDisplayName: record.ownerUser.displayName ?? record.ownerUser.email,
+    }));
   }
 }

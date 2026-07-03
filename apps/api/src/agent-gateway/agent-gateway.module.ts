@@ -9,6 +9,6 @@ import { ConnectedAgentsRegistry } from './connected-agents.registry.js';
 @Module({
   imports: [PersistenceModule, UiGatewayModule, ValidationModule],
   providers: [ConnectedAgentsRegistry, AgentGateway, AgentCommandRouterService],
-  exports: [AgentGateway, AgentCommandRouterService],
+  exports: [AgentGateway, AgentCommandRouterService, ConnectedAgentsRegistry],
 })
 export class AgentGatewayModule {}

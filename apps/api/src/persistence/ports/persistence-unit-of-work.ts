@@ -1,5 +1,7 @@
 import type { AgentEventsRepository } from './agent-events.repository.js';
 import type { ExternalIdentitiesRepository } from './external-identities.repository.js';
+import type { ProjectMembersRepository } from './project-members.repository.js';
+import type { ProjectReadinessRepository } from './project-readiness.repository.js';
 import type { ProjectsRepository } from './projects.repository.js';
 import type { ReviewRequestsRepository } from './review-requests.repository.js';
 import type { SessionMembersRepository } from './session-members.repository.js';
@@ -13,6 +15,8 @@ export interface PersistenceRepositories {
   externalIdentities: ExternalIdentitiesRepository;
   sourceControlConnections: SourceControlConnectionsRepository;
   projects: ProjectsRepository;
+  projectMembers: ProjectMembersRepository;
+  projectReadiness: ProjectReadinessRepository;
   sessions: SessionsRepository;
   sessionMembers: SessionMembersRepository;
   agentEvents: AgentEventsRepository;

@@ -38,6 +38,7 @@ model User {
   externalIdentities       ExternalIdentity[]
   sourceControlConnections SourceControlConnection[] @relation("SourceControlConnectionOwner")
   ownedProjects            Project[]                 @relation("ProjectOwner")
+  projectMemberships       ProjectMember[]
   createdSessions          Session[]                 @relation("SessionCreatedBy")
   sessionMemberships       SessionMember[]
   messages                 Message[]
@@ -79,17 +80,50 @@ model Project {
   ownerUserId               String                  @map("owner_user_id") @db.Uuid
   sourceControlConnectionId String                  @map("github_installation_id") @db.Uuid
   name                      String
+  description               String?
   repoFullName              String                  @map("repo_full_name")
   defaultBranch             String                  @map("default_branch")
+  defaultModelId            String                  @default("codex-cli/gpt-5.4") @map("default_model_id")
+  pmCanStartSessions        Boolean                 @default(true) @map("pm_can_start_sessions")
   agentProjectKey           String                  @map("agent_project_key")
   createdAt                 DateTime                @default(now()) @map("created_at") @db.Timestamptz(6)
   ownerUser                 User                    @relation("ProjectOwner", fields: [ownerUserId], references: [id], onDelete: Cascade)
   sourceControlConnection   SourceControlConnection @relation(fields: [sourceControlConnectionId], references: [id], onDelete: Cascade, map: "projects_github_installation_id_fkey")
+  projectMembers            ProjectMember[]
+  readinessSnapshot         ProjectReadinessSnapshot?
   sessions                  Session[]
 
   @@index([ownerUserId])
   @@index([sourceControlConnectionId], map: "projects_github_installation_id_idx")
   @@map("projects")
+}
+
+model ProjectMember {
+  id        String   @id @default(uuid()) @db.Uuid
+  projectId String   @map("project_id") @db.Uuid
+  userId    String   @map("user_id") @db.Uuid
+  role      String
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  project   Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([projectId, userId])
+  @@index([projectId])
+  @@index([userId])
+  @@map("project_members")
+}
+
+model ProjectReadinessSnapshot {
+  id        String   @id @default(uuid()) @db.Uuid
+  projectId String   @unique @map("project_id") @db.Uuid
+  ok        Boolean
+  checks    Json     @default("[]")
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
+  project   Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@index([projectId])
+  @@map("project_readiness_snapshots")
 }
 
 model Session {

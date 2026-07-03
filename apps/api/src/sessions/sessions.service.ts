@@ -8,11 +8,13 @@ import {
 import type { PersistenceUnitOfWork } from '../persistence/ports/persistence-unit-of-work.js';
 import type { ProjectsRepository } from '../persistence/ports/projects.repository.js';
 import type { SessionsRepository } from '../persistence/ports/sessions.repository.js';
+import { SessionStartPolicy, type SessionStartSource } from './session-start-policy.js';
 import { InvalidSessionTransitionError, type SessionAgentEvent, SessionStateMachine } from './session-state-machine.js';
 
 export interface CreateSessionInput {
   projectId: string;
   modelId: string;
+  startSource?: SessionStartSource;
 }
 
 @Injectable()
@@ -26,6 +28,8 @@ export class SessionsService {
     private readonly sessionsRepository: SessionsRepository,
     @Inject(PERSISTENCE_UNIT_OF_WORK)
     private readonly persistenceUnitOfWork: PersistenceUnitOfWork,
+    @Inject(SessionStartPolicy)
+    private readonly sessionStartPolicy: SessionStartPolicy,
   ) {}
 
   async getSession(sessionId: string): Promise<Session> {
@@ -39,19 +43,14 @@ export class SessionsService {
   }
 
   async createSession(input: CreateSessionInput, user: PairDockIdentity): Promise<Session> {
-    if (user.kind !== 'developer') {
-      throw new ForbiddenException('Only developers can create sessions.');
-    }
-
-    const project = await this.projectsRepository.findById(input.projectId);
-
-    if (!project) {
-      throw new NotFoundException(`Project ${input.projectId} was not found.`);
-    }
-
-    if (project.ownerUserId !== user.id) {
-      throw new ForbiddenException('Only the owning developer can create sessions for this project.');
-    }
+    const project = await this.sessionStartPolicy.assertCanStart(input.projectId, user, input.startSource);
+    const sessionMembers =
+      user.kind === 'pm'
+        ? [
+            { userId: project.ownerUserId, role: 'developer' as const },
+            { userId: user.id, role: 'pm' as const },
+          ]
+        : [{ userId: user.id, role: 'developer' as const }];
 
     return this.persistenceUnitOfWork.execute(async (repositories) => {
       const session = await repositories.sessions.create({
@@ -61,11 +60,13 @@ export class SessionsService {
         modelId: input.modelId,
       });
 
-      await repositories.sessionMembers.add({
-        sessionId: session.id,
-        userId: user.id,
-        role: 'developer',
-      });
+      for (const sessionMember of sessionMembers) {
+        await repositories.sessionMembers.add({
+          sessionId: session.id,
+          userId: sessionMember.userId,
+          role: sessionMember.role,
+        });
+      }
 
       return session;
     });
