@@ -10,4 +10,8 @@ export interface CreateSourceControlConnectionInput {
 export interface SourceControlConnectionsRepository {
   create(input: CreateSourceControlConnectionInput): Promise<SourceControlConnection>;
   findById(id: string): Promise<SourceControlConnection | null>;
+  findByOwnerAndProviderConnection(input: {
+    ownerUserId: string;
+    providerConnectionId: string;
+  }): Promise<SourceControlConnection | null>;
 }

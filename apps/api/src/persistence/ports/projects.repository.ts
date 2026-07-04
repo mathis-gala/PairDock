@@ -17,9 +17,16 @@ export interface SharedProjectRecord {
   ownerDisplayName: string;
 }
 
+export interface DeveloperProjectRecord {
+  project: Project;
+  sourceControlAccountLogin: string;
+  pmMemberCount: number;
+}
+
 export interface ProjectsRepository {
   create(input: CreateProjectInput): Promise<Project>;
   findById(id: string): Promise<Project | null>;
   findByAgentProjectKey(agentProjectKey: string): Promise<Project | null>;
+  listOwnedByUserId(userId: string): Promise<DeveloperProjectRecord[]>;
   listSharedByUserId(userId: string): Promise<SharedProjectRecord[]>;
 }

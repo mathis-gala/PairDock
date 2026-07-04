@@ -15,6 +15,7 @@ export interface CreateSessionInput {
 export interface SessionsRepository {
   create(input: CreateSessionInput): Promise<Session>;
   findById(id: string): Promise<Session | null>;
+  listByProjectIds(projectIds: string[]): Promise<Session[]>;
   updateStatus(input: {
     id: string;
     status: SessionStatus;

@@ -31,6 +31,23 @@ export class SessionsRepositoryAdapter implements SessionsRepository {
     return record ? mapSession(record) : null;
   }
 
+  async listByProjectIds(projectIds: string[]): Promise<Session[]> {
+    if (projectIds.length === 0) {
+      return [];
+    }
+
+    const records = await this.prisma.session.findMany({
+      where: {
+        projectId: {
+          in: projectIds,
+        },
+      },
+      orderBy: { createdAt: 'desc' },
+    });
+
+    return records.map(mapSession);
+  }
+
   async updateStatus(input: {
     id: string;
     status: Session['status'];

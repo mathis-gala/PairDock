@@ -57,7 +57,7 @@ export function DeveloperLoginCard({ onAuthenticated }: DeveloperLoginCardProps)
         {errorMessage ? <p className="text-sm text-rose-300">{errorMessage}</p> : null}
         <div className="flex items-center justify-between gap-3">
           <p className="text-sm text-slate-500">
-            Task 12 includes the login surface. The developer dashboard lands in the next task.
+            Opens project creation, PM sharing, model selection, session start, and cleanup controls.
           </p>
           <Button type="submit">{isSubmitting ? 'Signing in…' : 'Sign in as developer'}</Button>
         </div>
