@@ -72,7 +72,9 @@ export class CreateDraftReviewRequestUseCase {
     }
 
     const branchName = session.branchName ?? buildSessionBranchName(session.id);
-    await this.agentCommandRouter.routeToOwningAgent(sessionId, buildGitPushBranchCommand(sessionId));
+    await this.agentCommandRouter.routeToOwningAgent(sessionId, buildGitPushBranchCommand(sessionId), {
+      waitForCompletion: true,
+    });
 
     const reviewRequest = await this.sourceControl.createDraftReviewRequest({
       projectId: project.id,

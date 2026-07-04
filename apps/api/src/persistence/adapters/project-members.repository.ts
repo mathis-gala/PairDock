@@ -41,4 +41,13 @@ export class ProjectMembersRepositoryAdapter implements ProjectMembersRepository
 
     return record ? mapProjectMembership(record) : null;
   }
+
+  async listByProjectId(projectId: string): Promise<ProjectMembership[]> {
+    const records = await this.prisma.projectMember.findMany({
+      where: { projectId },
+      orderBy: { createdAt: 'asc' },
+    });
+
+    return records.map(mapProjectMembership);
+  }
 }

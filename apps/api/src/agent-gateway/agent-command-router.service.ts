@@ -16,7 +16,11 @@ export class AgentCommandRouterService {
     private readonly agentGateway: AgentGateway,
   ) {}
 
-  async routeToOwningAgent(sessionId: string, command: AgentCommandEnvelope): Promise<void> {
+  async routeToOwningAgent(
+    sessionId: string,
+    command: AgentCommandEnvelope,
+    options: { waitForCompletion?: boolean } = {},
+  ): Promise<void> {
     const session = await this.sessionsRepository.findById(sessionId);
 
     if (!session) {
@@ -29,7 +33,9 @@ export class AgentCommandRouterService {
       throw new NotFoundException(`Project ${session.projectId} was not found.`);
     }
 
-    const delivered = this.agentGateway.emitToAgent(project.agentProjectKey, command);
+    const delivered = options.waitForCompletion
+      ? await this.agentGateway.emitToAgentAndWait(project.agentProjectKey, command)
+      : this.agentGateway.emitToAgent(project.agentProjectKey, command);
 
     if (!delivered) {
       throw new ServiceUnavailableException(`Agent ${project.agentProjectKey} is not connected.`);

@@ -79,6 +79,30 @@ export class AgentGateway implements OnGatewayDisconnect {
     return true;
   }
 
+  async emitToAgentAndWait(agentId: string, command: AgentCommandEnvelope): Promise<boolean> {
+    const socketId = this.connectedAgentsRegistry.findSocketId(agentId);
+
+    if (!socketId) {
+      return false;
+    }
+
+    const responses = (await this.server
+      .to(socketId)
+      .timeout(30_000)
+      .emitWithAck(agentProtocolMessageEventName, command)) as unknown[];
+    const response = responses[0];
+
+    if (isCommandAcknowledgement(response) && response.accepted) {
+      return true;
+    }
+
+    if (isCommandAcknowledgement(response) && response.error) {
+      throw new Error(response.error);
+    }
+
+    throw new Error(`Agent ${agentId} did not acknowledge command ${command.type}.`);
+  }
+
   private async persistEvent(
     agentId: string | null,
     sessionId: string | null,
@@ -294,5 +318,15 @@ function isLifecycleProgressStatus(
     status === 'AWAITING_PM_VALIDATION' ||
     status === 'REVIEW_REQUEST_CREATING' ||
     status === 'REVIEW_REQUEST_CREATED'
+  );
+}
+
+function isCommandAcknowledgement(value: unknown): value is { accepted: boolean; error?: string } {
+  return (
+    value !== null &&
+    typeof value === 'object' &&
+    'accepted' in value &&
+    typeof value.accepted === 'boolean' &&
+    (!('error' in value) || value.error === undefined || typeof value.error === 'string')
   );
 }
