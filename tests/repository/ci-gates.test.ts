@@ -23,13 +23,26 @@ test('CI workflow runs repository quality gates for pull requests and main pushe
   assert.match(workflow, /branches:\s*\[main\]/, 'workflow push trigger must target main');
   assert.match(workflow, /bun install --frozen-lockfile/, 'workflow must install with the Bun lockfile');
 
+  for (const jobName of [
+    'static-quality:',
+    'prisma-migrations:',
+    'api-tests:',
+    'local-agent-tests:',
+    'web-tests-build:',
+  ]) {
+    assert.ok(workflow.includes(jobName), `workflow must split CI into parallel ${jobName} job`);
+  }
+
   for (const command of [
     'bun run prisma:generate',
     'bun run db:migrate',
     'bun run db:status',
     'bun run typecheck',
     'bun run lint',
-    'bun run test',
+    'bun run test:architecture',
+    'bun run --filter @pairdock/api test',
+    'bun run --filter @pairdock/local-agent test',
+    'bun run --filter @pairdock/web test:unit',
     'bun run build',
   ]) {
     assert.ok(workflow.includes(command), `workflow must run ${command}`);
@@ -37,6 +50,7 @@ test('CI workflow runs repository quality gates for pull requests and main pushe
 
   assert.match(workflow, /postgres:/, 'workflow must provision PostgreSQL for Prisma migration status');
   assert.match(workflow, /DATABASE_URL:/, 'workflow must provide DATABASE_URL to Prisma commands');
+  assert.match(workflow, /timeout-minutes:/, 'workflow jobs and long test steps must have timeouts');
 });
 
 test('repository quality gates are exposed as root scripts', () => {
