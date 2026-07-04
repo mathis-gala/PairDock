@@ -1,5 +1,9 @@
 import type { SessionStatus } from '@pairdock/domain';
-import type { SessionCloseCommandEnvelope, SessionPrepareCommandEnvelope } from '@pairdock/shared-contracts';
+import type {
+  GitPushBranchCommandEnvelope,
+  SessionCloseCommandEnvelope,
+  SessionPrepareCommandEnvelope,
+} from '@pairdock/shared-contracts';
 import { DockerSandboxAdapter } from '../docker/docker-sandbox.adapter.js';
 import { HealthcheckService } from '../docker/healthcheck.service.js';
 import type { ProjectPreviewConfig, SandboxPort } from '../docker/sandbox.port.js';
@@ -127,6 +131,18 @@ export class SessionRunner {
 
     await this.worktreeService.cleanup(workspace, command.payload.mode);
     return { cleaned: true };
+  }
+
+  async pushBranch(command: GitPushBranchCommandEnvelope): Promise<{ branchName: string }> {
+    const workspace = this.sessionRegistry.find(command.sessionId);
+
+    if (!workspace) {
+      throw new Error(`Session ${command.sessionId} is not prepared on this agent.`);
+    }
+
+    return {
+      branchName: await this.worktreeService.pushBranch(workspace),
+    };
   }
 
   findWorkspace(sessionId: string): SessionWorkspace | null {

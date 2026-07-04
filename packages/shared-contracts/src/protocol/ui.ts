@@ -24,6 +24,7 @@ export const developerProjectSessionSummarySchema = z.object({
   id: uuidSchema,
   status: z.string().min(1),
   modelId: z.string().min(1),
+  reviewRequestUrl: z.string().nullable().optional(),
   createdAt: z.string().min(1),
   closedAt: z.string().nullable(),
 });

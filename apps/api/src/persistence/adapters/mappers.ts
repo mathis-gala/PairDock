@@ -2,6 +2,7 @@ import type {
   AgentEventRecord,
   ExternalIdentity,
   ExternalIdentityProvider,
+  NotificationRecord,
   PairDockUser,
   Project,
   ProjectMembership,
@@ -18,6 +19,7 @@ import type {
   AgentEvent,
   ExternalIdentity as PrismaExternalIdentity,
   Message as PrismaMessage,
+  Notification as PrismaNotification,
   Project as PrismaProject,
   ProjectMember as PrismaProjectMember,
   ProjectReadinessSnapshot as PrismaProjectReadinessSnapshot,
@@ -172,6 +174,19 @@ export function mapReviewRequest(record: PrismaPullRequest): ReviewRequestRecord
   };
 }
 
+export function mapNotification(record: PrismaNotification): NotificationRecord {
+  return {
+    id: record.id,
+    userId: record.userId,
+    sessionId: record.sessionId,
+    type: parseNotificationType(record.type),
+    provider: record.provider,
+    providerMessageId: record.providerMessageId,
+    status: parseNotificationStatus(record.status),
+    createdAt: record.createdAt,
+  };
+}
+
 function parseExternalIdentityProvider(value: string): ExternalIdentityProvider {
   if (isExternalIdentityProvider(value)) {
     return value;
@@ -194,4 +209,20 @@ function parseProjectMembershipRole(value: string): ProjectMembershipRole {
 
 function isProjectMembershipRole(value: string): value is ProjectMembershipRole {
   return value === 'pm';
+}
+
+function parseNotificationType(value: string): NotificationRecord['type'] {
+  if (value === 'review-request-created') {
+    return value;
+  }
+
+  throw new Error(`Unsupported notification type "${value}" read from the database.`);
+}
+
+function parseNotificationStatus(value: string): NotificationRecord['status'] {
+  if (value === 'sent' || value === 'queued' || value === 'failed') {
+    return value;
+  }
+
+  throw new Error(`Unsupported notification status "${value}" read from the database.`);
 }

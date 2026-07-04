@@ -10,4 +10,5 @@ export interface CreateReviewRequestInput {
 export interface ReviewRequestsRepository {
   create(input: CreateReviewRequestInput): Promise<ReviewRequestRecord>;
   findBySessionId(sessionId: string): Promise<ReviewRequestRecord | null>;
+  findManyBySessionIds(sessionIds: string[]): Promise<ReviewRequestRecord[]>;
 }

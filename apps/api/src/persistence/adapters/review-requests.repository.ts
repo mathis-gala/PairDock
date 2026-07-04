@@ -29,4 +29,21 @@ export class ReviewRequestsRepositoryAdapter implements ReviewRequestsRepository
 
     return record ? mapReviewRequest(record) : null;
   }
+
+  async findManyBySessionIds(sessionIds: string[]): Promise<ReviewRequestRecord[]> {
+    if (sessionIds.length === 0) {
+      return [];
+    }
+
+    const records = await this.prisma.pullRequest.findMany({
+      where: {
+        sessionId: {
+          in: sessionIds,
+        },
+      },
+      orderBy: { createdAt: 'desc' },
+    });
+
+    return records.map(mapReviewRequest);
+  }
 }

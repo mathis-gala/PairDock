@@ -39,6 +39,7 @@ export interface ApiClient {
     listEvents(sessionId: string): Promise<SessionEventRecordView[]>;
     sendPrompt(sessionId: string, content: string): Promise<SessionMessageView>;
     cancelPrompt(sessionId: string): Promise<void>;
+    createDraftReviewRequest(sessionId: string): Promise<{ reviewRequestUrl: string }>;
     close(sessionId: string): Promise<SessionView>;
   };
 }
@@ -120,6 +121,13 @@ export function createApiClient(accessToken: string): ApiClient {
           method: 'POST',
           headers: authHeaders(accessToken),
         });
+      },
+      async createDraftReviewRequest(sessionId: string): Promise<{ reviewRequestUrl: string }> {
+        const value = await requestJson(`/sessions/${sessionId}/review-request`, {
+          method: 'POST',
+          headers: authHeaders(accessToken),
+        });
+        return z.object({ reviewRequestUrl: z.string() }).parse(value);
       },
       async close(sessionId: string): Promise<SessionView> {
         const value = await requestJson(`/sessions/${sessionId}/close`, {

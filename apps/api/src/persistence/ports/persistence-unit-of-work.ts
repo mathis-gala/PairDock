@@ -1,5 +1,6 @@
 import type { AgentEventsRepository } from './agent-events.repository.js';
 import type { ExternalIdentitiesRepository } from './external-identities.repository.js';
+import type { NotificationsRepository } from './notifications.repository.js';
 import type { ProjectMembersRepository } from './project-members.repository.js';
 import type { ProjectReadinessRepository } from './project-readiness.repository.js';
 import type { ProjectsRepository } from './projects.repository.js';
@@ -22,6 +23,7 @@ export interface PersistenceRepositories {
   agentEvents: AgentEventsRepository;
   validationRuns: ValidationRunsRepository;
   reviewRequests: ReviewRequestsRepository;
+  notifications: NotificationsRepository;
 }
 
 export interface PersistenceUnitOfWork {

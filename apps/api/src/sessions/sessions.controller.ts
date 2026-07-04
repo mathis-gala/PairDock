@@ -1,7 +1,18 @@
-import { Body, Controller, Get, HttpCode, Inject, Param, Post, Req } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Get,
+  HttpCode,
+  Inject,
+  InternalServerErrorException,
+  Param,
+  Post,
+  Req,
+} from '@nestjs/common';
 import type { AuthenticatedRequest } from '../auth/authenticated-request.js';
 import { RequireAuth } from '../auth/require-auth.decorator.js';
 import { RequireSessionAccess } from '../auth/require-session-access.decorator.js';
+import { CreateDraftReviewRequestUseCase } from '../review-requests/create-draft-review-request.use-case.js';
 import { SessionPromptService } from './session-prompt.service.js';
 import type { SessionStartSource } from './session-start-policy.js';
 import { SessionsService } from './sessions.service.js';
@@ -23,6 +34,8 @@ export class SessionsController {
     private readonly sessionsService: SessionsService,
     @Inject(SessionPromptService)
     private readonly sessionPromptService: SessionPromptService,
+    @Inject(CreateDraftReviewRequestUseCase)
+    private readonly createDraftReviewRequestUseCase: CreateDraftReviewRequestUseCase,
   ) {}
 
   @Get(':sessionId')
@@ -80,5 +93,15 @@ export class SessionsController {
   @RequireSessionAccess()
   cancelPrompt(@Param('sessionId') sessionId: string) {
     return this.sessionPromptService.cancelPromptResponse(sessionId);
+  }
+
+  @Post(':sessionId/review-request')
+  @RequireSessionAccess()
+  createDraftReviewRequest(@Param('sessionId') sessionId: string, @Req() request: AuthenticatedRequest) {
+    if (!request.user) {
+      throw new InternalServerErrorException('Authenticated user was not resolved.');
+    }
+
+    return this.createDraftReviewRequestUseCase.create(sessionId, request.user);
   }
 }

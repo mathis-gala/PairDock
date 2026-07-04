@@ -106,6 +106,19 @@ function buildCloseCommand(
   };
 }
 
+function buildPushCommand(sessionId: string): Extract<AgentCommandEnvelope, { type: 'git.pushBranch' }> {
+  return {
+    protocolVersion: AGENT_PROTOCOL_VERSION,
+    messageId: '33333333-3333-4333-8333-333333333333',
+    sessionId,
+    sentAt: new Date().toISOString(),
+    type: 'git.pushBranch',
+    payload: {
+      sessionId,
+    },
+  };
+}
+
 function waitForAgentEvent(socket: Socket, eventType: AgentEventEnvelope['type']) {
   return new Promise<AgentEventEnvelope>((resolve) => {
     const listener = (event: AgentEventEnvelope) => {
@@ -269,6 +282,73 @@ test('BT-017: AgentClient emits a retryable error when preview healthcheck times
       message: `Preview healthcheck did not become ready for session ${sessionId} within 30000ms.`,
       retryable: true,
     });
+  } finally {
+    await client.stop();
+    await new Promise<void>((resolve) => {
+      io.close(() => resolve());
+    });
+  }
+});
+
+test('BT-031: AgentClient pushes the prepared session branch before review request creation', async () => {
+  const repositoryPath = await createTempRepository();
+  const remotePath = await mkdtemp(join(tmpdir(), 'pairdock-remote-'));
+  await execGit(remotePath, ['init', '--bare', '--initial-branch=main']);
+  await execGit(repositoryPath, ['remote', 'add', 'origin', remotePath]);
+  const managedRoot = await createManagedWorktreeRoot();
+  const { backendUrl, io, socketPromise } = await createAgentServer();
+  const sessionId = '99999999-9999-4999-8999-999999999999';
+  const branchName = 'pairdock/session-9999';
+  const client = new AgentClient(
+    {
+      agentId: 'agent-local-1',
+      authToken: 'secret-token',
+      backendUrl,
+      capabilities: ['session.prepare', 'git.pushBranch'],
+      projectPaths: {
+        pairdock: repositoryPath,
+      },
+    },
+    {
+      error() {},
+      info() {},
+      warn() {},
+    },
+    {
+      sessionRunner: new SessionRunner(
+        {
+          projectPaths: {
+            pairdock: repositoryPath,
+          },
+        },
+        {
+          worktreeService: new WorktreeService(managedRoot),
+          sandboxPort: new ReadySandboxPort(),
+          previewTunnelPort: new ReadyPreviewTunnelPort(),
+        },
+      ),
+    },
+  );
+
+  try {
+    await client.start();
+    const socket = await socketPromise;
+    await waitForAgentEvent(socket, 'agent.connected');
+
+    const readyEventPromise = waitForAgentEvent(socket, 'session.ready');
+    socket.emit(agentProtocolMessageEventName, buildPrepareCommand(sessionId, branchName));
+    await readyEventPromise;
+
+    const pushedEventPromise = waitForAgentEvent(socket, 'git.branchPushed');
+    socket.emit(agentProtocolMessageEventName, buildPushCommand(sessionId));
+    const pushedEvent = await pushedEventPromise;
+
+    assert.deepEqual(pushedEvent.payload, {
+      sessionId,
+      branchName,
+    });
+    const remoteBranchCommit = await execGit(remotePath, ['rev-parse', '--verify', `refs/heads/${branchName}`]);
+    assert.match(remoteBranchCommit, /^[a-f0-9]{40}$/);
   } finally {
     await client.stop();
     await new Promise<void>((resolve) => {

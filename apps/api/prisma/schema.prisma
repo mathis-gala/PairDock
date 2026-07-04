@@ -42,6 +42,7 @@ model User {
   createdSessions          Session[]                 @relation("SessionCreatedBy")
   sessionMemberships       SessionMember[]
   messages                 Message[]
+  notifications            Notification[]
 
   @@map("users")
 }
@@ -145,6 +146,7 @@ model Session {
   agentEvents     AgentEvent[]
   validationRuns  ValidationRun[]
   pullRequests    PullRequest[]
+  notifications   Notification[]
 
   @@index([projectId])
   @@index([createdByUserId])
@@ -219,4 +221,21 @@ model PullRequest {
 
   @@index([sessionId])
   @@map("pull_requests")
+}
+
+model Notification {
+  id                String   @id @default(uuid()) @db.Uuid
+  userId            String   @map("user_id") @db.Uuid
+  sessionId         String?  @map("session_id") @db.Uuid
+  type              String
+  provider          String?
+  providerMessageId String?  @map("provider_message_id")
+  status            String
+  createdAt         DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  user              User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  session           Session? @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([sessionId])
+  @@map("notifications")
 }

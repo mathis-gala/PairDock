@@ -20,6 +20,7 @@ import {
   PROJECT_MEMBERS_REPOSITORY,
   PROJECT_READINESS_REPOSITORY,
   PROJECTS_REPOSITORY,
+  REVIEW_REQUESTS_REPOSITORY,
   SESSIONS_REPOSITORY,
   SOURCE_CONTROL_CONNECTIONS_REPOSITORY,
   USERS_REPOSITORY,
@@ -27,6 +28,7 @@ import {
 import type { ProjectMembersRepository } from '../persistence/ports/project-members.repository.js';
 import type { ProjectReadinessRepository } from '../persistence/ports/project-readiness.repository.js';
 import type { DeveloperProjectRecord, ProjectsRepository } from '../persistence/ports/projects.repository.js';
+import type { ReviewRequestsRepository } from '../persistence/ports/review-requests.repository.js';
 import type { SessionsRepository } from '../persistence/ports/sessions.repository.js';
 import type { SourceControlConnectionsRepository } from '../persistence/ports/source-control-connections.repository.js';
 import type { UsersRepository } from '../persistence/ports/users.repository.js';
@@ -42,6 +44,8 @@ export class ProjectsService {
     private readonly projectMembersRepository: ProjectMembersRepository,
     @Inject(SOURCE_CONTROL_CONNECTIONS_REPOSITORY)
     private readonly sourceControlConnectionsRepository: SourceControlConnectionsRepository,
+    @Inject(REVIEW_REQUESTS_REPOSITORY)
+    private readonly reviewRequestsRepository: ReviewRequestsRepository,
     @Inject(SESSIONS_REPOSITORY)
     private readonly sessionsRepository: SessionsRepository,
     @Inject(USERS_REPOSITORY)
@@ -124,9 +128,16 @@ export class ProjectsService {
   async listDeveloperProjects(user: PairDockIdentity): Promise<DeveloperProjectSummary[]> {
     const projectRecords = await this.projectsRepository.listOwnedByUserId(user.id);
     const sessionsByProjectId = await this.listSessionsByProjectId(projectRecords.map(({ project }) => project.id));
+    const reviewRequestUrlsBySessionId = await this.listReviewRequestUrlsBySessionId(
+      [...sessionsByProjectId.values()].flat().map((session) => session.id),
+    );
 
     return projectRecords.map((record) =>
-      this.buildDeveloperProjectSummary(record, sessionsByProjectId.get(record.project.id) ?? []),
+      this.buildDeveloperProjectSummary(
+        record,
+        sessionsByProjectId.get(record.project.id) ?? [],
+        reviewRequestUrlsBySessionId,
+      ),
     );
   }
 
@@ -185,7 +196,12 @@ export class ProjectsService {
     const refreshedRecord = await this.findOwnedProjectRecord(projectId, user.id);
     const sessionsByProjectId = await this.listSessionsByProjectId([projectRecord.project.id]);
 
-    return this.buildDeveloperProjectSummary(refreshedRecord, sessionsByProjectId.get(projectRecord.project.id) ?? []);
+    const projectSessions = sessionsByProjectId.get(projectRecord.project.id) ?? [];
+    const reviewRequestUrlsBySessionId = await this.listReviewRequestUrlsBySessionId(
+      projectSessions.map((session) => session.id),
+    );
+
+    return this.buildDeveloperProjectSummary(refreshedRecord, projectSessions, reviewRequestUrlsBySessionId);
   }
 
   private parseCreateProjectInput(body: unknown): CreateDeveloperProjectInput {
@@ -241,7 +257,24 @@ export class ProjectsService {
     return sessionsByProjectId;
   }
 
-  private buildDeveloperProjectSummary(record: DeveloperProjectRecord, sessions: Session[]): DeveloperProjectSummary {
+  private async listReviewRequestUrlsBySessionId(sessionIds: string[]): Promise<Map<string, string | null>> {
+    const reviewRequests = await this.reviewRequestsRepository.findManyBySessionIds(sessionIds);
+    const urlsBySessionId = new Map<string, string | null>();
+
+    for (const reviewRequest of reviewRequests) {
+      if (!urlsBySessionId.has(reviewRequest.sessionId)) {
+        urlsBySessionId.set(reviewRequest.sessionId, reviewRequest.reviewRequestUrl);
+      }
+    }
+
+    return urlsBySessionId;
+  }
+
+  private buildDeveloperProjectSummary(
+    record: DeveloperProjectRecord,
+    sessions: Session[],
+    reviewRequestUrlsBySessionId: Map<string, string | null> = new Map(),
+  ): DeveloperProjectSummary {
     return {
       id: record.project.id,
       name: record.project.name,
@@ -260,6 +293,9 @@ export class ProjectsService {
         id: session.id,
         status: session.status,
         modelId: session.modelId,
+        ...(reviewRequestUrlsBySessionId.has(session.id)
+          ? { reviewRequestUrl: reviewRequestUrlsBySessionId.get(session.id) }
+          : {}),
         createdAt: session.createdAt.toISOString(),
         closedAt: session.closedAt?.toISOString() ?? null,
       })),

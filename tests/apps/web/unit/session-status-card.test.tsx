@@ -43,6 +43,7 @@ const session: SessionView = {
     testStatus: 'passed',
     previewStatus: 'passed',
   },
+  reviewRequest: null,
   createdAt: '2026-07-02T20:00:00.000Z',
   closedAt: null,
 };
@@ -54,7 +55,15 @@ const feed: SessionEventFeedSnapshot = {
 };
 
 test('Task 12: session overview renders project metadata, participants, and passed validation state', () => {
-  const html = renderToStaticMarkup(<SessionStatusCard feed={feed} session={session} />);
+  const html = renderToStaticMarkup(
+    <SessionStatusCard
+      feed={feed}
+      isCreatingReviewRequest={false}
+      onCreateReviewRequest={async () => undefined}
+      reviewRequestError={null}
+      session={session}
+    />,
+  );
 
   assert.match(html, /Session overview/);
   assert.match(html, /PairDock/);
