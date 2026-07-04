@@ -54,6 +54,14 @@ export class WorktreeService {
     }
   }
 
+  async pushBranch(input: PreparedWorktree): Promise<string> {
+    const normalizedRepositoryPath = await this.requireGitRepository(input.repositoryPath);
+
+    this.assertNotMainRepository(normalizedRepositoryPath, input.worktreePath);
+    await execGit(input.worktreePath, ['push', '--set-upstream', 'origin', input.branchName]);
+    return input.branchName;
+  }
+
   private resolveWorktreePath(sessionId: string): string {
     return resolve(this.managedRoot, sessionId);
   }

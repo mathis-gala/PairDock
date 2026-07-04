@@ -26,6 +26,16 @@ export function SessionControlCard({ closePending, onClose, session }: SessionCo
       {session.closedAt ? (
         <p className="text-xs text-slate-500">Cleanup closed {new Date(session.closedAt).toLocaleString()}</p>
       ) : null}
+      {session.reviewRequestUrl ? (
+        <a
+          className="mt-2 inline-block text-xs font-semibold text-sky-300 underline"
+          href={session.reviewRequestUrl}
+          rel="noreferrer"
+          target="_blank"
+        >
+          Open draft review request
+        </a>
+      ) : null}
       {canClose ? (
         <div className="mt-3 flex flex-wrap items-center gap-2">
           {confirmingClose ? (

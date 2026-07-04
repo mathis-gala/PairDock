@@ -23,10 +23,14 @@ export function PmSessionPage({ accessToken, onBack, sessionId }: PmSessionPageP
   const [presetId, setPresetId] = useState<PreviewPresetId>('desktop');
   const [zoomPercent, setZoomPercent] = useState(100);
   const eventFeed = useSessionEventFeed(accessToken, sessionId);
-  const { sessionQuery, messagesQuery, eventsQuery, sendPromptMutation, cancelPromptMutation } = useSessionData(
-    accessToken,
-    sessionId,
-  );
+  const {
+    sessionQuery,
+    messagesQuery,
+    eventsQuery,
+    sendPromptMutation,
+    cancelPromptMutation,
+    createReviewRequestMutation,
+  } = useSessionData(accessToken, sessionId);
 
   if (sessionQuery.isLoading || messagesQuery.isLoading || eventsQuery.isLoading) {
     return (
@@ -77,7 +81,18 @@ export function PmSessionPage({ accessToken, onBack, sessionId }: PmSessionPageP
           Back to shared projects
         </Button>
       </div>
-      <SessionStatusCard feed={eventFeed} session={session} />
+      <SessionStatusCard
+        feed={eventFeed}
+        isCreatingReviewRequest={createReviewRequestMutation.isPending}
+        onCreateReviewRequest={async () => {
+          createReviewRequestMutation.reset();
+          await createReviewRequestMutation.mutateAsync();
+        }}
+        reviewRequestError={
+          createReviewRequestMutation.error instanceof Error ? createReviewRequestMutation.error.message : null
+        }
+        session={session}
+      />
       <div className="grid gap-6 xl:grid-cols-[1.05fr_0.95fr]">
         <div className="space-y-6">
           <PromptComposer

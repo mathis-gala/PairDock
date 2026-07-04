@@ -38,11 +38,20 @@ export function useSessionData(accessToken: string, sessionId: string) {
     },
   });
 
+  const createReviewRequestMutation = useMutation({
+    mutationFn: () => api.sessions.createDraftReviewRequest(sessionId),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ['session', sessionId] });
+      void queryClient.invalidateQueries({ queryKey: ['session-events', sessionId] });
+    },
+  });
+
   return {
     sessionQuery,
     messagesQuery,
     eventsQuery,
     sendPromptMutation,
     cancelPromptMutation,
+    createReviewRequestMutation,
   };
 }

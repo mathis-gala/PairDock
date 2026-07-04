@@ -10,6 +10,7 @@ import {
   agentEventEnvelopeSchema,
   type ChecksResultEventEnvelope,
   type ErrorEventEnvelope,
+  type GitBranchPushedEventEnvelope,
   type GitDiffEventEnvelope,
   type SessionClosedEventEnvelope,
   type SessionProgressEventEnvelope,
@@ -99,6 +100,20 @@ export function buildGitDiffEvent(input: {
   });
 }
 
+export function buildGitBranchPushedEvent(input: {
+  sessionId: string;
+  branchName: string;
+}): GitBranchPushedEventEnvelope {
+  return buildEnvelope({
+    sessionId: input.sessionId,
+    type: 'git.branchPushed',
+    payload: {
+      sessionId: input.sessionId,
+      branchName: input.branchName,
+    },
+  });
+}
+
 export function buildChecksResultEvent(input: {
   sessionId: string;
   result: Omit<ChecksResultEventEnvelope['payload'], 'sessionId'>;
@@ -155,6 +170,7 @@ function buildEnvelope(envelope: Omit<SessionReadyEventEnvelope, EnvelopeMetadat
 function buildEnvelope(envelope: Omit<AgentOutputEventEnvelope, EnvelopeMetadata>): AgentOutputEventEnvelope;
 function buildEnvelope(envelope: Omit<AgentDoneEventEnvelope, EnvelopeMetadata>): AgentDoneEventEnvelope;
 function buildEnvelope(envelope: Omit<GitDiffEventEnvelope, EnvelopeMetadata>): GitDiffEventEnvelope;
+function buildEnvelope(envelope: Omit<GitBranchPushedEventEnvelope, EnvelopeMetadata>): GitBranchPushedEventEnvelope;
 function buildEnvelope(envelope: Omit<ChecksResultEventEnvelope, EnvelopeMetadata>): ChecksResultEventEnvelope;
 function buildEnvelope(envelope: Omit<SessionClosedEventEnvelope, EnvelopeMetadata>): SessionClosedEventEnvelope;
 function buildEnvelope(envelope: Omit<ErrorEventEnvelope, EnvelopeMetadata>): ErrorEventEnvelope;

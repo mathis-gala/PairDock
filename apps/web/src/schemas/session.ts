@@ -44,6 +44,14 @@ export const sessionSchema = z.object({
     })
     .nullable(),
   latestValidation: validationSummarySchema.nullable(),
+  reviewRequest: z
+    .object({
+      url: z.string().nullable(),
+      number: z.number().nullable(),
+      status: z.string(),
+    })
+    .nullable()
+    .optional(),
   createdAt: z.string(),
   closedAt: z.string().nullable(),
 });

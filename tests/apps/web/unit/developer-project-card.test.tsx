@@ -21,6 +21,7 @@ const project: DeveloperProjectSummary = {
       id: '44444444-4444-4444-8444-444444444444',
       status: 'CREATED',
       modelId: 'codex-cli/gpt-5.5',
+      reviewRequestUrl: 'https://github.com/mathis/developer-project/pull/14',
       createdAt: '2026-07-04T10:00:00.000Z',
       closedAt: null,
     },
@@ -45,5 +46,7 @@ test('BT-028/BT-029/BT-049: developer project card exposes model start, sharing,
   assert.match(html, /Start developer session/);
   assert.match(html, /Share with PM/);
   assert.match(html, /PM access/);
+  assert.match(html, /Open draft review request/);
+  assert.match(html, /https:\/\/github\.com\/mathis\/developer-project\/pull\/14/);
   assert.match(html, /Close session/);
 });

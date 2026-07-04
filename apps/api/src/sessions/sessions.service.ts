@@ -1,3 +1,4 @@
+import { randomUUID } from 'node:crypto';
 import {
   BadRequestException,
   ConflictException,
@@ -15,6 +16,7 @@ import {
   MESSAGES_REPOSITORY,
   PERSISTENCE_UNIT_OF_WORK,
   PROJECTS_REPOSITORY,
+  REVIEW_REQUESTS_REPOSITORY,
   SESSION_MEMBERS_REPOSITORY,
   SESSIONS_REPOSITORY,
   USERS_REPOSITORY,
@@ -23,6 +25,7 @@ import type { AgentEventsRepository } from '../persistence/ports/agent-events.re
 import type { MessagesRepository } from '../persistence/ports/messages.repository.js';
 import type { PersistenceUnitOfWork } from '../persistence/ports/persistence-unit-of-work.js';
 import type { ProjectsRepository } from '../persistence/ports/projects.repository.js';
+import type { ReviewRequestsRepository } from '../persistence/ports/review-requests.repository.js';
 import type { SessionMembersRepository } from '../persistence/ports/session-members.repository.js';
 import type { SessionsRepository } from '../persistence/ports/sessions.repository.js';
 import type { UsersRepository } from '../persistence/ports/users.repository.js';
@@ -58,6 +61,8 @@ export class SessionsService {
     private readonly agentEventsRepository: AgentEventsRepository,
     @Inject(SESSION_MEMBERS_REPOSITORY)
     private readonly sessionMembersRepository: SessionMembersRepository,
+    @Inject(REVIEW_REQUESTS_REPOSITORY)
+    private readonly reviewRequestsRepository: ReviewRequestsRepository,
     @Inject(USERS_REPOSITORY)
     private readonly usersRepository: UsersRepository,
     @Inject(PERSISTENCE_UNIT_OF_WORK)
@@ -127,6 +132,7 @@ export class SessionsService {
         createdByUserId: user.id,
         status: 'CREATED',
         modelId: input.modelId,
+        branchName: `pairdock/session-${randomUUID().slice(0, 8)}`,
       });
 
       for (const sessionMember of sessionMembers) {
@@ -222,9 +228,10 @@ export class SessionsService {
   }
 
   private async buildSessionResponse(session: Session) {
-    const [latestDiff, latestValidation, project, sessionMembers] = await Promise.all([
+    const [latestDiff, latestValidation, latestReviewRequest, project, sessionMembers] = await Promise.all([
       this.diffService.getLatestDiff(session.id),
       this.validationService.getLatestValidation(session.id),
+      this.reviewRequestsRepository.findBySessionId(session.id),
       this.projectsRepository.findById(session.projectId),
       this.sessionMembersRepository.listBySessionId(session.id),
     ]);
@@ -257,6 +264,15 @@ export class SessionsService {
       })),
       latestDiff,
       latestValidation,
+      ...(latestReviewRequest
+        ? {
+            reviewRequest: {
+              url: latestReviewRequest.reviewRequestUrl,
+              number: latestReviewRequest.reviewRequestNumber,
+              status: latestReviewRequest.status,
+            },
+          }
+        : {}),
       createdAt: session.createdAt.toISOString(),
       closedAt: session.closedAt?.toISOString() ?? null,
     };

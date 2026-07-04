@@ -6,6 +6,7 @@ import {
   type AgentPromptCommandEnvelope,
   agentProtocolMessageEventName,
   type ChecksResultEventEnvelope,
+  type GitPushBranchCommandEnvelope,
   type SessionCloseCommandEnvelope,
   type SessionPrepareCommandEnvelope,
 } from '@pairdock/shared-contracts';
@@ -22,6 +23,7 @@ import {
   buildAgentOutputEvent,
   buildChecksResultEvent,
   buildErrorEvent,
+  buildGitBranchPushedEvent,
   buildGitDiffEvent,
   buildSessionClosedEvent,
   buildSessionProgressEvent,
@@ -185,6 +187,9 @@ export class AgentClient {
       case 'agent.cancel':
         await this.handleAgentCancel(command);
         return;
+      case 'git.pushBranch':
+        await this.handleGitPushBranch(command);
+        return;
       default:
         return;
     }
@@ -331,6 +336,20 @@ export class AgentClient {
       await this.agentHarnessPort.cancel(command.sessionId);
     } catch (error) {
       await this.emitError('agent.cancel.failed', command.sessionId, error, false);
+    }
+  }
+
+  private async handleGitPushBranch(command: GitPushBranchCommandEnvelope): Promise<void> {
+    try {
+      const result = await this.sessionRunner.pushBranch(command);
+      await this.emitEvent(
+        buildGitBranchPushedEvent({
+          sessionId: command.sessionId,
+          branchName: result.branchName,
+        }),
+      );
+    } catch (error) {
+      await this.emitError('git.pushBranch.failed', command.sessionId, error, false);
     }
   }
 
