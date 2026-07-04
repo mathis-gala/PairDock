@@ -110,12 +110,20 @@ export class AgentClient {
     socket.on('disconnect', (reason: string) => {
       this.logger.warn(`Disconnected from PairDock backend: ${reason}.`);
     });
-    socket.on(agentProtocolMessageEventName, (payload: unknown) => {
-      void this.handleProtocolMessage(payload).catch((error: unknown) => {
-        const message = error instanceof Error ? error.message : String(error);
-        this.logger.error(`Agent command handling failed: ${message}`);
-      });
-    });
+    socket.on(
+      agentProtocolMessageEventName,
+      (payload: unknown, acknowledge?: (response: { accepted: boolean; error?: string }) => void) => {
+        void this.handleProtocolMessage(payload)
+          .then(() => {
+            acknowledge?.({ accepted: true });
+          })
+          .catch((error: unknown) => {
+            const message = error instanceof Error ? error.message : String(error);
+            this.logger.error(`Agent command handling failed: ${message}`);
+            acknowledge?.({ accepted: false, error: message });
+          });
+      },
+    );
 
     await new Promise<void>((resolve, reject) => {
       const cleanup = () => {

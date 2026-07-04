@@ -57,7 +57,6 @@ export class SessionStateMachine {
           lastError: `Agent command failed with exit code ${event.payload.exitCode}.`,
         };
       case 'session.closed':
-        this.assertTransition(session.status, 'CLOSED');
         return {
           ...session,
           status: 'CLOSED',

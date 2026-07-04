@@ -9,4 +9,5 @@ export interface AddProjectMemberInput {
 export interface ProjectMembersRepository {
   add(input: AddProjectMemberInput): Promise<ProjectMembership>;
   findByProjectIdAndUserId(projectId: string, userId: string): Promise<ProjectMembership | null>;
+  listByProjectId(projectId: string): Promise<ProjectMembership[]>;
 }

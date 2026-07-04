@@ -9,12 +9,15 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import type { PairDockIdentity, Session, SessionStatus } from '@pairdock/domain';
+import { AGENT_PROTOCOL_VERSION, type SessionPrepareCommandEnvelope } from '@pairdock/shared-contracts';
+import { AgentCommandRouterService } from '../agent-gateway/agent-command-router.service.js';
 import { ConnectedAgentsRegistry } from '../agent-gateway/connected-agents.registry.js';
 import { DiffService } from '../diff/diff.service.js';
 import {
   AGENT_EVENTS_REPOSITORY,
   MESSAGES_REPOSITORY,
   PERSISTENCE_UNIT_OF_WORK,
+  PROJECT_MEMBERS_REPOSITORY,
   PROJECTS_REPOSITORY,
   REVIEW_REQUESTS_REPOSITORY,
   SESSION_MEMBERS_REPOSITORY,
@@ -24,6 +27,7 @@ import {
 import type { AgentEventsRepository } from '../persistence/ports/agent-events.repository.js';
 import type { MessagesRepository } from '../persistence/ports/messages.repository.js';
 import type { PersistenceUnitOfWork } from '../persistence/ports/persistence-unit-of-work.js';
+import type { ProjectMembersRepository } from '../persistence/ports/project-members.repository.js';
 import type { ProjectsRepository } from '../persistence/ports/projects.repository.js';
 import type { ReviewRequestsRepository } from '../persistence/ports/review-requests.repository.js';
 import type { SessionMembersRepository } from '../persistence/ports/session-members.repository.js';
@@ -61,6 +65,8 @@ export class SessionsService {
     private readonly agentEventsRepository: AgentEventsRepository,
     @Inject(SESSION_MEMBERS_REPOSITORY)
     private readonly sessionMembersRepository: SessionMembersRepository,
+    @Inject(PROJECT_MEMBERS_REPOSITORY)
+    private readonly projectMembersRepository: ProjectMembersRepository,
     @Inject(REVIEW_REQUESTS_REPOSITORY)
     private readonly reviewRequestsRepository: ReviewRequestsRepository,
     @Inject(USERS_REPOSITORY)
@@ -69,6 +75,8 @@ export class SessionsService {
     private readonly persistenceUnitOfWork: PersistenceUnitOfWork,
     @Inject(ConnectedAgentsRegistry)
     private readonly connectedAgentsRegistry: ConnectedAgentsRegistry,
+    @Inject(AgentCommandRouterService)
+    private readonly agentCommandRouter: AgentCommandRouterService,
     @Inject(DiffService)
     private readonly diffService: DiffService,
     @Inject(ValidationService)
@@ -124,9 +132,14 @@ export class SessionsService {
             { userId: project.ownerUserId, role: 'developer' },
             { userId: user.id, role: 'pm' },
           ]
-        : [{ userId: user.id, role: 'developer' }];
+        : [
+            { userId: user.id, role: 'developer' },
+            ...(await this.projectMembersRepository.listByProjectId(project.id))
+              .filter((member) => member.role === 'pm')
+              .map((member) => ({ userId: member.userId, role: 'pm' })),
+          ];
 
-    return this.persistenceUnitOfWork.execute(async (repositories) => {
+    const session = await this.persistenceUnitOfWork.execute(async (repositories) => {
       const session = await repositories.sessions.create({
         projectId: project.id,
         createdByUserId: user.id,
@@ -145,6 +158,9 @@ export class SessionsService {
 
       return session;
     });
+
+    await this.prepareSessionIfAgentOnline(session, project.agentProjectKey);
+    return session;
   }
 
   async applyAgentEventResponse(sessionId: string, event: unknown, user: PairDockIdentity | undefined) {
@@ -293,6 +309,30 @@ export class SessionsService {
       throw new ForbiddenException('Only the owning developer can manage this session.');
     }
   }
+
+  private async prepareSessionIfAgentOnline(session: Session, agentProjectKey: string): Promise<void> {
+    if (!this.connectedAgentsRegistry.findSocketId(agentProjectKey)) {
+      return;
+    }
+
+    await this.agentCommandRouter.routeToOwningAgent(session.id, buildSessionPrepareCommand(session, agentProjectKey));
+  }
+}
+
+function buildSessionPrepareCommand(session: Session, agentProjectKey: string): SessionPrepareCommandEnvelope {
+  return {
+    protocolVersion: AGENT_PROTOCOL_VERSION,
+    messageId: randomUUID(),
+    sessionId: session.id,
+    sentAt: new Date().toISOString(),
+    type: 'session.prepare',
+    payload: {
+      sessionId: session.id,
+      projectKey: agentProjectKey,
+      branchName: session.branchName ?? `pairdock/session-${session.id.slice(0, 8)}`,
+      modelId: session.modelId,
+    },
+  };
 }
 
 function parseSessionAgentEvent(value: unknown): SessionAgentEvent {

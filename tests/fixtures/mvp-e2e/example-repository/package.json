@@ -1,0 +1,10 @@
+{
+  "name": "pairdock-mvp-e2e-fixture",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "node scripts/pass-check.mjs build",
+    "test": "node scripts/pass-check.mjs test",
+    "lint": "node scripts/pass-check.mjs lint"
+  }
+}
