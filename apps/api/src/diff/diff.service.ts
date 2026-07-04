@@ -39,11 +39,13 @@ function isSessionDiffPayload(payload: unknown): payload is SessionDiffView {
     return false;
   }
 
-  const candidate = payload as { diff?: unknown; changedFiles?: unknown };
+  if (!('diff' in payload) || !('changedFiles' in payload)) {
+    return false;
+  }
 
   return (
-    typeof candidate.diff === 'string' &&
-    Array.isArray(candidate.changedFiles) &&
-    candidate.changedFiles.every((file) => typeof file === 'string')
+    typeof payload.diff === 'string' &&
+    Array.isArray(payload.changedFiles) &&
+    payload.changedFiles.every((file) => typeof file === 'string')
   );
 }

@@ -2,6 +2,17 @@ export type UserKind = 'developer' | 'pm';
 
 export type ExternalIdentityProvider = 'github' | 'slack';
 export type SourceControlProvider = 'github';
+export type ProjectMembershipRole = 'pm';
+export type ToolReadinessKey =
+  | 'agent'
+  | 'git'
+  | 'repository'
+  | 'source-control'
+  | 'agent-harness'
+  | 'docker'
+  | 'preview-tunnel'
+  | 'project-commands';
+export type ToolReadinessStatus = 'passed' | 'failed' | 'warning' | 'skipped';
 
 export type SessionStatus =
   | 'CREATED'
@@ -51,10 +62,38 @@ export interface Project {
   ownerUserId: string;
   sourceControlConnectionId: string;
   name: string;
+  description: string | null;
   repoFullName: string;
   defaultBranch: string;
+  defaultModelId: string;
+  pmCanStartSessions: boolean;
   agentProjectKey: string;
   createdAt: Date;
+}
+
+export interface ProjectMembership {
+  id: string;
+  projectId: string;
+  userId: string;
+  role: ProjectMembershipRole;
+  createdAt: Date;
+}
+
+export interface ToolReadinessCheck {
+  key: ToolReadinessKey;
+  status: ToolReadinessStatus;
+  required: boolean;
+  message: string | null;
+  remediation: string | null;
+}
+
+export interface ProjectReadinessSnapshot {
+  id: string;
+  projectId: string;
+  ok: boolean;
+  checks: ToolReadinessCheck[];
+  createdAt: Date;
+  updatedAt: Date;
 }
 
 export interface Session {

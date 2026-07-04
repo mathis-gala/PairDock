@@ -1,6 +1,8 @@
+import { QueryClientProvider } from '@tanstack/react-query';
 import React from 'react';
 import ReactDOM from 'react-dom/client';
-import { App } from './App.js';
+import App from './App.js';
+import { queryClient } from './app/query-client.js';
 import './index.css';
 
 const rootElement = document.getElementById('root');
@@ -11,6 +13,8 @@ if (!rootElement) {
 
 ReactDOM.createRoot(rootElement).render(
   <React.StrictMode>
-    <App />
+    <QueryClientProvider client={queryClient}>
+      <App />
+    </QueryClientProvider>
   </React.StrictMode>,
 );

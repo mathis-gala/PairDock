@@ -14,12 +14,7 @@ import {
 import { io, type Socket } from 'socket.io-client';
 import { AppModule } from '../../../../../apps/api/src/app.module.js';
 import { DatabaseClient } from '../../../../../apps/api/src/persistence/client.js';
-
-interface AuthResponseBody {
-  created: boolean;
-  accessToken: string;
-  user: { id: string; email: string; displayName: string | null; kind: string };
-}
+import { authResponseSchema, idResponseSchema, parseJsonResponse } from '../test-json.js';
 
 const prisma = new DatabaseClient();
 
@@ -33,6 +28,8 @@ async function resetDatabase() {
   await prisma.message.deleteMany();
   await prisma.sessionMember.deleteMany();
   await prisma.session.deleteMany();
+  await prisma.projectReadinessSnapshot.deleteMany();
+  await prisma.projectMember.deleteMany();
   await prisma.project.deleteMany();
   await prisma.sourceControlConnection.deleteMany();
   await prisma.externalIdentity.deleteMany();
@@ -60,7 +57,7 @@ async function authenticateDeveloper(tokenSeed = randomUUID()) {
 
   return {
     status: response.status,
-    body: (await response.json()) as AuthResponseBody,
+    body: await parseJsonResponse(response, authResponseSchema),
   };
 }
 
@@ -75,7 +72,7 @@ async function authenticatePm(tokenSeed = randomUUID()) {
 
   return {
     status: response.status,
-    body: (await response.json()) as AuthResponseBody,
+    body: await parseJsonResponse(response, authResponseSchema),
   };
 }
 
@@ -111,7 +108,7 @@ async function createSession(projectId: string, accessToken: string) {
   });
 
   assert.equal(response.status, 201);
-  return (await response.json()) as { id: string };
+  return parseJsonResponse(response, idResponseSchema);
 }
 
 function connectSocket(namespace: '/agent' | '/ui', accessToken?: string): Socket {
@@ -122,6 +119,10 @@ function connectSocket(namespace: '/agent' | '/ui', accessToken?: string): Socke
 }
 
 function waitForConnect(socket: Socket): Promise<void> {
+  if (socket.connected) {
+    return Promise.resolve();
+  }
+
   return new Promise((resolve, reject) => {
     socket.once('connect', () => resolve());
     socket.once('connect_error', reject);

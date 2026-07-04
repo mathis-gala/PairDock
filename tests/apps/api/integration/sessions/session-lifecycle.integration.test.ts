@@ -5,12 +5,13 @@ import type { INestApplication } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from '../../../../../apps/api/src/app.module.js';
 import { DatabaseClient } from '../../../../../apps/api/src/persistence/client.js';
-
-interface AuthResponseBody {
-  created: boolean;
-  accessToken: string;
-  user: { id: string; email: string; displayName: string | null; kind: string };
-}
+import {
+  authResponseSchema,
+  idResponseSchema,
+  parseJsonResponse,
+  sessionCreateResponseSchema,
+  sessionStateResponseSchema,
+} from '../test-json.js';
 
 const prisma = new DatabaseClient();
 
@@ -24,6 +25,8 @@ async function resetDatabase() {
   await prisma.message.deleteMany();
   await prisma.sessionMember.deleteMany();
   await prisma.session.deleteMany();
+  await prisma.projectReadinessSnapshot.deleteMany();
+  await prisma.projectMember.deleteMany();
   await prisma.project.deleteMany();
   await prisma.sourceControlConnection.deleteMany();
   await prisma.externalIdentity.deleteMany();
@@ -51,7 +54,7 @@ async function authenticateDeveloper(tokenSeed = randomUUID()) {
 
   return {
     status: response.status,
-    body: (await response.json()) as AuthResponseBody,
+    body: await parseJsonResponse(response, authResponseSchema),
   };
 }
 
@@ -105,13 +108,7 @@ test('Task 4: developer owner can create a session and the backend persists it a
 
   assert.equal(response.status, 201);
 
-  const body = (await response.json()) as {
-    id: string;
-    status: string;
-    projectId: string;
-    createdByUserId: string;
-    modelId: string;
-  };
+  const body = await parseJsonResponse(response, sessionCreateResponseSchema);
 
   assert.equal(body.status, 'CREATED');
   assert.equal(body.projectId, project.id);
@@ -139,7 +136,7 @@ test('Task 4: backend applies valid agent prepare events in order and reaches RE
     },
     body: JSON.stringify({ projectId: project.id, modelId: 'codex-cli/gpt-5.4' }),
   });
-  const createdSession = (await createResponse.json()) as { id: string };
+  const createdSession = await parseJsonResponse(createResponse, idResponseSchema);
 
   const events = [
     { type: 'session.progress', payload: { status: 'AGENT_CONNECTING' } },
@@ -149,7 +146,7 @@ test('Task 4: backend applies valid agent prepare events in order and reaches RE
     { type: 'session.ready', payload: { previewUrl: 'https://preview.pairdock.test' } },
   ];
 
-  let finalBody: { status: string; previewUrl: string | null } | undefined;
+  let finalBody: { status: string; previewUrl?: string | null } | undefined;
 
   for (const event of events) {
     const eventResponse = await fetch(`${baseUrl}/sessions/${createdSession.id}/events`, {
@@ -162,7 +159,7 @@ test('Task 4: backend applies valid agent prepare events in order and reaches RE
     });
 
     assert.equal(eventResponse.status, 201);
-    finalBody = (await eventResponse.json()) as { status: string; previewUrl: string | null };
+    finalBody = await parseJsonResponse(eventResponse, sessionStateResponseSchema);
   }
 
   assert.equal(finalBody?.status, 'READY');
@@ -188,7 +185,7 @@ test('Task 4: backend rejects invalid transitions and close is idempotent', asyn
     },
     body: JSON.stringify({ projectId: project.id, modelId: 'codex-cli/gpt-5.4' }),
   });
-  const createdSession = (await createResponse.json()) as { id: string };
+  const createdSession = await parseJsonResponse(createResponse, idResponseSchema);
 
   const invalidTransitionResponse = await fetch(`${baseUrl}/sessions/${createdSession.id}/events`, {
     method: 'POST',
@@ -215,8 +212,8 @@ test('Task 4: backend rejects invalid transitions and close is idempotent', asyn
   assert.equal(firstCloseResponse.status, 201);
   assert.equal(secondCloseResponse.status, 201);
 
-  const firstCloseBody = (await firstCloseResponse.json()) as { status: string; closedAt: string | null };
-  const secondCloseBody = (await secondCloseResponse.json()) as { status: string; closedAt: string | null };
+  const firstCloseBody = await parseJsonResponse(firstCloseResponse, sessionStateResponseSchema);
+  const secondCloseBody = await parseJsonResponse(secondCloseResponse, sessionStateResponseSchema);
 
   assert.equal(firstCloseBody.status, 'CLOSED');
   assert.ok(firstCloseBody.closedAt);

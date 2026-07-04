@@ -1,5 +1,13 @@
 import { randomUUID } from 'node:crypto';
-import { ConflictException, Inject, Injectable, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  ConflictException,
+  Inject,
+  Injectable,
+  InternalServerErrorException,
+  NotFoundException,
+} from '@nestjs/common';
+import type { PairDockIdentity, SessionMember } from '@pairdock/domain';
 import {
   AGENT_PROTOCOL_VERSION,
   type AgentCancelCommandEnvelope,
@@ -15,6 +23,12 @@ export interface SessionPromptActor {
   role: string;
 }
 
+export interface CreatePromptRequest {
+  user?: PairDockIdentity;
+  sessionMember?: SessionMember;
+  content?: string;
+}
+
 @Injectable()
 export class SessionPromptService {
   constructor(
@@ -25,6 +39,21 @@ export class SessionPromptService {
     @Inject(AgentCommandRouterService)
     private readonly agentCommandRouter: AgentCommandRouterService,
   ) {}
+
+  async createPromptResponse(sessionId: string, request: CreatePromptRequest) {
+    const content = request.content?.trim();
+
+    if (!content) {
+      throw new BadRequestException('Prompt content is required.');
+    }
+
+    const message = await this.createPrompt(sessionId, this.requirePromptActor(request), content);
+
+    return {
+      ...message,
+      createdAt: message.createdAt.toISOString(),
+    };
+  }
 
   async createPrompt(sessionId: string, actor: SessionPromptActor, content: string) {
     const session = await this.requireSession(sessionId);
@@ -44,6 +73,15 @@ export class SessionPromptService {
     });
   }
 
+  async cancelPromptResponse(sessionId: string) {
+    await this.cancelPrompt(sessionId);
+
+    return {
+      accepted: true,
+      sessionId,
+    };
+  }
+
   async cancelPrompt(sessionId: string): Promise<void> {
     const session = await this.requireSession(sessionId);
 
@@ -52,6 +90,17 @@ export class SessionPromptService {
     }
 
     await this.agentCommandRouter.routeToOwningAgent(sessionId, buildAgentCancelCommand(sessionId));
+  }
+
+  private requirePromptActor(request: CreatePromptRequest): SessionPromptActor {
+    if (!request.user || !request.sessionMember) {
+      throw new InternalServerErrorException('Authenticated session membership was not resolved.');
+    }
+
+    return {
+      userId: request.user.id,
+      role: request.sessionMember.role,
+    };
   }
 
   private async requireSession(sessionId: string) {

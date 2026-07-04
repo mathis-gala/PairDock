@@ -7,7 +7,7 @@ import {
   WebSocketGateway,
   WebSocketServer,
 } from '@nestjs/websockets';
-import type { SessionStatus } from '@pairdock/domain';
+import type { SessionStatus, ToolReadinessCheck } from '@pairdock/domain';
 import {
   type AgentCommandEnvelope,
   type AgentConnectedEventEnvelope,
@@ -24,18 +24,6 @@ import { type SessionAgentEvent, SessionStateMachine } from '../sessions/session
 import { UiGateway } from '../ui-gateway/ui.gateway.js';
 import { ValidationService } from '../validation/validation.service.js';
 import { ConnectedAgentsRegistry } from './connected-agents.registry.js';
-
-const lifecycleProgressStatuses = [
-  'AGENT_CONNECTING',
-  'WORKTREE_CREATING',
-  'DOCKER_STARTING',
-  'PREVIEW_STARTING',
-  'AGENT_RUNNING',
-  'CHECKS_RUNNING',
-  'AWAITING_PM_VALIDATION',
-  'REVIEW_REQUEST_CREATING',
-  'REVIEW_REQUEST_CREATED',
-] as const;
 
 @Injectable()
 @WebSocketGateway({ namespace: '/agent', cors: { origin: '*' } })
@@ -96,6 +84,36 @@ export class AgentGateway implements OnGatewayDisconnect {
     sessionId: string | null,
     event: AgentEventEnvelope,
   ): Promise<void> {
+    if (event.type === 'readiness.result') {
+      await this.persistenceUnitOfWork.execute(async (repositories) => {
+        const project = await repositories.projects.findByAgentProjectKey(event.payload.projectKey);
+
+        await repositories.agentEvents.create({
+          sessionId,
+          agentId,
+          type: event.type,
+          payload: event.payload,
+        });
+
+        if (!project) {
+          return;
+        }
+
+        await repositories.projectReadiness.upsert({
+          projectId: project.id,
+          ok: event.payload.ok,
+          checks: event.payload.checks.map<ToolReadinessCheck>((check) => ({
+            key: check.key,
+            status: check.status,
+            required: check.required,
+            message: check.message ?? null,
+            remediation: check.remediation ?? null,
+          })),
+        });
+      });
+      return;
+    }
+
     if (sessionId && event.type === 'checks.result') {
       await this.persistenceUnitOfWork.execute(async (repositories) => {
         const currentSession = await repositories.sessions.findById(sessionId);
@@ -266,5 +284,15 @@ function isLifecycleProgressStatus(
   | 'REVIEW_REQUEST_CREATING'
   | 'REVIEW_REQUEST_CREATED'
 > {
-  return (lifecycleProgressStatuses as readonly SessionStatus[]).includes(status);
+  return (
+    status === 'AGENT_CONNECTING' ||
+    status === 'WORKTREE_CREATING' ||
+    status === 'DOCKER_STARTING' ||
+    status === 'PREVIEW_STARTING' ||
+    status === 'AGENT_RUNNING' ||
+    status === 'CHECKS_RUNNING' ||
+    status === 'AWAITING_PM_VALIDATION' ||
+    status === 'REVIEW_REQUEST_CREATING' ||
+    status === 'REVIEW_REQUEST_CREATED'
+  );
 }

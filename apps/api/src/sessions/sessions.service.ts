@@ -1,18 +1,46 @@
-import { ConflictException, ForbiddenException, Inject, Injectable, NotFoundException } from '@nestjs/common';
-import type { PairDockIdentity, Session } from '@pairdock/domain';
 import {
+  BadRequestException,
+  ConflictException,
+  ForbiddenException,
+  Inject,
+  Injectable,
+  InternalServerErrorException,
+  NotFoundException,
+} from '@nestjs/common';
+import type { PairDockIdentity, Session, SessionStatus } from '@pairdock/domain';
+import { ConnectedAgentsRegistry } from '../agent-gateway/connected-agents.registry.js';
+import { DiffService } from '../diff/diff.service.js';
+import {
+  AGENT_EVENTS_REPOSITORY,
+  MESSAGES_REPOSITORY,
   PERSISTENCE_UNIT_OF_WORK,
   PROJECTS_REPOSITORY,
+  SESSION_MEMBERS_REPOSITORY,
   SESSIONS_REPOSITORY,
+  USERS_REPOSITORY,
 } from '../persistence/persistence.tokens.js';
+import type { AgentEventsRepository } from '../persistence/ports/agent-events.repository.js';
+import type { MessagesRepository } from '../persistence/ports/messages.repository.js';
 import type { PersistenceUnitOfWork } from '../persistence/ports/persistence-unit-of-work.js';
 import type { ProjectsRepository } from '../persistence/ports/projects.repository.js';
+import type { SessionMembersRepository } from '../persistence/ports/session-members.repository.js';
 import type { SessionsRepository } from '../persistence/ports/sessions.repository.js';
+import type { UsersRepository } from '../persistence/ports/users.repository.js';
+import { ValidationService } from '../validation/validation.service.js';
+import { SessionCloseService } from './session-close.service.js';
+import { SessionStartPolicy, type SessionStartSource } from './session-start-policy.js';
 import { InvalidSessionTransitionError, type SessionAgentEvent, SessionStateMachine } from './session-state-machine.js';
 
 export interface CreateSessionInput {
   projectId: string;
   modelId: string;
+  startSource?: SessionStartSource;
+}
+
+export interface CreateSessionRequest {
+  projectId?: string;
+  modelId?: string;
+  startSource?: SessionStartSource;
 }
 
 @Injectable()
@@ -24,8 +52,26 @@ export class SessionsService {
     private readonly projectsRepository: ProjectsRepository,
     @Inject(SESSIONS_REPOSITORY)
     private readonly sessionsRepository: SessionsRepository,
+    @Inject(MESSAGES_REPOSITORY)
+    private readonly messagesRepository: MessagesRepository,
+    @Inject(AGENT_EVENTS_REPOSITORY)
+    private readonly agentEventsRepository: AgentEventsRepository,
+    @Inject(SESSION_MEMBERS_REPOSITORY)
+    private readonly sessionMembersRepository: SessionMembersRepository,
+    @Inject(USERS_REPOSITORY)
+    private readonly usersRepository: UsersRepository,
     @Inject(PERSISTENCE_UNIT_OF_WORK)
     private readonly persistenceUnitOfWork: PersistenceUnitOfWork,
+    @Inject(ConnectedAgentsRegistry)
+    private readonly connectedAgentsRegistry: ConnectedAgentsRegistry,
+    @Inject(DiffService)
+    private readonly diffService: DiffService,
+    @Inject(ValidationService)
+    private readonly validationService: ValidationService,
+    @Inject(SessionCloseService)
+    private readonly sessionCloseService: SessionCloseService,
+    @Inject(SessionStartPolicy)
+    private readonly sessionStartPolicy: SessionStartPolicy,
   ) {}
 
   async getSession(sessionId: string): Promise<Session> {
@@ -38,20 +84,42 @@ export class SessionsService {
     return session;
   }
 
+  async getSessionResponse(sessionId: string) {
+    return this.buildSessionResponse(await this.getSession(sessionId));
+  }
+
+  async listMessages(sessionId: string) {
+    const messages = await this.messagesRepository.listBySessionId(sessionId);
+
+    return messages.map((message) => ({
+      ...message,
+      createdAt: message.createdAt.toISOString(),
+    }));
+  }
+
+  async listEvents(sessionId: string) {
+    const events = await this.agentEventsRepository.listBySessionId(sessionId);
+
+    return events.map((event) => ({
+      ...event,
+      createdAt: event.createdAt.toISOString(),
+    }));
+  }
+
+  async createSessionResponse(input: CreateSessionRequest | undefined, user: PairDockIdentity | undefined) {
+    const session = await this.createSession(this.parseCreateSessionInput(input), this.requireUser(user));
+    return this.buildSessionResponse(session);
+  }
+
   async createSession(input: CreateSessionInput, user: PairDockIdentity): Promise<Session> {
-    if (user.kind !== 'developer') {
-      throw new ForbiddenException('Only developers can create sessions.');
-    }
-
-    const project = await this.projectsRepository.findById(input.projectId);
-
-    if (!project) {
-      throw new NotFoundException(`Project ${input.projectId} was not found.`);
-    }
-
-    if (project.ownerUserId !== user.id) {
-      throw new ForbiddenException('Only the owning developer can create sessions for this project.');
-    }
+    const project = await this.sessionStartPolicy.assertCanStart(input.projectId, user, input.startSource);
+    const sessionMembers =
+      user.kind === 'pm'
+        ? [
+            { userId: project.ownerUserId, role: 'developer' },
+            { userId: user.id, role: 'pm' },
+          ]
+        : [{ userId: user.id, role: 'developer' }];
 
     return this.persistenceUnitOfWork.execute(async (repositories) => {
       const session = await repositories.sessions.create({
@@ -61,14 +129,21 @@ export class SessionsService {
         modelId: input.modelId,
       });
 
-      await repositories.sessionMembers.add({
-        sessionId: session.id,
-        userId: user.id,
-        role: 'developer',
-      });
+      for (const sessionMember of sessionMembers) {
+        await repositories.sessionMembers.add({
+          sessionId: session.id,
+          userId: sessionMember.userId,
+          role: sessionMember.role,
+        });
+      }
 
       return session;
     });
+  }
+
+  async applyAgentEventResponse(sessionId: string, event: unknown, user: PairDockIdentity | undefined) {
+    const session = await this.applyAgentEvent(sessionId, parseSessionAgentEvent(event), this.requireUser(user));
+    return this.buildSessionResponse(session);
   }
 
   async applyAgentEvent(sessionId: string, event: SessionAgentEvent, user: PairDockIdentity): Promise<Session> {
@@ -108,6 +183,85 @@ export class SessionsService {
     }
   }
 
+  async closeSessionResponse(sessionId: string, user: PairDockIdentity | undefined) {
+    const actor = this.requireUser(user);
+    const session = await this.getSession(sessionId);
+
+    if (actor.kind !== 'developer' || session.createdByUserId !== actor.id) {
+      throw new ForbiddenException('Only the owning developer can close this session.');
+    }
+
+    return this.buildSessionResponse(await this.sessionCloseService.closeSession(sessionId));
+  }
+
+  private parseCreateSessionInput(input: CreateSessionRequest | undefined): CreateSessionInput {
+    const projectId = input?.projectId?.trim();
+    const modelId = input?.modelId?.trim();
+
+    if (!projectId) {
+      throw new BadRequestException('Project id is required.');
+    }
+
+    if (!modelId) {
+      throw new BadRequestException('Model id is required.');
+    }
+
+    return {
+      projectId,
+      modelId,
+      startSource: input?.startSource,
+    };
+  }
+
+  private requireUser(user: PairDockIdentity | undefined): PairDockIdentity {
+    if (!user) {
+      throw new InternalServerErrorException('Authenticated user was not resolved.');
+    }
+
+    return user;
+  }
+
+  private async buildSessionResponse(session: Session) {
+    const [latestDiff, latestValidation, project, sessionMembers] = await Promise.all([
+      this.diffService.getLatestDiff(session.id),
+      this.validationService.getLatestValidation(session.id),
+      this.projectsRepository.findById(session.projectId),
+      this.sessionMembersRepository.listBySessionId(session.id),
+    ]);
+
+    if (!project) {
+      throw new NotFoundException(`Project ${session.projectId} was not found.`);
+    }
+
+    const userIds = [...new Set([project.ownerUserId, ...sessionMembers.map((member) => member.userId)])];
+    const users = await Promise.all(
+      userIds.map(async (userId) => ({ userId, user: await this.usersRepository.findById(userId) })),
+    );
+    const usersById = new Map(users.map(({ userId, user }) => [userId, user]));
+    const agentAvailability = this.connectedAgentsRegistry.findSocketId(project.agentProjectKey) ? 'online' : 'offline';
+
+    return {
+      ...session,
+      project: {
+        id: project.id,
+        name: project.name,
+        defaultBranch: project.defaultBranch,
+        ownerDisplayName: formatUserDisplayName(usersById.get(project.ownerUserId), project.ownerUserId),
+        owningAgentId: project.agentProjectKey,
+        agentAvailability,
+      },
+      participants: [...sessionMembers].sort(compareSessionMembers).map((member) => ({
+        userId: member.userId,
+        role: member.role,
+        displayName: formatUserDisplayName(usersById.get(member.userId), member.userId),
+      })),
+      latestDiff,
+      latestValidation,
+      createdAt: session.createdAt.toISOString(),
+      closedAt: session.closedAt?.toISOString() ?? null,
+    };
+  }
+
   private async assertOwnerAccess(session: Session, user: PairDockIdentity): Promise<void> {
     if (user.kind !== 'developer') {
       throw new ForbiddenException('Only developers can manage session lifecycle.');
@@ -123,4 +277,129 @@ export class SessionsService {
       throw new ForbiddenException('Only the owning developer can manage this session.');
     }
   }
+}
+
+function parseSessionAgentEvent(value: unknown): SessionAgentEvent {
+  const event = requireObject(value, 'Event type is required.');
+  const type = event.type;
+  const payload = requireObject(event.payload, 'Event payload is required.');
+
+  if (type === 'session.progress') {
+    const status = payload.status;
+
+    if (typeof status !== 'string' || !isProgressStatus(status)) {
+      throw new BadRequestException('Progress status is invalid.');
+    }
+
+    const message = payload.message;
+
+    if (message !== undefined && typeof message !== 'string') {
+      throw new BadRequestException('Progress message is invalid.');
+    }
+
+    return {
+      type,
+      payload: {
+        status,
+        ...(message ? { message } : {}),
+      },
+    };
+  }
+
+  if (type === 'session.ready') {
+    const previewUrl = payload.previewUrl;
+
+    if (typeof previewUrl !== 'string') {
+      throw new BadRequestException('Preview URL is required.');
+    }
+
+    return { type, payload: { previewUrl } };
+  }
+
+  if (type === 'agent.done') {
+    const exitCode = payload.exitCode;
+
+    if (typeof exitCode !== 'number') {
+      throw new BadRequestException('Exit code is required.');
+    }
+
+    return { type, payload: { exitCode } };
+  }
+
+  if (type === 'session.closed') {
+    const cleaned = payload.cleaned;
+
+    if (typeof cleaned !== 'boolean') {
+      throw new BadRequestException('Cleaned flag is required.');
+    }
+
+    return { type, payload: { cleaned } };
+  }
+
+  if (type === 'error') {
+    const message = payload.message;
+    const retryable = payload.retryable;
+
+    if (typeof message !== 'string' || typeof retryable !== 'boolean') {
+      throw new BadRequestException('Error payload is invalid.');
+    }
+
+    return { type, payload: { message, retryable } };
+  }
+
+  throw new BadRequestException('Event type is required.');
+}
+
+function requireObject(value: unknown, message: string): Record<string, unknown> {
+  if (!isRecord(value)) {
+    throw new BadRequestException(message);
+  }
+
+  return value;
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return Boolean(value && typeof value === 'object' && !Array.isArray(value));
+}
+
+function isProgressStatus(
+  value: string,
+): value is Exclude<SessionStatus, 'CREATED' | 'READY' | 'CLOSING' | 'CLOSED' | 'FAILED'> {
+  return (
+    value === 'AGENT_CONNECTING' ||
+    value === 'WORKTREE_CREATING' ||
+    value === 'DOCKER_STARTING' ||
+    value === 'PREVIEW_STARTING' ||
+    value === 'AGENT_RUNNING' ||
+    value === 'CHECKS_RUNNING' ||
+    value === 'AWAITING_PM_VALIDATION' ||
+    value === 'REVIEW_REQUEST_CREATING' ||
+    value === 'REVIEW_REQUEST_CREATED'
+  );
+}
+
+function formatUserDisplayName(
+  user: { displayName: string | null; email: string } | null | undefined,
+  fallback: string,
+): string {
+  return user?.displayName ?? user?.email ?? fallback;
+}
+
+function compareSessionMembers(
+  left: { role: string; userId: string },
+  right: { role: string; userId: string },
+): number {
+  return sessionMemberOrder(left.role) - sessionMemberOrder(right.role) || left.userId.localeCompare(right.userId);
+}
+
+function sessionMemberOrder(role: string): number {
+  if (role === 'developer') {
+    return 0;
+  }
+
+  if (role === 'pm') {
+    return 1;
+  }
+
+  return 2;
 }

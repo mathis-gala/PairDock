@@ -1,7 +1,7 @@
-export const AGENT_PROTOCOL_VERSION = '2026-06-27' as const;
-export const agentProtocolMessageEventName = 'protocol.message' as const;
-export const uiSessionSubscribeEventName = 'session.subscribe' as const;
-export const uiSessionSubscribedEventName = 'session.subscribed' as const;
-export const uiSessionEventName = 'session.event' as const;
+export const AGENT_PROTOCOL_VERSION = '2026-06-27';
+export const agentProtocolMessageEventName = 'protocol.message';
+export const uiSessionSubscribeEventName = 'session.subscribe';
+export const uiSessionSubscribedEventName = 'session.subscribed';
+export const uiSessionEventName = 'session.event';
 
 export type AgentProtocolVersion = typeof AGENT_PROTOCOL_VERSION;

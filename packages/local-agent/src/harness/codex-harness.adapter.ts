@@ -32,7 +32,7 @@ export class CodexHarnessAdapter implements AgentHarnessPort {
       shell: false,
       stdio: ['ignore', 'pipe', 'pipe'],
     });
-    const queue = new AsyncEventQueue<AgentHarnessEvent>();
+    const queue = new AgentHarnessEventQueue();
     let settled = false;
 
     this.activeRuns.set(input.sessionId, childProcess);
@@ -127,13 +127,13 @@ async function onceExit(process: ChildProcess): Promise<void> {
   });
 }
 
-class AsyncEventQueue<T> implements AsyncIterable<T> {
-  private readonly values: T[] = [];
-  private readonly waiters: Array<(result: IteratorResult<T>) => void> = [];
+class AgentHarnessEventQueue implements AsyncIterable<AgentHarnessEvent> {
+  private readonly values: AgentHarnessEvent[] = [];
+  private readonly waiters: Array<(result: IteratorResult<AgentHarnessEvent, void>) => void> = [];
   private closed = false;
   private failure: Error | null = null;
 
-  push(value: T): void {
+  push(value: AgentHarnessEvent): void {
     if (this.closed || this.failure) {
       return;
     }
@@ -150,7 +150,7 @@ class AsyncEventQueue<T> implements AsyncIterable<T> {
   close(): void {
     this.closed = true;
     while (this.waiters.length > 0) {
-      this.waiters.shift()?.({ done: true, value: undefined as T });
+      this.waiters.shift()?.({ done: true, value: undefined });
     }
   }
 
@@ -158,15 +158,18 @@ class AsyncEventQueue<T> implements AsyncIterable<T> {
     this.failure = error;
     this.closed = true;
     while (this.waiters.length > 0) {
-      this.waiters.shift()?.({ done: true, value: undefined as T });
+      this.waiters.shift()?.({ done: true, value: undefined });
     }
   }
 
-  [Symbol.asyncIterator](): AsyncIterator<T> {
+  [Symbol.asyncIterator](): AsyncIterator<AgentHarnessEvent, void> {
     return {
-      next: async (): Promise<IteratorResult<T>> => {
+      next: async (): Promise<IteratorResult<AgentHarnessEvent, void>> => {
         if (this.values.length > 0) {
-          return { done: false, value: this.values.shift() as T };
+          const value = this.values.shift();
+          if (value) {
+            return { done: false, value };
+          }
         }
 
         if (this.failure) {
@@ -174,10 +177,10 @@ class AsyncEventQueue<T> implements AsyncIterable<T> {
         }
 
         if (this.closed) {
-          return { done: true, value: undefined as T };
+          return { done: true, value: undefined };
         }
 
-        return new Promise<IteratorResult<T>>((resolve) => {
+        return new Promise<IteratorResult<AgentHarnessEvent, void>>((resolve) => {
           this.waiters.push(resolve);
         }).then((result) => {
           if (result.done && this.failure) {

@@ -8,6 +8,7 @@ import test from 'node:test';
 import { promisify } from 'node:util';
 import {
   AGENT_PROTOCOL_VERSION,
+  type AgentCommandEnvelope,
   type AgentEventEnvelope,
   agentProtocolMessageEventName,
 } from '@pairdock/shared-contracts';
@@ -69,13 +70,16 @@ async function createAgentServer() {
   };
 }
 
-function buildPrepareCommand(sessionId: string, branchName: string) {
+function buildPrepareCommand(
+  sessionId: string,
+  branchName: string,
+): Extract<AgentCommandEnvelope, { type: 'session.prepare' }> {
   return {
     protocolVersion: AGENT_PROTOCOL_VERSION,
     messageId: '11111111-1111-4111-8111-111111111111',
     sessionId,
     sentAt: new Date().toISOString(),
-    type: 'session.prepare' as const,
+    type: 'session.prepare',
     payload: {
       sessionId,
       projectKey: 'pairdock',
@@ -85,13 +89,16 @@ function buildPrepareCommand(sessionId: string, branchName: string) {
   };
 }
 
-function buildCloseCommand(sessionId: string, mode: 'keep-branch' | 'delete-local') {
+function buildCloseCommand(
+  sessionId: string,
+  mode: 'keep-branch' | 'delete-local',
+): Extract<AgentCommandEnvelope, { type: 'session.close' }> {
   return {
     protocolVersion: AGENT_PROTOCOL_VERSION,
     messageId: '22222222-2222-4222-8222-222222222222',
     sessionId,
     sentAt: new Date().toISOString(),
-    type: 'session.close' as const,
+    type: 'session.close',
     payload: {
       sessionId,
       mode,

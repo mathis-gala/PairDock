@@ -8,17 +8,13 @@ import {
   AGENT_PROTOCOL_VERSION,
   type AgentCommandEnvelope,
   type AgentEventEnvelope,
+  agentCommandEnvelopeSchema,
   agentProtocolMessageEventName,
 } from '@pairdock/shared-contracts';
 import { io, type Socket } from 'socket.io-client';
 import { AppModule } from '../../../../../apps/api/src/app.module.js';
 import { DatabaseClient } from '../../../../../apps/api/src/persistence/client.js';
-
-interface AuthResponseBody {
-  created: boolean;
-  accessToken: string;
-  user: { id: string; email: string; displayName: string | null; kind: string };
-}
+import { authResponseSchema, idResponseSchema, parseJsonResponse, sessionPromptResponseSchema } from '../test-json.js';
 
 const prisma = new DatabaseClient();
 
@@ -32,6 +28,8 @@ async function resetDatabase() {
   await prisma.message.deleteMany();
   await prisma.sessionMember.deleteMany();
   await prisma.session.deleteMany();
+  await prisma.projectReadinessSnapshot.deleteMany();
+  await prisma.projectMember.deleteMany();
   await prisma.project.deleteMany();
   await prisma.sourceControlConnection.deleteMany();
   await prisma.externalIdentity.deleteMany();
@@ -59,7 +57,7 @@ async function authenticateDeveloper(tokenSeed = randomUUID()) {
 
   return {
     status: response.status,
-    body: (await response.json()) as AuthResponseBody,
+    body: await parseJsonResponse(response, authResponseSchema),
   };
 }
 
@@ -74,7 +72,7 @@ async function authenticatePm(tokenSeed = randomUUID()) {
 
   return {
     status: response.status,
-    body: (await response.json()) as AuthResponseBody,
+    body: await parseJsonResponse(response, authResponseSchema),
   };
 }
 
@@ -110,7 +108,7 @@ async function createSession(projectId: string, accessToken: string) {
   });
 
   assert.equal(response.status, 201);
-  return (await response.json()) as { id: string };
+  return parseJsonResponse(response, idResponseSchema);
 }
 
 function connectAgentSocket(): Socket {
@@ -120,21 +118,31 @@ function connectAgentSocket(): Socket {
 }
 
 function waitForConnect(socket: Socket): Promise<void> {
+  if (socket.connected) {
+    return Promise.resolve();
+  }
+
   return new Promise((resolve, reject) => {
     socket.once('connect', () => resolve());
     socket.once('connect_error', reject);
   });
 }
 
-function waitForCommand<TCommand extends AgentCommandEnvelope>(
+function waitForCommand(
   socket: Socket,
-  expectedType: TCommand['type'],
-): Promise<TCommand> {
+  expectedType: 'agent.prompt',
+): Promise<Extract<AgentCommandEnvelope, { type: 'agent.prompt' }>>;
+function waitForCommand(
+  socket: Socket,
+  expectedType: 'agent.cancel',
+): Promise<Extract<AgentCommandEnvelope, { type: 'agent.cancel' }>>;
+function waitForCommand(socket: Socket, expectedType: AgentCommandEnvelope['type']): Promise<AgentCommandEnvelope> {
   return new Promise((resolve) => {
-    const listener = (payload: AgentCommandEnvelope) => {
-      if (payload.type === expectedType) {
+    const listener = (payload: unknown) => {
+      const command = agentCommandEnvelopeSchema.parse(payload);
+      if (command.type === expectedType) {
         socket.off(agentProtocolMessageEventName, listener);
-        resolve(payload as TCommand);
+        resolve(command);
       }
     };
 
@@ -178,10 +186,7 @@ test('Task 9: POST /sessions/:sessionId/prompts routes agent.prompt to the ownin
 
   try {
     await waitForConnect(agentSocket);
-    const commandPromise = waitForCommand<Extract<AgentCommandEnvelope, { type: 'agent.prompt' }>>(
-      agentSocket,
-      'agent.prompt',
-    );
+    const commandPromise = waitForCommand(agentSocket, 'agent.prompt');
 
     agentSocket.emit(agentProtocolMessageEventName, {
       protocolVersion: AGENT_PROTOCOL_VERSION,
@@ -206,7 +211,7 @@ test('Task 9: POST /sessions/:sessionId/prompts routes agent.prompt to the ownin
     });
 
     assert.equal(response.status, 201);
-    const body = (await response.json()) as { sessionId: string; role: string; content: string };
+    const body = await parseJsonResponse(response, sessionPromptResponseSchema);
     assert.equal(body.sessionId, session.id);
     assert.equal(body.role, 'pm');
     assert.equal(body.content, 'Please fix the failing tests.');
@@ -252,10 +257,7 @@ test('Task 9: POST /sessions/:sessionId/prompts/cancel routes agent.cancel to th
 
   try {
     await waitForConnect(agentSocket);
-    const commandPromise = waitForCommand<Extract<AgentCommandEnvelope, { type: 'agent.cancel' }>>(
-      agentSocket,
-      'agent.cancel',
-    );
+    const commandPromise = waitForCommand(agentSocket, 'agent.cancel');
 
     agentSocket.emit(agentProtocolMessageEventName, {
       protocolVersion: AGENT_PROTOCOL_VERSION,

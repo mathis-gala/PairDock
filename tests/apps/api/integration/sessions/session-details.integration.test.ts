@@ -5,12 +5,7 @@ import type { INestApplication } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from '../../../../../apps/api/src/app.module.js';
 import { DatabaseClient } from '../../../../../apps/api/src/persistence/client.js';
-
-interface AuthResponseBody {
-  created: boolean;
-  accessToken: string;
-  user: { id: string; email: string; displayName: string | null; kind: string };
-}
+import { authResponseSchema, parseJsonResponse, sessionDetailsResponseSchema } from '../test-json.js';
 
 const prisma = new DatabaseClient();
 
@@ -24,6 +19,8 @@ async function resetDatabase() {
   await prisma.message.deleteMany();
   await prisma.sessionMember.deleteMany();
   await prisma.session.deleteMany();
+  await prisma.projectReadinessSnapshot.deleteMany();
+  await prisma.projectMember.deleteMany();
   await prisma.project.deleteMany();
   await prisma.sourceControlConnection.deleteMany();
   await prisma.externalIdentity.deleteMany();
@@ -51,7 +48,7 @@ async function authenticatePm(tokenSeed = randomUUID(), teamId = 'pairdock-teste
 
   return {
     status: response.status,
-    body: (await response.json()) as AuthResponseBody,
+    body: await parseJsonResponse(response, authResponseSchema),
   };
 }
 
@@ -99,7 +96,7 @@ async function createSessionFixture(pmUserId: string) {
     ],
   });
 
-  return { session };
+  return { developer, project, session };
 }
 
 test.before(async () => {
@@ -151,9 +148,28 @@ test('Task 10: session details include the latest persisted git diff snapshot', 
 
   assert.equal(sessionResponse.status, 200);
 
-  const sessionPayload = (await sessionResponse.json()) as {
-    latestDiff: { diff: string; changedFiles: string[] } | null;
-  };
+  const sessionPayload = await parseJsonResponse(sessionResponse, sessionDetailsResponseSchema);
+
+  assert.deepEqual(sessionPayload.project, {
+    id: fixture.project.id,
+    name: fixture.project.name,
+    defaultBranch: fixture.project.defaultBranch,
+    ownerDisplayName: fixture.developer.displayName,
+    owningAgentId: fixture.project.agentProjectKey,
+    agentAvailability: 'offline',
+  });
+  assert.deepEqual(sessionPayload.participants, [
+    {
+      userId: fixture.developer.id,
+      role: 'developer',
+      displayName: fixture.developer.displayName,
+    },
+    {
+      userId: pmLogin.body.user.id,
+      role: 'pm',
+      displayName: pmLogin.body.user.displayName,
+    },
+  ]);
 
   assert.deepEqual(sessionPayload.latestDiff, {
     diff: 'diff --git a/README.md b/README.md\n+Updated README',

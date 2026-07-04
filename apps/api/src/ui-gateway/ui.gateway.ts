@@ -27,8 +27,7 @@ export class UiGateway {
   @SubscribeMessage(uiSessionSubscribeEventName)
   async subscribeToSession(@MessageBody() payload: unknown, @ConnectedSocket() client: Socket) {
     const subscription = uiSessionSubscriptionSchema.parse(payload);
-    const authorizationHeader = client.handshake.headers.authorization;
-    const user = this.authTokenService.verify(this.extractBearerToken(authorizationHeader));
+    const user = this.authTokenService.verify(this.extractAuthToken(client));
     const membership = await this.invitationsService.findMembership(subscription.sessionId, user.id);
 
     if (!membership) {
@@ -46,6 +45,32 @@ export class UiGateway {
 
   private roomName(sessionId: string): string {
     return `session:${sessionId}`;
+  }
+
+  private extractAuthToken(client: Socket): string {
+    const authToken = this.extractAuthTokenFromHandshake(client.handshake.auth);
+
+    if (authToken) {
+      return authToken;
+    }
+
+    return this.extractBearerToken(client.handshake.headers.authorization);
+  }
+
+  private extractAuthTokenFromHandshake(auth: Socket['handshake']['auth']): string | null {
+    if (!auth || typeof auth !== 'object') {
+      return null;
+    }
+
+    if ('token' in auth && typeof auth.token === 'string' && auth.token.length > 0) {
+      return auth.token;
+    }
+
+    if ('authorization' in auth && typeof auth.authorization === 'string') {
+      return this.extractBearerToken(auth.authorization);
+    }
+
+    return null;
   }
 
   private extractBearerToken(authorizationHeader: string | string[] | undefined): string {

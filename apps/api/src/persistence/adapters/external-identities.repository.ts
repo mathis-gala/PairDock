@@ -1,11 +1,12 @@
 import { Inject, Injectable } from '@nestjs/common';
 import type { ExternalIdentity } from '@pairdock/domain';
-import type { Prisma } from '../../generated/prisma/client.js';
-import { DatabaseClient, type DatabaseExecutor } from '../client.js';
+import type { DatabaseExecutor } from '../client.js';
+import { DatabaseClient } from '../client.js';
 import type {
   CreateExternalIdentityInput,
   ExternalIdentitiesRepository,
 } from '../ports/external-identities.repository.js';
+import { serializeJsonObject } from './json-parsers.js';
 import { mapExternalIdentity } from './mappers.js';
 
 @Injectable()
@@ -19,7 +20,7 @@ export class ExternalIdentitiesRepositoryAdapter implements ExternalIdentitiesRe
         provider: input.provider,
         providerUserId: input.providerUserId,
         providerTeamId: input.providerTeamId ?? null,
-        metadata: (input.metadata ?? {}) as Prisma.InputJsonObject,
+        metadata: serializeJsonObject(input.metadata ?? {}),
       },
     });
 

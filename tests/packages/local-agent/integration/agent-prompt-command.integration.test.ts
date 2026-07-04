@@ -421,6 +421,7 @@ class RecordingHarnessPort implements AgentHarnessPort {
 
 class CancellableHarnessPort implements AgentHarnessPort {
   private readonly cancellations = new Map<string, () => void>();
+  private readonly pendingCancellations = new Set<string>();
   cancelledSessionIds: string[] = [];
 
   async *runPrompt(input: RunPromptInput): AsyncIterable<AgentHarnessEvent> {
@@ -430,9 +431,13 @@ class CancellableHarnessPort implements AgentHarnessPort {
       text: 'stdout:started\n',
     };
 
-    await new Promise<void>((resolve) => {
-      this.cancellations.set(input.sessionId, resolve);
-    });
+    if (this.pendingCancellations.has(input.sessionId)) {
+      this.pendingCancellations.delete(input.sessionId);
+    } else {
+      await new Promise<void>((resolve) => {
+        this.cancellations.set(input.sessionId, resolve);
+      });
+    }
 
     yield {
       type: 'done',
@@ -442,7 +447,12 @@ class CancellableHarnessPort implements AgentHarnessPort {
 
   async cancel(sessionId: string): Promise<void> {
     this.cancelledSessionIds.push(sessionId);
-    this.cancellations.get(sessionId)?.();
+    const cancellation = this.cancellations.get(sessionId);
+    if (cancellation) {
+      cancellation();
+    } else {
+      this.pendingCancellations.add(sessionId);
+    }
     this.cancellations.delete(sessionId);
   }
 }

@@ -1,5 +1,12 @@
 import { z } from 'zod';
-import { checkResultSchema, envelopeBaseSchema, sessionEnvelope, sessionStatusSchema, uuidSchema } from './common.js';
+import {
+  checkResultSchema,
+  envelopeBaseSchema,
+  sessionEnvelope,
+  sessionStatusSchema,
+  toolReadinessCheckSchema,
+  uuidSchema,
+} from './common.js';
 
 const sessionIdConsistencyRule = {
   message: 'Envelope sessionId must match payload.sessionId.',
@@ -11,6 +18,16 @@ export const agentConnectedEventEnvelopeSchema = envelopeBaseSchema.extend({
   payload: z.object({
     agentId: z.string().min(1),
     capabilities: z.array(z.string().min(1)),
+  }),
+});
+
+export const readinessResultEventEnvelopeSchema = envelopeBaseSchema.extend({
+  type: z.literal('readiness.result'),
+  payload: z.object({
+    projectKey: z.string().min(1),
+    sessionId: uuidSchema.optional(),
+    ok: z.boolean(),
+    checks: z.array(toolReadinessCheckSchema),
   }),
 });
 
@@ -107,6 +124,7 @@ export const errorEventEnvelopeSchema = envelopeBaseSchema
 
 export const agentEventEnvelopeSchema = z.discriminatedUnion('type', [
   agentConnectedEventEnvelopeSchema,
+  readinessResultEventEnvelopeSchema,
   sessionProgressEventEnvelopeSchema,
   sessionReadyEventEnvelopeSchema,
   agentOutputEventEnvelopeSchema,
@@ -119,6 +137,7 @@ export const agentEventEnvelopeSchema = z.discriminatedUnion('type', [
 ]);
 
 export type AgentConnectedEventEnvelope = z.infer<typeof agentConnectedEventEnvelopeSchema>;
+export type ReadinessResultEventEnvelope = z.infer<typeof readinessResultEventEnvelopeSchema>;
 export type SessionProgressEventEnvelope = z.infer<typeof sessionProgressEventEnvelopeSchema>;
 export type SessionReadyEventEnvelope = z.infer<typeof sessionReadyEventEnvelopeSchema>;
 export type AgentOutputEventEnvelope = z.infer<typeof agentOutputEventEnvelopeSchema>;

@@ -6,6 +6,10 @@ async function bootstrap() {
   const app = await NestFactory.create(AppModule);
   const port = Number(process.env.PORT ?? '3000');
 
+  app.enableCors({
+    origin: '*',
+  });
+
   await app.listen(port);
   console.log(`PairDock API skeleton listening on http://localhost:${port}`);
 }
