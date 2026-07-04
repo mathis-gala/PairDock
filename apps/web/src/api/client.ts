@@ -17,11 +17,6 @@ interface CreateSessionInput {
   startSource: 'pm';
 }
 
-/**
- * Treaty-style API client. Replace scattered `fetch` calls with typed route
- * namespaces, e.g. `api.sessions.get(id)`, `api.sessions.sendPrompt(...)`.
- * The access token is injected into the Authorization header centrally.
- */
 export interface ApiClient {
   readonly projects: {
     listShared(): Promise<SharedProjectSummary[]>;
@@ -95,10 +90,6 @@ export function createApiClient(accessToken: string): ApiClient {
   };
 }
 
-/**
- * Unauthenticated auth namespace. These routes resolve an access token rather
- * than require one, so they live outside the authenticated client factory.
- */
 export const authApi: {
   authenticateDeveloper(rawAccessToken: string): Promise<AuthSession>;
   authenticatePm(rawAccessToken: string): Promise<AuthSession>;

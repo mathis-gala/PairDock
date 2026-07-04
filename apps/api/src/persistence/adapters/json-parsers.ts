@@ -1,19 +1,6 @@
 import type { ToolReadinessCheck, ToolReadinessKey, ToolReadinessStatus } from '@pairdock/domain';
 import type { Prisma } from '../../generated/prisma/client.js';
 
-/**
- * Runtime parsing for the Prisma JSON boundary. Prisma stores JSON columns as
- * `Prisma.JsonValue` (an opaque union of null / boolean / number / string /
- * array / object); the domain needs specific shapes. These functions parse the
- * value at runtime and throw when the shape does not match, instead of
- * asserting a type that was never checked.
- *
- * The matching write helpers serialize domain values back into the exact
- * `Prisma.InputJson*` shapes so repository code never needs a cast.
- */
-
-// ---- read side: Prisma.JsonValue -> domain ----
-
 export function parseJsonObject(value: Prisma.JsonValue): Record<string, unknown> {
   if (value !== null && typeof value === 'object' && !Array.isArray(value)) {
     return value;
@@ -80,8 +67,6 @@ function isToolReadinessStatus(value: string): value is ToolReadinessStatus {
   return value === 'passed' || value === 'failed' || value === 'warning' || value === 'skipped';
 }
 
-// ---- write side: domain -> Prisma.InputJson* ----
-
 export function serializeJsonObject(value: Record<string, unknown>): Prisma.InputJsonObject {
   return toInputJsonObject(value);
 }
@@ -104,11 +89,6 @@ function serializeToolReadinessCheck(check: ToolReadinessCheck): Prisma.InputJso
   };
 }
 
-/**
- * Recursive coercion of an untrusted value into Prisma's JSON input shape.
- * `undefined` entries (which Prisma rejects) are dropped; everything else is
- * copied verbatim once its concrete JSON type is confirmed at runtime.
- */
 function toInputJsonValue(value: unknown): Prisma.InputJsonValue {
   if (typeof value === 'string' || typeof value === 'number' || typeof value === 'boolean') {
     return value;

@@ -59,10 +59,6 @@ const agentHarnessConfigSchema = z.object({
   args: z.array(z.string().min(1)).optional(),
 });
 
-/**
- * Schema for the agent configuration file read from disk. Parsing through this
- * schema turns untrusted JSON into a fully-typed value with no casts.
- */
 const agentConfigFileSchema = z.object({
   backendUrl: z.string().min(1),
   agentId: z.string().min(1),

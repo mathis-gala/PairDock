@@ -1,4 +1,4 @@
-import { ForbiddenException, Inject, Injectable } from '@nestjs/common';
+import { ForbiddenException, Inject, Injectable, InternalServerErrorException } from '@nestjs/common';
 import type { PairDockIdentity } from '@pairdock/domain';
 import type { SharedProjectSummary } from '@pairdock/shared-contracts';
 import { ConnectedAgentsRegistry } from '../agent-gateway/connected-agents.registry.js';
@@ -16,6 +16,10 @@ export class ProjectsService {
     @Inject(ConnectedAgentsRegistry)
     private readonly connectedAgentsRegistry: ConnectedAgentsRegistry,
   ) {}
+
+  listSharedProjectsResponse(user: PairDockIdentity | undefined): Promise<SharedProjectSummary[]> {
+    return this.listSharedProjects(this.requireUser(user));
+  }
 
   async listSharedProjects(user: PairDockIdentity): Promise<SharedProjectSummary[]> {
     if (user.kind !== 'pm') {
@@ -56,6 +60,14 @@ export class ProjectsService {
             }),
       } satisfies SharedProjectSummary;
     });
+  }
+
+  private requireUser(user: PairDockIdentity | undefined): PairDockIdentity {
+    if (!user) {
+      throw new InternalServerErrorException('Authenticated user was not resolved.');
+    }
+
+    return user;
   }
 }
 
