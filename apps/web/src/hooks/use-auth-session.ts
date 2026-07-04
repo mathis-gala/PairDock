@@ -2,9 +2,11 @@ import { useSyncExternalStore } from 'react';
 import { type AuthSession, authSessionSchema } from '../schemas/auth.js';
 
 const AUTH_STORAGE_KEY = 'pairdock.auth.session';
+let cachedSerializedSession: string | null | undefined;
+let cachedAuthSession: AuthSession | null = null;
 
 export function useAuthSession(): AuthSession | null {
-  return useSyncExternalStore(subscribe, getSnapshot, getSnapshot);
+  return useSyncExternalStore(subscribe, getAuthSessionSnapshot, getAuthSessionSnapshot);
 }
 
 export function setAuthSession(session: AuthSession): void {
@@ -40,21 +42,30 @@ function subscribe(listener: () => void): () => void {
   };
 }
 
-function getSnapshot(): AuthSession | null {
+export function getAuthSessionSnapshot(): AuthSession | null {
   if (typeof window === 'undefined') {
     return null;
   }
 
   const serializedSession = window.localStorage.getItem(AUTH_STORAGE_KEY);
 
+  if (serializedSession === cachedSerializedSession) {
+    return cachedAuthSession;
+  }
+
+  cachedSerializedSession = serializedSession;
+
   if (!serializedSession) {
+    cachedAuthSession = null;
     return null;
   }
 
   try {
     const parsed = authSessionSchema.safeParse(JSON.parse(serializedSession));
-    return parsed.success ? parsed.data : null;
+    cachedAuthSession = parsed.success ? parsed.data : null;
+    return cachedAuthSession;
   } catch {
+    cachedAuthSession = null;
     return null;
   }
 }
