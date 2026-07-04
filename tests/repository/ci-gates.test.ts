@@ -28,7 +28,8 @@ test('CI workflow runs repository quality gates for pull requests and main pushe
     'prisma-migrations:',
     'api-tests:',
     'local-agent-tests:',
-    'web-tests-build:',
+    'web-tests:',
+    'build:',
   ]) {
     assert.ok(workflow.includes(jobName), `workflow must split CI into parallel ${jobName} job`);
   }
