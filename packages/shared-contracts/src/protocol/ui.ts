@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { uuidSchema } from './common.js';
+import { toolReadinessCheckSchema, uuidSchema } from './common.js';
 
 export const uiSessionSubscriptionSchema = z.object({
   sessionId: uuidSchema,
@@ -29,6 +29,11 @@ export const developerProjectSessionSummarySchema = z.object({
   closedAt: z.string().nullable(),
 });
 
+export const developerProjectReadinessSchema = z.object({
+  ok: z.boolean(),
+  checks: z.array(toolReadinessCheckSchema),
+});
+
 export const developerProjectSummarySchema = z.object({
   id: uuidSchema,
   name: z.string().min(1),
@@ -41,6 +46,7 @@ export const developerProjectSummarySchema = z.object({
   pmCanStartSessions: z.boolean(),
   pmMemberCount: z.number().int().nonnegative(),
   agentAvailability: z.enum(['online', 'offline']),
+  readiness: developerProjectReadinessSchema.nullable(),
   sessions: z.array(developerProjectSessionSummarySchema),
 });
 
@@ -67,6 +73,7 @@ export const shareDeveloperProjectInputSchema = z.object({
 export type UiSessionSubscription = z.infer<typeof uiSessionSubscriptionSchema>;
 export type SharedProjectSummary = z.infer<typeof sharedProjectSummarySchema>;
 export type DeveloperProjectSessionSummary = z.infer<typeof developerProjectSessionSummarySchema>;
+export type DeveloperProjectReadiness = z.infer<typeof developerProjectReadinessSchema>;
 export type DeveloperProjectSummary = z.infer<typeof developerProjectSummarySchema>;
 export type CreateDeveloperProjectInput = z.infer<typeof createDeveloperProjectInputSchema>;
 export type ShareDeveloperProjectInput = z.infer<typeof shareDeveloperProjectInputSchema>;

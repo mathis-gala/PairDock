@@ -7,7 +7,7 @@ import {
   InternalServerErrorException,
   NotFoundException,
 } from '@nestjs/common';
-import type { PairDockIdentity, PairDockUser, Session } from '@pairdock/domain';
+import type { PairDockIdentity, PairDockUser, ProjectReadinessSnapshot, Session } from '@pairdock/domain';
 import {
   type CreateDeveloperProjectInput,
   createDeveloperProjectInputSchema,
@@ -127,6 +127,11 @@ export class ProjectsService {
 
   async listDeveloperProjects(user: PairDockIdentity): Promise<DeveloperProjectSummary[]> {
     const projectRecords = await this.projectsRepository.listOwnedByUserId(user.id);
+    const readinessByProjectId = new Map(
+      (await this.projectReadinessRepository.findManyByProjectIds(projectRecords.map(({ project }) => project.id))).map(
+        (snapshot) => [snapshot.projectId, snapshot],
+      ),
+    );
     const sessionsByProjectId = await this.listSessionsByProjectId(projectRecords.map(({ project }) => project.id));
     const reviewRequestUrlsBySessionId = await this.listReviewRequestUrlsBySessionId(
       [...sessionsByProjectId.values()].flat().map((session) => session.id),
@@ -137,6 +142,7 @@ export class ProjectsService {
         record,
         sessionsByProjectId.get(record.project.id) ?? [],
         reviewRequestUrlsBySessionId,
+        readinessByProjectId.get(record.project.id) ?? null,
       ),
     );
   }
@@ -176,6 +182,8 @@ export class ProjectsService {
         pmMemberCount: 0,
       },
       [],
+      new Map(),
+      null,
     );
   }
 
@@ -201,7 +209,7 @@ export class ProjectsService {
       projectSessions.map((session) => session.id),
     );
 
-    return this.buildDeveloperProjectSummary(refreshedRecord, projectSessions, reviewRequestUrlsBySessionId);
+    return this.buildDeveloperProjectSummary(refreshedRecord, projectSessions, reviewRequestUrlsBySessionId, null);
   }
 
   private parseCreateProjectInput(body: unknown): CreateDeveloperProjectInput {
@@ -274,6 +282,7 @@ export class ProjectsService {
     record: DeveloperProjectRecord,
     sessions: Session[],
     reviewRequestUrlsBySessionId: Map<string, string | null> = new Map(),
+    readinessSnapshot: ProjectReadinessSnapshot | null = null,
   ): DeveloperProjectSummary {
     return {
       id: record.project.id,
@@ -289,6 +298,12 @@ export class ProjectsService {
       agentAvailability: this.connectedAgentsRegistry.findSocketId(record.project.agentProjectKey)
         ? 'online'
         : 'offline',
+      readiness: readinessSnapshot
+        ? {
+            ok: readinessSnapshot.ok,
+            checks: readinessSnapshot.checks,
+          }
+        : null,
       sessions: sessions.slice(0, 5).map((session) => ({
         id: session.id,
         status: session.status,

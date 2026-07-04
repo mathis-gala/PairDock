@@ -10,7 +10,8 @@
     "dev": "tsx watch src/main.ts start",
     "test": "bun run test:integration",
     "test:integration": "sh -c 'files=$(find ../../tests/packages/local-agent/integration -name \"*.test.ts\" -print); if [ -z \"$files\" ]; then echo \"No integration tests found\"; else node --import tsx --test --test-concurrency=1 $files; fi'",
-    "typecheck": "tsc --noEmit -p tsconfig.json"
+    "typecheck": "tsc --noEmit -p tsconfig.json",
+    "build": "bun run typecheck"
   },
   "dependencies": {
     "@pairdock/shared-contracts": "0.1.0",

@@ -54,6 +54,12 @@ export class SessionStartPolicy {
         throw new ForbiddenException('Only the owning developer can create sessions for this project.');
       }
 
+      const readinessSnapshot = await this.projectReadinessRepository.findByProjectId(project.id);
+
+      if (readinessSnapshot && !readinessSnapshot.ok) {
+        throw new ConflictException(resolveDeveloperReadinessFailure(readinessSnapshot.checks));
+      }
+
       return project;
     }
 
@@ -83,4 +89,11 @@ export class SessionStartPolicy {
 
     return project;
   }
+}
+
+function resolveDeveloperReadinessFailure(
+  checks: { message: string | null; required: boolean; status: string }[],
+): string {
+  const failingRequiredCheck = checks.find((check) => check.required && check.status === 'failed');
+  return failingRequiredCheck?.message ?? 'Required developer readiness checks must pass before starting a session.';
 }

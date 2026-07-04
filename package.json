@@ -10,6 +10,9 @@
   "scripts": {
     "lint": "biome check .",
     "lint:fix": "biome check --write .",
+    "test": "bun run test:architecture && bun run --workspaces --if-present test",
+    "test:architecture": "node --import tsx --test tests/repository/**/*.test.ts",
+    "build": "bun run --workspaces --if-present build",
     "typecheck": "bun run --workspaces --if-present typecheck",
     "prisma:generate": "bun run --filter @pairdock/api prisma:generate",
     "db:migrate": "bun run --filter @pairdock/api db:migrate",

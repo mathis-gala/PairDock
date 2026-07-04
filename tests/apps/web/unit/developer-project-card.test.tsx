@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import type { DeveloperProjectSummary } from '@pairdock/shared-contracts';
+import { createElement } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { DeveloperProjectCard } from '../../../../apps/web/src/components/developer/developer-project-card.js';
 
@@ -16,6 +17,7 @@ const project: DeveloperProjectSummary = {
   pmCanStartSessions: true,
   pmMemberCount: 1,
   agentAvailability: 'offline',
+  readiness: null,
   sessions: [
     {
       id: '44444444-4444-4444-8444-444444444444',
@@ -28,17 +30,43 @@ const project: DeveloperProjectSummary = {
   ],
 };
 
+const blockedProject: DeveloperProjectSummary = {
+  ...project,
+  id: '55555555-5555-4555-8555-555555555555',
+  readiness: {
+    ok: false,
+    checks: [
+      {
+        key: 'docker',
+        status: 'failed',
+        required: true,
+        message: 'Docker unavailable.',
+        remediation: 'Start Docker Desktop and rerun readiness checks.',
+      },
+      {
+        key: 'preview-tunnel',
+        status: 'warning',
+        required: false,
+        message: 'Preview tunnel is optional for this project.',
+        remediation: 'Configure a tunnel before sharing previews outside the local network.',
+      },
+    ],
+  },
+};
+
 test('BT-028/BT-029/BT-049: developer project card exposes model start, sharing, and close controls', () => {
   const html = renderToStaticMarkup(
-    <DeveloperProjectCard
-      closePendingSessionId={null}
-      onCloseSession={async () => undefined}
-      onShareProject={async () => undefined}
-      onStartSession={async () => undefined}
-      project={project}
-      sharePendingProjectId={null}
-      startPendingProjectId={null}
-    />,
+    createElement(DeveloperProjectCard, {
+      closePendingSessionId: null,
+      onCloseSession: async () => undefined,
+      onRequestReadiness: async () => undefined,
+      onShareProject: async () => undefined,
+      onStartSession: async () => undefined,
+      project,
+      readinessPendingProjectId: null,
+      sharePendingProjectId: null,
+      startPendingProjectId: null,
+    }),
   );
 
   assert.match(html, /Model selector/);
@@ -49,4 +77,26 @@ test('BT-028/BT-029/BT-049: developer project card exposes model start, sharing,
   assert.match(html, /Open draft review request/);
   assert.match(html, /https:\/\/github\.com\/mathis\/developer-project\/pull\/14/);
   assert.match(html, /Close session/);
+});
+
+test('BT-044: developer project card disables start and shows readiness remediation for failed required checks', () => {
+  const html = renderToStaticMarkup(
+    createElement(DeveloperProjectCard, {
+      closePendingSessionId: null,
+      onCloseSession: async () => undefined,
+      onRequestReadiness: async () => undefined,
+      onShareProject: async () => undefined,
+      onStartSession: async () => undefined,
+      project: blockedProject,
+      readinessPendingProjectId: null,
+      sharePendingProjectId: null,
+      startPendingProjectId: null,
+    }),
+  );
+
+  assert.match(html, /Docker unavailable\./);
+  assert.match(html, /Start Docker Desktop and rerun readiness checks\./);
+  assert.match(html, /Preview tunnel is optional for this project\./);
+  assert.match(html, /Optional/);
+  assert.match(html, /disabled=""/);
 });

@@ -30,6 +30,7 @@ export interface ApiClient {
     create(input: CreateDeveloperProjectInput): Promise<DeveloperProjectSummary>;
     listDeveloper(): Promise<DeveloperProjectSummary[]>;
     listShared(): Promise<SharedProjectSummary[]>;
+    requestReadinessCheck(projectId: string): Promise<void>;
     share(projectId: string, input: ShareDeveloperProjectInput): Promise<DeveloperProjectSummary>;
   };
   readonly sessions: {
@@ -68,6 +69,12 @@ export function createApiClient(accessToken: string): ApiClient {
           headers: authHeaders(accessToken),
         });
         return sharedProjectSummaryListSchema.parse(value);
+      },
+      async requestReadinessCheck(projectId: string): Promise<void> {
+        await requestJson(`/tool-readiness/projects/${projectId}/check`, {
+          method: 'POST',
+          headers: authHeaders(accessToken),
+        });
       },
       async share(projectId: string, input: ShareDeveloperProjectInput): Promise<DeveloperProjectSummary> {
         const value = await requestJson(`/projects/${projectId}/members`, {

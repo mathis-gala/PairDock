@@ -7,6 +7,7 @@ import { PersistenceModule } from './persistence/persistence.module.js';
 import { ProjectsModule } from './projects/projects.module.js';
 import { SessionsModule } from './sessions/sessions.module.js';
 import { SourceControlModule } from './source-control/source-control.module.js';
+import { ToolReadinessModule } from './tool-readiness/tool-readiness.module.js';
 import { UiGatewayModule } from './ui-gateway/ui-gateway.module.js';
 import { UsersModule } from './users/users.module.js';
 
@@ -18,6 +19,7 @@ import { UsersModule } from './users/users.module.js';
     InvitationsModule,
     AuthModule,
     ProjectsModule,
+    ToolReadinessModule,
     SessionsModule,
     UiGatewayModule,
     AgentGatewayModule,

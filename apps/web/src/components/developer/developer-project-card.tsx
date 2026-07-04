@@ -5,15 +5,18 @@ import { SectionCard } from '../section-card.js';
 import { StatusBadge } from '../status-badge.js';
 import { ProjectShareForm } from './project-share-form.js';
 import { SessionControlCard } from './session-control-card.js';
+import { ToolReadinessPanel } from './tool-readiness-panel.js';
 
 const modelOptions = ['codex-cli/gpt-5.4', 'codex-cli/gpt-5.5', 'openai-compatible/gpt-4.1', 'custom/local'];
 
 interface DeveloperProjectCardProps {
   closePendingSessionId: string | null;
   onCloseSession: (sessionId: string) => Promise<void>;
+  onRequestReadiness: (projectId: string) => Promise<void>;
   onShareProject: (projectId: string, pmEmail: string) => Promise<void>;
   onStartSession: (projectId: string, modelId: string) => Promise<void>;
   project: DeveloperProjectSummary;
+  readinessPendingProjectId: string | null;
   sharePendingProjectId: string | null;
   startPendingProjectId: string | null;
 }
@@ -21,14 +24,18 @@ interface DeveloperProjectCardProps {
 export function DeveloperProjectCard({
   closePendingSessionId,
   onCloseSession,
+  onRequestReadiness,
   onShareProject,
   onStartSession,
   project,
+  readinessPendingProjectId,
   sharePendingProjectId,
   startPendingProjectId,
 }: DeveloperProjectCardProps) {
   const [selectedModelId, setSelectedModelId] = useState(project.defaultModelId);
   const startPending = startPendingProjectId === project.id;
+  const readinessPending = readinessPendingProjectId === project.id;
+  const startBlockedByReadiness = project.agentAvailability !== 'online' || project.readiness?.ok !== true;
   const sharePending = sharePendingProjectId === project.id;
 
   return (
@@ -74,12 +81,18 @@ export function DeveloperProjectCard({
             </label>
             <Button
               className="mt-3"
-              disabled={startPending}
+              disabled={startPending || startBlockedByReadiness}
               onClick={async () => onStartSession(project.id, selectedModelId)}
             >
               {startPending ? 'Starting session…' : 'Start developer session'}
             </Button>
           </div>
+          <ToolReadinessPanel
+            agentAvailability={project.agentAvailability}
+            isRequesting={readinessPending}
+            onRequestReadiness={async () => onRequestReadiness(project.id)}
+            readiness={project.readiness}
+          />
           <div className="rounded-xl border border-slate-800 bg-slate-950/70 p-3">
             <p className="mb-2 text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">Share with PM</p>
             <ProjectShareForm

@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import type { SharedProjectSummary } from '@pairdock/shared-contracts';
+import { createElement } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { SharedProjectCard } from '../../../../apps/web/src/components/pm-session/shared-project-card.js';
 
@@ -32,14 +33,22 @@ const blockedProject: SharedProjectSummary = {
 
 test('BT-048: shared-project cards expose enabled and disabled PM session starts', () => {
   const readyHtml = renderToStaticMarkup(
-    <SharedProjectCard onStart={() => undefined} project={readyProject} startPending={false} />,
+    createElement(SharedProjectCard, { onStart: () => undefined, project: readyProject, startPending: false }),
   );
   const blockedHtml = renderToStaticMarkup(
-    <SharedProjectCard onStart={() => undefined} project={blockedProject} startPending={false} />,
+    createElement(SharedProjectCard, { onStart: () => undefined, project: blockedProject, startPending: false }),
   );
 
   assert.match(readyHtml, /Start PM session/);
   assert.doesNotMatch(readyHtml, /disabled=""/);
   assert.match(blockedHtml, /Owning agent is offline\./);
   assert.match(blockedHtml, /disabled=""/);
+});
+
+test('BT-045: shared-project cards never expose developer local readiness diagnostics', () => {
+  const blockedHtml = renderToStaticMarkup(
+    createElement(SharedProjectCard, { onStart: () => undefined, project: blockedProject, startPending: false }),
+  );
+
+  assert.doesNotMatch(blockedHtml, /Docker|Git CLI|agent harness|preview tunnel|local path|\/Users\/dev/i);
 });

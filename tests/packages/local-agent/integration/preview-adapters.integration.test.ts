@@ -24,7 +24,7 @@ test('Task 8: DockerSandboxAdapter runs the stop command in the session worktree
     modelId: 'codex-cli/gpt-5.4',
     previewConfig: {
       sandbox: {
-        startCommand: `node -e "setInterval(() => {}, 1000)"`,
+        startCommand: `exec node -e "setInterval(() => {}, 1000)"`,
         stopCommand: `node -e "require('node:fs').writeFileSync('sandbox-stopped.txt', 'done')"`,
         healthcheckUrl: 'http://127.0.0.1:3100/health',
       },
@@ -33,7 +33,7 @@ test('Task 8: DockerSandboxAdapter runs the stop command in the session worktree
 
   await adapter.stop(sandboxRef, {
     sandbox: {
-      startCommand: `node -e "setInterval(() => {}, 1000)"`,
+      startCommand: `exec node -e "setInterval(() => {}, 1000)"`,
       stopCommand: `node -e "require('node:fs').writeFileSync('sandbox-stopped.txt', 'done')"`,
       healthcheckUrl: 'http://127.0.0.1:3100/health',
     },
@@ -55,7 +55,7 @@ test('Task 8: CloudflarePreviewTunnelAdapter runs the close command in the sessi
     worktreePath,
     previewConfig: {
       tunnel: {
-        startCommand: `node -e "console.log('https://pairdock.trycloudflare.com'); setInterval(() => {}, 1000)"`,
+        startCommand: `exec node -e "console.log('https://pairdock.trycloudflare.com'); setInterval(() => {}, 1000)"`,
         closeCommand: `node -e "require('node:fs').writeFileSync('tunnel-closed.txt', 'done')"`,
       },
     },
@@ -65,7 +65,7 @@ test('Task 8: CloudflarePreviewTunnelAdapter runs the close command in the sessi
 
   await adapter.close(tunnelRef, {
     tunnel: {
-      startCommand: `node -e "console.log('https://pairdock.trycloudflare.com'); setInterval(() => {}, 1000)"`,
+      startCommand: `exec node -e "console.log('https://pairdock.trycloudflare.com'); setInterval(() => {}, 1000)"`,
       closeCommand: `node -e "require('node:fs').writeFileSync('tunnel-closed.txt', 'done')"`,
     },
   });
