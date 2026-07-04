@@ -1,8 +1,12 @@
 import { useSyncExternalStore } from 'react';
 import type { AppRoute } from '../routing/route-types.js';
 
+const loginRoute: AppRoute = { kind: 'login' };
+let cachedHash: string | null = null;
+let cachedRoute: AppRoute = loginRoute;
+
 export function useAppRoute(): AppRoute {
-  return useSyncExternalStore(subscribe, getSnapshot, getSnapshot);
+  return useSyncExternalStore(subscribe, getAppRouteSnapshot, getAppRouteSnapshot);
 }
 
 export function openLogin(): void {
@@ -30,12 +34,19 @@ function subscribe(listener: () => void): () => void {
   return () => window.removeEventListener('hashchange', listener);
 }
 
-function getSnapshot(): AppRoute {
+export function getAppRouteSnapshot(): AppRoute {
   if (typeof window === 'undefined') {
-    return { kind: 'login' };
+    return loginRoute;
   }
 
-  return parseHash(window.location.hash);
+  const currentHash = window.location.hash;
+  if (currentHash === cachedHash) {
+    return cachedRoute;
+  }
+
+  cachedHash = currentHash;
+  cachedRoute = parseHash(currentHash);
+  return cachedRoute;
 }
 
 function parseHash(hashValue: string): AppRoute {
@@ -54,7 +65,7 @@ function parseHash(hashValue: string): AppRoute {
     return { kind: 'pm-session', sessionId: sessionRouteMatch[1] };
   }
 
-  return { kind: 'login' };
+  return loginRoute;
 }
 
 function setHash(nextHash: string): void {
