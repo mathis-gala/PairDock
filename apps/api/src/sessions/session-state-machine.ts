@@ -16,7 +16,7 @@ export class InvalidSessionTransitionError extends Error {
   }
 }
 
-const allowedProgressTransitions = new Map<Session['status'], ProgressStatus[]>([
+const allowedProgressTransitions = new Map<Session['status'], SessionStatus[]>([
   ['CREATED', ['AGENT_CONNECTING']],
   ['AGENT_CONNECTING', ['WORKTREE_CREATING']],
   ['WORKTREE_CREATING', ['DOCKER_STARTING']],
@@ -113,7 +113,7 @@ export class SessionStateMachine {
 
     const allowedTransitions = allowedProgressTransitions.get(currentStatus);
 
-    if (allowedTransitions?.includes(nextStatus as ProgressStatus)) {
+    if (allowedTransitions?.includes(nextStatus)) {
       return;
     }
 

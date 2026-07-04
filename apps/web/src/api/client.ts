@@ -1,4 +1,5 @@
 import { type SharedProjectSummary, sharedProjectSummaryListSchema } from '@pairdock/shared-contracts';
+import { z } from 'zod';
 import { getBackendUrl } from '../lib/backend-url.js';
 import { type AuthSession, authResponseSchema } from '../schemas/auth.js';
 import {
@@ -98,7 +99,10 @@ export function createApiClient(accessToken: string): ApiClient {
  * Unauthenticated auth namespace. These routes resolve an access token rather
  * than require one, so they live outside the authenticated client factory.
  */
-export const authApi = {
+export const authApi: {
+  authenticateDeveloper(rawAccessToken: string): Promise<AuthSession>;
+  authenticatePm(rawAccessToken: string): Promise<AuthSession>;
+} = {
   async authenticateDeveloper(rawAccessToken: string): Promise<AuthSession> {
     const response = await fetch(`${getBackendUrl()}/auth/developer/callback`, {
       method: 'POST',
@@ -118,7 +122,7 @@ export const authApi = {
 
     return toAuthSession(response, 'slack');
   },
-} as const;
+};
 
 interface RequestOptions {
   method: string;
@@ -128,14 +132,18 @@ interface RequestOptions {
 
 async function requestJson(path: string, options: RequestOptions): Promise<unknown> {
   const response = await fetch(`${getBackendUrl()}${path}`, options);
-  const body = (await response.json().catch(() => null)) as { message?: string } | null;
+  const body = await response.json().catch(() => null);
+  const errorBody = responseErrorSchema.safeParse(body);
 
   if (!response.ok) {
-    throw new Error(body?.message ?? 'Request failed.');
+    const message = errorBody.success && errorBody.data ? errorBody.data.message : undefined;
+    throw new Error(message ?? 'Request failed.');
   }
 
   return body;
 }
+
+const responseErrorSchema = z.object({ message: z.string().optional() }).nullable();
 
 function authHeaders(accessToken: string): Record<string, string> {
   return { authorization: `Bearer ${accessToken}` };

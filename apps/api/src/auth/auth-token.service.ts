@@ -34,7 +34,7 @@ export class AuthTokenService {
       throw new UnauthorizedException('Invalid authentication token.');
     }
 
-    const parsed = JSON.parse(Buffer.from(payload, 'base64url').toString('utf8')) as TokenPayload;
+    const parsed = parseTokenPayload(Buffer.from(payload, 'base64url').toString('utf8'));
 
     return {
       id: parsed.id,
@@ -47,4 +47,40 @@ export class AuthTokenService {
   private sign(payload: string): string {
     return createHmac('sha256', this.secret).update(payload).digest('base64url');
   }
+}
+
+function parseTokenPayload(rawPayload: string): TokenPayload {
+  let value: unknown;
+  try {
+    value = JSON.parse(rawPayload);
+  } catch {
+    throw new UnauthorizedException('Malformed authentication token.');
+  }
+
+  if (!isRecord(value)) {
+    throw new UnauthorizedException('Malformed authentication token.');
+  }
+
+  const { id, email, displayName, kind, iat } = value;
+
+  if (
+    typeof id !== 'string' ||
+    typeof email !== 'string' ||
+    (displayName !== null && typeof displayName !== 'string') ||
+    typeof kind !== 'string' ||
+    !isUserKind(kind) ||
+    typeof iat !== 'string'
+  ) {
+    throw new UnauthorizedException('Malformed authentication token.');
+  }
+
+  return { id, email, displayName, kind, iat };
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return value !== null && typeof value === 'object' && !Array.isArray(value);
+}
+
+function isUserKind(value: string): value is TokenPayload['kind'] {
+  return value === 'developer' || value === 'pm';
 }

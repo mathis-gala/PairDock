@@ -381,9 +381,7 @@ export class AgentClient {
 }
 
 function isRetryableError(error: unknown): boolean {
-  return Boolean(
-    error && typeof error === 'object' && 'retryable' in error && (error as { retryable?: unknown }).retryable === true,
-  );
+  return Boolean(error && typeof error === 'object' && 'retryable' in error && error.retryable === true);
 }
 
 export type { AgentConnectedEventEnvelope };

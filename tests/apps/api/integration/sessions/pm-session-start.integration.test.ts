@@ -11,11 +11,7 @@ import {
 import { io, type Socket } from 'socket.io-client';
 import { AppModule } from '../../../../../apps/api/src/app.module.js';
 import { DatabaseClient } from '../../../../../apps/api/src/persistence/client.js';
-
-interface AuthResponseBody {
-  accessToken: string;
-  user: { id: string; email: string; displayName: string | null; kind: string };
-}
+import { authResponseSchema, parseJsonResponse, sessionCreateResponseSchema } from '../test-json.js';
 
 const prisma = new DatabaseClient();
 
@@ -58,7 +54,7 @@ async function authenticatePm(tokenSeed = randomUUID(), teamId = 'pairdock-teste
 
   return {
     status: response.status,
-    body: (await response.json()) as AuthResponseBody,
+    body: await parseJsonResponse(response, authResponseSchema),
   };
 }
 
@@ -200,7 +196,7 @@ test('BT-046: PM can start a shared project only when the project is ready and t
     });
 
     assert.equal(response.status, 201);
-    const sessionPayload = (await response.json()) as { id: string; createdByUserId: string; projectId: string };
+    const sessionPayload = await parseJsonResponse(response, sessionCreateResponseSchema);
     assert.equal(sessionPayload.createdByUserId, pmLogin.body.user.id);
     assert.equal(sessionPayload.projectId, fixture.project.id);
 

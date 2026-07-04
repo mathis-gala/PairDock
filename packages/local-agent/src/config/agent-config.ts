@@ -1,6 +1,7 @@
 import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import { homedir } from 'node:os';
 import { dirname, resolve } from 'node:path';
+import { z } from 'zod';
 import type { ProjectChecksConfig } from '../checks/checks-runner.js';
 import type { ProjectPreviewConfig } from '../docker/sandbox.port.js';
 import type { ProjectAgentHarnessConfig } from '../harness/agent-harness.port.js';
@@ -26,6 +27,52 @@ export interface SaveAgentConfigInput {
   checksConfigs?: Record<string, ProjectChecksConfig>;
   agentHarnessConfigs?: Record<string, ProjectAgentHarnessConfig>;
 }
+
+const sandboxConfigSchema = z.object({
+  startCommand: z.string().min(1),
+  stopCommand: z.string().min(1).optional(),
+  healthcheckUrl: z.string().min(1),
+});
+
+const tunnelConfigSchema = z.object({
+  publicUrl: z.string().min(1).optional(),
+  startCommand: z.string().min(1).optional(),
+  closeCommand: z.string().min(1).optional(),
+  startupTimeoutMs: z.number().int().positive().optional(),
+});
+
+const previewConfigSchema = z.object({
+  sandbox: sandboxConfigSchema.optional(),
+  tunnel: tunnelConfigSchema.optional(),
+  healthcheckTimeoutMs: z.number().int().positive().optional(),
+  healthcheckIntervalMs: z.number().int().positive().optional(),
+});
+
+const checksConfigSchema = z.object({
+  build: z.string().min(1).optional(),
+  test: z.string().min(1).optional(),
+  lint: z.string().min(1).optional(),
+});
+
+const agentHarnessConfigSchema = z.object({
+  command: z.string().min(1).optional(),
+  args: z.array(z.string().min(1)).optional(),
+});
+
+/**
+ * Schema for the agent configuration file read from disk. Parsing through this
+ * schema turns untrusted JSON into a fully-typed value with no casts.
+ */
+const agentConfigFileSchema = z.object({
+  backendUrl: z.string().min(1),
+  agentId: z.string().min(1),
+  authToken: z.string().min(1).optional(),
+  capabilities: z.array(z.string().min(1)).optional(),
+  projectPaths: z.record(z.string().min(1), z.string().min(1)).optional(),
+  previewConfigs: z.record(z.string().min(1), previewConfigSchema).optional(),
+  checksConfigs: z.record(z.string().min(1), checksConfigSchema).optional(),
+  agentHarnessConfigs: z.record(z.string().min(1), agentHarnessConfigSchema).optional(),
+});
 
 const DEFAULT_CONFIG_PATH = resolve(homedir(), '.pairdock', 'agent.json');
 const CONFIG_PATH_ENV_VAR = 'PAIRDOCK_AGENT_CONFIG_PATH';
@@ -69,8 +116,9 @@ export async function saveAgentConfig(input: SaveAgentConfigInput): Promise<{ co
 export async function loadAgentConfig(): Promise<AgentConfig> {
   const path = resolveAgentConfigPath();
   const rawConfig = await readFile(path, 'utf8');
+  const parsed = agentConfigFileSchema.parse(JSON.parse(rawConfig));
 
-  return normalizeAgentConfig(JSON.parse(rawConfig) as SaveAgentConfigInput);
+  return normalizeAgentConfig(parsed);
 }
 
 export function summarizeAgentConfig(config: AgentConfig) {

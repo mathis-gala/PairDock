@@ -5,11 +5,12 @@ import type { INestApplication } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from '../../../../../apps/api/src/app.module.js';
 import { DatabaseClient } from '../../../../../apps/api/src/persistence/client.js';
-
-interface AuthResponseBody {
-  accessToken: string;
-  user: { id: string; email: string; displayName: string | null; kind: string };
-}
+import {
+  authResponseSchema,
+  parseJsonResponse,
+  sessionEventListResponseSchema,
+  sessionMessageListResponseSchema,
+} from '../test-json.js';
 
 const prisma = new DatabaseClient();
 
@@ -52,7 +53,7 @@ async function authenticatePm(tokenSeed = randomUUID(), teamId = 'pairdock-teste
 
   return {
     status: response.status,
-    body: (await response.json()) as AuthResponseBody,
+    body: await parseJsonResponse(response, authResponseSchema),
   };
 }
 
@@ -168,8 +169,8 @@ test('Task 12: PM session route can reload persisted prompt history and event hi
   assert.equal(messagesResponse.status, 200);
   assert.equal(eventsResponse.status, 200);
 
-  const messages = (await messagesResponse.json()) as Array<{ role: string; content: string }>;
-  const events = (await eventsResponse.json()) as Array<{ type: string }>;
+  const messages = await parseJsonResponse(messagesResponse, sessionMessageListResponseSchema);
+  const events = await parseJsonResponse(eventsResponse, sessionEventListResponseSchema);
 
   assert.deepEqual(
     messages.map((message) => message.role),

@@ -62,14 +62,12 @@ export class UiGateway {
       return null;
     }
 
-    const candidate = auth as { token?: unknown; authorization?: unknown };
-
-    if (typeof candidate.token === 'string' && candidate.token.length > 0) {
-      return candidate.token;
+    if ('token' in auth && typeof auth.token === 'string' && auth.token.length > 0) {
+      return auth.token;
     }
 
-    if (typeof candidate.authorization === 'string') {
-      return this.extractBearerToken(candidate.authorization);
+    if ('authorization' in auth && typeof auth.authorization === 'string') {
+      return this.extractBearerToken(auth.authorization);
     }
 
     return null;

@@ -4,8 +4,10 @@ import {
   type AgentCommandEnvelope,
   type AgentConnectedEventEnvelope,
   type AgentDoneEventEnvelope,
+  type AgentEventEnvelope,
   type AgentOutputEventEnvelope,
   agentCommandEnvelopeSchema,
+  agentEventEnvelopeSchema,
   type ChecksResultEventEnvelope,
   type ErrorEventEnvelope,
   type GitDiffEventEnvelope,
@@ -144,13 +146,23 @@ export function parseAgentCommandEnvelope(payload: unknown): AgentCommandEnvelop
   return agentCommandEnvelopeSchema.parse(payload);
 }
 
-function buildEnvelope<TEnvelope extends { protocolVersion: string; messageId: string; sentAt: string }>(
-  envelope: Omit<TEnvelope, 'protocolVersion' | 'messageId' | 'sentAt'>,
-): TEnvelope {
-  return {
+type EnvelopeMetadata = 'protocolVersion' | 'messageId' | 'sentAt';
+type AgentEventEnvelopeInput = Omit<AgentEventEnvelope, EnvelopeMetadata>;
+
+function buildEnvelope(envelope: Omit<AgentConnectedEventEnvelope, EnvelopeMetadata>): AgentConnectedEventEnvelope;
+function buildEnvelope(envelope: Omit<SessionProgressEventEnvelope, EnvelopeMetadata>): SessionProgressEventEnvelope;
+function buildEnvelope(envelope: Omit<SessionReadyEventEnvelope, EnvelopeMetadata>): SessionReadyEventEnvelope;
+function buildEnvelope(envelope: Omit<AgentOutputEventEnvelope, EnvelopeMetadata>): AgentOutputEventEnvelope;
+function buildEnvelope(envelope: Omit<AgentDoneEventEnvelope, EnvelopeMetadata>): AgentDoneEventEnvelope;
+function buildEnvelope(envelope: Omit<GitDiffEventEnvelope, EnvelopeMetadata>): GitDiffEventEnvelope;
+function buildEnvelope(envelope: Omit<ChecksResultEventEnvelope, EnvelopeMetadata>): ChecksResultEventEnvelope;
+function buildEnvelope(envelope: Omit<SessionClosedEventEnvelope, EnvelopeMetadata>): SessionClosedEventEnvelope;
+function buildEnvelope(envelope: Omit<ErrorEventEnvelope, EnvelopeMetadata>): ErrorEventEnvelope;
+function buildEnvelope(envelope: AgentEventEnvelopeInput): AgentEventEnvelope {
+  return agentEventEnvelopeSchema.parse({
     protocolVersion: AGENT_PROTOCOL_VERSION,
     messageId: randomUUID(),
     sentAt: new Date().toISOString(),
     ...envelope,
-  } as TEnvelope;
+  });
 }

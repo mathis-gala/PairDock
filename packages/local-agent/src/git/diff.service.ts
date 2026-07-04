@@ -101,10 +101,8 @@ async function execGitAllowingDiffExitCode(cwd: string, args: string[]): Promise
   try {
     return await execGit(cwd, args);
   } catch (error) {
-    const execError = error as ExecFileException & { stdout?: string };
-
-    if (execError.code === 1 && typeof execError.stdout === 'string') {
-      return execError.stdout.trimEnd();
+    if (isGitDiffExitCode(error)) {
+      return error.stdout.trimEnd();
     }
 
     throw error;
@@ -114,4 +112,14 @@ async function execGitAllowingDiffExitCode(cwd: string, args: string[]): Promise
 function normalizeStatusPath(rawPath: string): string {
   const normalizedPath = rawPath.includes(' -> ') ? (rawPath.split(' -> ').at(-1) ?? rawPath) : rawPath;
   return normalizedPath.replaceAll('\\', '/');
+}
+
+function isGitDiffExitCode(error: unknown): error is ExecFileException & { stdout: string } {
+  return (
+    error instanceof Error &&
+    'code' in error &&
+    error.code === 1 &&
+    'stdout' in error &&
+    typeof error.stdout === 'string'
+  );
 }

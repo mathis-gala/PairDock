@@ -25,18 +25,6 @@ import { UiGateway } from '../ui-gateway/ui.gateway.js';
 import { ValidationService } from '../validation/validation.service.js';
 import { ConnectedAgentsRegistry } from './connected-agents.registry.js';
 
-const lifecycleProgressStatuses = [
-  'AGENT_CONNECTING',
-  'WORKTREE_CREATING',
-  'DOCKER_STARTING',
-  'PREVIEW_STARTING',
-  'AGENT_RUNNING',
-  'CHECKS_RUNNING',
-  'AWAITING_PM_VALIDATION',
-  'REVIEW_REQUEST_CREATING',
-  'REVIEW_REQUEST_CREATED',
-] as const;
-
 @Injectable()
 @WebSocketGateway({ namespace: '/agent', cors: { origin: '*' } })
 export class AgentGateway implements OnGatewayDisconnect {
@@ -296,5 +284,15 @@ function isLifecycleProgressStatus(
   | 'REVIEW_REQUEST_CREATING'
   | 'REVIEW_REQUEST_CREATED'
 > {
-  return (lifecycleProgressStatuses as readonly SessionStatus[]).includes(status);
+  return (
+    status === 'AGENT_CONNECTING' ||
+    status === 'WORKTREE_CREATING' ||
+    status === 'DOCKER_STARTING' ||
+    status === 'PREVIEW_STARTING' ||
+    status === 'AGENT_RUNNING' ||
+    status === 'CHECKS_RUNNING' ||
+    status === 'AWAITING_PM_VALIDATION' ||
+    status === 'REVIEW_REQUEST_CREATING' ||
+    status === 'REVIEW_REQUEST_CREATED'
+  );
 }

@@ -5,12 +5,7 @@ import type { INestApplication } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from '../../../../../apps/api/src/app.module.js';
 import { DatabaseClient } from '../../../../../apps/api/src/persistence/client.js';
-
-interface AuthResponseBody {
-  created: boolean;
-  accessToken: string;
-  user: { id: string; email: string; displayName: string | null; kind: string };
-}
+import { authResponseSchema, parseJsonResponse, sessionDetailsResponseSchema } from '../test-json.js';
 
 const prisma = new DatabaseClient();
 
@@ -53,7 +48,7 @@ async function authenticatePm(tokenSeed = randomUUID(), teamId = 'pairdock-teste
 
   return {
     status: response.status,
-    body: (await response.json()) as AuthResponseBody,
+    body: await parseJsonResponse(response, authResponseSchema),
   };
 }
 
@@ -153,18 +148,7 @@ test('Task 10: session details include the latest persisted git diff snapshot', 
 
   assert.equal(sessionResponse.status, 200);
 
-  const sessionPayload = (await sessionResponse.json()) as {
-    project: {
-      id: string;
-      name: string;
-      defaultBranch: string;
-      ownerDisplayName: string;
-      owningAgentId: string;
-      agentAvailability: 'online' | 'offline';
-    };
-    participants: Array<{ userId: string; role: string; displayName: string }>;
-    latestDiff: { diff: string; changedFiles: string[] } | null;
-  };
+  const sessionPayload = await parseJsonResponse(sessionResponse, sessionDetailsResponseSchema);
 
   assert.deepEqual(sessionPayload.project, {
     id: fixture.project.id,

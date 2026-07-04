@@ -1,9 +1,11 @@
 import type {
   AgentEventRecord,
   ExternalIdentity,
+  ExternalIdentityProvider,
   PairDockUser,
   Project,
   ProjectMembership,
+  ProjectMembershipRole,
   ProjectReadinessSnapshot,
   ReviewRequestRecord,
   Session,
@@ -26,6 +28,7 @@ import type {
   User as PrismaUser,
   ValidationRun as PrismaValidationRun,
 } from '../../generated/prisma/client.js';
+import { parseJsonObject, parseToolReadinessChecks } from './json-parsers.js';
 
 export function mapUser(record: PrismaUser): PairDockUser {
   return {
@@ -41,10 +44,10 @@ export function mapExternalIdentity(record: PrismaExternalIdentity): ExternalIde
   return {
     id: record.id,
     userId: record.userId,
-    provider: record.provider as ExternalIdentity['provider'],
+    provider: parseExternalIdentityProvider(record.provider),
     providerUserId: record.providerUserId,
     providerTeamId: record.providerTeamId,
-    metadata: record.metadata as Record<string, unknown>,
+    metadata: parseJsonObject(record.metadata),
     createdAt: record.createdAt,
   };
 }
@@ -81,7 +84,7 @@ export function mapProjectMembership(record: PrismaProjectMember): ProjectMember
     id: record.id,
     projectId: record.projectId,
     userId: record.userId,
-    role: record.role as ProjectMembership['role'],
+    role: parseProjectMembershipRole(record.role),
     createdAt: record.createdAt,
   };
 }
@@ -91,7 +94,7 @@ export function mapProjectReadinessSnapshot(record: PrismaProjectReadinessSnapsh
     id: record.id,
     projectId: record.projectId,
     ok: record.ok,
-    checks: Array.isArray(record.checks) ? (record.checks as unknown as ProjectReadinessSnapshot['checks']) : [],
+    checks: parseToolReadinessChecks(record.checks),
     createdAt: record.createdAt,
     updatedAt: record.updatedAt,
   };
@@ -139,7 +142,7 @@ export function mapAgentEvent(record: AgentEvent): AgentEventRecord {
     sessionId: record.sessionId,
     agentId: record.agentId,
     type: record.type,
-    payload: record.payload as Record<string, unknown>,
+    payload: parseJsonObject(record.payload),
     createdAt: record.createdAt,
   };
 }
@@ -167,4 +170,28 @@ export function mapReviewRequest(record: PrismaPullRequest): ReviewRequestRecord
     status: record.status,
     createdAt: record.createdAt,
   };
+}
+
+function parseExternalIdentityProvider(value: string): ExternalIdentityProvider {
+  if (isExternalIdentityProvider(value)) {
+    return value;
+  }
+
+  throw new Error(`Unsupported external identity provider "${value}" read from the database.`);
+}
+
+function isExternalIdentityProvider(value: string): value is ExternalIdentityProvider {
+  return value === 'github' || value === 'slack';
+}
+
+function parseProjectMembershipRole(value: string): ProjectMembershipRole {
+  if (isProjectMembershipRole(value)) {
+    return value;
+  }
+
+  throw new Error(`Unsupported project membership role "${value}" read from the database.`);
+}
+
+function isProjectMembershipRole(value: string): value is ProjectMembershipRole {
+  return value === 'pm';
 }

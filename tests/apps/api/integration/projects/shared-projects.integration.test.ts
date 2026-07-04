@@ -11,11 +11,7 @@ import {
 import { io, type Socket } from 'socket.io-client';
 import { AppModule } from '../../../../../apps/api/src/app.module.js';
 import { DatabaseClient } from '../../../../../apps/api/src/persistence/client.js';
-
-interface AuthResponseBody {
-  accessToken: string;
-  user: { id: string; email: string; displayName: string | null; kind: string };
-}
+import { authResponseSchema, parseJsonResponse, sharedProjectListResponseSchema } from '../test-json.js';
 
 const prisma = new DatabaseClient();
 
@@ -58,7 +54,7 @@ async function authenticatePm(tokenSeed = randomUUID(), teamId = 'pairdock-teste
 
   return {
     status: response.status,
-    body: (await response.json()) as AuthResponseBody,
+    body: await parseJsonResponse(response, authResponseSchema),
   };
 }
 
@@ -207,17 +203,7 @@ test('BT-048: PM shared-project dashboard lists only shared projects and exposes
     });
 
     assert.equal(response.status, 200);
-    const payload = (await response.json()) as Array<{
-      id: string;
-      name: string;
-      ownerDisplayName: string;
-      repoFullName: string;
-      defaultBranch: string;
-      defaultModelId: string;
-      agentAvailability: string;
-      canStartSession: boolean;
-      unavailableReason?: string;
-    }>;
+    const payload = await parseJsonResponse(response, sharedProjectListResponseSchema);
 
     assert.equal(payload.length, 2);
     assert.deepEqual(

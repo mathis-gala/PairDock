@@ -1,5 +1,5 @@
 import { useSyncExternalStore } from 'react';
-import type { AuthSession } from '../schemas/auth.js';
+import { type AuthSession, authSessionSchema } from '../schemas/auth.js';
 
 const AUTH_STORAGE_KEY = 'pairdock.auth.session';
 
@@ -52,29 +52,8 @@ function getSnapshot(): AuthSession | null {
   }
 
   try {
-    const parsedSession = JSON.parse(serializedSession) as Partial<AuthSession>;
-
-    if (
-      typeof parsedSession.accessToken !== 'string' ||
-      (parsedSession.provider !== 'github' && parsedSession.provider !== 'slack') ||
-      !parsedSession.user ||
-      typeof parsedSession.user.id !== 'string' ||
-      typeof parsedSession.user.email !== 'string' ||
-      (parsedSession.user.kind !== 'developer' && parsedSession.user.kind !== 'pm')
-    ) {
-      return null;
-    }
-
-    return {
-      accessToken: parsedSession.accessToken,
-      provider: parsedSession.provider,
-      user: {
-        id: parsedSession.user.id,
-        email: parsedSession.user.email,
-        displayName: parsedSession.user.displayName ?? null,
-        kind: parsedSession.user.kind,
-      },
-    } satisfies AuthSession;
+    const parsed = authSessionSchema.safeParse(JSON.parse(serializedSession));
+    return parsed.success ? parsed.data : null;
   } catch {
     return null;
   }

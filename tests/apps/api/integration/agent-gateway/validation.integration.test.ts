@@ -6,17 +6,13 @@ import { NestFactory } from '@nestjs/core';
 import {
   AGENT_PROTOCOL_VERSION,
   type AgentEventEnvelope,
+  agentEventEnvelopeSchema,
   agentProtocolMessageEventName,
 } from '@pairdock/shared-contracts';
 import { io, type Socket } from 'socket.io-client';
 import { AppModule } from '../../../../../apps/api/src/app.module.js';
 import { DatabaseClient } from '../../../../../apps/api/src/persistence/client.js';
-
-interface AuthResponseBody {
-  created: boolean;
-  accessToken: string;
-  user: { id: string; email: string; displayName: string | null; kind: string };
-}
+import { authResponseSchema, idResponseSchema, parseJsonResponse, sessionStateResponseSchema } from '../test-json.js';
 
 const prisma = new DatabaseClient();
 
@@ -59,7 +55,7 @@ async function authenticateDeveloper(tokenSeed = randomUUID()) {
 
   return {
     status: response.status,
-    body: (await response.json()) as AuthResponseBody,
+    body: await parseJsonResponse(response, authResponseSchema),
   };
 }
 
@@ -95,7 +91,7 @@ async function createSession(projectId: string, accessToken: string) {
   });
 
   assert.equal(response.status, 201);
-  return (await response.json()) as { id: string };
+  return parseJsonResponse(response, idResponseSchema);
 }
 
 function connectAgentSocket(): Socket {
@@ -132,12 +128,8 @@ function buildAgentConnectedEvent(): AgentEventEnvelope {
   };
 }
 
-function buildSessionEvent(
-  sessionId: string,
-  event: AgentEventEnvelope['type'] | 'checks.result',
-  payload: Record<string, unknown>,
-): AgentEventEnvelope {
-  return {
+function buildSessionEvent(sessionId: string, event: AgentEventEnvelope['type'], payload: Record<string, unknown>) {
+  return agentEventEnvelopeSchema.parse({
     protocolVersion: AGENT_PROTOCOL_VERSION,
     messageId: randomUUID(),
     sessionId,
@@ -147,7 +139,7 @@ function buildSessionEvent(
       ...payload,
     },
     sentAt: new Date().toISOString(),
-  } as AgentEventEnvelope;
+  });
 }
 
 test.before(async () => {
@@ -207,17 +199,7 @@ test('BT-025: ValidationModule persists checks.result and exposes the latest fai
     assert.equal(persistedValidationRun?.lintStatus, 'failed');
     assert.equal(persistedSession?.status, 'FAILED');
 
-    const sessionPayload = (await sessionResponse.json()) as {
-      status: string;
-      latestValidation: {
-        status: string;
-        buildStatus: string | null;
-        testStatus: string | null;
-        lintStatus: string | null;
-        previewStatus: string | null;
-      } | null;
-      lastError: string | null;
-    };
+    const sessionPayload = await parseJsonResponse(sessionResponse, sessionStateResponseSchema);
 
     assert.equal(sessionPayload.status, 'FAILED');
     assert.deepEqual(sessionPayload.latestValidation, {
@@ -270,16 +252,7 @@ test('Task 11: successful checks move the session into AWAITING_PM_VALIDATION', 
     assert.equal(sessionResponse.status, 200);
     assert.equal(persistedSession?.status, 'AWAITING_PM_VALIDATION');
 
-    const sessionPayload = (await sessionResponse.json()) as {
-      status: string;
-      latestValidation: {
-        status: string;
-        buildStatus: string | null;
-        testStatus: string | null;
-        lintStatus: string | null;
-        previewStatus: string | null;
-      } | null;
-    };
+    const sessionPayload = await parseJsonResponse(sessionResponse, sessionStateResponseSchema);
 
     assert.equal(sessionPayload.status, 'AWAITING_PM_VALIDATION');
     assert.deepEqual(sessionPayload.latestValidation, {

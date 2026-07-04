@@ -1,8 +1,9 @@
 import { Inject, Injectable } from '@nestjs/common';
 import type { ProjectReadinessSnapshot } from '@pairdock/domain';
-import type { Prisma } from '../../generated/prisma/client.js';
-import { DatabaseClient, type DatabaseExecutor } from '../client.js';
+import type { DatabaseExecutor } from '../client.js';
+import { DatabaseClient } from '../client.js';
 import type { ProjectReadinessRepository, UpsertProjectReadinessInput } from '../ports/project-readiness.repository.js';
+import { serializeChecks } from './json-parsers.js';
 import { mapProjectReadinessSnapshot } from './mappers.js';
 
 @Injectable()
@@ -48,14 +49,4 @@ export class ProjectReadinessRepositoryAdapter implements ProjectReadinessReposi
 
     return records.map(mapProjectReadinessSnapshot);
   }
-}
-
-function serializeChecks(checks: UpsertProjectReadinessInput['checks']): Prisma.InputJsonArray {
-  return checks.map((check) => ({
-    key: check.key,
-    status: check.status,
-    required: check.required,
-    message: check.message,
-    remediation: check.remediation,
-  })) as Prisma.InputJsonArray;
 }

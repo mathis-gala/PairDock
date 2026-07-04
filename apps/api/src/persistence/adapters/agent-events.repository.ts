@@ -1,8 +1,9 @@
 import { Inject, Injectable } from '@nestjs/common';
 import type { AgentEventRecord } from '@pairdock/domain';
-import type { Prisma } from '../../generated/prisma/client.js';
-import { DatabaseClient, type DatabaseExecutor } from '../client.js';
+import type { DatabaseExecutor } from '../client.js';
+import { DatabaseClient } from '../client.js';
 import type { AgentEventsRepository, CreateAgentEventInput } from '../ports/agent-events.repository.js';
+import { serializeJsonValue } from './json-parsers.js';
 import { mapAgentEvent } from './mappers.js';
 
 @Injectable()
@@ -15,7 +16,7 @@ export class AgentEventsRepositoryAdapter implements AgentEventsRepository {
         sessionId: input.sessionId ?? null,
         agentId: input.agentId ?? null,
         type: input.type,
-        payload: input.payload as Prisma.InputJsonValue,
+        payload: serializeJsonValue(input.payload),
       },
     });
 

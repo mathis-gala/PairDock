@@ -1,4 +1,4 @@
-import { type PreviewPresetId, previewPresets } from '../../lib/preview-presets.js';
+import { isPreviewPresetId, type PreviewPresetId, previewPresets } from '../../lib/preview-presets.js';
 import { Button } from '../button.js';
 import { SectionCard } from '../section-card.js';
 
@@ -36,7 +36,11 @@ export function PreviewToolbar({
           <span className="text-slate-500">Preset</span>
           <select
             className="rounded-lg border border-slate-700 bg-slate-950 px-3 py-2"
-            onChange={(event) => onPresetChange(event.target.value as PreviewPresetId)}
+            onChange={(event) => {
+              if (isPreviewPresetId(event.target.value)) {
+                onPresetChange(event.target.value);
+              }
+            }}
             value={presetId}
           >
             {previewPresets.map((preset) => (

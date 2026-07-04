@@ -235,9 +235,9 @@ export class SessionsController {
 
     const userIds = [...new Set([project.ownerUserId, ...sessionMembers.map((member) => member.userId)])];
     const users = await Promise.all(
-      userIds.map(async (userId) => [userId, await this.usersRepository.findById(userId)] as const),
+      userIds.map(async (userId) => ({ userId, user: await this.usersRepository.findById(userId) })),
     );
-    const usersById = new Map(users);
+    const usersById = new Map(users.map(({ userId, user }) => [userId, user]));
     const agentAvailability = this.connectedAgentsRegistry.findSocketId(project.agentProjectKey) ? 'online' : 'offline';
 
     return {

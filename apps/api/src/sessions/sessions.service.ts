@@ -47,10 +47,10 @@ export class SessionsService {
     const sessionMembers =
       user.kind === 'pm'
         ? [
-            { userId: project.ownerUserId, role: 'developer' as const },
-            { userId: user.id, role: 'pm' as const },
+            { userId: project.ownerUserId, role: 'developer' },
+            { userId: user.id, role: 'pm' },
           ]
-        : [{ userId: user.id, role: 'developer' as const }];
+        : [{ userId: user.id, role: 'developer' }];
 
     return this.persistenceUnitOfWork.execute(async (repositories) => {
       const session = await repositories.sessions.create({

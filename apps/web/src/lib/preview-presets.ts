@@ -47,3 +47,7 @@ export function getPreviewFrameStyle(presetId: PreviewPresetId): Pick<PreviewPre
     height: preset.height,
   };
 }
+
+export function isPreviewPresetId(value: string): value is PreviewPresetId {
+  return previewPresets.some((preset) => preset.id === value);
+}
