@@ -26,7 +26,9 @@ test('CI workflow runs repository quality gates for pull requests and main pushe
   for (const jobName of [
     'static-quality:',
     'prisma-migrations:',
-    'api-tests:',
+    'api-unit-tests:',
+    'api-integration-tests:',
+    'api-e2e-tests:',
     'local-agent-tests:',
     'web-tests:',
     'build:',
@@ -41,8 +43,10 @@ test('CI workflow runs repository quality gates for pull requests and main pushe
     'bun run typecheck',
     'bun run lint',
     'bun run test:architecture',
-    'bun run --filter @pairdock/api test',
-    'bun run --filter @pairdock/local-agent test',
+    'bun run --filter @pairdock/api test:unit',
+    'bun run --filter @pairdock/api test:integration',
+    'bun run --filter @pairdock/api test:e2e',
+    'node --import tsx --test --test-concurrency=1 $' + '{{ matrix.test_file }}',
     'bun run --filter @pairdock/web test:unit',
     'bun run build',
   ]) {
@@ -52,6 +56,7 @@ test('CI workflow runs repository quality gates for pull requests and main pushe
   assert.match(workflow, /postgres:/, 'workflow must provision PostgreSQL for Prisma migration status');
   assert.match(workflow, /DATABASE_URL:/, 'workflow must provide DATABASE_URL to Prisma commands');
   assert.match(workflow, /timeout-minutes:/, 'workflow jobs and long test steps must have timeouts');
+  assert.match(workflow, /fail-fast:\s*false/, 'matrix jobs must not cancel sibling test files on first failure');
 });
 
 test('repository quality gates are exposed as root scripts', () => {
