@@ -10,13 +10,21 @@ interface DeveloperHomePageProps {
 }
 
 export function DeveloperHomePage({ session }: DeveloperHomePageProps) {
-  const { closeSessionMutation, createProjectMutation, projectsQuery, shareProjectMutation, startSessionMutation } =
-    useDeveloperProjects(session.accessToken);
+  const {
+    closeSessionMutation,
+    createProjectMutation,
+    projectsQuery,
+    requestReadinessMutation,
+    shareProjectMutation,
+    startSessionMutation,
+  } = useDeveloperProjects(session.accessToken);
   const projects = projectsQuery.data ?? [];
   const createError = createProjectMutation.error instanceof Error ? createProjectMutation.error.message : null;
   const shareError = shareProjectMutation.error instanceof Error ? shareProjectMutation.error.message : null;
   const startError = startSessionMutation.error instanceof Error ? startSessionMutation.error.message : null;
   const closeError = closeSessionMutation.error instanceof Error ? closeSessionMutation.error.message : null;
+  const readinessError =
+    requestReadinessMutation.error instanceof Error ? requestReadinessMutation.error.message : null;
 
   return (
     <div className="mx-auto max-w-7xl space-y-6 px-6 py-8">
@@ -39,6 +47,7 @@ export function DeveloperHomePage({ session }: DeveloperHomePageProps) {
       />
       {createError ? <ErrorCard title="Could not create project" message={createError} /> : null}
       {shareError ? <ErrorCard title="Could not share project" message={shareError} /> : null}
+      {readinessError ? <ErrorCard title="Could not request readiness check" message={readinessError} /> : null}
       {startError ? <ErrorCard title="Could not start session" message={startError} /> : null}
       {closeError ? <ErrorCard title="Could not close session" message={closeError} /> : null}
 
@@ -66,6 +75,10 @@ export function DeveloperHomePage({ session }: DeveloperHomePageProps) {
                   closeSessionMutation.reset();
                   await closeSessionMutation.mutateAsync(sessionId);
                 }}
+                onRequestReadiness={async (projectId) => {
+                  requestReadinessMutation.reset();
+                  await requestReadinessMutation.mutateAsync(projectId);
+                }}
                 onShareProject={async (projectId, pmEmail) => {
                   shareProjectMutation.reset();
                   await shareProjectMutation.mutateAsync({ projectId, pmEmail });
@@ -75,6 +88,7 @@ export function DeveloperHomePage({ session }: DeveloperHomePageProps) {
                   await startSessionMutation.mutateAsync({ projectId, modelId });
                 }}
                 project={project}
+                readinessPendingProjectId={requestReadinessMutation.variables ?? null}
                 sharePendingProjectId={shareProjectMutation.variables?.projectId ?? null}
                 startPendingProjectId={startSessionMutation.variables?.projectId ?? null}
               />

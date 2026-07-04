@@ -12,6 +12,7 @@ import {
   type ErrorEventEnvelope,
   type GitBranchPushedEventEnvelope,
   type GitDiffEventEnvelope,
+  type ReadinessResultEventEnvelope,
   type SessionClosedEventEnvelope,
   type SessionProgressEventEnvelope,
   type SessionReadyEventEnvelope,
@@ -26,6 +27,20 @@ export function buildAgentConnectedEvent(input: {
     payload: {
       agentId: input.agentId,
       capabilities: [...input.capabilities],
+    },
+  });
+}
+
+export function buildReadinessResultEvent(
+  input: ReadinessResultEventEnvelope['payload'],
+): ReadinessResultEventEnvelope {
+  return buildEnvelope({
+    type: 'readiness.result',
+    payload: {
+      projectKey: input.projectKey,
+      ...(input.sessionId ? { sessionId: input.sessionId } : {}),
+      ok: input.ok,
+      checks: input.checks,
     },
   });
 }
@@ -165,6 +180,7 @@ type EnvelopeMetadata = 'protocolVersion' | 'messageId' | 'sentAt';
 type AgentEventEnvelopeInput = Omit<AgentEventEnvelope, EnvelopeMetadata>;
 
 function buildEnvelope(envelope: Omit<AgentConnectedEventEnvelope, EnvelopeMetadata>): AgentConnectedEventEnvelope;
+function buildEnvelope(envelope: Omit<ReadinessResultEventEnvelope, EnvelopeMetadata>): ReadinessResultEventEnvelope;
 function buildEnvelope(envelope: Omit<SessionProgressEventEnvelope, EnvelopeMetadata>): SessionProgressEventEnvelope;
 function buildEnvelope(envelope: Omit<SessionReadyEventEnvelope, EnvelopeMetadata>): SessionReadyEventEnvelope;
 function buildEnvelope(envelope: Omit<AgentOutputEventEnvelope, EnvelopeMetadata>): AgentOutputEventEnvelope;

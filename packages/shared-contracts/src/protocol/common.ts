@@ -43,6 +43,8 @@ export const toolReadinessCheckSchema = z.object({
   remediation: z.string().min(1).nullable().optional(),
 });
 
+export type ToolReadinessCheck = z.infer<typeof toolReadinessCheckSchema>;
+
 export const envelopeBaseSchema = z.object({
   protocolVersion: z.literal(AGENT_PROTOCOL_VERSION),
   messageId: uuidSchema,

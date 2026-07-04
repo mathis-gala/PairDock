@@ -38,6 +38,13 @@ export function useDeveloperProjects(accessToken: string) {
     },
   });
 
+  const requestReadinessMutation = useMutation({
+    mutationFn: (projectId: string) => api.projects.requestReadinessCheck(projectId),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey });
+    },
+  });
+
   const startSessionMutation = useMutation({
     mutationFn: ({ projectId, modelId }: StartDeveloperSessionInput) =>
       api.sessions.create({
@@ -61,6 +68,7 @@ export function useDeveloperProjects(accessToken: string) {
     closeSessionMutation,
     createProjectMutation,
     projectsQuery,
+    requestReadinessMutation,
     shareProjectMutation,
     startSessionMutation,
   };

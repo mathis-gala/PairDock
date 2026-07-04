@@ -84,6 +84,20 @@ export const developerProjectResponseSchema = z.object({
   pmCanStartSessions: z.boolean(),
   pmMemberCount: z.number(),
   agentAvailability: z.string(),
+  readiness: z
+    .object({
+      ok: z.boolean(),
+      checks: z.array(
+        z.object({
+          key: z.string(),
+          status: z.string(),
+          required: z.boolean(),
+          message: z.string().nullable(),
+          remediation: z.string().nullable(),
+        }),
+      ),
+    })
+    .nullable(),
   sessions: z.array(
     z.object({
       id: z.string(),

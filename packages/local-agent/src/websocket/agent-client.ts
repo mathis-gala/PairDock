@@ -7,6 +7,7 @@ import {
   agentProtocolMessageEventName,
   type ChecksResultEventEnvelope,
   type GitPushBranchCommandEnvelope,
+  type ReadinessCheckCommandEnvelope,
   type SessionCloseCommandEnvelope,
   type SessionPrepareCommandEnvelope,
 } from '@pairdock/shared-contracts';
@@ -16,6 +17,7 @@ import { DiffService } from '../git/diff.service.js';
 import { CodexHarnessAdapter } from '../harness/codex-harness.adapter.js';
 import type { AgentHarnessPort } from '../harness/index.js';
 import { LogRedactor } from '../logging/redactor.js';
+import { ReadinessRunner } from '../readiness/readiness-runner.js';
 import { SessionRunner } from '../session/session-runner.js';
 import {
   buildAgentConnectedEvent,
@@ -25,6 +27,7 @@ import {
   buildErrorEvent,
   buildGitBranchPushedEvent,
   buildGitDiffEvent,
+  buildReadinessResultEvent,
   buildSessionClosedEvent,
   buildSessionProgressEvent,
   buildSessionReadyEvent,
@@ -54,6 +57,7 @@ export class AgentClient {
   private readonly agentHarnessPort: AgentHarnessPort;
   private readonly diffService: DiffService;
   private readonly checksRunner: ChecksRunner;
+  private readonly readinessRunner: ReadinessRunner;
   private readonly logRedactor: LogRedactor;
 
   constructor(
@@ -64,6 +68,7 @@ export class AgentClient {
       agentHarnessPort?: AgentHarnessPort;
       diffService?: DiffService;
       checksRunner?: ChecksRunner;
+      readinessRunner?: ReadinessRunner;
       logRedactor?: LogRedactor;
     } = {},
   ) {
@@ -76,6 +81,15 @@ export class AgentClient {
     this.agentHarnessPort = dependencies.agentHarnessPort ?? new CodexHarnessAdapter(config.agentHarnessConfigs ?? {});
     this.diffService = dependencies.diffService ?? new DiffService();
     this.checksRunner = dependencies.checksRunner ?? new ChecksRunner(config.checksConfigs ?? {});
+    this.readinessRunner =
+      dependencies.readinessRunner ??
+      new ReadinessRunner({
+        authToken: config.authToken,
+        projectPaths: config.projectPaths,
+        previewConfigs: config.previewConfigs,
+        checksConfigs: config.checksConfigs,
+        agentHarnessConfigs: config.agentHarnessConfigs,
+      });
     this.logRedactor = dependencies.logRedactor ?? new LogRedactor();
   }
 
@@ -103,6 +117,7 @@ export class AgentClient {
       });
 
       socket.emit(agentProtocolMessageEventName, event);
+      void this.publishConfiguredProjectReadiness();
       this.logger.info(
         `Connected agent ${event.payload.agentId} to ${this.config.backendUrl} with ${event.payload.capabilities.length} capabilities.`,
       );
@@ -186,6 +201,9 @@ export class AgentClient {
       case 'session.prepare':
         await this.handleSessionPrepare(command);
         return;
+      case 'readiness.check':
+        await this.handleReadinessCheck(command);
+        return;
       case 'session.close':
         await this.handleSessionClose(command);
         return;
@@ -204,7 +222,27 @@ export class AgentClient {
   }
 
   private describeCommand(command: AgentCommandEnvelope): string {
-    return `Received backend command ${command.type} for session ${command.sessionId}.`;
+    return `Received backend command ${command.type}${command.sessionId ? ` for session ${command.sessionId}` : ''}.`;
+  }
+
+  private async publishConfiguredProjectReadiness(): Promise<void> {
+    for (const projectKey of Object.keys(this.config.projectPaths)) {
+      try {
+        const result = await this.readinessRunner.run({ projectKey });
+        await this.emitEvent(buildReadinessResultEvent(result));
+      } catch (error) {
+        const message = error instanceof Error ? error.message : String(error);
+        this.logger.warn(`Readiness check failed for project ${projectKey}: ${message}`);
+      }
+    }
+  }
+
+  private async handleReadinessCheck(command: ReadinessCheckCommandEnvelope): Promise<void> {
+    const result = await this.readinessRunner.run({
+      projectKey: command.payload.projectKey,
+      sessionId: command.payload.sessionId,
+    });
+    await this.emitEvent(buildReadinessResultEvent(result));
   }
 
   private async handleSessionPrepare(command: SessionPrepareCommandEnvelope): Promise<void> {
