@@ -1,16 +1,13 @@
+import {
+  uiSessionEventName,
+  uiSessionSubscribedEventName,
+  uiSessionSubscribeEventName,
+} from '@pairdock/shared-contracts';
 import { useQueryClient } from '@tanstack/react-query';
 import { useMemo, useSyncExternalStore } from 'react';
 import { io, type Socket } from 'socket.io-client';
 import { getBackendUrl } from '../lib/backend-url.js';
-import { uiSessionEventName, uiSessionSubscribedEventName, uiSessionSubscribeEventName } from './session-api.js';
-
-type FeedConnectionState = 'idle' | 'connecting' | 'subscribed' | 'error';
-
-export interface SessionEventFeedSnapshot {
-  connectionState: FeedConnectionState;
-  errorMessage: string | null;
-  lastEventType: string | null;
-}
+import type { SessionEventFeedSnapshot } from '../schemas/session-feed.js';
 
 interface FeedIdentity {
   accessToken: string;

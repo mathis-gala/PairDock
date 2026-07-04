@@ -1,5 +1,5 @@
-import { SectionCard } from '../ui/section-card.js';
-import { getPreviewFrameStyle, type PreviewPresetId } from './preview-presets.js';
+import { getPreviewFrameStyle, type PreviewPresetId } from '../../lib/preview-presets.js';
+import { SectionCard } from '../section-card.js';
 
 interface PreviewFrameProps {
   presetId: PreviewPresetId;

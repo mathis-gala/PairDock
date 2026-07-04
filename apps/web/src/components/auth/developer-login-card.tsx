@@ -1,32 +1,23 @@
 import { useForm } from '@tanstack/react-form';
-import { useState } from 'react';
-import { Button } from '../ui/button.js';
-import { SectionCard } from '../ui/section-card.js';
-import { TextInput } from '../ui/text-input.js';
-import { authenticateDeveloper, createBrowserSeed } from './auth-api.js';
-import type { AuthSession } from './auth-types.js';
+import { useAuthenticateDeveloper } from '../../hooks/use-authenticate.js';
+import { createBrowserSeed } from '../../lib/browser-seed.js';
+import type { AuthSession } from '../../schemas/auth.js';
+import { Button } from '../button.js';
+import { SectionCard } from '../section-card.js';
+import { TextInput } from '../text-input.js';
 
 interface DeveloperLoginCardProps {
   onAuthenticated: (session: AuthSession) => void;
 }
 
 export function DeveloperLoginCard({ onAuthenticated }: DeveloperLoginCardProps) {
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const { isSubmitting, errorMessage, authenticate } = useAuthenticateDeveloper(onAuthenticated);
   const form = useForm({
     defaultValues: {
       seed: createBrowserSeed('developer'),
     },
     onSubmit: async ({ value }) => {
-      setErrorMessage(null);
-      setIsSubmitting(true);
-
-      try {
-        const session = await authenticateDeveloper(value.seed);
-        onAuthenticated(session);
-      } finally {
-        setIsSubmitting(false);
-      }
+      await authenticate(value.seed);
     },
   });
 

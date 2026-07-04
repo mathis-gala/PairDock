@@ -1,6 +1,6 @@
-import type { AuthSession } from './auth-types.js';
-import { DeveloperLoginCard } from './developer-login-card.js';
-import { PmLoginCard } from './pm-login-card.js';
+import { DeveloperLoginCard } from '../components/auth/developer-login-card.js';
+import { PmLoginCard } from '../components/auth/pm-login-card.js';
+import type { AuthSession } from '../schemas/auth.js';
 
 interface LoginPageProps {
   onAuthenticated: (session: AuthSession) => void;

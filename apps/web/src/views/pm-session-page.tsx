@@ -1,25 +1,17 @@
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
-import { Button } from '../ui/button.js';
-import { SectionCard } from '../ui/section-card.js';
-import { DiffPanel } from './diff-panel.js';
-import { PreviewFrame } from './preview-frame.js';
-import type { PreviewPresetId } from './preview-presets.js';
-import { PreviewToolbar } from './preview-toolbar.js';
-import { PromptComposer } from './prompt-composer.js';
-import { PromptHistoryPanel } from './prompt-history-panel.js';
-import {
-  cancelSessionPrompt,
-  fetchSession,
-  fetchSessionEvents,
-  fetchSessionMessages,
-  sendSessionPrompt,
-} from './session-api.js';
-import { useSessionEventFeed } from './session-event-feed-store.js';
-import { SessionEventPanel } from './session-event-panel.js';
-import type { SessionMessageView } from './session-schemas.js';
-import { SessionStatusCard } from './session-status-card.js';
-import { ValidationPanel } from './validation-panel.js';
+import { Button } from '../components/button.js';
+import { DiffPanel } from '../components/pm-session/diff-panel.js';
+import { PreviewFrame } from '../components/pm-session/preview-frame.js';
+import { PreviewToolbar } from '../components/pm-session/preview-toolbar.js';
+import { PromptComposer } from '../components/pm-session/prompt-composer.js';
+import { PromptHistoryPanel } from '../components/pm-session/prompt-history-panel.js';
+import { SessionEventPanel } from '../components/pm-session/session-event-panel.js';
+import { SessionStatusCard } from '../components/pm-session/session-status-card.js';
+import { ValidationPanel } from '../components/pm-session/validation-panel.js';
+import { SectionCard } from '../components/section-card.js';
+import { useSessionData } from '../hooks/use-session-data.js';
+import { useSessionEventFeed } from '../hooks/use-session-event-feed.js';
+import type { PreviewPresetId } from '../lib/preview-presets.js';
 
 interface PmSessionPageProps {
   accessToken: string;
@@ -30,35 +22,11 @@ interface PmSessionPageProps {
 export function PmSessionPage({ accessToken, onBack, sessionId }: PmSessionPageProps) {
   const [presetId, setPresetId] = useState<PreviewPresetId>('desktop');
   const [zoomPercent, setZoomPercent] = useState(100);
-  const queryClient = useQueryClient();
   const eventFeed = useSessionEventFeed(accessToken, sessionId);
-  const sessionQuery = useQuery({
-    queryKey: ['session', sessionId],
-    queryFn: () => fetchSession(accessToken, sessionId),
-  });
-  const messagesQuery = useQuery({
-    queryKey: ['session-messages', sessionId],
-    queryFn: () => fetchSessionMessages(accessToken, sessionId),
-  });
-  const eventsQuery = useQuery({
-    queryKey: ['session-events', sessionId],
-    queryFn: () => fetchSessionEvents(accessToken, sessionId),
-  });
-  const sendPromptMutation = useMutation({
-    mutationFn: (content: string) => sendSessionPrompt(accessToken, sessionId, content),
-    onSuccess: (message) => {
-      queryClient.setQueryData<SessionMessageView[]>(['session-messages', sessionId], (currentMessages) =>
-        currentMessages ? [...currentMessages, message] : [message],
-      );
-    },
-  });
-  const cancelPromptMutation = useMutation({
-    mutationFn: () => cancelSessionPrompt(accessToken, sessionId),
-    onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: ['session', sessionId] });
-      void queryClient.invalidateQueries({ queryKey: ['session-events', sessionId] });
-    },
-  });
+  const { sessionQuery, messagesQuery, eventsQuery, sendPromptMutation, cancelPromptMutation } = useSessionData(
+    accessToken,
+    sessionId,
+  );
 
   if (sessionQuery.isLoading || messagesQuery.isLoading || eventsQuery.isLoading) {
     return (

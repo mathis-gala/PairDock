@@ -1,5 +1,5 @@
-import type { AuthSession } from '../auth/auth-types.js';
-import { SectionCard } from '../ui/section-card.js';
+import { SectionCard } from '../components/section-card.js';
+import type { AuthSession } from '../schemas/auth.js';
 
 interface DeveloperHomePageProps {
   session: AuthSession;

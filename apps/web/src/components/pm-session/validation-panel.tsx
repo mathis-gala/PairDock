@@ -1,5 +1,5 @@
-import { SectionCard } from '../ui/section-card.js';
-import type { ValidationSummaryView } from './session-schemas.js';
+import type { ValidationSummaryView } from '../../schemas/session.js';
+import { SectionCard } from '../section-card.js';
 
 interface ValidationPanelProps {
   validation: ValidationSummaryView | null;

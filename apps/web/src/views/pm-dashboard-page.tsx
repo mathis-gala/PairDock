@@ -1,8 +1,6 @@
-import type { SharedProjectSummary } from '@pairdock/shared-contracts';
-import { useMutation, useQuery } from '@tanstack/react-query';
-import { SectionCard } from '../ui/section-card.js';
-import { createPmSession, fetchSharedProjects } from './session-api.js';
-import { SharedProjectCard } from './shared-project-card.js';
+import { SharedProjectCard } from '../components/pm-session/shared-project-card.js';
+import { SectionCard } from '../components/section-card.js';
+import { useSharedProjects } from '../hooks/use-shared-projects.js';
 
 interface PmDashboardPageProps {
   accessToken: string;
@@ -10,22 +8,7 @@ interface PmDashboardPageProps {
 }
 
 export function PmDashboardPage({ accessToken, onOpenSession }: PmDashboardPageProps) {
-  const sharedProjectsQuery = useQuery({
-    queryKey: ['shared-projects', accessToken],
-    queryFn: () => fetchSharedProjects(accessToken),
-  });
-  const startSessionMutation = useMutation({
-    mutationFn: (project: SharedProjectSummary) =>
-      createPmSession(accessToken, {
-        projectId: project.id,
-        modelId: project.defaultModelId,
-        startSource: 'pm',
-      }),
-    onSuccess: (session) => {
-      onOpenSession(session.id);
-    },
-  });
-
+  const { sharedProjectsQuery, startSessionMutation } = useSharedProjects(accessToken, onOpenSession);
   const pendingProjectId = startSessionMutation.variables?.id ?? null;
 
   return (

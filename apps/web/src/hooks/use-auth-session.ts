@@ -1,5 +1,5 @@
 import { useSyncExternalStore } from 'react';
-import type { AuthSession } from './auth-types.js';
+import type { AuthSession } from '../schemas/auth.js';
 
 const AUTH_STORAGE_KEY = 'pairdock.auth.session';
 

@@ -1,5 +1,5 @@
 import { useSyncExternalStore } from 'react';
-import type { AppRoute } from './route-types.js';
+import type { AppRoute } from '../routing/route-types.js';
 
 export function useAppRoute(): AppRoute {
   return useSyncExternalStore(subscribe, getSnapshot, getSnapshot);

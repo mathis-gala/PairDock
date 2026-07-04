@@ -1,6 +1,6 @@
-import { Button } from '../ui/button.js';
-import { SectionCard } from '../ui/section-card.js';
-import { type PreviewPresetId, previewPresets } from './preview-presets.js';
+import { type PreviewPresetId, previewPresets } from '../../lib/preview-presets.js';
+import { Button } from '../button.js';
+import { SectionCard } from '../section-card.js';
 
 interface PreviewToolbarProps {
   onPresetChange: (presetId: PreviewPresetId) => void;

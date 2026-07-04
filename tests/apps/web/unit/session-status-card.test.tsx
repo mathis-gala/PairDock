@@ -1,9 +1,9 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import { renderToStaticMarkup } from 'react-dom/server';
-import type { SessionEventFeedSnapshot } from '../../../../apps/web/src/pm-session/session-event-feed-store.js';
-import type { SessionView } from '../../../../apps/web/src/pm-session/session-schemas.js';
-import { SessionStatusCard } from '../../../../apps/web/src/pm-session/session-status-card.js';
+import { SessionStatusCard } from '../../../../apps/web/src/components/pm-session/session-status-card.js';
+import type { SessionView } from '../../../../apps/web/src/schemas/session.js';
+import type { SessionEventFeedSnapshot } from '../../../../apps/web/src/schemas/session-feed.js';
 
 const session: SessionView = {
   id: '11111111-1111-4111-8111-111111111111',

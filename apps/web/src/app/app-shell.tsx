@@ -1,10 +1,10 @@
-import { clearAuthSession, setAuthSession, useAuthSession } from '../auth/auth-store.js';
-import { DeveloperHomePage } from '../auth/developer-home-page.js';
-import { LoginPage } from '../auth/login-page.js';
-import { AppHeader } from '../layout/app-header.js';
-import { PmDashboardPage } from '../pm-session/pm-dashboard-page.js';
-import { PmSessionPage } from '../pm-session/pm-session-page.js';
-import { openDeveloperHome, openPmDashboard, openPmSession, useAppRoute } from '../routing/route-store.js';
+import { AppHeader } from '../components/app-header.js';
+import { openDeveloperHome, openPmDashboard, openPmSession, useAppRoute } from '../hooks/use-app-route.js';
+import { clearAuthSession, setAuthSession, useAuthSession } from '../hooks/use-auth-session.js';
+import { DeveloperHomePage } from '../views/developer-home-page.js';
+import { LoginPage } from '../views/login-page.js';
+import { PmDashboardPage } from '../views/pm-dashboard-page.js';
+import { PmSessionPage } from '../views/pm-session-page.js';
 
 export function AppShell() {
   const authSession = useAuthSession();

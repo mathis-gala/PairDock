@@ -1,7 +1,7 @@
-import { SectionCard } from '../ui/section-card.js';
-import { StatusBadge } from '../ui/status-badge.js';
-import type { SessionEventFeedSnapshot } from './session-event-feed-store.js';
-import type { SessionView } from './session-schemas.js';
+import type { SessionView } from '../../schemas/session.js';
+import type { SessionEventFeedSnapshot } from '../../schemas/session-feed.js';
+import { SectionCard } from '../section-card.js';
+import { StatusBadge } from '../status-badge.js';
 
 interface SessionStatusCardProps {
   feed: SessionEventFeedSnapshot;

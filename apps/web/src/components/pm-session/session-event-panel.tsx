@@ -1,7 +1,7 @@
-import { SectionCard } from '../ui/section-card.js';
-import { formatEventPayload } from './format-event-payload.js';
-import type { SessionEventFeedSnapshot } from './session-event-feed-store.js';
-import type { SessionEventRecordView } from './session-schemas.js';
+import { formatEventPayload } from '../../lib/format-event-payload.js';
+import type { SessionEventRecordView } from '../../schemas/session.js';
+import type { SessionEventFeedSnapshot } from '../../schemas/session-feed.js';
+import { SectionCard } from '../section-card.js';
 
 interface SessionEventPanelProps {
   events: SessionEventRecordView[];

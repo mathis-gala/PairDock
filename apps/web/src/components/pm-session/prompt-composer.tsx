@@ -1,8 +1,8 @@
 import { useForm } from '@tanstack/react-form';
 import { useState } from 'react';
-import { Button } from '../ui/button.js';
-import { SectionCard } from '../ui/section-card.js';
-import { TextArea } from '../ui/text-area.js';
+import { Button } from '../button.js';
+import { SectionCard } from '../section-card.js';
+import { TextArea } from '../text-area.js';
 
 interface PromptComposerProps {
   canCancel: boolean;

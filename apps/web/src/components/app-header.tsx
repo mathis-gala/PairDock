@@ -1,5 +1,5 @@
-import type { AuthSession } from '../auth/auth-types.js';
-import { Button } from '../ui/button.js';
+import type { AuthSession } from '../schemas/auth.js';
+import { Button } from './button.js';
 
 interface AppHeaderProps {
   currentViewLabel: string;

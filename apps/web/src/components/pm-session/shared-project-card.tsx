@@ -1,8 +1,8 @@
 import type { SharedProjectSummary } from '@pairdock/shared-contracts';
-import { classNames } from '../lib/class-names.js';
-import { Button } from '../ui/button.js';
-import { SectionCard } from '../ui/section-card.js';
-import { StatusBadge } from '../ui/status-badge.js';
+import { classNames } from '../../lib/class-names.js';
+import { Button } from '../button.js';
+import { SectionCard } from '../section-card.js';
+import { StatusBadge } from '../status-badge.js';
 
 interface SharedProjectCardProps {
   onStart: (project: SharedProjectSummary) => void;

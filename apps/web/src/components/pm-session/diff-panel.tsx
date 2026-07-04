@@ -1,5 +1,5 @@
-import { SectionCard } from '../ui/section-card.js';
-import type { SessionView } from './session-schemas.js';
+import type { SessionView } from '../../schemas/session.js';
+import { SectionCard } from '../section-card.js';
 
 interface DiffPanelProps {
   latestDiff: SessionView['latestDiff'];

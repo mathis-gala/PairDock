@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import type { SharedProjectSummary } from '@pairdock/shared-contracts';
 import { renderToStaticMarkup } from 'react-dom/server';
-import { SharedProjectCard } from '../../../../apps/web/src/pm-session/shared-project-card.js';
+import { SharedProjectCard } from '../../../../apps/web/src/components/pm-session/shared-project-card.js';
 
 const readyProject: SharedProjectSummary = {
   id: '11111111-1111-4111-8111-111111111111',

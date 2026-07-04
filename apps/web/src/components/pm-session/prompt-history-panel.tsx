@@ -1,5 +1,5 @@
-import { SectionCard } from '../ui/section-card.js';
-import type { SessionMessageView } from './session-schemas.js';
+import type { SessionMessageView } from '../../schemas/session.js';
+import { SectionCard } from '../section-card.js';
 
 interface PromptHistoryPanelProps {
   messages: SessionMessageView[];
