@@ -72,6 +72,31 @@ export const sharedProjectListResponseSchema = z.array(
   }),
 );
 
+export const developerProjectResponseSchema = z.object({
+  id: z.string(),
+  name: z.string(),
+  description: z.string().nullable(),
+  repoFullName: z.string(),
+  defaultBranch: z.string(),
+  defaultModelId: z.string(),
+  agentProjectKey: z.string(),
+  sourceControlAccountLogin: z.string(),
+  pmCanStartSessions: z.boolean(),
+  pmMemberCount: z.number(),
+  agentAvailability: z.string(),
+  sessions: z.array(
+    z.object({
+      id: z.string(),
+      status: z.string(),
+      modelId: z.string(),
+      createdAt: z.string(),
+      closedAt: z.string().nullable(),
+    }),
+  ),
+});
+
+export const developerProjectListResponseSchema = z.array(developerProjectResponseSchema);
+
 export const sessionPromptResponseSchema = z.object({
   sessionId: z.string(),
   role: z.string(),

@@ -1,7 +1,12 @@
 import { Inject, Injectable } from '@nestjs/common';
 import type { Project } from '@pairdock/domain';
 import { DatabaseClient, type DatabaseExecutor } from '../client.js';
-import type { CreateProjectInput, ProjectsRepository, SharedProjectRecord } from '../ports/projects.repository.js';
+import type {
+  CreateProjectInput,
+  DeveloperProjectRecord,
+  ProjectsRepository,
+  SharedProjectRecord,
+} from '../ports/projects.repository.js';
 import { mapProject } from './mappers.js';
 
 @Injectable()
@@ -34,6 +39,31 @@ export class ProjectsRepositoryAdapter implements ProjectsRepository {
   async findByAgentProjectKey(agentProjectKey: string): Promise<Project | null> {
     const record = await this.prisma.project.findFirst({ where: { agentProjectKey } });
     return record ? mapProject(record) : null;
+  }
+
+  async listOwnedByUserId(userId: string): Promise<DeveloperProjectRecord[]> {
+    const records = await this.prisma.project.findMany({
+      where: { ownerUserId: userId },
+      include: {
+        sourceControlConnection: {
+          select: {
+            accountLogin: true,
+          },
+        },
+        _count: {
+          select: {
+            projectMembers: true,
+          },
+        },
+      },
+      orderBy: { createdAt: 'asc' },
+    });
+
+    return records.map((record) => ({
+      project: mapProject(record),
+      sourceControlAccountLogin: record.sourceControlConnection.accountLogin,
+      pmMemberCount: record._count.projectMembers,
+    }));
   }
 
   async listSharedByUserId(userId: string): Promise<SharedProjectRecord[]> {

@@ -1,10 +1,35 @@
-import { ForbiddenException, Inject, Injectable, InternalServerErrorException } from '@nestjs/common';
-import type { PairDockIdentity } from '@pairdock/domain';
-import type { SharedProjectSummary } from '@pairdock/shared-contracts';
+import {
+  BadRequestException,
+  ConflictException,
+  ForbiddenException,
+  Inject,
+  Injectable,
+  InternalServerErrorException,
+  NotFoundException,
+} from '@nestjs/common';
+import type { PairDockIdentity, PairDockUser, Session } from '@pairdock/domain';
+import {
+  type CreateDeveloperProjectInput,
+  createDeveloperProjectInputSchema,
+  type DeveloperProjectSummary,
+  type SharedProjectSummary,
+  shareDeveloperProjectInputSchema,
+} from '@pairdock/shared-contracts';
 import { ConnectedAgentsRegistry } from '../agent-gateway/connected-agents.registry.js';
-import { PROJECT_READINESS_REPOSITORY, PROJECTS_REPOSITORY } from '../persistence/persistence.tokens.js';
+import {
+  PROJECT_MEMBERS_REPOSITORY,
+  PROJECT_READINESS_REPOSITORY,
+  PROJECTS_REPOSITORY,
+  SESSIONS_REPOSITORY,
+  SOURCE_CONTROL_CONNECTIONS_REPOSITORY,
+  USERS_REPOSITORY,
+} from '../persistence/persistence.tokens.js';
+import type { ProjectMembersRepository } from '../persistence/ports/project-members.repository.js';
 import type { ProjectReadinessRepository } from '../persistence/ports/project-readiness.repository.js';
-import type { ProjectsRepository } from '../persistence/ports/projects.repository.js';
+import type { DeveloperProjectRecord, ProjectsRepository } from '../persistence/ports/projects.repository.js';
+import type { SessionsRepository } from '../persistence/ports/sessions.repository.js';
+import type { SourceControlConnectionsRepository } from '../persistence/ports/source-control-connections.repository.js';
+import type { UsersRepository } from '../persistence/ports/users.repository.js';
 
 @Injectable()
 export class ProjectsService {
@@ -13,12 +38,46 @@ export class ProjectsService {
     private readonly projectsRepository: ProjectsRepository,
     @Inject(PROJECT_READINESS_REPOSITORY)
     private readonly projectReadinessRepository: ProjectReadinessRepository,
+    @Inject(PROJECT_MEMBERS_REPOSITORY)
+    private readonly projectMembersRepository: ProjectMembersRepository,
+    @Inject(SOURCE_CONTROL_CONNECTIONS_REPOSITORY)
+    private readonly sourceControlConnectionsRepository: SourceControlConnectionsRepository,
+    @Inject(SESSIONS_REPOSITORY)
+    private readonly sessionsRepository: SessionsRepository,
+    @Inject(USERS_REPOSITORY)
+    private readonly usersRepository: UsersRepository,
     @Inject(ConnectedAgentsRegistry)
     private readonly connectedAgentsRegistry: ConnectedAgentsRegistry,
   ) {}
 
   listSharedProjectsResponse(user: PairDockIdentity | undefined): Promise<SharedProjectSummary[]> {
     return this.listSharedProjects(this.requireUser(user));
+  }
+
+  async listDeveloperProjectsResponse(user: PairDockIdentity | undefined): Promise<DeveloperProjectSummary[]> {
+    return this.listDeveloperProjects(this.requireDeveloper(user));
+  }
+
+  async createDeveloperProjectResponse(
+    body: unknown,
+    user: PairDockIdentity | undefined,
+  ): Promise<DeveloperProjectSummary> {
+    const input = this.parseCreateProjectInput(body);
+    return this.createDeveloperProject(input, this.requireDeveloper(user));
+  }
+
+  async shareDeveloperProjectResponse(
+    projectId: string,
+    body: unknown,
+    user: PairDockIdentity | undefined,
+  ): Promise<DeveloperProjectSummary> {
+    const input = shareDeveloperProjectInputSchema.safeParse(body);
+
+    if (!input.success) {
+      throw new BadRequestException('PM email is required.');
+    }
+
+    return this.shareDeveloperProject(projectId, input.data.pmEmail.toLowerCase(), this.requireDeveloper(user));
   }
 
   async listSharedProjects(user: PairDockIdentity): Promise<SharedProjectSummary[]> {
@@ -60,6 +119,161 @@ export class ProjectsService {
             }),
       } satisfies SharedProjectSummary;
     });
+  }
+
+  async listDeveloperProjects(user: PairDockIdentity): Promise<DeveloperProjectSummary[]> {
+    const projectRecords = await this.projectsRepository.listOwnedByUserId(user.id);
+    const sessionsByProjectId = await this.listSessionsByProjectId(projectRecords.map(({ project }) => project.id));
+
+    return projectRecords.map((record) =>
+      this.buildDeveloperProjectSummary(record, sessionsByProjectId.get(record.project.id) ?? []),
+    );
+  }
+
+  async createDeveloperProject(
+    input: CreateDeveloperProjectInput,
+    user: PairDockIdentity,
+  ): Promise<DeveloperProjectSummary> {
+    const sourceControlConnection =
+      (await this.sourceControlConnectionsRepository.findByOwnerAndProviderConnection({
+        ownerUserId: user.id,
+        providerConnectionId: input.sourceControl.providerConnectionId,
+      })) ??
+      (await this.sourceControlConnectionsRepository.create({
+        ownerUserId: user.id,
+        provider: 'github',
+        providerConnectionId: input.sourceControl.providerConnectionId,
+        accountLogin: input.sourceControl.accountLogin,
+      }));
+
+    const project = await this.projectsRepository.create({
+      ownerUserId: user.id,
+      sourceControlConnectionId: sourceControlConnection.id,
+      name: input.name,
+      description: input.description || null,
+      repoFullName: input.repoFullName,
+      defaultBranch: input.defaultBranch,
+      defaultModelId: input.defaultModelId,
+      pmCanStartSessions: input.pmCanStartSessions ?? true,
+      agentProjectKey: input.agentProjectKey,
+    });
+
+    return this.buildDeveloperProjectSummary(
+      {
+        project,
+        sourceControlAccountLogin: sourceControlConnection.accountLogin,
+        pmMemberCount: 0,
+      },
+      [],
+    );
+  }
+
+  async shareDeveloperProject(
+    projectId: string,
+    pmEmail: string,
+    user: PairDockIdentity,
+  ): Promise<DeveloperProjectSummary> {
+    const projectRecord = await this.findOwnedProjectRecord(projectId, user.id);
+    const pmUser = await this.findOrCreatePmUser(pmEmail);
+
+    await this.projectMembersRepository.add({
+      projectId,
+      userId: pmUser.id,
+      role: 'pm',
+    });
+
+    const refreshedRecord = await this.findOwnedProjectRecord(projectId, user.id);
+    const sessionsByProjectId = await this.listSessionsByProjectId([projectRecord.project.id]);
+
+    return this.buildDeveloperProjectSummary(refreshedRecord, sessionsByProjectId.get(projectRecord.project.id) ?? []);
+  }
+
+  private parseCreateProjectInput(body: unknown): CreateDeveloperProjectInput {
+    const parsed = createDeveloperProjectInputSchema.safeParse(body);
+
+    if (!parsed.success) {
+      throw new BadRequestException('Project name, repository, branch, model, agent key, and connection are required.');
+    }
+
+    return parsed.data;
+  }
+
+  private async findOwnedProjectRecord(projectId: string, ownerUserId: string): Promise<DeveloperProjectRecord> {
+    const record = (await this.projectsRepository.listOwnedByUserId(ownerUserId)).find(
+      ({ project }) => project.id === projectId,
+    );
+
+    if (!record) {
+      throw new NotFoundException(`Project ${projectId} was not found.`);
+    }
+
+    return record;
+  }
+
+  private async findOrCreatePmUser(pmEmail: string): Promise<PairDockUser> {
+    const existingUser = await this.usersRepository.findByEmail(pmEmail);
+
+    if (existingUser) {
+      if (existingUser.kind !== 'pm') {
+        throw new ConflictException('Project access can only be shared with a PM identity.');
+      }
+
+      return existingUser;
+    }
+
+    return this.usersRepository.create({
+      email: pmEmail,
+      displayName: null,
+      kind: 'pm',
+    });
+  }
+
+  private async listSessionsByProjectId(projectIds: string[]): Promise<Map<string, Session[]>> {
+    const sessions = await this.sessionsRepository.listByProjectIds(projectIds);
+    const sessionsByProjectId = new Map<string, Session[]>();
+
+    for (const session of sessions) {
+      const projectSessions = sessionsByProjectId.get(session.projectId) ?? [];
+      projectSessions.push(session);
+      sessionsByProjectId.set(session.projectId, projectSessions);
+    }
+
+    return sessionsByProjectId;
+  }
+
+  private buildDeveloperProjectSummary(record: DeveloperProjectRecord, sessions: Session[]): DeveloperProjectSummary {
+    return {
+      id: record.project.id,
+      name: record.project.name,
+      description: record.project.description,
+      repoFullName: record.project.repoFullName,
+      defaultBranch: record.project.defaultBranch,
+      defaultModelId: record.project.defaultModelId,
+      agentProjectKey: record.project.agentProjectKey,
+      sourceControlAccountLogin: record.sourceControlAccountLogin,
+      pmCanStartSessions: record.project.pmCanStartSessions,
+      pmMemberCount: record.pmMemberCount,
+      agentAvailability: this.connectedAgentsRegistry.findSocketId(record.project.agentProjectKey)
+        ? 'online'
+        : 'offline',
+      sessions: sessions.slice(0, 5).map((session) => ({
+        id: session.id,
+        status: session.status,
+        modelId: session.modelId,
+        createdAt: session.createdAt.toISOString(),
+        closedAt: session.closedAt?.toISOString() ?? null,
+      })),
+    };
+  }
+
+  private requireDeveloper(user: PairDockIdentity | undefined): PairDockIdentity {
+    const currentUser = this.requireUser(user);
+
+    if (currentUser.kind !== 'developer') {
+      throw new ForbiddenException('Only developer users can access developer project controls.');
+    }
+
+    return currentUser;
   }
 
   private requireUser(user: PairDockIdentity | undefined): PairDockIdentity {

@@ -29,6 +29,7 @@ test('BT-008: SessionCloseService is idempotent when the session is already CLOS
       throw new Error('not implemented');
     },
     findById: async () => closedSession,
+    listByProjectIds: async () => [],
     updateStatus: async () => {
       updateCalls += 1;
       return closedSession;

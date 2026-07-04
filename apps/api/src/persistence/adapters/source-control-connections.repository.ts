@@ -27,4 +27,18 @@ export class SourceControlConnectionsRepositoryAdapter implements SourceControlC
     const record = await this.prisma.sourceControlConnection.findUnique({ where: { id } });
     return record ? mapSourceControlConnection(record) : null;
   }
+
+  async findByOwnerAndProviderConnection(input: {
+    ownerUserId: string;
+    providerConnectionId: string;
+  }): Promise<SourceControlConnection | null> {
+    const record = await this.prisma.sourceControlConnection.findFirst({
+      where: {
+        ownerUserId: input.ownerUserId,
+        providerConnectionId: input.providerConnectionId,
+      },
+    });
+
+    return record ? mapSourceControlConnection(record) : null;
+  }
 }

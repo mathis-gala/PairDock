@@ -1,4 +1,12 @@
-import { type SharedProjectSummary, sharedProjectSummaryListSchema } from '@pairdock/shared-contracts';
+import {
+  type CreateDeveloperProjectInput,
+  type DeveloperProjectSummary,
+  developerProjectSummaryListSchema,
+  developerProjectSummarySchema,
+  type ShareDeveloperProjectInput,
+  type SharedProjectSummary,
+  sharedProjectSummaryListSchema,
+} from '@pairdock/shared-contracts';
 import { z } from 'zod';
 import { getBackendUrl } from '../lib/backend-url.js';
 import { type AuthSession, authResponseSchema } from '../schemas/auth.js';
@@ -14,12 +22,15 @@ import {
 interface CreateSessionInput {
   projectId: string;
   modelId: string;
-  startSource: 'pm';
+  startSource: 'developer' | 'pm';
 }
 
 export interface ApiClient {
   readonly projects: {
+    create(input: CreateDeveloperProjectInput): Promise<DeveloperProjectSummary>;
+    listDeveloper(): Promise<DeveloperProjectSummary[]>;
     listShared(): Promise<SharedProjectSummary[]>;
+    share(projectId: string, input: ShareDeveloperProjectInput): Promise<DeveloperProjectSummary>;
   };
   readonly sessions: {
     create(input: CreateSessionInput): Promise<SessionView>;
@@ -28,18 +39,42 @@ export interface ApiClient {
     listEvents(sessionId: string): Promise<SessionEventRecordView[]>;
     sendPrompt(sessionId: string, content: string): Promise<SessionMessageView>;
     cancelPrompt(sessionId: string): Promise<void>;
+    close(sessionId: string): Promise<SessionView>;
   };
 }
 
 export function createApiClient(accessToken: string): ApiClient {
   return {
     projects: {
+      async create(input: CreateDeveloperProjectInput): Promise<DeveloperProjectSummary> {
+        const value = await requestJson('/projects', {
+          method: 'POST',
+          headers: jsonHeaders(accessToken),
+          body: JSON.stringify(input),
+        });
+        return developerProjectSummarySchema.parse(value);
+      },
+      async listDeveloper(): Promise<DeveloperProjectSummary[]> {
+        const value = await requestJson('/projects/developer', {
+          method: 'GET',
+          headers: authHeaders(accessToken),
+        });
+        return developerProjectSummaryListSchema.parse(value);
+      },
       async listShared(): Promise<SharedProjectSummary[]> {
         const value = await requestJson('/projects/shared', {
           method: 'GET',
           headers: authHeaders(accessToken),
         });
         return sharedProjectSummaryListSchema.parse(value);
+      },
+      async share(projectId: string, input: ShareDeveloperProjectInput): Promise<DeveloperProjectSummary> {
+        const value = await requestJson(`/projects/${projectId}/members`, {
+          method: 'POST',
+          headers: jsonHeaders(accessToken),
+          body: JSON.stringify(input),
+        });
+        return developerProjectSummarySchema.parse(value);
       },
     },
     sessions: {
@@ -85,6 +120,13 @@ export function createApiClient(accessToken: string): ApiClient {
           method: 'POST',
           headers: authHeaders(accessToken),
         });
+      },
+      async close(sessionId: string): Promise<SessionView> {
+        const value = await requestJson(`/sessions/${sessionId}/close`, {
+          method: 'POST',
+          headers: authHeaders(accessToken),
+        });
+        return sessionSchema.parse(value);
       },
     },
   };
