@@ -208,8 +208,13 @@ export class SessionsService {
   async closeSessionResponse(sessionId: string, user: PairDockIdentity | undefined) {
     const actor = this.requireUser(user);
     const session = await this.getSession(sessionId);
+    const project = await this.projectsRepository.findById(session.projectId);
 
-    if (actor.kind !== 'developer' || session.createdByUserId !== actor.id) {
+    if (!project) {
+      throw new NotFoundException(`Project ${session.projectId} was not found.`);
+    }
+
+    if (actor.kind !== 'developer' || (session.createdByUserId !== actor.id && project.ownerUserId !== actor.id)) {
       throw new ForbiddenException('Only the owning developer can close this session.');
     }
 

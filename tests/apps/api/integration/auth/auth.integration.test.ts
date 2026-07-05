@@ -204,6 +204,35 @@ test('BT-035: AuthModule normalizes GitHub and Slack callbacks into PairDock use
   assert.equal(externalIdentities[1]?.provider, 'slack');
 });
 
+test('BT-035: Slack login updates an invited PM placeholder with the Slack display name', async () => {
+  const invitedPm = await prisma.user.create({
+    data: {
+      email: 'mathis.dubuisson.pm@pairdock.test',
+      displayName: null,
+      kind: 'pm',
+    },
+  });
+
+  const response = await fetch(`${baseUrl}/auth/pm/callback`, {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({
+      accessToken: 'slack:mathis-dubuisson-pm:team-local:mathis.dubuisson.pm@pairdock.test:Mathis Dubuisson',
+    }),
+  });
+  const login = {
+    status: response.status,
+    body: await parseJsonResponse(response, authResponseSchema),
+  };
+
+  assert.equal(login.status, 200);
+  assert.equal(login.body.user.id, invitedPm.id);
+  assert.equal(login.body.user.displayName, 'Mathis Dubuisson');
+
+  const persistedUser = await prisma.user.findUniqueOrThrow({ where: { id: invitedPm.id } });
+  assert.equal(persistedUser.displayName, 'Mathis Dubuisson');
+});
+
 test('BT-004: SessionAccessGuard allows an invited PM to read a session and send a prompt', async () => {
   const pmLogin = await authenticatePm();
   const fixture = await createSessionFixture(pmLogin.body.user.id);

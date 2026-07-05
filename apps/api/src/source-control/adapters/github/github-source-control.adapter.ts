@@ -77,6 +77,11 @@ export class GithubSourceControlAdapter implements SourceControlPort {
           name: 'readiness-project',
           defaultBranch: 'main',
         },
+        {
+          fullName: 'mathis-gala/Booster-Break',
+          name: 'Booster-Break',
+          defaultBranch: 'main',
+        },
       ];
     }
 

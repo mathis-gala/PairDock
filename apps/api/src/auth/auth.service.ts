@@ -126,12 +126,12 @@ export class AuthService {
         ...identity.metadata,
       });
 
-      return this.buildResult(existingUser, false);
+      return this.buildResult(await this.syncUserProfile(existingUser, identity), false);
     }
 
     const existingUserByEmail = await this.usersService.findByEmail(identity.email);
     const user =
-      existingUserByEmail ??
+      (existingUserByEmail ? await this.syncUserProfile(existingUserByEmail, identity) : null) ??
       (await this.usersService.create({
         email: identity.email,
         displayName: identity.displayName,
@@ -147,6 +147,14 @@ export class AuthService {
     });
 
     return this.buildResult(user, true);
+  }
+
+  private async syncUserProfile(user: PairDockUser, identity: NormalizedIdentity): Promise<PairDockUser> {
+    if (user.displayName || !identity.displayName) {
+      return user;
+    }
+
+    return this.usersService.updateProfile(user.id, { displayName: identity.displayName });
   }
 
   private buildResult(user: PairDockUser, created: boolean): AuthResult {

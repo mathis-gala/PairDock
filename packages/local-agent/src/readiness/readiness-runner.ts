@@ -11,6 +11,7 @@ interface ReadinessRunnerConfig {
   previewConfigs?: Record<string, ProjectPreviewConfig>;
   checksConfigs?: Record<string, ProjectChecksConfig>;
   agentHarnessConfigs?: Record<string, ProjectAgentHarnessConfig>;
+  commandTimeoutMs?: number;
 }
 
 interface CommandResult {
@@ -33,10 +34,14 @@ export interface ReadinessResult {
 }
 
 export class ReadinessRunner {
+  private readonly commandTimeoutMs: number;
+
   constructor(
     private readonly config: ReadinessRunnerConfig,
     private readonly commandRunner: CommandRunner = runCommand,
-  ) {}
+  ) {
+    this.commandTimeoutMs = config.commandTimeoutMs ?? 10_000;
+  }
 
   async run(input: RunReadinessInput): Promise<ReadinessResult> {
     const repositoryPath = this.config.projectPaths[input.projectKey];
@@ -71,10 +76,15 @@ export class ReadinessRunner {
   }
 
   private async checkGitCli(): Promise<ToolReadinessCheck> {
-    const result = await this.commandRunner('git', ['--version']);
+    const result = await this.runDeveloperCommand('git', ['--version']);
     return result.ok
       ? passed('git', true, 'Git CLI is available.')
-      : failed('git', true, 'Git CLI is unavailable.', 'Install Git and ensure git is on PATH.');
+      : failed(
+          'git',
+          true,
+          failureMessage('Git CLI is unavailable.', result),
+          'Install Git and ensure git is on PATH.',
+        );
   }
 
   private async checkRepository(repositoryPath: string | undefined): Promise<ToolReadinessCheck> {
@@ -98,13 +108,13 @@ export class ReadinessRunner {
       );
     }
 
-    const result = await this.commandRunner('git', ['rev-parse', '--is-inside-work-tree'], repositoryPath);
+    const result = await this.runDeveloperCommand('git', ['rev-parse', '--is-inside-work-tree'], repositoryPath);
     return result.ok
       ? passed('repository', true, 'Configured project path is a Git repository.')
       : failed(
           'repository',
           true,
-          'Configured project path is not a Git repository.',
+          failureMessage('Configured project path is not a Git repository.', result),
           'Choose a project path inside the Git repository you want PairDock to edit.',
         );
   }
@@ -119,13 +129,13 @@ export class ReadinessRunner {
       );
     }
 
-    const result = await this.commandRunner('git', ['remote', 'get-url', 'origin'], repositoryPath);
+    const result = await this.runDeveloperCommand('git', ['remote', 'get-url', 'origin'], repositoryPath);
     return result.ok
       ? passed('source-control', true, 'Source-control origin remote is configured.')
       : failed(
           'source-control',
           true,
-          'Source-control origin remote is missing.',
+          failureMessage('Source-control origin remote is missing.', result),
           'Add an origin remote that matches the configured source-control repository.',
         );
   }
@@ -133,41 +143,38 @@ export class ReadinessRunner {
   private async checkAgentHarness(projectKey: string): Promise<ToolReadinessCheck> {
     const command = this.config.agentHarnessConfigs?.[projectKey]?.command ?? 'codex';
     const executable = command.trim().split(/\s+/)[0];
-    const result = await this.commandRunner('sh', ['-c', `command -v ${shellQuote(executable)}`]);
+    const result = await this.runDeveloperCommand('sh', ['-c', `command -v ${shellQuote(executable)}`]);
 
     return result.ok
       ? passed('agent-harness', true, 'Agent harness command is available.')
       : failed(
           'agent-harness',
           true,
-          'Agent harness command is unavailable.',
+          failureMessage('Agent harness command is unavailable.', result),
           'Install or authenticate the configured agent harness, then rerun readiness checks.',
         );
   }
 
   private async checkDocker(projectKey: string): Promise<ToolReadinessCheck> {
-    const previewStartCommand = this.config.previewConfigs?.[projectKey]?.sandbox?.startCommand ?? '';
-    const dockerRequired = /\bdocker\b|\bdocker-compose\b/.test(previewStartCommand);
-    const result = await this.commandRunner('docker', ['info']);
+    void projectKey;
+    const result = await this.runDeveloperCommand('docker', ['info']);
 
     if (result.ok) {
-      return passed('docker', dockerRequired, 'Docker is available.');
+      return passed('docker', true, 'Docker is available.');
     }
 
-    return dockerRequired
-      ? failed('docker', true, 'Docker is unavailable.', 'Start Docker Desktop and rerun readiness checks.')
-      : warning(
-          'docker',
-          false,
-          'Docker is optional for this project.',
-          'Install Docker only if your preview command uses it.',
-        );
+    return failed(
+      'docker',
+      true,
+      failureMessage('Docker is unavailable.', result),
+      'Start Docker Desktop and rerun readiness checks.',
+    );
   }
 
   private checkPreviewTunnel(projectKey: string): ToolReadinessCheck {
     const tunnelConfig = this.config.previewConfigs?.[projectKey]?.tunnel;
 
-    if (tunnelConfig?.publicUrl || tunnelConfig?.startCommand) {
+    if (tunnelConfig?.publicUrl || tunnelConfig?.provider === 'cloudflare') {
       return passed('preview-tunnel', false, 'Preview tunnel is configured.');
     }
 
@@ -192,6 +199,26 @@ export class ReadinessRunner {
           'Add build, test, and lint commands to pairdock.yml.',
         );
   }
+
+  private async runDeveloperCommand(command: string, args: string[], cwd?: string): Promise<CommandResult> {
+    let timeout: NodeJS.Timeout | undefined;
+    const timeoutResult = new Promise<CommandResult>((resolve) => {
+      timeout = setTimeout(() => {
+        resolve({
+          ok: false,
+          output: `${command} ${args.join(' ')} timed out after ${this.commandTimeoutMs}ms.`,
+        });
+      }, this.commandTimeoutMs);
+    });
+
+    try {
+      return await Promise.race([this.commandRunner(command, args, cwd), timeoutResult]);
+    } finally {
+      if (timeout) {
+        clearTimeout(timeout);
+      }
+    }
+  }
 }
 
 function passed(key: ToolReadinessCheck['key'], required: boolean, message: string): ToolReadinessCheck {
@@ -214,6 +241,10 @@ function failed(
   remediation: string,
 ): ToolReadinessCheck {
   return { key, status: 'failed', required, message, remediation };
+}
+
+function failureMessage(defaultMessage: string, result: CommandResult): string {
+  return result.output ? `${defaultMessage} ${result.output}` : defaultMessage;
 }
 
 function runCommand(command: string, args: string[], cwd?: string): Promise<CommandResult> {

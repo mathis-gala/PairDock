@@ -29,4 +29,15 @@ export class UsersRepositoryAdapter implements UsersRepository {
     const record = await this.prisma.user.findUnique({ where: { email } });
     return record ? mapUser(record) : null;
   }
+
+  async updateProfile(id: string, input: { displayName?: string | null }): Promise<PairDockUser> {
+    const record = await this.prisma.user.update({
+      where: { id },
+      data: {
+        ...(input.displayName !== undefined ? { displayName: input.displayName } : {}),
+      },
+    });
+
+    return mapUser(record);
+  }
 }

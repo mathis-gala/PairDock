@@ -68,6 +68,21 @@ test('GithubDeveloperIdentityAdapter exchanges GitHub App callback code and pres
   });
 });
 
+test('GithubDeveloperIdentityAdapter preserves fixture installation metadata for local dev', async () => {
+  const adapter = new GithubDeveloperIdentityAdapter({
+    apiBaseUrl: 'https://api.github.test',
+    oauthBaseUrl: 'https://github.test',
+  });
+
+  const identity = await adapter.getDeveloperIdentity(
+    'github:mathis-gala:mathis@example.com:Mathis Gala:installation:test-tcg',
+  );
+
+  assert.deepEqual(identity.metadata, {
+    installationId: 'test-tcg',
+  });
+});
+
 test('SlackPmIdentityAdapter resolves a PM from Slack auth and users APIs', async () => {
   const requestedUrls: string[] = [];
   const adapter = new SlackPmIdentityAdapter({ apiBaseUrl: 'https://slack.test/api' }, async (url) => {

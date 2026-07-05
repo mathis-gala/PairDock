@@ -27,6 +27,7 @@ export interface ProjectsRepository {
   create(input: CreateProjectInput): Promise<Project>;
   findById(id: string): Promise<Project | null>;
   findByAgentProjectKey(agentProjectKey: string): Promise<Project | null>;
+  listByAgentProjectKey(agentProjectKey: string): Promise<Project[]>;
   listOwnedByUserId(userId: string): Promise<DeveloperProjectRecord[]>;
   listSharedByUserId(userId: string): Promise<SharedProjectRecord[]>;
 }

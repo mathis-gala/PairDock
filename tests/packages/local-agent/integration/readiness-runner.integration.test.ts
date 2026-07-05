@@ -28,3 +28,26 @@ test('BT-044: ReadinessRunner reports every developer-side readiness check with 
   assert.equal(checksByKey.get('project-commands')?.status, 'failed');
   assert.match(checksByKey.get('project-commands')?.remediation ?? '', /pairdock\.yml/);
 });
+
+test('BT-044: ReadinessRunner fails hanging developer commands with a clear timeout', async () => {
+  const runner = new ReadinessRunner(
+    {
+      authToken: 'test-token',
+      projectPaths: {},
+      previewConfigs: {},
+      checksConfigs: {},
+      agentHarnessConfigs: {},
+      commandTimeoutMs: 5,
+    },
+    () => new Promise(() => undefined),
+  );
+
+  const result = await runner.run({ projectKey: 'missing-project' });
+  const checksByKey = new Map(result.checks.map((check) => [check.key, check]));
+
+  assert.equal(result.ok, false);
+  assert.equal(checksByKey.get('git')?.status, 'failed');
+  assert.match(checksByKey.get('git')?.message ?? '', /timed out/i);
+  assert.equal(checksByKey.get('docker')?.status, 'failed');
+  assert.match(checksByKey.get('docker')?.message ?? '', /timed out/i);
+});

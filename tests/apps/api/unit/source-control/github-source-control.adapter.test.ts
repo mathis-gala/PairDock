@@ -74,6 +74,19 @@ test('GithubSourceControlAdapter verifies repository access through GitHub repo 
   assert.equal(capturedInit?.method, 'GET');
 });
 
+test('GithubSourceControlAdapter exposes TCG Collection repository for local dev fixture installations', async () => {
+  const adapter = new GithubSourceControlAdapter({
+    apiBaseUrl: 'https://api.github.test',
+  });
+
+  const repositories = await adapter.listInstallationRepositories({
+    ownerUserId: '10000000-0000-4000-8000-000000000001',
+    providerConnectionId: 'test-tcg',
+  });
+
+  assert.ok(repositories.some((repository) => repository.fullName === 'mathis-gala/Booster-Break'));
+});
+
 test('GithubSourceControlAdapter creates GitHub App installation token before draft PR creation', async () => {
   const { privateKey } = generateKeyPairSync('rsa', { modulusLength: 2048 });
   const requestedUrls: string[] = [];

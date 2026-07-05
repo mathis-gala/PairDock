@@ -53,8 +53,8 @@ export class ConnectedAgentsRegistry {
     return this.agentIdBySocketId.get(socketId) ?? null;
   }
 
-  findSocketId(agentId: string): string | null {
-    return this.socketIdByAgentId.get(agentId) ?? null;
+  findSocketId(agentIdOrProjectKey: string): string | null {
+    return this.socketIdByAgentId.get(agentIdOrProjectKey) ?? this.findSocketIdByProjectKey(agentIdOrProjectKey);
   }
 
   findSnapshot(agentId: string): ConnectedAgentSnapshot | null {
@@ -64,6 +64,18 @@ export class ConnectedAgentsRegistry {
 
   listSnapshots(): ConnectedAgentSnapshot[] {
     return [...this.snapshotByAgentId.values()].map(cloneSnapshot);
+  }
+
+  private findSocketIdByProjectKey(projectKey: string): string | null {
+    for (const snapshot of this.snapshotByAgentId.values()) {
+      if (!snapshot.projects.some((project) => project.key === projectKey)) {
+        continue;
+      }
+
+      return this.socketIdByAgentId.get(snapshot.agentId) ?? null;
+    }
+
+    return null;
   }
 }
 

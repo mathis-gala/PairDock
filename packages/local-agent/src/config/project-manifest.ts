@@ -15,9 +15,29 @@ const pairdockManifestSchema = z.object({
   repoFullName: z.string().min(1).optional(),
   defaultBranch: z.string().min(1).optional(),
   models: z.array(z.string().min(1)).optional(),
+  sandbox: z
+    .object({
+      image: z.string().min(1).optional(),
+      workdir: z.string().min(1).optional(),
+      network: z.enum(['isolated', 'host-services']).optional(),
+      env: z.record(z.string().min(1), z.string()).optional(),
+      ports: z.array(z.string().min(1)).optional(),
+    })
+    .optional(),
   preview: z.object({
     start: z.string().min(1),
     healthcheck: z.string().url(),
+    tunnel: z
+      .union([
+        z.literal('cloudflare'),
+        z.object({
+          provider: z.literal('cloudflare').optional(),
+          publicUrl: z.string().url().optional(),
+          image: z.string().min(1).optional(),
+          startupTimeoutMs: z.number().int().positive().optional(),
+        }),
+      ])
+      .optional(),
   }),
   checks: z.object({
     build: z.string().min(1),
@@ -87,9 +107,34 @@ async function loadProjectManifest(projectKey: string, projectPath: string): Pro
       sandbox: {
         startCommand: manifest.preview.start,
         healthcheckUrl: manifest.preview.healthcheck,
+        ...(manifest.sandbox?.image ? { image: manifest.sandbox.image } : {}),
+        ...(manifest.sandbox?.workdir ? { workdir: manifest.sandbox.workdir } : {}),
+        ...(manifest.sandbox?.network ? { network: manifest.sandbox.network } : {}),
+        ...(manifest.sandbox?.env ? { env: manifest.sandbox.env } : {}),
+        ...(manifest.sandbox?.ports ? { ports: manifest.sandbox.ports } : {}),
       },
+      ...(manifest.preview.tunnel
+        ? {
+            tunnel: normalizeTunnelManifest(manifest.preview.tunnel),
+          }
+        : {}),
     },
     checksConfig,
+  };
+}
+
+function normalizeTunnelManifest(
+  tunnel: 'cloudflare' | { provider?: 'cloudflare'; publicUrl?: string; image?: string; startupTimeoutMs?: number },
+) {
+  if (tunnel === 'cloudflare') {
+    return { provider: 'cloudflare' as const };
+  }
+
+  return {
+    provider: tunnel.provider ?? ('cloudflare' as const),
+    ...(tunnel.publicUrl ? { publicUrl: tunnel.publicUrl } : {}),
+    ...(tunnel.image ? { image: tunnel.image } : {}),
+    ...(tunnel.startupTimeoutMs ? { startupTimeoutMs: tunnel.startupTimeoutMs } : {}),
   };
 }
 

@@ -80,6 +80,7 @@ export class AgentClient {
       new SessionRunner({
         projectPaths: config.projectPaths,
         previewConfigs: config.previewConfigs,
+        logger: this.logger,
       });
     this.agentHarnessPort = dependencies.agentHarnessPort ?? new CodexHarnessAdapter(config.agentHarnessConfigs ?? {});
     this.diffService = dependencies.diffService ?? new DiffService();
@@ -243,10 +244,12 @@ export class AgentClient {
   }
 
   private async handleReadinessCheck(command: ReadinessCheckCommandEnvelope): Promise<void> {
+    this.logger.info(`Running readiness check for project ${command.payload.projectKey}.`);
     const result = await this.readinessRunner.run({
       projectKey: command.payload.projectKey,
       sessionId: command.payload.sessionId,
     });
+    this.logger.info(`Publishing readiness result for project ${result.projectKey}.`);
     await this.emitEvent(buildReadinessResultEvent(result));
   }
 
@@ -446,7 +449,22 @@ export class AgentClient {
       throw new Error('AgentClient socket is not connected.');
     }
 
-    await this.socket.emitWithAck(agentProtocolMessageEventName, event);
+    await new Promise<void>((resolve) => {
+      const timeout = setTimeout(() => {
+        this.logger.warn(`PairDock backend did not acknowledge ${event.type} within 5000ms.`);
+        resolve();
+      }, 5_000);
+
+      this.socket?.emit(agentProtocolMessageEventName, event, (response?: { accepted?: boolean; error?: string }) => {
+        clearTimeout(timeout);
+
+        if (response?.accepted === false) {
+          this.logger.warn(`PairDock backend rejected ${event.type}: ${response.error ?? 'unknown error'}`);
+        }
+
+        resolve();
+      });
+    });
   }
 }
 

@@ -34,6 +34,7 @@ async function runLogin() {
       'agent-id': { type: 'string' },
       'backend-url': { type: 'string' },
       capability: { type: 'string', multiple: true },
+      model: { type: 'string', multiple: true },
       project: { type: 'string', multiple: true },
       token: { type: 'string' },
     },
@@ -47,6 +48,7 @@ async function runLogin() {
     authToken: values.token,
     backendUrl: values['backend-url'] ?? '',
     capabilities: values.capability,
+    models: parseModelMappings(values.model),
     projectPaths,
   });
 
@@ -105,6 +107,21 @@ async function waitForShutdownSignal(onShutdown: () => Promise<void>): Promise<v
 
 function parseProjectMappings(projectMappings: string[] | undefined): Record<string, string> {
   return Object.fromEntries((projectMappings ?? []).map(parseProjectMapping));
+}
+
+function parseModelMappings(modelMappings: string[] | undefined) {
+  return (modelMappings ?? []).map(parseModelMapping);
+}
+
+function parseModelMapping(modelMapping: string): { id: string; label: string; provider: string } {
+  const parts = modelMapping.split('=');
+
+  if (parts.length !== 3 || parts.some((part) => part.trim().length === 0)) {
+    throw new Error(`Invalid --model value "${modelMapping}". Expected <model-id>=<label>=<provider>.`);
+  }
+
+  const [id, label, provider] = parts;
+  return { id, label, provider };
 }
 
 function parseProjectMapping(projectMapping: string): [string, string] {

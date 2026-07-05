@@ -34,10 +34,12 @@ function subscribe(listener: () => void): () => void {
 
   const notify = () => listener();
   window.addEventListener('storage', notify);
+  window.addEventListener('hashchange', notify);
   window.addEventListener(AUTH_STORAGE_KEY, notify);
 
   return () => {
     window.removeEventListener('storage', notify);
+    window.removeEventListener('hashchange', notify);
     window.removeEventListener(AUTH_STORAGE_KEY, notify);
   };
 }

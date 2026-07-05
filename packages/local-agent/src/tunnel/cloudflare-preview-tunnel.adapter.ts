@@ -48,14 +48,13 @@ export class CloudflarePreviewTunnelAdapter implements PreviewTunnelPort {
       };
     }
 
-    const startCommand = tunnelConfig?.startCommand ?? `cloudflared tunnel --url ${input.localUrl}`;
+    const startCommand = buildCloudflareDockerCommand(input.localUrl, tunnelConfig?.image);
 
-    const process = this.spawn(startCommand, {
+    const { process, publicUrl } = await this.openTunnelProcess({
+      command: startCommand,
       cwd: input.worktreePath,
-      shell: true,
-      stdio: ['ignore', 'pipe', 'pipe'],
+      timeoutMs: tunnelConfig?.startupTimeoutMs ?? 45_000,
     });
-    const publicUrl = await this.waitForPublicUrl(process, tunnelConfig?.startupTimeoutMs ?? 15_000);
     const ref: PreviewTunnelRef = {
       id: randomUUID(),
       sessionId: input.sessionId,
@@ -70,17 +69,8 @@ export class CloudflarePreviewTunnelAdapter implements PreviewTunnelPort {
   }
 
   async close(ref: PreviewTunnelRef, previewConfig?: ProjectPreviewConfig): Promise<void> {
-    const tunnelConfig = previewConfig?.tunnel;
+    void previewConfig;
     const managedProcess = this.processes.get(ref.id);
-
-    if (tunnelConfig?.closeCommand) {
-      const closeProcess = this.spawn(tunnelConfig.closeCommand, {
-        cwd: managedProcess?.cwd,
-        shell: true,
-        stdio: 'ignore',
-      });
-      await onceExit(closeProcess);
-    }
 
     if (managedProcess?.process && !managedProcess.process.killed) {
       managedProcess.process.kill('SIGTERM');
@@ -99,6 +89,34 @@ export class CloudflarePreviewTunnelAdapter implements PreviewTunnelPort {
 
   private waitForPublicUrl(process: TunnelProcessLike, timeoutMs: number): Promise<string> {
     return this.dependencies.waitForPublicUrl?.(process, timeoutMs) ?? waitForPublicUrl(process, timeoutMs);
+  }
+
+  private async openTunnelProcess(input: {
+    command: string;
+    cwd: string;
+    timeoutMs: number;
+  }): Promise<{ process: TunnelProcessLike; publicUrl: string }> {
+    let lastError: unknown;
+
+    for (let attempt = 0; attempt < 2; attempt += 1) {
+      const process = this.spawn(input.command, {
+        cwd: input.cwd,
+        shell: true,
+        stdio: ['ignore', 'pipe', 'pipe'],
+      });
+
+      try {
+        return {
+          process,
+          publicUrl: await this.waitForPublicUrl(process, input.timeoutMs),
+        };
+      } catch (error) {
+        lastError = error;
+        await terminateProcess(process);
+      }
+    }
+
+    throw lastError instanceof Error ? lastError : new Error(String(lastError));
   }
 }
 
@@ -144,4 +162,34 @@ async function onceExit(process: TunnelProcessLike): Promise<void> {
     process.once('exit', () => resolve());
     process.once('error', reject);
   });
+}
+
+async function terminateProcess(process: TunnelProcessLike): Promise<void> {
+  if (process.killed || process.exitCode !== null) {
+    return;
+  }
+
+  process.kill('SIGTERM');
+  await Promise.race([onceExit(process), delay(2_000)]);
+  if (!process.killed && process.exitCode === null) {
+    process.kill('SIGKILL');
+  }
+}
+
+function buildCloudflareDockerCommand(localUrl: string, image = 'cloudflare/cloudflared:latest'): string {
+  return `docker run --rm --add-host host.docker.internal:host-gateway ${image} tunnel --url ${toHostDockerUrl(localUrl)}`;
+}
+
+function toHostDockerUrl(localUrl: string): string {
+  try {
+    const url = new URL(localUrl);
+
+    if (url.hostname === '127.0.0.1' || url.hostname === 'localhost') {
+      url.hostname = 'host.docker.internal';
+    }
+
+    return url.toString().replace(/\/$/, '');
+  } catch {
+    return localUrl;
+  }
 }

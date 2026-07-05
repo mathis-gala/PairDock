@@ -36,7 +36,7 @@ async function createAgentServer() {
 }
 
 test('BT-012: AgentClient announces configured capabilities when it connects', async () => {
-  const { io, backendUrl } = await createAgentServer();
+  const { io, httpServer, backendUrl } = await createAgentServer();
   const received = new Promise<RecordedHandshake>((resolve) => {
     io.of('/agent').on('connection', (socket) => {
       socket.on(agentProtocolMessageEventName, (payload: AgentConnectedEventEnvelope) => {
@@ -78,6 +78,9 @@ test('BT-012: AgentClient announces configured capabilities when it connects', a
     await client.stop();
     await new Promise<void>((resolve) => {
       io.close(() => resolve());
+    });
+    await new Promise<void>((resolve) => {
+      httpServer.close(() => resolve());
     });
   }
 });

@@ -142,8 +142,14 @@ export class GithubDeveloperIdentityAdapter implements DeveloperIdentityPort {
 
 function parseFixtureIdentity(accessToken: string): NormalizedIdentity {
   const [provider, providerUserId, email, ...displayNameParts] = accessToken.split(':');
+  const installationMarkerIndex = displayNameParts.indexOf('installation');
+  const installationId = installationMarkerIndex >= 0 ? displayNameParts[installationMarkerIndex + 1] : undefined;
+  const displayName =
+    installationMarkerIndex >= 0
+      ? displayNameParts.slice(0, installationMarkerIndex).join(':')
+      : displayNameParts.join(':');
 
-  if (provider !== 'github' || !providerUserId || !email || displayNameParts.length === 0) {
+  if (provider !== 'github' || !providerUserId || !email || !displayName) {
     throw new UnauthorizedException('Invalid GitHub callback token.');
   }
 
@@ -152,9 +158,9 @@ function parseFixtureIdentity(accessToken: string): NormalizedIdentity {
     providerUserId,
     providerTeamId: null,
     email,
-    displayName: displayNameParts.join(':').trim(),
+    displayName: displayName.trim(),
     kind: 'developer',
-    metadata: {},
+    metadata: installationId ? { installationId } : {},
   };
 }
 

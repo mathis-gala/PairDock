@@ -82,7 +82,9 @@ export function DeveloperHomePage({ onSignOut, session }: DeveloperHomePageProps
             {projects.length > 0 ? (
               projects.map((project) => (
                 <DeveloperProjectCard
-                  closePendingSessionId={closeSessionMutation.variables ?? null}
+                  closePendingSessionId={
+                    closeSessionMutation.isPending ? (closeSessionMutation.variables ?? null) : null
+                  }
                   key={project.id}
                   onCloseSession={async (sessionId) => {
                     closeSessionMutation.reset();
@@ -101,9 +103,15 @@ export function DeveloperHomePage({ onSignOut, session }: DeveloperHomePageProps
                     await startSessionMutation.mutateAsync({ projectId, modelId });
                   }}
                   project={project}
-                  readinessPendingProjectId={requestReadinessMutation.variables ?? null}
-                  sharePendingProjectId={shareProjectMutation.variables?.projectId ?? null}
-                  startPendingProjectId={startSessionMutation.variables?.projectId ?? null}
+                  readinessPendingProjectId={
+                    requestReadinessMutation.isPending ? (requestReadinessMutation.variables ?? null) : null
+                  }
+                  sharePendingProjectId={
+                    shareProjectMutation.isPending ? (shareProjectMutation.variables?.projectId ?? null) : null
+                  }
+                  startPendingProjectId={
+                    startSessionMutation.isPending ? (startSessionMutation.variables?.projectId ?? null) : null
+                  }
                 />
               ))
             ) : projectsQuery.isLoading ? null : (

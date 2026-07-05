@@ -51,12 +51,17 @@ const sandboxConfigSchema = z.object({
   startCommand: z.string().min(1),
   stopCommand: z.string().min(1).optional(),
   healthcheckUrl: z.string().min(1),
+  image: z.string().min(1).optional(),
+  workdir: z.string().min(1).optional(),
+  network: z.enum(['isolated', 'host-services']).optional(),
+  env: z.record(z.string().min(1), z.string()).optional(),
+  ports: z.array(z.string().min(1)).optional(),
 });
 
 const tunnelConfigSchema = z.object({
+  provider: z.literal('cloudflare').optional(),
   publicUrl: z.string().min(1).optional(),
-  startCommand: z.string().min(1).optional(),
-  closeCommand: z.string().min(1).optional(),
+  image: z.string().min(1).optional(),
   startupTimeoutMs: z.number().int().positive().optional(),
 });
 
@@ -377,6 +382,35 @@ function normalizeSandboxConfig(
     normalizedSandboxConfig.stopCommand = stopCommand;
   }
 
+  const image = normalizeOptionalConfigString(sandboxConfig.image, `sandbox.image for ${projectKey}`);
+  if (image !== undefined) {
+    normalizedSandboxConfig.image = image;
+  }
+
+  const workdir = normalizeOptionalConfigString(sandboxConfig.workdir, `sandbox.workdir for ${projectKey}`);
+  if (workdir !== undefined) {
+    normalizedSandboxConfig.workdir = workdir;
+  }
+
+  if (sandboxConfig.network !== undefined) {
+    normalizedSandboxConfig.network = sandboxConfig.network;
+  }
+
+  if (sandboxConfig.env !== undefined) {
+    normalizedSandboxConfig.env = Object.fromEntries(
+      Object.entries(sandboxConfig.env).map(([name, value]) => [
+        normalizeRequiredValue(name, `sandbox.env name for ${projectKey}`),
+        value,
+      ]),
+    );
+  }
+
+  if (sandboxConfig.ports !== undefined) {
+    normalizedSandboxConfig.ports = sandboxConfig.ports.map((port, index) =>
+      normalizeRequiredValue(port, `sandbox.ports[${index}] for ${projectKey}`),
+    );
+  }
+
   return normalizedSandboxConfig;
 }
 
@@ -392,25 +426,18 @@ function normalizeTunnelConfig(
 
   const normalizedTunnelConfig: NonNullable<ProjectPreviewConfig['tunnel']> = {};
 
+  if (tunnelConfig.provider !== undefined) {
+    normalizedTunnelConfig.provider = tunnelConfig.provider;
+  }
+
   const publicUrl = normalizeOptionalConfigString(tunnelConfig.publicUrl, `tunnel.publicUrl for ${projectKey}`);
   if (publicUrl !== undefined) {
     normalizedTunnelConfig.publicUrl = publicUrl;
   }
 
-  const startCommand = normalizeOptionalConfigString(
-    tunnelConfig.startCommand,
-    `tunnel.startCommand for ${projectKey}`,
-  );
-  if (startCommand !== undefined) {
-    normalizedTunnelConfig.startCommand = startCommand;
-  }
-
-  const closeCommand = normalizeOptionalConfigString(
-    tunnelConfig.closeCommand,
-    `tunnel.closeCommand for ${projectKey}`,
-  );
-  if (closeCommand !== undefined) {
-    normalizedTunnelConfig.closeCommand = closeCommand;
+  const image = normalizeOptionalConfigString(tunnelConfig.image, `tunnel.image for ${projectKey}`);
+  if (image !== undefined) {
+    normalizedTunnelConfig.image = image;
   }
 
   const startupTimeoutMs = normalizeOptionalPositiveInteger(

@@ -39,8 +39,8 @@ export function useDeveloperProjects(accessToken: string) {
 
   const shareProjectMutation = useMutation({
     mutationFn: ({ projectId, pmEmail }: ShareDeveloperProjectInput) => api.projects.share(projectId, { pmEmail }),
-    onSuccess: (project) => {
-      replaceProject(queryClient, queryKey, project);
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey });
     },
   });
 
@@ -79,18 +79,4 @@ export function useDeveloperProjects(accessToken: string) {
     setupQuery,
     startSessionMutation,
   };
-}
-
-function replaceProject(
-  queryClient: ReturnType<typeof useQueryClient>,
-  queryKey: string[],
-  project: DeveloperProjectSummary,
-) {
-  queryClient.setQueryData<DeveloperProjectSummary[]>(
-    queryKey,
-    (currentProjects) =>
-      currentProjects?.map((currentProject) => (currentProject.id === project.id ? project : currentProject)) ?? [
-        project,
-      ],
-  );
 }

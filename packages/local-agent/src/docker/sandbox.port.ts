@@ -3,11 +3,16 @@ export interface ProjectPreviewConfig {
     startCommand: string;
     stopCommand?: string;
     healthcheckUrl: string;
+    image?: string;
+    workdir?: string;
+    network?: 'isolated' | 'host-services';
+    env?: Record<string, string>;
+    ports?: string[];
   };
   tunnel?: {
+    provider?: 'cloudflare';
     publicUrl?: string;
-    startCommand?: string;
-    closeCommand?: string;
+    image?: string;
     startupTimeoutMs?: number;
   };
   healthcheckTimeoutMs?: number;

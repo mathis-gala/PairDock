@@ -63,7 +63,14 @@ export class AgentGateway implements OnGatewayDisconnect {
 
   @SubscribeMessage(agentProtocolMessageEventName)
   async handleAgentProtocolMessage(@MessageBody() payload: unknown, @ConnectedSocket() client: Socket) {
-    const event = agentEventEnvelopeSchema.parse(payload);
+    const parsedEvent = agentEventEnvelopeSchema.safeParse(payload);
+
+    if (!parsedEvent.success) {
+      console.error('Rejected invalid agent event:', parsedEvent.error.message);
+      return { accepted: false, error: parsedEvent.error.message };
+    }
+
+    const event = parsedEvent.data;
     const agentId = this.resolveAgentId(client, event);
     const sessionId = this.resolveSessionId(event);
 
@@ -78,7 +85,13 @@ export class AgentGateway implements OnGatewayDisconnect {
       });
     }
 
-    await this.persistEvent(agentId, sessionId, event);
+    try {
+      await this.persistEvent(agentId, sessionId, event);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      console.error(`Failed to persist agent event ${event.type}:`, message);
+      return { accepted: false, error: message };
+    }
 
     if (sessionId) {
       this.uiGateway.publishSessionEvent(sessionId, event);
@@ -129,7 +142,7 @@ export class AgentGateway implements OnGatewayDisconnect {
   ): Promise<void> {
     if (event.type === 'readiness.result') {
       await this.persistenceUnitOfWork.execute(async (repositories) => {
-        const project = await repositories.projects.findByAgentProjectKey(event.payload.projectKey);
+        const projects = await repositories.projects.listByAgentProjectKey(event.payload.projectKey);
 
         await repositories.agentEvents.create({
           sessionId,
@@ -138,21 +151,23 @@ export class AgentGateway implements OnGatewayDisconnect {
           payload: event.payload,
         });
 
-        if (!project) {
+        if (projects.length === 0) {
           return;
         }
 
-        await repositories.projectReadiness.upsert({
-          projectId: project.id,
-          ok: event.payload.ok,
-          checks: event.payload.checks.map<ToolReadinessCheck>((check) => ({
-            key: check.key,
-            status: check.status,
-            required: check.required,
-            message: check.message ?? null,
-            remediation: check.remediation ?? null,
-          })),
-        });
+        for (const project of projects) {
+          await repositories.projectReadiness.upsert({
+            projectId: project.id,
+            ok: event.payload.ok,
+            checks: event.payload.checks.map<ToolReadinessCheck>((check) => ({
+              key: check.key,
+              status: check.status,
+              required: check.required,
+              message: check.message ?? null,
+              remediation: check.remediation ?? null,
+            })),
+          });
+        }
       });
       return;
     }

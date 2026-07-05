@@ -16,9 +16,18 @@ test('V1: local agent loads pairdock.yml and publishes safe project metadata', a
       'defaultBranch: main',
       'models:',
       '  - agent/gpt-5',
+      'sandbox:',
+      '  image: oven/bun:1',
+      '  workdir: /workspace',
+      '  network: host-services',
+      '  env:',
+      '    DATABASE_URL: "postgresql://postgres:pairdockdev@host.docker.internal:55432/pairdock"',
+      '  ports:',
+      '    - "127.0.0.1:4000:4000"',
       'preview:',
-      '  start: "pnpm dev --host 127.0.0.1 --port 4000"',
+      '  start: "pnpm dev --host 0.0.0.0 --port 4000"',
       '  healthcheck: "http://127.0.0.1:4000"',
+      '  tunnel: cloudflare',
       'checks:',
       '  build: "pnpm build"',
       '  test: "pnpm test"',
@@ -47,8 +56,18 @@ test('V1: local agent loads pairdock.yml and publishes safe project metadata', a
       models: ['agent/gpt-5'],
     },
   ]);
-  assert.equal(config.previewConfigs.pairdock?.sandbox?.startCommand, 'pnpm dev --host 127.0.0.1 --port 4000');
+  assert.equal(config.previewConfigs.pairdock?.sandbox?.image, 'oven/bun:1');
+  assert.equal(config.previewConfigs.pairdock?.sandbox?.workdir, '/workspace');
+  assert.equal(config.previewConfigs.pairdock?.sandbox?.network, 'host-services');
+  assert.deepEqual(config.previewConfigs.pairdock?.sandbox?.env, {
+    DATABASE_URL: 'postgresql://postgres:pairdockdev@host.docker.internal:55432/pairdock',
+  });
+  assert.deepEqual(config.previewConfigs.pairdock?.sandbox?.ports, ['127.0.0.1:4000:4000']);
+  assert.equal(config.previewConfigs.pairdock?.sandbox?.startCommand, 'pnpm dev --host 0.0.0.0 --port 4000');
   assert.equal(config.previewConfigs.pairdock?.sandbox?.healthcheckUrl, 'http://127.0.0.1:4000');
+  assert.deepEqual(config.previewConfigs.pairdock?.tunnel, {
+    provider: 'cloudflare',
+  });
   assert.deepEqual(config.checksConfigs?.pairdock, {
     build: 'pnpm build',
     test: 'pnpm test',
