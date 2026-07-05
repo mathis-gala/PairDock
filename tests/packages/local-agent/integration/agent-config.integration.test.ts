@@ -169,7 +169,7 @@ test('V1: local agent login command stores declared models and project mappings'
     [
       '--import',
       'tsx',
-      resolve(process.cwd(), 'src/main.ts'),
+      resolve(process.cwd(), 'packages/local-agent/src/main.ts'),
       'login',
       '--agent-id',
       'local-agent-1',
