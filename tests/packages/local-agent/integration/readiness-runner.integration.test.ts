@@ -26,5 +26,5 @@ test('BT-044: ReadinessRunner reports every developer-side readiness check with 
   assert.equal(checksByKey.get('preview-tunnel')?.status, 'warning');
   assert.equal(checksByKey.get('preview-tunnel')?.required, false);
   assert.equal(checksByKey.get('project-commands')?.status, 'failed');
-  assert.match(checksByKey.get('project-commands')?.remediation ?? '', /Configure build, test, and lint commands/);
+  assert.match(checksByKey.get('project-commands')?.remediation ?? '', /pairdock\.yml/);
 });

@@ -11,7 +11,7 @@ const project: DeveloperProjectSummary = {
   description: 'Owned project',
   repoFullName: 'mathis/developer-project',
   defaultBranch: 'main',
-  defaultModelId: 'codex-cli/gpt-5.5',
+  defaultModelId: 'agent/gpt-5',
   agentProjectKey: 'local-developer-project',
   sourceControlAccountLogin: 'mathis',
   pmCanStartSessions: true,
@@ -22,7 +22,7 @@ const project: DeveloperProjectSummary = {
     {
       id: '44444444-4444-4444-8444-444444444444',
       status: 'CREATED',
-      modelId: 'codex-cli/gpt-5.5',
+      modelId: 'agent/gpt-5',
       reviewRequestUrl: 'https://github.com/mathis/developer-project/pull/14',
       createdAt: '2026-07-04T10:00:00.000Z',
       closedAt: null,
@@ -54,7 +54,7 @@ const blockedProject: DeveloperProjectSummary = {
   },
 };
 
-test('BT-028/BT-029/BT-049: developer project card exposes model start, sharing, and close controls', () => {
+test('BT-028/BT-029/BT-049: developer project card exposes default model start, sharing, and close controls', () => {
   const html = renderToStaticMarkup(
     createElement(DeveloperProjectCard, {
       closePendingSessionId: null,
@@ -69,14 +69,15 @@ test('BT-028/BT-029/BT-049: developer project card exposes model start, sharing,
     }),
   );
 
-  assert.match(html, /Model selector/);
-  assert.match(html, /codex-cli\/gpt-5\.5/);
+  assert.match(html, /Default model/);
+  assert.match(html, /agent\/gpt-5/);
   assert.match(html, /Start developer session/);
   assert.match(html, /Share with PM/);
   assert.match(html, /PM access/);
   assert.match(html, /Open draft review request/);
   assert.match(html, /https:\/\/github\.com\/mathis\/developer-project\/pull\/14/);
   assert.match(html, /Close session/);
+  assert.doesNotMatch(html, /codex-cli/);
 });
 
 test('BT-044: developer project card disables start and shows readiness remediation for failed required checks', () => {

@@ -10,4 +10,5 @@ test('BT-034: login screen renders distinct developer and PM entry points', () =
   assert.match(html, /Espace produit/);
   assert.match(html, /Continuer avec GitHub App/);
   assert.match(html, /Continuer avec Slack App/);
+  assert.doesNotMatch(html, /Codex/);
 });

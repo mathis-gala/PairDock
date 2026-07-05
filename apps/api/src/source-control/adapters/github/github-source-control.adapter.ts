@@ -7,6 +7,20 @@ interface GithubPullResponse {
   number?: unknown;
 }
 
+interface GithubRepositoryResponse {
+  full_name?: unknown;
+  name?: unknown;
+  default_branch?: unknown;
+}
+
+interface GithubInstallationRepositoriesResponse {
+  repositories?: unknown;
+}
+
+interface GithubBranchResponse {
+  name?: unknown;
+}
+
 interface GithubSourceControlConfig {
   apiBaseUrl: string;
   token?: string;
@@ -41,6 +55,94 @@ export class GithubSourceControlAdapter implements SourceControlPort {
       const message = await response.text().catch(() => '');
       throw new Error(`GitHub repository access check failed with ${response.status}: ${message}`.trim());
     }
+  }
+
+  async listInstallationRepositories(
+    input: Parameters<SourceControlPort['listInstallationRepositories']>[0],
+  ): Promise<Awaited<ReturnType<SourceControlPort['listInstallationRepositories']>>> {
+    if (isTestConnection(input.providerConnectionId)) {
+      return [
+        {
+          fullName: 'mathis-gala/PairDock',
+          name: 'PairDock',
+          defaultBranch: 'main',
+        },
+        {
+          fullName: 'pairdock/mvp-e2e-fixture',
+          name: 'mvp-e2e-fixture',
+          defaultBranch: 'main',
+        },
+        {
+          fullName: 'mathis/readiness-project',
+          name: 'readiness-project',
+          defaultBranch: 'main',
+        },
+      ];
+    }
+
+    const token = await this.resolveToken(input.providerConnectionId);
+    const response = await this.fetcher(`${this.config.apiBaseUrl}/installation/repositories?per_page=100`, {
+      method: 'GET',
+      headers: githubHeaders(token),
+    });
+
+    if (!response.ok) {
+      const message = await response.text().catch(() => '');
+      throw new Error(`GitHub repository listing failed with ${response.status}: ${message}`.trim());
+    }
+
+    const payload = (await response.json()) as GithubInstallationRepositoriesResponse;
+    const repositories = Array.isArray(payload.repositories) ? payload.repositories : [];
+
+    return repositories.flatMap((repository) => {
+      const parsed = repository as GithubRepositoryResponse;
+
+      if (
+        typeof parsed.full_name !== 'string' ||
+        !parsed.full_name ||
+        typeof parsed.name !== 'string' ||
+        !parsed.name ||
+        typeof parsed.default_branch !== 'string' ||
+        !parsed.default_branch
+      ) {
+        return [];
+      }
+
+      return [
+        {
+          fullName: parsed.full_name,
+          name: parsed.name,
+          defaultBranch: parsed.default_branch,
+        },
+      ];
+    });
+  }
+
+  async listRepositoryBranches(
+    input: Parameters<SourceControlPort['listRepositoryBranches']>[0],
+  ): Promise<Awaited<ReturnType<SourceControlPort['listRepositoryBranches']>>> {
+    if (isTestConnection(input.providerConnectionId)) {
+      return ['main', 'develop', 'dev'];
+    }
+
+    const token = await this.resolveToken(input.providerConnectionId);
+    const response = await this.fetcher(`${this.config.apiBaseUrl}/repos/${input.repoFullName}/branches?per_page=100`, {
+      method: 'GET',
+      headers: githubHeaders(token),
+    });
+
+    if (!response.ok) {
+      const message = await response.text().catch(() => '');
+      throw new Error(`GitHub branch listing failed with ${response.status}: ${message}`.trim());
+    }
+
+    const payload = (await response.json()) as unknown;
+    const branches = Array.isArray(payload) ? payload : [];
+
+    return branches.flatMap((branch) => {
+      const parsed = branch as GithubBranchResponse;
+      return typeof parsed.name === 'string' && parsed.name ? [parsed.name] : [];
+    });
   }
 
   async createDraftReviewRequest(

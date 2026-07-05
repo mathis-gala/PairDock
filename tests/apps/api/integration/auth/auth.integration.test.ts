@@ -147,6 +147,8 @@ async function announceAgent(socket: Socket, agentId: string) {
     payload: {
       agentId,
       capabilities: ['session.prepare', 'agent.prompt', 'agent.cancel', 'preview'],
+      models: [],
+      projects: [],
     },
     sentAt: new Date().toISOString(),
   } satisfies AgentEventEnvelope);

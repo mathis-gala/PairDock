@@ -22,12 +22,18 @@ export function useDeveloperProjects(accessToken: string) {
     queryFn: () => api.projects.listDeveloper(),
   });
 
+  const setupQuery = useQuery({
+    queryKey: ['developer-project-setup', accessToken],
+    queryFn: () => api.projects.getSetup(),
+  });
+
   const createProjectMutation = useMutation({
     mutationFn: (input: CreateDeveloperProjectInput) => api.projects.create(input),
     onSuccess: (project) => {
       queryClient.setQueryData<DeveloperProjectSummary[]>(queryKey, (currentProjects) =>
         currentProjects ? [...currentProjects, project] : [project],
       );
+      void queryClient.invalidateQueries({ queryKey: ['developer-project-setup', accessToken] });
     },
   });
 
@@ -70,6 +76,7 @@ export function useDeveloperProjects(accessToken: string) {
     projectsQuery,
     requestReadinessMutation,
     shareProjectMutation,
+    setupQuery,
     startSessionMutation,
   };
 }

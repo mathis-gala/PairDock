@@ -1,13 +1,10 @@
 import type { DeveloperProjectSummary } from '@pairdock/shared-contracts';
-import { useState } from 'react';
 import { Button } from '../button.js';
 import { SectionCard } from '../section-card.js';
 import { StatusBadge } from '../status-badge.js';
 import { ProjectShareForm } from './project-share-form.js';
 import { SessionControlCard } from './session-control-card.js';
 import { ToolReadinessPanel } from './tool-readiness-panel.js';
-
-const modelOptions = ['codex-cli/gpt-5.4', 'codex-cli/gpt-5.5', 'openai-compatible/gpt-4.1', 'custom/local'];
 
 interface DeveloperProjectCardProps {
   closePendingSessionId: string | null;
@@ -32,7 +29,6 @@ export function DeveloperProjectCard({
   sharePendingProjectId,
   startPendingProjectId,
 }: DeveloperProjectCardProps) {
-  const [selectedModelId, setSelectedModelId] = useState(project.defaultModelId);
   const startPending = startPendingProjectId === project.id;
   const readinessPending = readinessPendingProjectId === project.id;
   const startBlockedByReadiness = project.agentAvailability !== 'online' || project.readiness?.ok !== true;
@@ -60,29 +56,18 @@ export function DeveloperProjectCard({
               value={`${project.pmMemberCount} PM${project.pmMemberCount === 1 ? '' : 's'}`}
             />
             <ProjectFact label="Agent key" value={project.agentProjectKey} />
+            <ProjectFact label="Default model" value={project.defaultModelId} />
             <ProjectFact label="PM-start policy" value={project.pmCanStartSessions ? 'Enabled' : 'Disabled'} />
           </dl>
           <div className="rounded-xl border border-slate-800 bg-slate-950/70 p-3">
-            <label className="space-y-2">
-              <span className="block text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">
-                Model selector
-              </span>
-              <select
-                className="w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-sm text-slate-100 outline-none focus:border-sky-400"
-                onChange={(event) => setSelectedModelId(event.target.value)}
-                value={selectedModelId}
-              >
-                {Array.from(new Set([project.defaultModelId, ...modelOptions])).map((modelId) => (
-                  <option key={modelId} value={modelId}>
-                    {modelId}
-                  </option>
-                ))}
-              </select>
-            </label>
+            <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">Developer session</p>
+            <p className="mt-1 break-all text-sm text-slate-300">
+              Uses the saved agent model: {project.defaultModelId}
+            </p>
             <Button
               className="mt-3"
               disabled={startPending || startBlockedByReadiness}
-              onClick={async () => onStartSession(project.id, selectedModelId)}
+              onClick={async () => onStartSession(project.id, project.defaultModelId)}
             >
               {startPending ? 'Starting session…' : 'Start developer session'}
             </Button>
@@ -114,7 +99,7 @@ export function DeveloperProjectCard({
             ))
           ) : (
             <div className="rounded-xl border border-slate-800 bg-slate-950/70 p-3 text-sm text-slate-500">
-              No sessions yet. Choose a model and start a developer session.
+              No sessions yet. Start a developer session with the configured agent model.
             </div>
           )}
         </div>

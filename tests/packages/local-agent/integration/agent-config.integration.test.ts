@@ -35,6 +35,8 @@ test('BT-020: normalizeAgentConfig trims and preserves preview config fields', (
     agentId: 'local-agent-1',
     authToken: 'secret-token',
     capabilities: ['session.prepare', 'session.close'],
+    models: [],
+    projects: [],
     projectPaths: {
       pairdock: '/tmp/pairdock',
     },
@@ -56,6 +58,39 @@ test('BT-020: normalizeAgentConfig trims and preserves preview config fields', (
       },
     },
   });
+});
+
+test('V1: normalizeAgentConfig trims and deduplicates agent models and published projects', () => {
+  const config = normalizeAgentConfig({
+    backendUrl: 'https://pairdock.test',
+    agentId: 'local-agent-1',
+    models: [
+      { id: ' agent/gpt-5 ', label: ' GPT-5 ', provider: ' local ' },
+      { id: 'agent/gpt-5', label: 'Duplicate', provider: 'local' },
+    ],
+    projects: [
+      {
+        key: ' pairdock ',
+        name: ' PairDock ',
+        repoFullName: ' mathis-gala/PairDock ',
+        pathAlias: ' PairDock ',
+        defaultBranch: ' main ',
+        models: [' agent/gpt-5 '],
+      },
+    ],
+  });
+
+  assert.deepEqual(config.models, [{ id: 'agent/gpt-5', label: 'GPT-5', provider: 'local' }]);
+  assert.deepEqual(config.projects, [
+    {
+      key: 'pairdock',
+      name: 'PairDock',
+      repoFullName: 'mathis-gala/PairDock',
+      pathAlias: 'PairDock',
+      defaultBranch: 'main',
+      models: ['agent/gpt-5'],
+    },
+  ]);
 });
 
 test('BT-021: normalizeAgentConfig omits optional preview config sections when absent', () => {

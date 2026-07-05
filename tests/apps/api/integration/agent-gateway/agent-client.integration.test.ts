@@ -112,6 +112,8 @@ test('BT-012: a started local agent is visible from the backend after it announc
     assert.deepEqual(persistedEvent.payload, {
       agentId: 'agent-local-1',
       capabilities: ['session.prepare', 'agent.prompt'],
+      models: [],
+      projects: [],
     });
   } finally {
     await client.stop();

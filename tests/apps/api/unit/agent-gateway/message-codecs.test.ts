@@ -4,6 +4,7 @@ import test from 'node:test';
 import {
   AGENT_PROTOCOL_VERSION,
   agentCommandEnvelopeSchema,
+  agentConnectedEventEnvelopeSchema,
   agentEventEnvelopeSchema,
 } from '@pairdock/shared-contracts';
 
@@ -63,4 +64,31 @@ test('BT-042: shared Zod codecs reject mismatched envelope and payload session i
   });
 
   assert.equal(result.success, false);
+});
+
+test('V1: shared Zod codecs parse extended agent.connected metadata', () => {
+  const parsed = agentConnectedEventEnvelopeSchema.parse({
+    protocolVersion: AGENT_PROTOCOL_VERSION,
+    messageId: randomUUID(),
+    type: 'agent.connected',
+    payload: {
+      agentId: 'local-agent-1',
+      capabilities: ['session.prepare'],
+      models: [{ id: 'agent/gpt-5', label: 'GPT-5', provider: 'local' }],
+      projects: [
+        {
+          key: 'pairdock',
+          name: 'PairDock',
+          repoFullName: 'mathis-gala/PairDock',
+          pathAlias: 'PairDock',
+          defaultBranch: 'main',
+          models: ['agent/gpt-5'],
+        },
+      ],
+    },
+    sentAt: new Date().toISOString(),
+  });
+
+  assert.equal(parsed.payload.models[0]?.id, 'agent/gpt-5');
+  assert.equal(parsed.payload.projects[0]?.repoFullName, 'mathis-gala/PairDock');
 });

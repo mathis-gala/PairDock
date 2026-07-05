@@ -197,6 +197,15 @@ export interface PmIdentityPort {
 
 export interface SourceControlPort {
   assertProjectAccess(input: { ownerUserId: string; repoFullName: string }): Promise<void>;
+  listInstallationRepositories(input: {
+    ownerUserId: string;
+    providerConnectionId: string;
+  }): Promise<Array<{ fullName: string; name: string; defaultBranch: string }>>;
+  listRepositoryBranches(input: {
+    ownerUserId: string;
+    providerConnectionId: string;
+    repoFullName: string;
+  }): Promise<string[]>;
   createDraftReviewRequest(input: {
     projectId: string;
     sessionId: string;

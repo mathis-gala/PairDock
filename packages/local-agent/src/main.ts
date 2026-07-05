@@ -2,6 +2,7 @@
 
 import { parseArgs } from 'node:util';
 import { loadAgentConfig, saveAgentConfig, summarizeAgentConfig } from './config/agent-config.js';
+import { enrichConfigWithProjectManifests } from './config/project-manifest.js';
 import { AgentClient } from './websocket/agent-client.js';
 
 async function main() {
@@ -59,8 +60,8 @@ async function runLogin() {
 }
 
 async function runStart() {
-  const config = loadAgentConfig();
-  const client = new AgentClient(await config);
+  const config = await enrichConfigWithProjectManifests(await loadAgentConfig());
+  const client = new AgentClient(config);
 
   await client.start();
   await waitForShutdownSignal(async () => {
@@ -69,13 +70,15 @@ async function runStart() {
 }
 
 async function runStatus() {
-  const config = await loadAgentConfig();
+  const config = await enrichConfigWithProjectManifests(await loadAgentConfig());
   const summary = summarizeAgentConfig(config);
 
   console.log(`Backend URL: ${summary.backendUrl}`);
   console.log(`Agent ID: ${summary.agentId}`);
   console.log(`Capabilities: ${summary.capabilities.join(', ') || '(none)'}`);
   console.log(`Projects configured: ${summary.projectCount}`);
+  console.log(`Projects published: ${summary.publishedProjectCount}`);
+  console.log(`Models published: ${summary.modelCount}`);
   console.log(`Token configured: ${summary.tokenConfigured ? 'yes' : 'no'}`);
 }
 

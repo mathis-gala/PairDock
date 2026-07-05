@@ -123,6 +123,8 @@ function buildAgentConnectedEvent(): AgentEventEnvelope {
     payload: {
       agentId: 'agent-local-1',
       capabilities: ['session.prepare', 'agent.prompt', 'preview'],
+      models: [],
+      projects: [],
     },
     sentAt: new Date().toISOString(),
   };

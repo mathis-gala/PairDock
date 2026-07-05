@@ -9,6 +9,7 @@ import {
   agentProtocolMessageEventName,
 } from '@pairdock/shared-contracts';
 import { io, type Socket } from 'socket.io-client';
+import { ConnectedAgentsRegistry } from '../../../../../apps/api/src/agent-gateway/connected-agents.registry.js';
 import { AppModule } from '../../../../../apps/api/src/app.module.js';
 import { DatabaseClient } from '../../../../../apps/api/src/persistence/client.js';
 import {
@@ -78,6 +79,21 @@ async function authenticatePm(tokenSeed = randomUUID(), teamId = 'pairdock-teste
 }
 
 async function createDeveloperProject(accessToken: string, agentProjectKey = `agent-${randomUUID()}`) {
+  app.get(ConnectedAgentsRegistry).register(`setup-${agentProjectKey}`, {
+    agentId: agentProjectKey,
+    capabilities: ['readiness.check'],
+    models: [{ id: 'agent/gpt-5', label: 'GPT-5', provider: 'local-agent' }],
+    projects: [
+      {
+        key: agentProjectKey,
+        name: 'Readiness project',
+        repoFullName: 'mathis/readiness-project',
+        pathAlias: 'readiness-project',
+        defaultBranch: 'main',
+        models: ['agent/gpt-5'],
+      },
+    ],
+  });
   const response = await fetch(`${baseUrl}/projects`, {
     method: 'POST',
     headers: {
@@ -89,11 +105,11 @@ async function createDeveloperProject(accessToken: string, agentProjectKey = `ag
       description: 'Requires local readiness checks',
       repoFullName: 'mathis/readiness-project',
       defaultBranch: 'main',
-      defaultModelId: 'codex-cli/gpt-5.5',
+      defaultModelId: 'agent/gpt-5',
       agentProjectKey,
       pmCanStartSessions: true,
       sourceControl: {
-        providerConnectionId: `gh-install-${randomUUID()}`,
+        providerConnectionId: `test-gh-install-${randomUUID()}`,
         accountLogin: 'mathis',
       },
     }),

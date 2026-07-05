@@ -183,6 +183,14 @@ class RecordingSourceControlPort implements SourceControlPort {
 
   async assertProjectAccess(): Promise<void> {}
 
+  async listInstallationRepositories(): ReturnType<SourceControlPort['listInstallationRepositories']> {
+    return [{ fullName: 'mathis/pairdock-test', name: 'pairdock-test', defaultBranch: 'main' }];
+  }
+
+  async listRepositoryBranches(): ReturnType<SourceControlPort['listRepositoryBranches']> {
+    return ['main'];
+  }
+
   async createDraftReviewRequest(input: Parameters<SourceControlPort['createDraftReviewRequest']>[0]) {
     this.requests.push(input);
     this.callOrder?.push('source-control');

@@ -13,6 +13,7 @@ import {
 } from '@pairdock/shared-contracts';
 import { io, type Socket } from 'socket.io-client';
 import { type CheckResult, ChecksRunner, type ProjectChecksConfig } from '../checks/checks-runner.js';
+import type { AgentModelConfig, AgentProjectDescriptor } from '../config/agent-config.js';
 import { DiffService } from '../git/diff.service.js';
 import { CodexHarnessAdapter } from '../harness/codex-harness.adapter.js';
 import type { AgentHarnessPort } from '../harness/index.js';
@@ -39,6 +40,8 @@ export interface AgentClientConfig {
   agentId: string;
   authToken?: string;
   capabilities: string[];
+  models?: AgentModelConfig[];
+  projects?: AgentProjectDescriptor[];
   projectPaths: Record<string, string>;
   previewConfigs?: Record<string, import('../docker/sandbox.port.js').ProjectPreviewConfig>;
   checksConfigs?: Record<string, ProjectChecksConfig>;
@@ -114,6 +117,8 @@ export class AgentClient {
       const event = buildAgentConnectedEvent({
         agentId: this.config.agentId,
         capabilities: this.config.capabilities,
+        models: this.config.models ?? [],
+        projects: this.config.projects ?? [],
       });
 
       socket.emit(agentProtocolMessageEventName, event);

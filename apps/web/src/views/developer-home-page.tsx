@@ -18,6 +18,7 @@ export function DeveloperHomePage({ onSignOut, session }: DeveloperHomePageProps
     projectsQuery,
     requestReadinessMutation,
     shareProjectMutation,
+    setupQuery,
     startSessionMutation,
   } = useDeveloperProjects(session.accessToken);
   const projects = projectsQuery.data ?? [];
@@ -47,11 +48,13 @@ export function DeveloperHomePage({ onSignOut, session }: DeveloperHomePageProps
 
           <DeveloperProjectForm
             developerSeed={session.user.email}
+            isSetupLoading={setupQuery.isLoading}
             isSubmitting={createProjectMutation.isPending}
             onSubmit={async (input) => {
               createProjectMutation.reset();
               await createProjectMutation.mutateAsync(input);
             }}
+            setup={setupQuery.data ?? null}
           />
           <div className="mt-5 space-y-3">
             {createError ? <ErrorCard title="Could not create project" message={createError} /> : null}

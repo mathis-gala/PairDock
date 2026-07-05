@@ -1,6 +1,8 @@
 import {
   type CreateDeveloperProjectInput,
+  type DeveloperProjectSetup,
   type DeveloperProjectSummary,
+  developerProjectSetupSchema,
   developerProjectSummaryListSchema,
   developerProjectSummarySchema,
   type ShareDeveloperProjectInput,
@@ -28,6 +30,7 @@ interface CreateSessionInput {
 export interface ApiClient {
   readonly projects: {
     create(input: CreateDeveloperProjectInput): Promise<DeveloperProjectSummary>;
+    getSetup(): Promise<DeveloperProjectSetup>;
     listDeveloper(): Promise<DeveloperProjectSummary[]>;
     listShared(): Promise<SharedProjectSummary[]>;
     requestReadinessCheck(projectId: string): Promise<void>;
@@ -55,6 +58,13 @@ export function createApiClient(accessToken: string): ApiClient {
           body: JSON.stringify(input),
         });
         return developerProjectSummarySchema.parse(value);
+      },
+      async getSetup(): Promise<DeveloperProjectSetup> {
+        const value = await requestJson('/projects/developer/setup', {
+          method: 'GET',
+          headers: authHeaders(accessToken),
+        });
+        return developerProjectSetupSchema.parse(value);
       },
       async listDeveloper(): Promise<DeveloperProjectSummary[]> {
         const value = await requestJson('/projects/developer', {

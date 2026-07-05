@@ -56,7 +56,7 @@ export class AgentGateway implements OnGatewayDisconnect {
     const sessionId = this.resolveSessionId(event);
 
     if (this.isAgentConnectedEvent(event)) {
-      this.connectedAgentsRegistry.register(client.id, event.payload.agentId);
+      this.connectedAgentsRegistry.register(client.id, event.payload);
     }
 
     await this.persistEvent(agentId, sessionId, event);

@@ -2,7 +2,7 @@
 
 ## Current repository context
 
-The repository is early-stage. Technical choices are defined by the provided product decisions: Bun workspaces, React/TanStack/Zod/Tailwind CSS with shadcn/ui components, NestJS/zodValidatorPipe/PostgreSQL with Prisma ORM, local Node.js/TypeScript agent, Codex CLI, Docker, Cloudflare Tunnel, GitHub App, and Slack PM login.
+The repository is early-stage. Technical choices are defined by the provided product decisions: Bun workspaces, React/TanStack/Zod/Tailwind CSS with shadcn/ui components, NestJS/zodValidatorPipe/PostgreSQL with Prisma ORM, local Node.js/TypeScript agent, pluggable agent harness adapters, optional Docker/Compose preview commands, Cloudflare Tunnel, GitHub App, and Slack PM login.
 
 Prototype reference: the collaborative developer/PM prototype is stored at `prototype/`; implementation notes live at `docs/prototypes/pairdock-collaborative-developer-pm.md`. Treat it as product evidence for role entry, project sharing, PM-started sessions, session workspace behavior, responsive preview presets, and review-request notification UX.
 
@@ -14,8 +14,8 @@ Hexagonal modular architecture driven by contracts:
 - Local agent as the privileged adapter to the developer machine, Git, Docker, configured agent harness, and tunnel.
 - React frontend as the PM/developer surface without direct local-machine capabilities.
 - Versioned WebSocket contracts between backend and agent.
-- Common agent harness interface to avoid coupling use cases to Codex.
-- Stable business ports for every external tool; replaceable adapters for GitHub, Slack, Codex, Docker, Cloudflare, and future agent harnesses.
+- Common agent harness interface to avoid coupling use cases to one CLI.
+- Stable business ports for every external tool; replaceable adapters for GitHub, Slack, agent harnesses, Docker/Compose preview commands, Cloudflare, and future providers.
 
 The critical boundary is `Backend ↔ Local Agent`. Every local side effect goes through explicit commands and persisted events.
 
@@ -27,12 +27,12 @@ Hexagonal rule: use-case modules never depend directly on a provider SDK, CLI, t
 - NestJS API: public REST, UI WebSocket, agent WebSocket, permissions, orchestration.
 - PostgreSQL: durable state for users, projects, sessions, events, validations, review requests.
 - Prisma ORM: schema, migrations, generated client, and persistence adapter implementation.
-- Local Agent CLI: resident service connected to the backend.
-- Docker sandbox: runtime for the target project per session.
-- Codex CLI: MVP agent harness launched inside the worktree.
+- Local Agent CLI: resident service connected to the backend. It reads local project paths and `pairdock.yml`, then publishes safe metadata only.
+- Preview runtime: project-defined command from `pairdock.yml`; Docker/Compose can be used inside that command but is not required.
+- Agent harness: pluggable local CLI adapter launched inside the worktree. `CodexHarnessAdapter` is one backend/local-agent implementation, not product language.
 - Cloudflare Tunnel: temporary preview exposure.
 - GitHub App: developer login, repository installation, and draft review request creation as the MVP source-control adapter; internally maps to GitHub draft PRs.
-- Slack App/OAuth: PM login, invitation identity, and MVP notification adapter for developer review-request notifications.
+- Slack App/OAuth: PM login and invitation identity. V1 does not send Slack bot notifications.
 - Bun: package manager and workspace command runner for install, typecheck, Prisma commands, and local dev scripts.
 
 ## Backend NestJS modules
@@ -103,7 +103,7 @@ MVP adapter:
 Responsibilities:
 - PairDock project linked to a source-control repository, local agent project alias/path, and owning developer.
 - Shared project access for invited PMs.
-- Repository metadata, default branch, declared commands, default model, and current agent availability summary.
+- Repository metadata, branch selection, local agent project key, declared commands, selected model, and current agent availability summary.
 
 Access rule:
 - Project membership decides who can see a project and start sessions for it.
@@ -195,10 +195,10 @@ Required developer-side checks for MVP:
 - target path is a Git repository with a clean-enough baseline for a worktree,
 - Git CLI available,
 - GitHub App/repository access available through `SourceControlPort`,
-- configured agent harness available and authenticated; Codex CLI is the MVP adapter check,
-- Docker daemon available,
+- configured agent harness available and authenticated,
+- Docker daemon available only when the project preview command requires Docker/Compose,
 - Cloudflare Tunnel binary/config available or marked optional by project policy,
-- project commands discoverable from PairDock config or `AGENTS.md`: dev, build, test, lint.
+- project commands discoverable from `pairdock.yml`: preview start/healthcheck, build, test, lint.
 
 PM-side checks:
 - authenticated through the PM identity adapter,

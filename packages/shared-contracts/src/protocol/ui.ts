@@ -52,6 +52,41 @@ export const developerProjectSummarySchema = z.object({
 
 export const developerProjectSummaryListSchema = z.array(developerProjectSummarySchema);
 
+export const developerSetupRepositorySchema = z.object({
+  fullName: z.string().min(1),
+  name: z.string().min(1),
+  defaultBranch: z.string().min(1),
+  branches: z.array(z.string().min(1)),
+});
+
+export const developerSetupAgentModelSchema = z.object({
+  id: z.string().min(1),
+  label: z.string().min(1),
+  provider: z.string().min(1),
+});
+
+export const developerSetupAgentProjectSchema = z.object({
+  key: z.string().min(1),
+  name: z.string().min(1),
+  repoFullName: z.string().min(1),
+  pathAlias: z.string().min(1),
+  defaultBranch: z.string().min(1).optional(),
+  models: z.array(z.string().min(1)).optional(),
+  readiness: developerProjectReadinessSchema.nullable(),
+});
+
+export const developerSetupAgentSchema = z.object({
+  agentId: z.string().min(1),
+  capabilities: z.array(z.string().min(1)),
+  models: z.array(developerSetupAgentModelSchema),
+  projects: z.array(developerSetupAgentProjectSchema),
+});
+
+export const developerProjectSetupSchema = z.object({
+  repositories: z.array(developerSetupRepositorySchema),
+  agents: z.array(developerSetupAgentSchema),
+});
+
 export const createDeveloperProjectInputSchema = z.object({
   name: z.string().trim().min(1),
   description: z.string().trim().optional(),
@@ -77,5 +112,10 @@ export type SharedProjectSummary = z.infer<typeof sharedProjectSummarySchema>;
 export type DeveloperProjectSessionSummary = z.infer<typeof developerProjectSessionSummarySchema>;
 export type DeveloperProjectReadiness = z.infer<typeof developerProjectReadinessSchema>;
 export type DeveloperProjectSummary = z.infer<typeof developerProjectSummarySchema>;
+export type DeveloperSetupRepository = z.infer<typeof developerSetupRepositorySchema>;
+export type DeveloperSetupAgentModel = z.infer<typeof developerSetupAgentModelSchema>;
+export type DeveloperSetupAgentProject = z.infer<typeof developerSetupAgentProjectSchema>;
+export type DeveloperSetupAgent = z.infer<typeof developerSetupAgentSchema>;
+export type DeveloperProjectSetup = z.infer<typeof developerProjectSetupSchema>;
 export type CreateDeveloperProjectInput = z.infer<typeof createDeveloperProjectInputSchema>;
 export type ShareDeveloperProjectInput = z.infer<typeof shareDeveloperProjectInputSchema>;

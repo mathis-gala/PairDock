@@ -46,7 +46,7 @@ export class ReadinessRunner {
       await this.checkRepository(repositoryPath),
       await this.checkSourceControl(repositoryPath),
       await this.checkAgentHarness(input.projectKey),
-      await this.checkDocker(),
+      await this.checkDocker(input.projectKey),
       this.checkPreviewTunnel(input.projectKey),
       this.checkProjectCommands(input.projectKey),
     ];
@@ -145,11 +145,23 @@ export class ReadinessRunner {
         );
   }
 
-  private async checkDocker(): Promise<ToolReadinessCheck> {
+  private async checkDocker(projectKey: string): Promise<ToolReadinessCheck> {
+    const previewStartCommand = this.config.previewConfigs?.[projectKey]?.sandbox?.startCommand ?? '';
+    const dockerRequired = /\bdocker\b|\bdocker-compose\b/.test(previewStartCommand);
     const result = await this.commandRunner('docker', ['info']);
-    return result.ok
-      ? passed('docker', true, 'Docker is available.')
-      : failed('docker', true, 'Docker is unavailable.', 'Start Docker Desktop and rerun readiness checks.');
+
+    if (result.ok) {
+      return passed('docker', dockerRequired, 'Docker is available.');
+    }
+
+    return dockerRequired
+      ? failed('docker', true, 'Docker is unavailable.', 'Start Docker Desktop and rerun readiness checks.')
+      : warning(
+          'docker',
+          false,
+          'Docker is optional for this project.',
+          'Install Docker only if your preview command uses it.',
+        );
   }
 
   private checkPreviewTunnel(projectKey: string): ToolReadinessCheck {
@@ -177,7 +189,7 @@ export class ReadinessRunner {
           'project-commands',
           true,
           'Build, test, and lint commands are not fully configured.',
-          'Configure build, test, and lint commands in the PairDock agent config.',
+          'Add build, test, and lint commands to pairdock.yml.',
         );
   }
 }

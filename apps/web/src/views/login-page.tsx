@@ -23,7 +23,7 @@ export function LoginPage({ onAuthenticated }: LoginPageProps) {
         </div>
       </div>
       <p className="mb-7 max-w-[460px] text-center text-[14.5px] leading-6 text-[#8b92a1] sm:mb-9">
-        Prête le Codex d'un développeur à ton équipe produit. Un volet pour prompter, un volet pour voir le rendu en
+        Prête l'agent IA d'un développeur à ton équipe produit. Un volet pour prompter, un volet pour voir le rendu en
         direct.
       </p>
       <div className="grid w-full max-w-[760px] gap-[18px] md:grid-cols-2">

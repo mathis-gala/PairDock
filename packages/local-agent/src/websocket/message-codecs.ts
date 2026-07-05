@@ -21,12 +21,16 @@ import {
 export function buildAgentConnectedEvent(input: {
   agentId: string;
   capabilities: string[];
+  models?: AgentConnectedEventEnvelope['payload']['models'];
+  projects?: AgentConnectedEventEnvelope['payload']['projects'];
 }): AgentConnectedEventEnvelope {
   return buildEnvelope({
     type: 'agent.connected',
     payload: {
       agentId: input.agentId,
       capabilities: [...input.capabilities],
+      models: input.models ?? [],
+      projects: input.projects ?? [],
     },
   });
 }
