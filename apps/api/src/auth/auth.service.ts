@@ -171,7 +171,7 @@ export class AuthService {
 
 function readOAuthStartUrlConfig(): OAuthStartUrlConfig {
   return {
-    frontendUrl: process.env.FRONTEND_URL ?? 'http://127.0.0.1:5173',
+    frontendUrl: process.env.FRONTEND_URL ?? 'http://localhost:5173',
     githubAppSlug: process.env.GITHUB_APP_SLUG,
     githubClientId: process.env.GITHUB_CLIENT_ID,
     githubRedirectUri: process.env.GITHUB_REDIRECT_URI,
