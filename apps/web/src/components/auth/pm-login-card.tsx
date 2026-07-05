@@ -1,27 +1,29 @@
 import { authApi } from '../../api/client.js';
-import type { AuthSession } from '../../schemas/auth.js';
 import { Button } from '../button.js';
-import { SectionCard } from '../section-card.js';
 
-interface PmLoginCardProps {
-  onAuthenticated: (session: AuthSession) => void;
-}
-
-export function PmLoginCard({ onAuthenticated: _onAuthenticated }: PmLoginCardProps) {
-  void _onAuthenticated;
-
+export function PmLoginCard() {
   function handleSlackAppAuth() {
     window.location.assign(authApi.pmStartUrl());
   }
 
   return (
-    <SectionCard
-      className="border-[#d3a4ea]/25 bg-gradient-to-b from-[#d3a4ea]/5 to-[#d3a4ea]/[0.015]"
-      eyebrow="PM"
-      title="Espace produit"
-      description="Connecte ton workspace Slack pour rejoindre les projets partagés avec ton adresse d'équipe."
-    >
-      <div className="space-y-4">
+    <section className="flex min-h-[250px] flex-col rounded-[14px] border border-[#d3a4ea]/25 bg-gradient-to-b from-[#d3a4ea]/5 to-[#d3a4ea]/[0.015] p-6 shadow-[0_18px_50px_rgba(0,0,0,0.22)]">
+      <div className="mb-5 flex size-[42px] items-center justify-center rounded-[11px] border border-[#d3a4ea]/25 bg-[#d3a4ea]/10 text-[#d3a4ea]">
+        <svg aria-hidden="true" className="size-[22px]" fill="none" viewBox="0 0 24 24">
+          <path
+            d="M9.5 4 8 20M16 4l-1.5 16M4.5 9H20M4 15h15.5"
+            stroke="currentColor"
+            strokeLinecap="round"
+            strokeWidth="1.7"
+          />
+        </svg>
+      </div>
+      <p className="font-mono text-xs font-semibold uppercase tracking-[0.14em] text-[#6f7686]">PM</p>
+      <h2 className="mt-1 font-['Space_Grotesk'] text-[18px] font-semibold text-[#eef0f4]">Espace produit</h2>
+      <p className="mt-2 text-sm leading-6 text-[#8b92a1]">
+        Connecte ton workspace Slack pour rejoindre les projets partagés avec ton adresse d'équipe.
+      </p>
+      <div className="mt-auto pt-6">
         <Button
           className="w-full bg-[#d3a4ea] text-[#2a1635] hover:bg-[#ddb4f0]"
           onClick={handleSlackAppAuth}
@@ -29,11 +31,11 @@ export function PmLoginCard({ onAuthenticated: _onAuthenticated }: PmLoginCardPr
         >
           Continuer avec Slack App
         </Button>
-        <p className="flex items-center gap-2 font-mono text-[11.5px] text-[#6f7686]">
+        <p className="mt-4 flex items-center gap-2 font-mono text-[11.5px] text-[#6f7686]">
           <span className="size-1.5 rounded-full bg-[#d3a4ea]" />
           auth PM seulement · aucune notification bot
         </p>
       </div>
-    </SectionCard>
+    </section>
   );
 }
