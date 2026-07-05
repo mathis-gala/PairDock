@@ -200,6 +200,8 @@ test('Task 12: UiGateway accepts browser auth payloads for PM session subscripti
       payload: {
         agentId: 'agent-local-1',
         capabilities: ['session.prepare', 'agent.prompt', 'preview'],
+        models: [],
+        projects: [],
       },
       sentAt: new Date().toISOString(),
     } satisfies AgentEventEnvelope);

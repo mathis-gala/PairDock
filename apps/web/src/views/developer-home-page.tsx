@@ -18,6 +18,7 @@ export function DeveloperHomePage({ onSignOut, session }: DeveloperHomePageProps
     projectsQuery,
     requestReadinessMutation,
     shareProjectMutation,
+    setupQuery,
     startSessionMutation,
   } = useDeveloperProjects(session.accessToken);
   const projects = projectsQuery.data ?? [];
@@ -47,11 +48,13 @@ export function DeveloperHomePage({ onSignOut, session }: DeveloperHomePageProps
 
           <DeveloperProjectForm
             developerSeed={session.user.email}
+            isSetupLoading={setupQuery.isLoading}
             isSubmitting={createProjectMutation.isPending}
             onSubmit={async (input) => {
               createProjectMutation.reset();
               await createProjectMutation.mutateAsync(input);
             }}
+            setup={setupQuery.data ?? null}
           />
           <div className="mt-5 space-y-3">
             {createError ? <ErrorCard title="Could not create project" message={createError} /> : null}
@@ -79,7 +82,9 @@ export function DeveloperHomePage({ onSignOut, session }: DeveloperHomePageProps
             {projects.length > 0 ? (
               projects.map((project) => (
                 <DeveloperProjectCard
-                  closePendingSessionId={closeSessionMutation.variables ?? null}
+                  closePendingSessionId={
+                    closeSessionMutation.isPending ? (closeSessionMutation.variables ?? null) : null
+                  }
                   key={project.id}
                   onCloseSession={async (sessionId) => {
                     closeSessionMutation.reset();
@@ -98,9 +103,15 @@ export function DeveloperHomePage({ onSignOut, session }: DeveloperHomePageProps
                     await startSessionMutation.mutateAsync({ projectId, modelId });
                   }}
                   project={project}
-                  readinessPendingProjectId={requestReadinessMutation.variables ?? null}
-                  sharePendingProjectId={shareProjectMutation.variables?.projectId ?? null}
-                  startPendingProjectId={startSessionMutation.variables?.projectId ?? null}
+                  readinessPendingProjectId={
+                    requestReadinessMutation.isPending ? (requestReadinessMutation.variables ?? null) : null
+                  }
+                  sharePendingProjectId={
+                    shareProjectMutation.isPending ? (shareProjectMutation.variables?.projectId ?? null) : null
+                  }
+                  startPendingProjectId={
+                    startSessionMutation.isPending ? (startSessionMutation.variables?.projectId ?? null) : null
+                  }
                 />
               ))
             ) : projectsQuery.isLoading ? null : (

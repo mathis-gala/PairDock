@@ -15,6 +15,9 @@ import { SessionRegistry, type SessionWorkspace } from './session-registry.js';
 export interface SessionRunnerConfig {
   projectPaths?: Record<string, string>;
   previewConfigs?: Record<string, ProjectPreviewConfig>;
+  logger?: {
+    info(message: string): void;
+  };
 }
 
 export interface SessionPrepareHooks {
@@ -36,6 +39,7 @@ export class SessionRunner {
   private readonly previewTunnelPort: PreviewTunnelPort;
   private readonly projectPaths: Record<string, string>;
   private readonly previewConfigs: Record<string, ProjectPreviewConfig>;
+  private readonly logger: { info(message: string): void } | undefined;
 
   constructor(
     config: SessionRunnerConfig = {},
@@ -49,6 +53,7 @@ export class SessionRunner {
   ) {
     this.projectPaths = config.projectPaths ?? {};
     this.previewConfigs = config.previewConfigs ?? {};
+    this.logger = config.logger;
     this.sessionRegistry = dependencies.sessionRegistry ?? new SessionRegistry();
     this.worktreeService = dependencies.worktreeService ?? new WorktreeService();
     this.sandboxPort = dependencies.sandboxPort ?? new DockerSandboxAdapter();
@@ -77,6 +82,7 @@ export class SessionRunner {
     this.sessionRegistry.register(baseWorkspace);
 
     await onProgress?.('DOCKER_STARTING');
+    this.logger?.info(`Starting Docker sandbox for session ${command.sessionId}.`);
     const sandboxRef = await this.sandboxPort.start({
       branchName: preparedWorktree.branchName,
       modelId: command.payload.modelId,
@@ -88,6 +94,7 @@ export class SessionRunner {
     });
 
     await onProgress?.('PREVIEW_STARTING');
+    this.logger?.info(`Waiting for preview healthcheck for session ${command.sessionId}.`);
     const healthcheck = await this.healthcheckService.waitUntilReady({
       intervalMs: previewConfig?.healthcheckIntervalMs,
       sandboxPort: this.sandboxPort,
@@ -101,6 +108,7 @@ export class SessionRunner {
       sessionId: command.sessionId,
       worktreePath: preparedWorktree.worktreePath,
     });
+    this.logger?.info(`Preview tunnel ready for session ${command.sessionId}: ${tunnelRef.publicUrl}.`);
     const workspace: SessionWorkspace = {
       ...baseWorkspace,
       previewUrl: tunnelRef.publicUrl,

@@ -54,3 +54,43 @@ test('useAuthSession snapshot returns a stable object while local storage is unc
     assert.equal(secondSnapshot, firstSnapshot);
   });
 });
+
+test('useAuthSession snapshot consumes and cleans OAuth callback hash', () => {
+  const session = {
+    accessToken: 'local-token',
+    provider: 'github',
+    user: {
+      id: '123e4567-e89b-12d3-a456-426614174000',
+      email: 'dev@example.com',
+      displayName: 'Local Dev',
+      kind: 'developer',
+    },
+  };
+  let persistedSession: string | null = null;
+  let cleanedUrl = '';
+  const localStorage = {
+    getItem: (key: string) => (key === authStorageKey ? persistedSession : null),
+    setItem: (key: string, value: string) => {
+      if (key === authStorageKey) {
+        persistedSession = value;
+      }
+    },
+  };
+  const location = {
+    hash: `#pairdock_auth=${encodeURIComponent(JSON.stringify(session))}`,
+    pathname: '/developer',
+    search: '',
+  };
+  const history = {
+    replaceState: (_state: null, _title: string, url: string) => {
+      cleanedUrl = url;
+    },
+  };
+
+  withWindow({ history, localStorage, location }, () => {
+    const snapshot = getAuthSessionSnapshot();
+
+    assert.equal(snapshot?.accessToken, 'local-token');
+    assert.equal(cleanedUrl, '/developer');
+  });
+});

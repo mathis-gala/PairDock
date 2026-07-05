@@ -1,71 +1,43 @@
-import { useForm } from '@tanstack/react-form';
-import { useAuthenticateDeveloper } from '../../hooks/use-authenticate.js';
-import { createBrowserSeed } from '../../lib/browser-seed.js';
-import type { AuthSession } from '../../schemas/auth.js';
+import { authApi } from '../../api/client.js';
+import { GitHubIcon } from '../brand-icons.js';
 import { Button } from '../button.js';
-import { SectionCard } from '../section-card.js';
-import { TextInput } from '../text-input.js';
 
-interface DeveloperLoginCardProps {
-  onAuthenticated: (session: AuthSession) => void;
-}
-
-export function DeveloperLoginCard({ onAuthenticated }: DeveloperLoginCardProps) {
-  const { isSubmitting, errorMessage, authenticate } = useAuthenticateDeveloper(onAuthenticated);
-  const form = useForm({
-    defaultValues: {
-      seed: createBrowserSeed('developer'),
-    },
-    onSubmit: async ({ value }) => {
-      await authenticate(value.seed);
-    },
-  });
+export function DeveloperLoginCard() {
+  function handleGithubAppAuth() {
+    window.location.assign(authApi.developerStartUrl());
+  }
 
   return (
-    <SectionCard
-      className="border-[#5fdf9b]/25 bg-gradient-to-b from-[#5fdf9b]/5 to-[#5fdf9b]/[0.015]"
-      eyebrow="Developer"
-      title="Espace développeur"
-      description="Provisionne un projet à partir d'un dépôt, choisis un modèle et ouvre une session que ton PM pourra rejoindre."
-    >
-      <form
-        className="space-y-4"
-        onSubmit={(event) => {
-          event.preventDefault();
-          void form.handleSubmit();
-        }}
-      >
-        <form.Field name="seed">
-          {(field) => {
-            const inputId = 'developer-seed';
-
-            return (
-              <div className="space-y-2 text-sm text-[#cdd2dc]">
-                <label className="block" htmlFor={inputId}>
-                  Identité GitHub locale
-                </label>
-                <TextInput
-                  id={inputId}
-                  name={field.name}
-                  onBlur={field.handleBlur}
-                  onChange={(event) => field.handleChange(event.target.value)}
-                  value={field.state.value}
-                />
-              </div>
-            );
-          }}
-        </form.Field>
-        {errorMessage ? <p className="text-sm text-rose-300">{errorMessage}</p> : null}
-        <div className="space-y-3">
-          <Button className="w-full" type="submit">
-            {isSubmitting ? 'Connexion…' : 'Continuer avec GitHub'}
-          </Button>
-          <p className="flex items-center gap-2 font-mono text-[11.5px] text-[#6f7686]">
-            <span className="size-1.5 rounded-full bg-[#5fdf9b]" />
-            gh CLI requis · accès dépôts
-          </p>
-        </div>
-      </form>
-    </SectionCard>
+    <section className="flex min-h-[250px] flex-col rounded-[14px] border border-[#5fdf9b]/25 bg-gradient-to-b from-[#5fdf9b]/5 to-[#5fdf9b]/[0.015] p-6 shadow-[0_18px_50px_rgba(0,0,0,0.22)]">
+      <div className="mb-5 flex size-[42px] items-center justify-center rounded-[11px] border border-[#5fdf9b]/25 bg-[#5fdf9b]/10 text-[#5fdf9b]">
+        <svg aria-hidden="true" className="size-[23px]" fill="none" viewBox="0 0 24 24">
+          <circle cx="6.5" cy="6" r="2.3" stroke="currentColor" strokeWidth="1.7" />
+          <circle cx="6.5" cy="18" r="2.3" stroke="currentColor" strokeWidth="1.7" />
+          <circle cx="17.5" cy="9" r="2.3" stroke="currentColor" strokeWidth="1.7" />
+          <path
+            d="M6.5 8.3v7.4M6.5 11.5c0 2.5 11 2 11 0"
+            stroke="currentColor"
+            strokeLinecap="round"
+            strokeWidth="1.7"
+          />
+        </svg>
+      </div>
+      <p className="font-mono text-xs font-semibold uppercase tracking-[0.14em] text-[#6f7686]">Developer</p>
+      <h2 className="mt-1 font-['Space_Grotesk'] text-[18px] font-semibold text-[#eef0f4]">Espace développeur</h2>
+      <p className="mt-2 text-sm leading-6 text-[#8b92a1]">
+        Installe l'app GitHub, choisis les dépôts autorisés et PairDock configure l'accès source-control
+        automatiquement.
+      </p>
+      <div className="mt-auto pt-6">
+        <Button className="w-full" onClick={handleGithubAppAuth} type="button">
+          <GitHubIcon />
+          Continuer avec GitHub App
+        </Button>
+        <p className="mt-4 flex items-center gap-2 font-mono text-[11.5px] text-[#6f7686]">
+          <span className="size-1.5 rounded-full bg-[#5fdf9b]" />
+          installation dépôt · PR draft via GitHub App
+        </p>
+      </div>
+    </section>
   );
 }

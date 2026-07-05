@@ -41,6 +41,11 @@ export class ProjectsRepositoryAdapter implements ProjectsRepository {
     return record ? mapProject(record) : null;
   }
 
+  async listByAgentProjectKey(agentProjectKey: string): Promise<Project[]> {
+    const records = await this.prisma.project.findMany({ where: { agentProjectKey } });
+    return records.map(mapProject);
+  }
+
   async listOwnedByUserId(userId: string): Promise<DeveloperProjectRecord[]> {
     const records = await this.prisma.project.findMany({
       where: { ownerUserId: userId },

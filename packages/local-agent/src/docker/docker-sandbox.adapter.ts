@@ -12,10 +12,25 @@ import type {
 interface ManagedSandboxProcess {
   process: ChildProcess;
   cwd: string;
+  containerName: string;
+}
+
+interface SandboxSpawnOptions {
+  cwd?: string;
+  shell: boolean;
+  stdio: 'ignore';
+}
+
+type SandboxSpawn = (command: string, args: string[], options: SandboxSpawnOptions) => ChildProcess;
+
+interface DockerSandboxAdapterDependencies {
+  spawn?: SandboxSpawn;
 }
 
 export class DockerSandboxAdapter implements SandboxPort {
   private readonly processes = new Map<string, ManagedSandboxProcess>();
+
+  constructor(private readonly dependencies: DockerSandboxAdapterDependencies = {}) {}
 
   async start(input: SandboxStartInput): Promise<SandboxRef> {
     const sandboxConfig = input.previewConfig?.sandbox;
@@ -24,9 +39,10 @@ export class DockerSandboxAdapter implements SandboxPort {
       throw new Error(`Missing sandbox preview config for project ${input.projectKey}.`);
     }
 
-    const process = spawn(sandboxConfig.startCommand, {
+    const containerName = `pairdock-${input.sessionId.replaceAll('-', '').slice(0, 24)}`;
+    const process = this.spawn('docker', buildDockerRunArgs(input, containerName), {
       cwd: input.worktreePath,
-      shell: true,
+      shell: false,
       stdio: 'ignore',
     });
 
@@ -36,10 +52,13 @@ export class DockerSandboxAdapter implements SandboxPort {
       healthcheckUrl: sandboxConfig.healthcheckUrl,
       metadata: {
         projectKey: input.projectKey,
+        type: 'docker',
+        containerName,
       },
     };
 
     this.processes.set(sandboxRef.id, {
+      containerName,
       cwd: input.worktreePath,
       process,
     });
@@ -50,14 +69,27 @@ export class DockerSandboxAdapter implements SandboxPort {
     const sandboxConfig = previewConfig?.sandbox;
     const managedProcess = this.processes.get(ref.id);
 
-    if (sandboxConfig?.stopCommand) {
-      const stopProcess = spawn(sandboxConfig.stopCommand, {
-        cwd: managedProcess?.cwd,
-        shell: true,
-        stdio: 'ignore',
-      });
+    if (sandboxConfig?.stopCommand && managedProcess) {
+      const stopProcess = this.spawn(
+        'docker',
+        ['exec', managedProcess.containerName, 'sh', '-lc', sandboxConfig.stopCommand],
+        {
+          cwd: managedProcess.cwd,
+          shell: false,
+          stdio: 'ignore',
+        },
+      );
 
       await onceExit(stopProcess);
+    }
+
+    if (managedProcess) {
+      const stopProcess = this.spawn('docker', ['stop', managedProcess.containerName], {
+        cwd: managedProcess.cwd,
+        shell: false,
+        stdio: 'ignore',
+      });
+      await Promise.race([onceExit(stopProcess), delay(5_000)]);
     }
 
     if (managedProcess?.process && !managedProcess.process.killed) {
@@ -73,7 +105,7 @@ export class DockerSandboxAdapter implements SandboxPort {
 
   async check(ref: SandboxRef): Promise<HealthcheckResult> {
     try {
-      const response = await fetch(ref.healthcheckUrl);
+      const response = await fetch(ref.healthcheckUrl, { signal: AbortSignal.timeout(2_000) });
       return {
         ready: response.ok,
         url: ref.healthcheckUrl,
@@ -86,6 +118,55 @@ export class DockerSandboxAdapter implements SandboxPort {
         message: error instanceof Error ? error.message : String(error),
       };
     }
+  }
+
+  private spawn(command: string, args: string[], options: SandboxSpawnOptions): ChildProcess {
+    return this.dependencies.spawn?.(command, args, options) ?? spawn(command, args, options);
+  }
+}
+
+function buildDockerRunArgs(input: SandboxStartInput, containerName: string): string[] {
+  const sandboxConfig = input.previewConfig?.sandbox;
+
+  if (!sandboxConfig) {
+    throw new Error(`Missing Docker sandbox config for project ${input.projectKey}.`);
+  }
+
+  const workdir = sandboxConfig.workdir ?? '/workspace';
+  const args = [
+    'run',
+    '--rm',
+    '--name',
+    containerName,
+    '--workdir',
+    workdir,
+    '--volume',
+    `${input.worktreePath}:${workdir}`,
+  ];
+
+  for (const port of sandboxConfig.ports ?? inferPortsFromHealthcheck(sandboxConfig.healthcheckUrl)) {
+    args.push('--publish', port);
+  }
+
+  if (sandboxConfig.network === 'host-services') {
+    args.push('--add-host', 'host.docker.internal:host-gateway');
+  }
+
+  for (const [name, value] of Object.entries(sandboxConfig.env ?? {})) {
+    args.push('--env', `${name}=${value}`);
+  }
+
+  args.push(sandboxConfig.image ?? 'node:22-bookworm-slim', 'sh', '-lc', sandboxConfig.startCommand);
+  return args;
+}
+
+function inferPortsFromHealthcheck(healthcheckUrl: string): string[] {
+  try {
+    const url = new URL(healthcheckUrl);
+    const port = url.port || (url.protocol === 'https:' ? '443' : '80');
+    return [`127.0.0.1:${port}:${port}`];
+  } catch {
+    return [];
   }
 }
 

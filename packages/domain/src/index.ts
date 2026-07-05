@@ -135,6 +135,29 @@ export interface AgentEventRecord {
   createdAt: Date;
 }
 
+export interface AgentRegistration {
+  id: string;
+  agentId: string;
+  ownerUserId: string | null;
+  displayName: string | null;
+  protocolVersion: string;
+  capabilities: string[];
+  models: Array<{ id: string; label: string; provider: string }>;
+  projects: Array<{
+    key: string;
+    name: string;
+    repoFullName: string;
+    pathAlias: string;
+    defaultBranch?: string;
+    models?: string[];
+  }>;
+  connectedAt: Date;
+  lastSeenAt: Date;
+  disconnectedAt: Date | null;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
 export interface ValidationRun {
   id: string;
   sessionId: string;
@@ -197,6 +220,15 @@ export interface PmIdentityPort {
 
 export interface SourceControlPort {
   assertProjectAccess(input: { ownerUserId: string; repoFullName: string }): Promise<void>;
+  listInstallationRepositories(input: {
+    ownerUserId: string;
+    providerConnectionId: string;
+  }): Promise<Array<{ fullName: string; name: string; defaultBranch: string }>>;
+  listRepositoryBranches(input: {
+    ownerUserId: string;
+    providerConnectionId: string;
+    repoFullName: string;
+  }): Promise<string[]>;
   createDraftReviewRequest(input: {
     projectId: string;
     sessionId: string;

@@ -1,5 +1,6 @@
 import { Module } from '@nestjs/common';
 import { AgentEventsRepositoryAdapter } from './adapters/agent-events.repository.js';
+import { AgentRegistrationsRepositoryAdapter } from './adapters/agent-registrations.repository.js';
 import { ExternalIdentitiesRepositoryAdapter } from './adapters/external-identities.repository.js';
 import { MessagesRepositoryAdapter } from './adapters/messages.repository.js';
 import { NotificationsRepositoryAdapter } from './adapters/notifications.repository.js';
@@ -16,6 +17,7 @@ import { ValidationRunsRepositoryAdapter } from './adapters/validation-runs.repo
 import { DatabaseClient } from './client.js';
 import {
   AGENT_EVENTS_REPOSITORY,
+  AGENT_REGISTRATIONS_REPOSITORY,
   EXTERNAL_IDENTITIES_REPOSITORY,
   MESSAGES_REPOSITORY,
   NOTIFICATIONS_REPOSITORY,
@@ -44,6 +46,7 @@ import {
     SessionMembersRepositoryAdapter,
     MessagesRepositoryAdapter,
     AgentEventsRepositoryAdapter,
+    AgentRegistrationsRepositoryAdapter,
     ValidationRunsRepositoryAdapter,
     ReviewRequestsRepositoryAdapter,
     NotificationsRepositoryAdapter,
@@ -58,6 +61,7 @@ import {
     { provide: SESSION_MEMBERS_REPOSITORY, useExisting: SessionMembersRepositoryAdapter },
     { provide: MESSAGES_REPOSITORY, useExisting: MessagesRepositoryAdapter },
     { provide: AGENT_EVENTS_REPOSITORY, useExisting: AgentEventsRepositoryAdapter },
+    { provide: AGENT_REGISTRATIONS_REPOSITORY, useExisting: AgentRegistrationsRepositoryAdapter },
     { provide: VALIDATION_RUNS_REPOSITORY, useExisting: ValidationRunsRepositoryAdapter },
     { provide: REVIEW_REQUESTS_REPOSITORY, useExisting: ReviewRequestsRepositoryAdapter },
     { provide: NOTIFICATIONS_REPOSITORY, useExisting: NotificationsRepositoryAdapter },
@@ -75,6 +79,7 @@ import {
     SESSION_MEMBERS_REPOSITORY,
     MESSAGES_REPOSITORY,
     AGENT_EVENTS_REPOSITORY,
+    AGENT_REGISTRATIONS_REPOSITORY,
     VALIDATION_RUNS_REPOSITORY,
     REVIEW_REQUESTS_REPOSITORY,
     NOTIFICATIONS_REPOSITORY,

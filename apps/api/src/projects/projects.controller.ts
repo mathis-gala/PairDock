@@ -19,6 +19,12 @@ export class ProjectsController {
     return this.projectsService.listDeveloperProjectsResponse(request.user);
   }
 
+  @Get('developer/setup')
+  @RequireAuth()
+  getDeveloperProjectSetup(@Req() request: AuthenticatedRequest) {
+    return this.projectsService.getDeveloperProjectSetupResponse(request.user);
+  }
+
   @Post()
   @RequireAuth()
   createDeveloperProject(@Body() body: unknown, @Req() request: AuthenticatedRequest) {

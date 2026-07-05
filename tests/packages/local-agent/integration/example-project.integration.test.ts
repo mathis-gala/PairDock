@@ -1,22 +1,22 @@
 import assert from 'node:assert/strict';
 import { execFile } from 'node:child_process';
-import { access, mkdtemp, realpath } from 'node:fs/promises';
-import { createServer } from 'node:http';
+import { access, mkdtemp } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 import test from 'node:test';
 import { promisify } from 'node:util';
 import { AGENT_PROTOCOL_VERSION, type AgentCommandEnvelope } from '@pairdock/shared-contracts';
+import type { SandboxPort, SandboxRef } from '../../../../packages/local-agent/src/docker/sandbox.port.js';
 import { WorktreeService } from '../../../../packages/local-agent/src/git/worktree.service.js';
 import {
   type AgentHarnessEvent,
   CodexHarnessAdapter,
 } from '../../../../packages/local-agent/src/harness/codex-harness.adapter.js';
 import { SessionRunner } from '../../../../packages/local-agent/src/session/session-runner.js';
+import type { PreviewTunnelPort } from '../../../../packages/local-agent/src/tunnel/preview-tunnel.port.js';
 
 const execFileAsync = promisify(execFile);
 const HARNESS_SCRIPT_PATH = resolve(__dirname, '../../../fixtures/local-agent/mock-harness.mjs');
-const PREVIEW_SCRIPT_PATH = resolve(__dirname, '../../../fixtures/local-agent/preview-server.mjs');
 
 async function createTempRepository() {
   const repositoryPath = await mkdtemp(join(tmpdir(), 'pairdock-repo-'));
@@ -29,19 +29,6 @@ async function createTempRepository() {
 
 async function createManagedWorktreeRoot() {
   return mkdtemp(join(tmpdir(), 'pairdock-worktrees-'));
-}
-
-async function reservePort() {
-  const server = createServer();
-  await new Promise<void>((resolve) => server.listen(0, '127.0.0.1', () => resolve()));
-  const address = server.address();
-
-  if (!address || typeof address === 'string') {
-    throw new Error('Expected an ephemeral test port.');
-  }
-
-  await new Promise<void>((resolve, reject) => server.close((error) => (error ? reject(error) : resolve())));
-  return address.port;
 }
 
 function buildPrepareCommand(
@@ -87,13 +74,13 @@ async function collectEvents(iterable: AsyncIterable<AgentHarnessEvent>): Promis
   return events;
 }
 
-test('Task 8 and Task 9: an example project exposes a reachable preview and a dummy prompt produces streamed logs with an exit code', async () => {
+test('Task 8 and Task 9: an example project prepares a preview and a dummy prompt streams logs with an exit code', async () => {
   const repositoryPath = await createTempRepository();
   const managedRoot = await createManagedWorktreeRoot();
-  const previewPort = await reservePort();
-  const previewUrl = `http://127.0.0.1:${previewPort}`;
   const sessionId = '61616161-6161-4611-8611-616161616161';
   const branchName = 'pairdock/session-6161';
+  const sandboxPort = new ReadySandboxPort();
+  const previewTunnelPort = new ReadyPreviewTunnelPort();
   const sessionRunner = new SessionRunner(
     {
       projectPaths: {
@@ -102,11 +89,11 @@ test('Task 8 and Task 9: an example project exposes a reachable preview and a du
       previewConfigs: {
         pairdock: {
           sandbox: {
-            startCommand: `node ${PREVIEW_SCRIPT_PATH} ${previewPort}`,
-            healthcheckUrl: previewUrl,
+            startCommand: 'pnpm dev --host 0.0.0.0 --port 4000',
+            healthcheckUrl: 'http://127.0.0.1:4000',
           },
           tunnel: {
-            publicUrl: previewUrl,
+            publicUrl: 'https://preview.pairdock.test',
           },
           healthcheckIntervalMs: 100,
           healthcheckTimeoutMs: 5_000,
@@ -114,6 +101,8 @@ test('Task 8 and Task 9: an example project exposes a reachable preview and a du
       },
     },
     {
+      previewTunnelPort,
+      sandboxPort,
       worktreeService: new WorktreeService(managedRoot),
     },
   );
@@ -127,11 +116,9 @@ test('Task 8 and Task 9: an example project exposes a reachable preview and a du
   const workspace = await sessionRunner.prepare(buildPrepareCommand(sessionId, branchName));
 
   try {
-    const previewResponse = await fetch(workspace.previewUrl ?? '');
-    const previewBody = await previewResponse.text();
-
-    assert.equal(previewResponse.status, 200);
-    assert.equal(previewBody, `preview:${await realpath(workspace.worktreePath)}`);
+    assert.equal(workspace.previewUrl, 'https://preview.pairdock.test');
+    assert.equal(sandboxPort.startCalls[0]?.worktreePath, workspace.worktreePath);
+    assert.equal(previewTunnelPort.openCalls[0]?.localUrl, 'http://127.0.0.1:4000');
 
     const events = await collectEvents(
       harnessAdapter.runPrompt({
@@ -165,6 +152,43 @@ test('Task 8 and Task 9: an example project exposes a reachable preview and a du
 
   await assert.rejects(() => access(workspace.worktreePath));
 });
+
+class ReadySandboxPort implements SandboxPort {
+  readonly startCalls: Array<{ worktreePath: string }> = [];
+
+  async start(input: { sessionId: string; worktreePath: string }): Promise<SandboxRef> {
+    this.startCalls.push({ worktreePath: input.worktreePath });
+    return {
+      id: `sandbox-${input.sessionId}`,
+      sessionId: input.sessionId,
+      healthcheckUrl: 'http://127.0.0.1:4000',
+    };
+  }
+
+  async stop(): Promise<void> {}
+
+  async check(ref: SandboxRef) {
+    return {
+      ready: true,
+      url: ref.healthcheckUrl,
+    };
+  }
+}
+
+class ReadyPreviewTunnelPort implements PreviewTunnelPort {
+  readonly openCalls: Array<{ localUrl: string }> = [];
+
+  async open(input: { sessionId: string; localUrl: string }) {
+    this.openCalls.push({ localUrl: input.localUrl });
+    return {
+      id: `tunnel-${input.sessionId}`,
+      sessionId: input.sessionId,
+      publicUrl: 'https://preview.pairdock.test',
+    };
+  }
+
+  async close(): Promise<void> {}
+}
 
 async function execGit(cwd: string, args: string[]): Promise<string> {
   const { stdout } = await execFileAsync('git', args, { cwd });

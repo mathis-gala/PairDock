@@ -93,6 +93,21 @@ async function authenticatePm(email: string, tokenSeed = randomUUID()) {
 }
 
 async function createDeveloperProject(accessToken: string, agentProjectKey: string) {
+  app.get(ConnectedAgentsRegistry).register(`setup-${agentProjectKey}`, {
+    agentId: agentProjectKey,
+    capabilities: ['session.prepare', 'session.close', 'agent.prompt', 'git.pushBranch'],
+    models: [{ id: 'codex-cli/gpt-5.4', label: 'GPT-5.4', provider: 'local-agent' }],
+    projects: [
+      {
+        key: agentProjectKey,
+        name: 'MVP E2E Fixture',
+        repoFullName: 'pairdock/mvp-e2e-fixture',
+        pathAlias: 'example-repository',
+        defaultBranch: 'main',
+        models: ['codex-cli/gpt-5.4'],
+      },
+    ],
+  });
   const response = await fetch(`${baseUrl}/projects`, {
     method: 'POST',
     headers: {
@@ -269,6 +284,17 @@ test('BT-033: full MVP flow starts a session, runs a PM prompt, creates a draft 
       authToken: 'test-agent-token',
       backendUrl: baseUrl,
       capabilities: ['session.prepare', 'session.close', 'agent.prompt', 'git.pushBranch'],
+      models: [{ id: project.defaultModelId, label: 'GPT-5.4', provider: 'local-agent' }],
+      projects: [
+        {
+          key: project.agentProjectKey,
+          name: project.name,
+          repoFullName: project.repoFullName,
+          pathAlias: 'example-repository',
+          defaultBranch: project.defaultBranch,
+          models: [project.defaultModelId],
+        },
+      ],
       projectPaths: {
         [project.agentProjectKey]: repository.repositoryPath,
       },

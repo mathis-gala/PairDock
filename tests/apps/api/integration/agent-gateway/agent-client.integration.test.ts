@@ -13,6 +13,7 @@ let app: INestApplication;
 let baseUrl: string;
 
 async function resetDatabase() {
+  await prisma.agentRegistration.deleteMany();
   await prisma.pullRequest.deleteMany();
   await prisma.validationRun.deleteMany();
   await prisma.agentEvent.deleteMany();
@@ -77,6 +78,17 @@ test('BT-012: a started local agent is visible from the backend after it announc
       authToken: 'secret-token',
       backendUrl: baseUrl,
       capabilities: ['session.prepare', 'agent.prompt'],
+      models: [{ id: 'agent/gpt-5', label: 'GPT-5', provider: 'local-agent' }],
+      projects: [
+        {
+          key: 'pairdock',
+          name: 'PairDock',
+          repoFullName: 'mathis-gala/PairDock',
+          pathAlias: 'PairDock',
+          defaultBranch: 'main',
+          models: ['agent/gpt-5'],
+        },
+      ],
       projectPaths: {},
     },
     {
@@ -112,7 +124,37 @@ test('BT-012: a started local agent is visible from the backend after it announc
     assert.deepEqual(persistedEvent.payload, {
       agentId: 'agent-local-1',
       capabilities: ['session.prepare', 'agent.prompt'],
+      models: [{ id: 'agent/gpt-5', label: 'GPT-5', provider: 'local-agent' }],
+      projects: [
+        {
+          key: 'pairdock',
+          name: 'PairDock',
+          repoFullName: 'mathis-gala/PairDock',
+          pathAlias: 'PairDock',
+          defaultBranch: 'main',
+          models: ['agent/gpt-5'],
+        },
+      ],
     });
+
+    const registration = await waitFor(
+      async () => prisma.agentRegistration.findUnique({ where: { agentId: 'agent-local-1' } }),
+      'Expected backend persistence to upsert agent registration.',
+    );
+
+    assert.equal(registration.protocolVersion, '2026-06-27');
+    assert.deepEqual(registration.capabilities, ['session.prepare', 'agent.prompt']);
+    assert.deepEqual(registration.models, [{ id: 'agent/gpt-5', label: 'GPT-5', provider: 'local-agent' }]);
+    assert.equal(registration.disconnectedAt, null);
+
+    await client.stop();
+
+    const disconnectedRegistration = await waitFor(async () => {
+      const record = await prisma.agentRegistration.findUnique({ where: { agentId: 'agent-local-1' } });
+      return record?.disconnectedAt ? record : null;
+    }, 'Expected backend persistence to mark agent disconnected.');
+
+    assert.ok(disconnectedRegistration.lastSeenAt >= registration.lastSeenAt);
   } finally {
     await client.stop();
   }

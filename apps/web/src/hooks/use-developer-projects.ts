@@ -22,19 +22,25 @@ export function useDeveloperProjects(accessToken: string) {
     queryFn: () => api.projects.listDeveloper(),
   });
 
+  const setupQuery = useQuery({
+    queryKey: ['developer-project-setup', accessToken],
+    queryFn: () => api.projects.getSetup(),
+  });
+
   const createProjectMutation = useMutation({
     mutationFn: (input: CreateDeveloperProjectInput) => api.projects.create(input),
     onSuccess: (project) => {
       queryClient.setQueryData<DeveloperProjectSummary[]>(queryKey, (currentProjects) =>
         currentProjects ? [...currentProjects, project] : [project],
       );
+      void queryClient.invalidateQueries({ queryKey: ['developer-project-setup', accessToken] });
     },
   });
 
   const shareProjectMutation = useMutation({
     mutationFn: ({ projectId, pmEmail }: ShareDeveloperProjectInput) => api.projects.share(projectId, { pmEmail }),
-    onSuccess: (project) => {
-      replaceProject(queryClient, queryKey, project);
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey });
     },
   });
 
@@ -70,20 +76,7 @@ export function useDeveloperProjects(accessToken: string) {
     projectsQuery,
     requestReadinessMutation,
     shareProjectMutation,
+    setupQuery,
     startSessionMutation,
   };
-}
-
-function replaceProject(
-  queryClient: ReturnType<typeof useQueryClient>,
-  queryKey: string[],
-  project: DeveloperProjectSummary,
-) {
-  queryClient.setQueryData<DeveloperProjectSummary[]>(
-    queryKey,
-    (currentProjects) =>
-      currentProjects?.map((currentProject) => (currentProject.id === project.id ? project : currentProject)) ?? [
-        project,
-      ],
-  );
 }

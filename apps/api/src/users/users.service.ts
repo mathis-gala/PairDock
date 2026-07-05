@@ -18,4 +18,8 @@ export class UsersService {
   create(input: { email: string; displayName?: string | null; kind: PairDockUser['kind'] }): Promise<PairDockUser> {
     return this.usersRepository.create(input);
   }
+
+  updateProfile(id: string, input: { displayName?: string | null }): Promise<PairDockUser> {
+    return this.usersRepository.updateProfile(id, input);
+  }
 }

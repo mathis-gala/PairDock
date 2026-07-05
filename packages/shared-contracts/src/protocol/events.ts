@@ -18,6 +18,27 @@ export const agentConnectedEventEnvelopeSchema = envelopeBaseSchema.extend({
   payload: z.object({
     agentId: z.string().min(1),
     capabilities: z.array(z.string().min(1)),
+    models: z
+      .array(
+        z.object({
+          id: z.string().min(1),
+          label: z.string().min(1),
+          provider: z.string().min(1),
+        }),
+      )
+      .default([]),
+    projects: z
+      .array(
+        z.object({
+          key: z.string().min(1),
+          name: z.string().min(1),
+          repoFullName: z.string().min(1),
+          pathAlias: z.string().min(1),
+          defaultBranch: z.string().min(1).optional(),
+          models: z.array(z.string().min(1)).optional(),
+        }),
+      )
+      .default([]),
   }),
 });
 

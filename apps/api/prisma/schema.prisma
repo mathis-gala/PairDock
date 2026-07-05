@@ -43,6 +43,7 @@ model User {
   sessionMemberships       SessionMember[]
   messages                 Message[]
   notifications            Notification[]
+  agentRegistrations       AgentRegistration[]
 
   @@map("users")
 }
@@ -192,6 +193,27 @@ model AgentEvent {
 
   @@index([sessionId])
   @@map("agent_events")
+}
+
+model AgentRegistration {
+  id              String    @id @default(uuid()) @db.Uuid
+  agentId         String    @unique @map("agent_id")
+  ownerUserId     String?   @map("owner_user_id") @db.Uuid
+  displayName     String?   @map("display_name")
+  protocolVersion String    @map("protocol_version")
+  capabilities    Json      @default("[]")
+  models          Json      @default("[]")
+  projects        Json      @default("[]")
+  connectedAt     DateTime  @default(now()) @map("connected_at") @db.Timestamptz(6)
+  lastSeenAt      DateTime  @default(now()) @map("last_seen_at") @db.Timestamptz(6)
+  disconnectedAt  DateTime? @map("disconnected_at") @db.Timestamptz(6)
+  createdAt       DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt       DateTime  @updatedAt @map("updated_at") @db.Timestamptz(6)
+  ownerUser       User?     @relation(fields: [ownerUserId], references: [id], onDelete: SetNull)
+
+  @@index([ownerUserId])
+  @@index([lastSeenAt])
+  @@map("agent_registrations")
 }
 
 model ValidationRun {

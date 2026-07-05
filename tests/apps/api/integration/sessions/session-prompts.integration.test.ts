@@ -195,6 +195,8 @@ test('Task 9: POST /sessions/:sessionId/prompts routes agent.prompt to the ownin
       payload: {
         agentId: 'agent-local-1',
         capabilities: ['session.prepare', 'agent.prompt', 'agent.cancel', 'preview'],
+        models: [],
+        projects: [],
       },
       sentAt: new Date().toISOString(),
     } satisfies AgentEventEnvelope);
@@ -266,6 +268,8 @@ test('Task 9: POST /sessions/:sessionId/prompts/cancel routes agent.cancel to th
       payload: {
         agentId: 'agent-local-1',
         capabilities: ['session.prepare', 'agent.prompt', 'agent.cancel', 'preview'],
+        models: [],
+        projects: [],
       },
       sentAt: new Date().toISOString(),
     } satisfies AgentEventEnvelope);

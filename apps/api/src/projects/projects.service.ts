@@ -11,12 +11,14 @@ import type { PairDockIdentity, PairDockUser, ProjectReadinessSnapshot, Session 
 import {
   type CreateDeveloperProjectInput,
   createDeveloperProjectInputSchema,
+  type DeveloperProjectSetup,
   type DeveloperProjectSummary,
   type SharedProjectSummary,
   shareDeveloperProjectInputSchema,
 } from '@pairdock/shared-contracts';
 import { ConnectedAgentsRegistry } from '../agent-gateway/connected-agents.registry.js';
 import {
+  EXTERNAL_IDENTITIES_REPOSITORY,
   PROJECT_MEMBERS_REPOSITORY,
   PROJECT_READINESS_REPOSITORY,
   PROJECTS_REPOSITORY,
@@ -25,6 +27,7 @@ import {
   SOURCE_CONTROL_CONNECTIONS_REPOSITORY,
   USERS_REPOSITORY,
 } from '../persistence/persistence.tokens.js';
+import type { ExternalIdentitiesRepository } from '../persistence/ports/external-identities.repository.js';
 import type { ProjectMembersRepository } from '../persistence/ports/project-members.repository.js';
 import type { ProjectReadinessRepository } from '../persistence/ports/project-readiness.repository.js';
 import type { DeveloperProjectRecord, ProjectsRepository } from '../persistence/ports/projects.repository.js';
@@ -32,12 +35,16 @@ import type { ReviewRequestsRepository } from '../persistence/ports/review-reque
 import type { SessionsRepository } from '../persistence/ports/sessions.repository.js';
 import type { SourceControlConnectionsRepository } from '../persistence/ports/source-control-connections.repository.js';
 import type { UsersRepository } from '../persistence/ports/users.repository.js';
+import type { SourceControlPort } from '../source-control/source-control.port.js';
+import { SOURCE_CONTROL_PORT } from '../source-control/source-control.tokens.js';
 
 @Injectable()
 export class ProjectsService {
   constructor(
     @Inject(PROJECTS_REPOSITORY)
     private readonly projectsRepository: ProjectsRepository,
+    @Inject(EXTERNAL_IDENTITIES_REPOSITORY)
+    private readonly externalIdentitiesRepository: ExternalIdentitiesRepository,
     @Inject(PROJECT_READINESS_REPOSITORY)
     private readonly projectReadinessRepository: ProjectReadinessRepository,
     @Inject(PROJECT_MEMBERS_REPOSITORY)
@@ -52,6 +59,8 @@ export class ProjectsService {
     private readonly usersRepository: UsersRepository,
     @Inject(ConnectedAgentsRegistry)
     private readonly connectedAgentsRegistry: ConnectedAgentsRegistry,
+    @Inject(SOURCE_CONTROL_PORT)
+    private readonly sourceControl: SourceControlPort,
   ) {}
 
   listSharedProjectsResponse(user: PairDockIdentity | undefined): Promise<SharedProjectSummary[]> {
@@ -60,6 +69,10 @@ export class ProjectsService {
 
   async listDeveloperProjectsResponse(user: PairDockIdentity | undefined): Promise<DeveloperProjectSummary[]> {
     return this.listDeveloperProjects(this.requireDeveloper(user));
+  }
+
+  async getDeveloperProjectSetupResponse(user: PairDockIdentity | undefined): Promise<DeveloperProjectSetup> {
+    return this.getDeveloperProjectSetup(this.requireDeveloper(user));
   }
 
   async createDeveloperProjectResponse(
@@ -151,16 +164,18 @@ export class ProjectsService {
     input: CreateDeveloperProjectInput,
     user: PairDockIdentity,
   ): Promise<DeveloperProjectSummary> {
+    const sourceControlInput = await this.resolveSourceControlInput(input, user);
+    await this.validateCreateProjectSelection(input, user, sourceControlInput.providerConnectionId);
     const sourceControlConnection =
       (await this.sourceControlConnectionsRepository.findByOwnerAndProviderConnection({
         ownerUserId: user.id,
-        providerConnectionId: input.sourceControl.providerConnectionId,
+        providerConnectionId: sourceControlInput.providerConnectionId,
       })) ??
       (await this.sourceControlConnectionsRepository.create({
         ownerUserId: user.id,
         provider: 'github',
-        providerConnectionId: input.sourceControl.providerConnectionId,
-        accountLogin: input.sourceControl.accountLogin,
+        providerConnectionId: sourceControlInput.providerConnectionId,
+        accountLogin: sourceControlInput.accountLogin,
       }));
 
     const project = await this.projectsRepository.create({
@@ -185,6 +200,39 @@ export class ProjectsService {
       new Map(),
       null,
     );
+  }
+
+  async getDeveloperProjectSetup(user: PairDockIdentity): Promise<DeveloperProjectSetup> {
+    const sourceControlInput = await this.resolveOptionalSourceControlInput(user);
+    const repositories = sourceControlInput
+      ? await Promise.all(
+          (
+            await this.sourceControl.listInstallationRepositories({
+              ownerUserId: user.id,
+              providerConnectionId: sourceControlInput.providerConnectionId,
+            })
+          ).map(async (repository) => ({
+            ...repository,
+            branches: await this.sourceControl.listRepositoryBranches({
+              ownerUserId: user.id,
+              providerConnectionId: sourceControlInput.providerConnectionId,
+              repoFullName: repository.fullName,
+            }),
+          })),
+        )
+      : [];
+
+    const agents = this.connectedAgentsRegistry.listSnapshots().map((agent) => ({
+      agentId: agent.agentId,
+      capabilities: agent.capabilities,
+      models: agent.models,
+      projects: agent.projects.map((project) => ({
+        ...project,
+        readiness: null,
+      })),
+    }));
+
+    return { repositories, agents };
   }
 
   async shareDeveloperProject(
@@ -220,6 +268,97 @@ export class ProjectsService {
     }
 
     return parsed.data;
+  }
+
+  private async resolveSourceControlInput(
+    input: CreateDeveloperProjectInput,
+    user: PairDockIdentity,
+  ): Promise<{ providerConnectionId: string; accountLogin: string }> {
+    if (input.sourceControl) {
+      return input.sourceControl;
+    }
+
+    const githubIdentity = await this.externalIdentitiesRepository.findByUserAndProvider({
+      userId: user.id,
+      provider: 'github',
+    });
+    const installationId = githubIdentity?.metadata.installationId;
+    const login = githubIdentity?.metadata.login;
+
+    if (typeof installationId !== 'string' || !installationId) {
+      throw new BadRequestException('Install the GitHub App before creating a project.');
+    }
+
+    return {
+      providerConnectionId: installationId,
+      accountLogin: typeof login === 'string' && login ? login : (user.displayName ?? user.email),
+    };
+  }
+
+  private async resolveOptionalSourceControlInput(
+    user: PairDockIdentity,
+  ): Promise<{ providerConnectionId: string; accountLogin: string } | null> {
+    const githubIdentity = await this.externalIdentitiesRepository.findByUserAndProvider({
+      userId: user.id,
+      provider: 'github',
+    });
+    const installationId = githubIdentity?.metadata.installationId;
+    const login = githubIdentity?.metadata.login;
+
+    if (typeof installationId !== 'string' || !installationId) {
+      return null;
+    }
+
+    return {
+      providerConnectionId: installationId,
+      accountLogin: typeof login === 'string' && login ? login : (user.displayName ?? user.email),
+    };
+  }
+
+  private async validateCreateProjectSelection(
+    input: CreateDeveloperProjectInput,
+    user: PairDockIdentity,
+    providerConnectionId: string,
+  ): Promise<void> {
+    const repositories = await this.sourceControl.listInstallationRepositories({
+      ownerUserId: user.id,
+      providerConnectionId,
+    });
+    const selectedRepository = repositories.find((repository) => repository.fullName === input.repoFullName);
+
+    if (!selectedRepository) {
+      throw new BadRequestException('Selected repository is not available through the GitHub App installation.');
+    }
+
+    const branches = await this.sourceControl.listRepositoryBranches({
+      ownerUserId: user.id,
+      providerConnectionId,
+      repoFullName: input.repoFullName,
+    });
+
+    if (!branches.includes(input.defaultBranch)) {
+      throw new BadRequestException('Selected branch does not exist in the GitHub App repository.');
+    }
+
+    const agent = this.connectedAgentsRegistry
+      .listSnapshots()
+      .find((snapshot) => snapshot.projects.some((project) => project.key === input.agentProjectKey));
+    const agentProject = agent?.projects.find((project) => project.key === input.agentProjectKey);
+
+    if (!agent || !agentProject) {
+      throw new BadRequestException('Selected local agent project is offline or not published.');
+    }
+
+    if (agentProject.repoFullName !== input.repoFullName) {
+      throw new BadRequestException('Selected local agent project does not match the GitHub repository.');
+    }
+
+    const agentModelIds = new Set(agent.models.map((model) => model.id));
+    const projectModelIds = agentProject.models?.length ? new Set(agentProject.models) : agentModelIds;
+
+    if (!projectModelIds.has(input.defaultModelId) || !agentModelIds.has(input.defaultModelId)) {
+      throw new BadRequestException('Selected model is not available on the connected local agent project.');
+    }
   }
 
   private async findOwnedProjectRecord(projectId: string, ownerUserId: string): Promise<DeveloperProjectRecord> {

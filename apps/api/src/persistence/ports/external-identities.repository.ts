@@ -11,9 +11,14 @@ export interface CreateExternalIdentityInput {
 export interface ExternalIdentitiesRepository {
   create(input: CreateExternalIdentityInput): Promise<ExternalIdentity>;
   findById(id: string): Promise<ExternalIdentity | null>;
+  findByUserAndProvider(input: {
+    userId: string;
+    provider: ExternalIdentity['provider'];
+  }): Promise<ExternalIdentity | null>;
   findByProviderIdentity(input: {
     provider: ExternalIdentity['provider'];
     providerUserId: string;
     providerTeamId?: string | null;
   }): Promise<ExternalIdentity | null>;
+  updateMetadata(id: string, metadata: Record<string, unknown>): Promise<ExternalIdentity>;
 }

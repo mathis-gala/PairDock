@@ -3,6 +3,7 @@ import { randomUUID } from 'node:crypto';
 import test from 'node:test';
 import type { INestApplication } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
+import { ConnectedAgentsRegistry } from '../../../../../apps/api/src/agent-gateway/connected-agents.registry.js';
 import { AppModule } from '../../../../../apps/api/src/app.module.js';
 import { DatabaseClient } from '../../../../../apps/api/src/persistence/client.js';
 import {
@@ -18,6 +19,7 @@ const prisma = new DatabaseClient();
 
 let app: INestApplication;
 let baseUrl: string;
+let connectedAgentsRegistry: ConnectedAgentsRegistry;
 
 async function resetDatabase() {
   await prisma.pullRequest.deleteMany();
@@ -37,6 +39,7 @@ async function resetDatabase() {
 async function startApplication() {
   app = await NestFactory.create(AppModule, { logger: false });
   await app.listen(0);
+  connectedAgentsRegistry = app.get(ConnectedAgentsRegistry);
   const address = app.getHttpServer().address();
 
   if (!address || typeof address === 'string') {
@@ -92,6 +95,7 @@ test('BT-028/BT-029/BT-049: developer creates a project, shares it, starts a mod
 
   assert.equal(developerLogin.status >= 200 && developerLogin.status < 300, true);
   assert.equal(pmLogin.status >= 200 && pmLogin.status < 300, true);
+  registerOnlineAgentProject('local-dev-control', 'agent-model/gpt-5');
 
   const createProjectResponse = await fetch(`${baseUrl}/projects`, {
     method: 'POST',
@@ -102,13 +106,13 @@ test('BT-028/BT-029/BT-049: developer creates a project, shares it, starts a mod
     body: JSON.stringify({
       name: 'Developer control project',
       description: 'Owned by the developer dashboard',
-      repoFullName: 'mathis/developer-control-project',
+      repoFullName: 'mathis-gala/PairDock',
       defaultBranch: 'main',
-      defaultModelId: 'codex-cli/gpt-5.5',
+      defaultModelId: 'agent-model/gpt-5',
       agentProjectKey: 'local-dev-control',
       pmCanStartSessions: true,
       sourceControl: {
-        providerConnectionId: 'gh-install-dev-control',
+        providerConnectionId: 'test-gh-install-dev-control',
         accountLogin: 'mathis',
       },
     }),
@@ -117,7 +121,7 @@ test('BT-028/BT-029/BT-049: developer creates a project, shares it, starts a mod
   assert.equal(createProjectResponse.status, 201);
   const createdProject = await parseJsonResponse(createProjectResponse, developerProjectResponseSchema);
   assert.equal(createdProject.name, 'Developer control project');
-  assert.equal(createdProject.defaultModelId, 'codex-cli/gpt-5.5');
+  assert.equal(createdProject.defaultModelId, 'agent-model/gpt-5');
   assert.equal(createdProject.sourceControlAccountLogin, 'mathis');
   assert.equal(createdProject.pmMemberCount, 0);
   assert.deepEqual(createdProject.sessions, []);
@@ -151,7 +155,7 @@ test('BT-028/BT-029/BT-049: developer creates a project, shares it, starts a mod
     },
     body: JSON.stringify({
       projectId: createdProject.id,
-      modelId: 'codex-cli/gpt-5.5',
+      modelId: 'agent-model/gpt-5',
       startSource: 'developer',
     }),
   });
@@ -160,7 +164,7 @@ test('BT-028/BT-029/BT-049: developer creates a project, shares it, starts a mod
   const createdSession = await parseJsonResponse(startSessionResponse, sessionCreateResponseSchema);
   assert.equal(createdSession.projectId, createdProject.id);
   assert.equal(createdSession.createdByUserId, developerLogin.body.user.id);
-  assert.equal(createdSession.modelId, 'codex-cli/gpt-5.5');
+  assert.equal(createdSession.modelId, 'agent-model/gpt-5');
 
   const developerMembership = await prisma.sessionMember.findUnique({
     where: { sessionId_userId: { sessionId: createdSession.id, userId: developerLogin.body.user.id } },
@@ -187,3 +191,65 @@ test('BT-028/BT-029/BT-049: developer creates a project, shares it, starts a mod
   assert.equal(developerProjects[0]?.sessions[0]?.id, createdSession.id);
   assert.equal(developerProjects[0]?.sessions[0]?.status, 'CLOSED');
 });
+
+test('developer project creation derives GitHub App installation from developer identity metadata', async () => {
+  const developerLogin = await authenticateDeveloper();
+  registerOnlineAgentProject('github-app-project', 'agent-model/gpt-5');
+
+  await prisma.externalIdentity.updateMany({
+    where: {
+      userId: developerLogin.body.user.id,
+      provider: 'github',
+    },
+    data: {
+      metadata: {
+        installationId: 'test-98765',
+        login: 'mathis-gala',
+      },
+    },
+  });
+
+  const createProjectResponse = await fetch(`${baseUrl}/projects`, {
+    method: 'POST',
+    headers: {
+      authorization: `Bearer ${developerLogin.body.accessToken}`,
+      'content-type': 'application/json',
+    },
+    body: JSON.stringify({
+      name: 'GitHub App project',
+      repoFullName: 'mathis-gala/PairDock',
+      defaultBranch: 'main',
+      defaultModelId: 'agent-model/gpt-5',
+      agentProjectKey: 'github-app-project',
+    }),
+  });
+
+  assert.equal(createProjectResponse.status, 201);
+  const createdProject = await parseJsonResponse(createProjectResponse, developerProjectResponseSchema);
+  const connection = await prisma.sourceControlConnection.findUnique({
+    where: {
+      id: (await prisma.project.findUniqueOrThrow({ where: { id: createdProject.id } })).sourceControlConnectionId,
+    },
+  });
+
+  assert.equal(createdProject.sourceControlAccountLogin, 'mathis-gala');
+  assert.equal(connection?.providerConnectionId, 'test-98765');
+});
+
+function registerOnlineAgentProject(agentProjectKey: string, modelId: string) {
+  connectedAgentsRegistry.register(`socket-${agentProjectKey}`, {
+    agentId: agentProjectKey,
+    capabilities: ['session.prepare', 'agent.prompt', 'preview'],
+    models: [{ id: modelId, label: 'GPT-5', provider: 'local-agent' }],
+    projects: [
+      {
+        key: agentProjectKey,
+        name: 'PairDock',
+        repoFullName: 'mathis-gala/PairDock',
+        pathAlias: 'PairDock',
+        defaultBranch: 'main',
+        models: [modelId],
+      },
+    ],
+  });
+}

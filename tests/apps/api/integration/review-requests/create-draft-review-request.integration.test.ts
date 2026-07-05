@@ -183,6 +183,14 @@ class RecordingSourceControlPort implements SourceControlPort {
 
   async assertProjectAccess(): Promise<void> {}
 
+  async listInstallationRepositories(): ReturnType<SourceControlPort['listInstallationRepositories']> {
+    return [{ fullName: 'mathis/pairdock-test', name: 'pairdock-test', defaultBranch: 'main' }];
+  }
+
+  async listRepositoryBranches(): ReturnType<SourceControlPort['listRepositoryBranches']> {
+    return ['main'];
+  }
+
   async createDraftReviewRequest(input: Parameters<SourceControlPort['createDraftReviewRequest']>[0]) {
     this.requests.push(input);
     this.callOrder?.push('source-control');
@@ -246,6 +254,7 @@ class InMemoryRepositories {
       create: async () => project,
       findByAgentProjectKey: async () => project,
       findById: async (id: string) => (id === project.id ? project : null),
+      listByAgentProjectKey: async () => [project],
       listOwnedByUserId: async () => [],
       listSharedByUserId: async () => [],
     };
@@ -286,6 +295,13 @@ class InMemoryRepositories {
               createdAt: new Date('2026-07-04T09:00:00.000Z'),
             }
           : null,
+      updateProfile: async () => ({
+        id: developer.id,
+        email: developer.email,
+        displayName: developer.displayName,
+        kind: 'developer',
+        createdAt: new Date('2026-07-04T09:00:00.000Z'),
+      }),
     };
     this.unitOfWork = {
       execute: async (work) =>

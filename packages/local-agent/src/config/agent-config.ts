@@ -6,11 +6,28 @@ import type { ProjectChecksConfig } from '../checks/checks-runner.js';
 import type { ProjectPreviewConfig } from '../docker/sandbox.port.js';
 import type { ProjectAgentHarnessConfig } from '../harness/agent-harness.port.js';
 
+export interface AgentModelConfig {
+  id: string;
+  label: string;
+  provider: string;
+}
+
+export interface AgentProjectDescriptor {
+  key: string;
+  name: string;
+  repoFullName: string;
+  pathAlias: string;
+  defaultBranch?: string;
+  models?: string[];
+}
+
 export interface AgentConfig {
   backendUrl: string;
   agentId: string;
   authToken?: string;
   capabilities: string[];
+  models: AgentModelConfig[];
+  projects: AgentProjectDescriptor[];
   projectPaths: Record<string, string>;
   previewConfigs: Record<string, ProjectPreviewConfig>;
   checksConfigs?: Record<string, ProjectChecksConfig>;
@@ -22,6 +39,8 @@ export interface SaveAgentConfigInput {
   agentId: string;
   authToken?: string;
   capabilities?: string[];
+  models?: AgentModelConfig[];
+  projects?: AgentProjectDescriptor[];
   projectPaths?: Record<string, string>;
   previewConfigs?: Record<string, ProjectPreviewConfig>;
   checksConfigs?: Record<string, ProjectChecksConfig>;
@@ -32,12 +51,17 @@ const sandboxConfigSchema = z.object({
   startCommand: z.string().min(1),
   stopCommand: z.string().min(1).optional(),
   healthcheckUrl: z.string().min(1),
+  image: z.string().min(1).optional(),
+  workdir: z.string().min(1).optional(),
+  network: z.enum(['isolated', 'host-services']).optional(),
+  env: z.record(z.string().min(1), z.string()).optional(),
+  ports: z.array(z.string().min(1)).optional(),
 });
 
 const tunnelConfigSchema = z.object({
+  provider: z.literal('cloudflare').optional(),
   publicUrl: z.string().min(1).optional(),
-  startCommand: z.string().min(1).optional(),
-  closeCommand: z.string().min(1).optional(),
+  image: z.string().min(1).optional(),
   startupTimeoutMs: z.number().int().positive().optional(),
 });
 
@@ -59,11 +83,28 @@ const agentHarnessConfigSchema = z.object({
   args: z.array(z.string().min(1)).optional(),
 });
 
+const agentModelConfigSchema = z.object({
+  id: z.string().min(1),
+  label: z.string().min(1),
+  provider: z.string().min(1),
+});
+
+const agentProjectDescriptorSchema = z.object({
+  key: z.string().min(1),
+  name: z.string().min(1),
+  repoFullName: z.string().min(1),
+  pathAlias: z.string().min(1),
+  defaultBranch: z.string().min(1).optional(),
+  models: z.array(z.string().min(1)).optional(),
+});
+
 const agentConfigFileSchema = z.object({
   backendUrl: z.string().min(1),
   agentId: z.string().min(1),
   authToken: z.string().min(1).optional(),
   capabilities: z.array(z.string().min(1)).optional(),
+  models: z.array(agentModelConfigSchema).optional(),
+  projects: z.array(agentProjectDescriptorSchema).optional(),
   projectPaths: z.record(z.string().min(1), z.string().min(1)).optional(),
   previewConfigs: z.record(z.string().min(1), previewConfigSchema).optional(),
   checksConfigs: z.record(z.string().min(1), checksConfigSchema).optional(),
@@ -82,6 +123,8 @@ export function normalizeAgentConfig(input: SaveAgentConfigInput): AgentConfig {
   const agentId = normalizeRequiredValue(input.agentId, 'agentId');
   const authToken = normalizeOptionalValue(input.authToken);
   const capabilities = normalizeCapabilities(input.capabilities ?? []);
+  const models = normalizeModels(input.models ?? []);
+  const projects = normalizeProjectDescriptors(input.projects ?? []);
   const projectPaths = normalizeProjectPaths(input.projectPaths ?? {});
   const previewConfigs = normalizePreviewConfigs(input.previewConfigs ?? {});
   const checksConfigs = normalizeChecksConfigs(input.checksConfigs ?? {});
@@ -92,6 +135,8 @@ export function normalizeAgentConfig(input: SaveAgentConfigInput): AgentConfig {
     agentId,
     authToken,
     capabilities,
+    models,
+    projects,
     projectPaths,
     previewConfigs,
     ...(Object.keys(checksConfigs).length > 0 ? { checksConfigs } : {}),
@@ -122,7 +167,9 @@ export function summarizeAgentConfig(config: AgentConfig) {
     agentId: config.agentId,
     backendUrl: config.backendUrl,
     capabilities: [...config.capabilities],
+    modelCount: config.models.length,
     projectCount: Object.keys(config.projectPaths).length,
+    publishedProjectCount: config.projects.length,
     tokenConfigured: Boolean(config.authToken),
     previewConfigCount: Object.keys(config.previewConfigs).length,
     checksConfigCount: Object.keys(config.checksConfigs ?? {}).length,
@@ -147,6 +194,57 @@ function normalizeBackendUrl(value: string): string {
 
 function normalizeCapabilities(capabilities: string[]): string[] {
   return [...new Set(capabilities.map((capability) => normalizeRequiredValue(capability, 'capability')))];
+}
+
+function normalizeModels(models: AgentModelConfig[]): AgentModelConfig[] {
+  const seen = new Set<string>();
+  const normalizedModels: AgentModelConfig[] = [];
+
+  for (const model of models) {
+    const id = normalizeRequiredValue(model.id, 'model.id');
+
+    if (seen.has(id)) {
+      continue;
+    }
+
+    seen.add(id);
+    normalizedModels.push({
+      id,
+      label: normalizeRequiredValue(model.label, `model.label for ${id}`),
+      provider: normalizeRequiredValue(model.provider, `model.provider for ${id}`),
+    });
+  }
+
+  return normalizedModels;
+}
+
+function normalizeProjectDescriptors(projects: AgentProjectDescriptor[]): AgentProjectDescriptor[] {
+  const seen = new Set<string>();
+  const normalizedProjects: AgentProjectDescriptor[] = [];
+
+  for (const project of projects) {
+    const key = normalizeRequiredValue(project.key, 'project.key');
+
+    if (seen.has(key)) {
+      continue;
+    }
+
+    seen.add(key);
+    normalizedProjects.push({
+      key,
+      name: normalizeRequiredValue(project.name, `project.name for ${key}`),
+      repoFullName: normalizeRequiredValue(project.repoFullName, `project.repoFullName for ${key}`),
+      pathAlias: normalizeRequiredValue(project.pathAlias, `project.pathAlias for ${key}`),
+      ...(project.defaultBranch
+        ? { defaultBranch: normalizeRequiredValue(project.defaultBranch, `project.defaultBranch for ${key}`) }
+        : {}),
+      ...(project.models
+        ? { models: project.models.map((modelId) => normalizeRequiredValue(modelId, `project.models for ${key}`)) }
+        : {}),
+    });
+  }
+
+  return normalizedProjects;
 }
 
 function normalizeProjectPaths(projectPaths: Record<string, string>): Record<string, string> {
@@ -284,6 +382,35 @@ function normalizeSandboxConfig(
     normalizedSandboxConfig.stopCommand = stopCommand;
   }
 
+  const image = normalizeOptionalConfigString(sandboxConfig.image, `sandbox.image for ${projectKey}`);
+  if (image !== undefined) {
+    normalizedSandboxConfig.image = image;
+  }
+
+  const workdir = normalizeOptionalConfigString(sandboxConfig.workdir, `sandbox.workdir for ${projectKey}`);
+  if (workdir !== undefined) {
+    normalizedSandboxConfig.workdir = workdir;
+  }
+
+  if (sandboxConfig.network !== undefined) {
+    normalizedSandboxConfig.network = sandboxConfig.network;
+  }
+
+  if (sandboxConfig.env !== undefined) {
+    normalizedSandboxConfig.env = Object.fromEntries(
+      Object.entries(sandboxConfig.env).map(([name, value]) => [
+        normalizeRequiredValue(name, `sandbox.env name for ${projectKey}`),
+        value,
+      ]),
+    );
+  }
+
+  if (sandboxConfig.ports !== undefined) {
+    normalizedSandboxConfig.ports = sandboxConfig.ports.map((port, index) =>
+      normalizeRequiredValue(port, `sandbox.ports[${index}] for ${projectKey}`),
+    );
+  }
+
   return normalizedSandboxConfig;
 }
 
@@ -299,25 +426,18 @@ function normalizeTunnelConfig(
 
   const normalizedTunnelConfig: NonNullable<ProjectPreviewConfig['tunnel']> = {};
 
+  if (tunnelConfig.provider !== undefined) {
+    normalizedTunnelConfig.provider = tunnelConfig.provider;
+  }
+
   const publicUrl = normalizeOptionalConfigString(tunnelConfig.publicUrl, `tunnel.publicUrl for ${projectKey}`);
   if (publicUrl !== undefined) {
     normalizedTunnelConfig.publicUrl = publicUrl;
   }
 
-  const startCommand = normalizeOptionalConfigString(
-    tunnelConfig.startCommand,
-    `tunnel.startCommand for ${projectKey}`,
-  );
-  if (startCommand !== undefined) {
-    normalizedTunnelConfig.startCommand = startCommand;
-  }
-
-  const closeCommand = normalizeOptionalConfigString(
-    tunnelConfig.closeCommand,
-    `tunnel.closeCommand for ${projectKey}`,
-  );
-  if (closeCommand !== undefined) {
-    normalizedTunnelConfig.closeCommand = closeCommand;
+  const image = normalizeOptionalConfigString(tunnelConfig.image, `tunnel.image for ${projectKey}`);
+  if (image !== undefined) {
+    normalizedTunnelConfig.image = image;
   }
 
   const startupTimeoutMs = normalizeOptionalPositiveInteger(

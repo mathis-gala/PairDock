@@ -10,6 +10,7 @@ import {
 } from '@pairdock/shared-contracts';
 import { io, type Socket } from 'socket.io-client';
 import { AppModule } from '../../../../../apps/api/src/app.module.js';
+import { AuthTokenService } from '../../../../../apps/api/src/auth/auth-token.service.js';
 import { DatabaseClient } from '../../../../../apps/api/src/persistence/client.js';
 import { authResponseSchema, parseJsonResponse, sessionCreateResponseSchema } from '../test-json.js';
 
@@ -127,6 +128,8 @@ async function announceAgent(socket: Socket, agentId: string) {
     payload: {
       agentId,
       capabilities: ['session.prepare', 'agent.prompt', 'agent.cancel', 'preview', 'readiness.check'],
+      models: [],
+      projects: [],
     },
     sentAt: new Date().toISOString(),
   });
@@ -212,6 +215,56 @@ test('BT-046: PM can start a shared project only when the project is ready and t
         { role: 'pm', userId: pmLogin.body.user.id },
       ],
     );
+  } finally {
+    agentSocket.close();
+  }
+});
+
+test('BT-046: owning developer can close a PM-created session', async () => {
+  const pmLogin = await authenticatePm();
+  const fixture = await createProjectFixture(pmLogin.body.user.id);
+  const agentSocket = connectAgentSocket();
+  const authTokenService = app.get(AuthTokenService);
+
+  try {
+    await announceAgent(agentSocket, fixture.project.agentProjectKey);
+    await publishReadiness(agentSocket, fixture.project.agentProjectKey);
+    await waitForReadiness(fixture.project.id);
+
+    const createResponse = await fetch(`${baseUrl}/sessions`, {
+      method: 'POST',
+      headers: {
+        authorization: `Bearer ${pmLogin.body.accessToken}`,
+        'content-type': 'application/json',
+      },
+      body: JSON.stringify({
+        projectId: fixture.project.id,
+        modelId: fixture.project.defaultModelId,
+        startSource: 'pm',
+      }),
+    });
+    const sessionPayload = await parseJsonResponse(createResponse, sessionCreateResponseSchema);
+
+    const pmCloseResponse = await fetch(`${baseUrl}/sessions/${sessionPayload.id}/close`, {
+      method: 'POST',
+      headers: { authorization: `Bearer ${pmLogin.body.accessToken}` },
+    });
+    assert.equal(pmCloseResponse.status, 403);
+
+    const developerAccessToken = authTokenService.issue({
+      id: fixture.developer.id,
+      email: fixture.developer.email,
+      displayName: fixture.developer.displayName,
+      kind: 'developer',
+    });
+    const developerCloseResponse = await fetch(`${baseUrl}/sessions/${sessionPayload.id}/close`, {
+      method: 'POST',
+      headers: { authorization: `Bearer ${developerAccessToken}` },
+    });
+    assert.equal(developerCloseResponse.status, 201);
+    const closedSession = await parseJsonResponse(developerCloseResponse, sessionCreateResponseSchema);
+    assert.equal(closedSession.status, 'CLOSED');
+    assert.ok(closedSession.closedAt);
   } finally {
     agentSocket.close();
   }
