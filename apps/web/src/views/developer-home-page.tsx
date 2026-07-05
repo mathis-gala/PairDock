@@ -1,15 +1,17 @@
 import { ConnectionActivityRail } from '../components/developer/connection-activity-rail.js';
 import { DeveloperProjectCard } from '../components/developer/developer-project-card.js';
 import { DeveloperProjectForm } from '../components/developer/developer-project-form.js';
+import { ProductShell } from '../components/product-shell.js';
 import { SectionCard } from '../components/section-card.js';
 import { useDeveloperProjects } from '../hooks/use-developer-projects.js';
 import type { AuthSession } from '../schemas/auth.js';
 
 interface DeveloperHomePageProps {
+  onSignOut: () => void;
   session: AuthSession;
 }
 
-export function DeveloperHomePage({ session }: DeveloperHomePageProps) {
+export function DeveloperHomePage({ onSignOut, session }: DeveloperHomePageProps) {
   const {
     closeSessionMutation,
     createProjectMutation,
@@ -27,82 +29,91 @@ export function DeveloperHomePage({ session }: DeveloperHomePageProps) {
     requestReadinessMutation.error instanceof Error ? requestReadinessMutation.error.message : null;
 
   return (
-    <div className="mx-auto max-w-7xl space-y-6 px-6 py-8">
-      <div className="max-w-3xl space-y-2">
-        <p className="text-sm uppercase tracking-[0.18em] text-sky-300">Developer control</p>
-        <h2 className="text-3xl font-semibold text-white">Project, session, model, sharing, and cleanup controls</h2>
-        <p className="text-slate-400">
-          Signed in as {session.user.displayName ?? session.user.email}. Create a project, grant PM access, choose a
-          model, start a developer-owned session, and close it with explicit cleanup confirmation.
-        </p>
-      </div>
+    <ProductShell
+      navItems={['Projets', 'Sessions actives', 'Modèles', 'Connexions']}
+      onSignOut={onSignOut}
+      user={session.user}
+    >
+      <div className="flex min-h-screen min-w-0">
+        <div className="min-w-0 flex-1 overflow-auto px-6 py-8 lg:px-9">
+          <div className="mb-5 flex flex-wrap items-end justify-between gap-4">
+            <div>
+              <h1 className="font-['Space_Grotesk'] text-2xl font-semibold tracking-[-0.01em]">Projets</h1>
+              <p className="mt-1 text-[13.5px] text-[#8b92a1]">
+                Chaque projet pointe vers un dépôt, un agent local et un modèle par défaut.
+              </p>
+            </div>
+          </div>
 
-      <DeveloperProjectForm
-        developerSeed={session.user.email}
-        isSubmitting={createProjectMutation.isPending}
-        onSubmit={async (input) => {
-          createProjectMutation.reset();
-          await createProjectMutation.mutateAsync(input);
-        }}
-      />
-      {createError ? <ErrorCard title="Could not create project" message={createError} /> : null}
-      {shareError ? <ErrorCard title="Could not share project" message={shareError} /> : null}
-      {readinessError ? <ErrorCard title="Could not request readiness check" message={readinessError} /> : null}
-      {startError ? <ErrorCard title="Could not start session" message={startError} /> : null}
-      {closeError ? <ErrorCard title="Could not close session" message={closeError} /> : null}
+          <DeveloperProjectForm
+            developerSeed={session.user.email}
+            isSubmitting={createProjectMutation.isPending}
+            onSubmit={async (input) => {
+              createProjectMutation.reset();
+              await createProjectMutation.mutateAsync(input);
+            }}
+          />
+          <div className="mt-5 space-y-3">
+            {createError ? <ErrorCard title="Could not create project" message={createError} /> : null}
+            {shareError ? <ErrorCard title="Could not share project" message={shareError} /> : null}
+            {readinessError ? <ErrorCard title="Could not request readiness check" message={readinessError} /> : null}
+            {startError ? <ErrorCard title="Could not start session" message={startError} /> : null}
+            {closeError ? <ErrorCard title="Could not close session" message={closeError} /> : null}
+          </div>
 
-      {projectsQuery.isLoading ? (
-        <SectionCard
-          title="Loading developer projects"
-          description="Reading owned projects, sessions, and PM access."
-        />
-      ) : null}
-      {projectsQuery.isError ? (
-        <ErrorCard
-          title="Could not load developer projects"
-          message={projectsQuery.error instanceof Error ? projectsQuery.error.message : 'Request failed.'}
-        />
-      ) : null}
-
-      <div className="grid gap-6 xl:grid-cols-[1fr_22rem]">
-        <div className="space-y-5">
-          {projects.length > 0 ? (
-            projects.map((project) => (
-              <DeveloperProjectCard
-                closePendingSessionId={closeSessionMutation.variables ?? null}
-                key={project.id}
-                onCloseSession={async (sessionId) => {
-                  closeSessionMutation.reset();
-                  await closeSessionMutation.mutateAsync(sessionId);
-                }}
-                onRequestReadiness={async (projectId) => {
-                  requestReadinessMutation.reset();
-                  await requestReadinessMutation.mutateAsync(projectId);
-                }}
-                onShareProject={async (projectId, pmEmail) => {
-                  shareProjectMutation.reset();
-                  await shareProjectMutation.mutateAsync({ projectId, pmEmail });
-                }}
-                onStartSession={async (projectId, modelId) => {
-                  startSessionMutation.reset();
-                  await startSessionMutation.mutateAsync({ projectId, modelId });
-                }}
-                project={project}
-                readinessPendingProjectId={requestReadinessMutation.variables ?? null}
-                sharePendingProjectId={shareProjectMutation.variables?.projectId ?? null}
-                startPendingProjectId={startSessionMutation.variables?.projectId ?? null}
-              />
-            ))
-          ) : projectsQuery.isLoading ? null : (
+          {projectsQuery.isLoading ? (
             <SectionCard
-              title="No developer projects yet"
-              description="Use the project creation screen above to register a local repository and source-control connection."
+              className="mt-5"
+              title="Chargement des projets"
+              description="Lecture des projets, sessions et accès PM."
             />
-          )}
+          ) : null}
+          {projectsQuery.isError ? (
+            <ErrorCard
+              title="Could not load developer projects"
+              message={projectsQuery.error instanceof Error ? projectsQuery.error.message : 'Request failed.'}
+            />
+          ) : null}
+
+          <div className="mt-5 space-y-3">
+            {projects.length > 0 ? (
+              projects.map((project) => (
+                <DeveloperProjectCard
+                  closePendingSessionId={closeSessionMutation.variables ?? null}
+                  key={project.id}
+                  onCloseSession={async (sessionId) => {
+                    closeSessionMutation.reset();
+                    await closeSessionMutation.mutateAsync(sessionId);
+                  }}
+                  onRequestReadiness={async (projectId) => {
+                    requestReadinessMutation.reset();
+                    await requestReadinessMutation.mutateAsync(projectId);
+                  }}
+                  onShareProject={async (projectId, pmEmail) => {
+                    shareProjectMutation.reset();
+                    await shareProjectMutation.mutateAsync({ projectId, pmEmail });
+                  }}
+                  onStartSession={async (projectId, modelId) => {
+                    startSessionMutation.reset();
+                    await startSessionMutation.mutateAsync({ projectId, modelId });
+                  }}
+                  project={project}
+                  readinessPendingProjectId={requestReadinessMutation.variables ?? null}
+                  sharePendingProjectId={shareProjectMutation.variables?.projectId ?? null}
+                  startPendingProjectId={startSessionMutation.variables?.projectId ?? null}
+                />
+              ))
+            ) : projectsQuery.isLoading ? null : (
+              <SectionCard
+                title="Aucun projet"
+                description="Crée un projet pour enregistrer un dépôt local et sa connexion source-control."
+              />
+            )}
+          </div>
         </div>
         <ConnectionActivityRail projects={projects} />
       </div>
-    </div>
+    </ProductShell>
   );
 }
 

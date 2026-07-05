@@ -8,10 +8,12 @@ interface ButtonProps extends PropsWithChildren<ButtonHTMLAttributes<HTMLButtonE
 }
 
 const variantClasses: Record<ButtonVariant, string> = {
-  primary: 'bg-sky-500 text-slate-950 hover:bg-sky-400 disabled:bg-slate-700 disabled:text-slate-400',
-  secondary: 'bg-slate-800 text-slate-100 hover:bg-slate-700 disabled:bg-slate-900 disabled:text-slate-500',
-  ghost: 'bg-transparent text-slate-200 hover:bg-slate-800 disabled:text-slate-500',
-  danger: 'bg-rose-500 text-white hover:bg-rose-400 disabled:bg-slate-700 disabled:text-slate-400',
+  primary:
+    'border-transparent bg-[#5fdf9b] text-[#0c2014] hover:bg-[#74e6ab] disabled:bg-[#23272f] disabled:text-[#6f7686]',
+  secondary:
+    'border-white/10 bg-[#23272f] text-[#eef0f4] hover:border-white/20 hover:bg-[#2a2f38] disabled:bg-[#1a1d24] disabled:text-[#565d6b]',
+  ghost: 'border-transparent bg-transparent text-[#cdd2dc] hover:bg-white/5 disabled:text-[#565d6b]',
+  danger: 'border-transparent bg-rose-500 text-white hover:bg-rose-400 disabled:bg-[#23272f] disabled:text-[#6f7686]',
 };
 
 export function Button({ children, className, type = 'button', variant = 'primary', ...props }: ButtonProps) {
@@ -19,7 +21,7 @@ export function Button({ children, className, type = 'button', variant = 'primar
     <button
       {...props}
       className={classNames(
-        'inline-flex items-center justify-center rounded-lg px-3 py-2 text-sm font-medium transition disabled:cursor-not-allowed',
+        'inline-flex min-h-10 items-center justify-center rounded-[10px] border px-4 py-2 text-[13.5px] font-semibold transition disabled:cursor-not-allowed',
         variantClasses[variant],
         className,
       )}

@@ -24,9 +24,10 @@ export function PmLoginCard({ onAuthenticated }: PmLoginCardProps) {
 
   return (
     <SectionCard
+      className="border-[#d3a4ea]/25 bg-gradient-to-b from-[#d3a4ea]/5 to-[#d3a4ea]/[0.015]"
       eyebrow="PM"
-      title="Slack-backed PM sign-in"
-      description="This path unlocks the PM shared-project dashboard, PM session route, prompting, live events, diff history, validation state, and responsive preview."
+      title="Espace produit"
+      description="Rejoins une session sur invitation, décris le correctif en langage naturel et ouvre la pull request."
     >
       <form
         className="space-y-4"
@@ -40,9 +41,9 @@ export function PmLoginCard({ onAuthenticated }: PmLoginCardProps) {
             const inputId = 'pm-seed';
 
             return (
-              <div className="space-y-2 text-sm text-slate-300">
+              <div className="space-y-2 text-sm text-[#cdd2dc]">
                 <label className="block" htmlFor={inputId}>
-                  PM seed
+                  Identité Slack locale
                 </label>
                 <TextInput
                   id={inputId}
@@ -60,9 +61,9 @@ export function PmLoginCard({ onAuthenticated }: PmLoginCardProps) {
             const inputId = 'pm-team-id';
 
             return (
-              <div className="space-y-2 text-sm text-slate-300">
+              <div className="space-y-2 text-sm text-[#cdd2dc]">
                 <label className="block" htmlFor={inputId}>
-                  Slack team id
+                  Workspace Slack
                 </label>
                 <TextInput
                   id={inputId}
@@ -76,9 +77,14 @@ export function PmLoginCard({ onAuthenticated }: PmLoginCardProps) {
           }}
         </form.Field>
         {errorMessage ? <p className="text-sm text-rose-300">{errorMessage}</p> : null}
-        <div className="flex items-center justify-between gap-3">
-          <p className="text-sm text-slate-500">Only projects already shared with this PM appear on the dashboard.</p>
-          <Button type="submit">{isSubmitting ? 'Signing in…' : 'Sign in as PM'}</Button>
+        <div className="space-y-3">
+          <Button className="w-full bg-[#d3a4ea] text-[#2a1635] hover:bg-[#ddb4f0]" type="submit">
+            {isSubmitting ? 'Connexion…' : 'Continuer avec Slack'}
+          </Button>
+          <p className="flex items-center gap-2 font-mono text-[11.5px] text-[#6f7686]">
+            <span className="size-1.5 rounded-full bg-[#d3a4ea]" />
+            sur invitation d'un dev
+          </p>
         </div>
       </form>
     </SectionCard>

@@ -1,4 +1,3 @@
-import { AppHeader } from '../components/app-header.js';
 import { openDeveloperHome, openPmDashboard, openPmSession, useAppRoute } from '../hooks/use-app-route.js';
 import { clearAuthSession, setAuthSession, useAuthSession } from '../hooks/use-auth-session.js';
 import { DeveloperHomePage } from '../views/developer-home-page.js';
@@ -12,7 +11,7 @@ export function AppShell() {
 
   if (!authSession) {
     return (
-      <main className="min-h-screen bg-slate-950 text-slate-100">
+      <main className="min-h-screen text-[#eef0f4]">
         <LoginPage
           onAuthenticated={(session) => {
             setAuthSession(session);
@@ -27,33 +26,20 @@ export function AppShell() {
     );
   }
 
-  const currentViewLabel =
-    authSession.user.kind === 'pm' && route.kind === 'pm-session'
-      ? 'PM session workspace'
-      : authSession.user.kind === 'pm'
-        ? 'PM shared-project dashboard'
-        : 'Developer local access';
-
   return (
-    <main className="min-h-screen bg-slate-950 text-slate-100">
-      <AppHeader
-        currentViewLabel={currentViewLabel}
-        onSignOut={() => {
-          clearAuthSession();
-        }}
-        user={authSession.user}
-      />
+    <main className="min-h-screen text-[#eef0f4]">
       {authSession.user.kind === 'pm' ? (
         route.kind === 'pm-session' ? (
           <PmSessionPage accessToken={authSession.accessToken} onBack={openPmDashboard} sessionId={route.sessionId} />
         ) : (
           <PmDashboardPage
             accessToken={authSession.accessToken}
+            onSignOut={clearAuthSession}
             onOpenSession={(sessionId) => openPmSession(sessionId)}
           />
         )
       ) : (
-        <DeveloperHomePage session={authSession} />
+        <DeveloperHomePage onSignOut={clearAuthSession} session={authSession} />
       )}
     </main>
   );

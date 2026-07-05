@@ -13,15 +13,17 @@ export function SectionCard({ actions, children, className, description, eyebrow
   return (
     <section
       className={classNames(
-        'rounded-2xl border border-slate-800 bg-slate-900/70 p-5 shadow-lg shadow-slate-950/40',
+        'rounded-[14px] border border-white/10 bg-[#191c23] p-5 shadow-[0_18px_50px_rgba(0,0,0,0.22)]',
         className,
       )}
     >
       <div className="mb-4 flex flex-wrap items-start justify-between gap-3">
         <div className="space-y-1">
-          {eyebrow ? <p className="text-xs font-semibold uppercase tracking-[0.16em] text-sky-300">{eyebrow}</p> : null}
-          <h2 className="text-lg font-semibold text-white">{title}</h2>
-          {description ? <div className="text-sm text-slate-400">{description}</div> : null}
+          {eyebrow ? (
+            <p className="font-mono text-xs font-semibold uppercase tracking-[0.14em] text-[#6f7686]">{eyebrow}</p>
+          ) : null}
+          <h2 className="font-['Space_Grotesk'] text-[18px] font-semibold text-[#eef0f4]">{title}</h2>
+          {description ? <div className="text-sm leading-6 text-[#8b92a1]">{description}</div> : null}
         </div>
         {actions ? <div className="flex flex-wrap items-center gap-2">{actions}</div> : null}
       </div>
