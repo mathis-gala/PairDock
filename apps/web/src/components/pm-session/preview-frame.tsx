@@ -1,5 +1,4 @@
 import { getPreviewFrameStyle, type PreviewPresetId } from '../../lib/preview-presets.js';
-import { SectionCard } from '../section-card.js';
 
 interface PreviewFrameProps {
   presetId: PreviewPresetId;
@@ -12,14 +11,11 @@ export function PreviewFrame({ presetId, previewUrl, zoomPercent }: PreviewFrame
   const scale = zoomPercent / 100;
 
   return (
-    <SectionCard
-      title="Preview canvas"
-      description="The iframe scales inside the workspace while preserving the requested device preset."
-    >
+    <div className="flex min-h-full justify-center">
       {previewUrl ? (
-        <div className="overflow-auto rounded-2xl border border-slate-800 bg-slate-950 p-4">
+        <div className="overflow-auto rounded-[12px] bg-white shadow-[0_18px_50px_rgba(0,0,0,0.45)]">
           <div
-            className="origin-top-left overflow-hidden rounded-xl border border-slate-700 bg-white"
+            className="origin-top-left overflow-hidden bg-white"
             style={{
               width: `calc(${frameStyle.width} * ${scale})`,
               height: `calc(${frameStyle.height} * ${scale})`,
@@ -38,10 +34,10 @@ export function PreviewFrame({ presetId, previewUrl, zoomPercent }: PreviewFrame
           </div>
         </div>
       ) : (
-        <div className="rounded-xl border border-dashed border-slate-700 bg-slate-950/70 px-4 py-12 text-center text-sm text-slate-500">
-          The local agent has not published a preview URL for this session yet.
+        <div className="m-auto max-w-[320px] rounded-[12px] border border-dashed border-white/10 bg-[#15171c] px-4 py-12 text-center text-sm text-[#565d6b]">
+          L'agent local n'a pas encore publié d'URL de preview pour cette session.
         </div>
       )}
-    </SectionCard>
+    </div>
   );
 }

@@ -23,9 +23,10 @@ export function DeveloperLoginCard({ onAuthenticated }: DeveloperLoginCardProps)
 
   return (
     <SectionCard
+      className="border-[#5fdf9b]/25 bg-gradient-to-b from-[#5fdf9b]/5 to-[#5fdf9b]/[0.015]"
       eyebrow="Developer"
-      title="GitHub-backed developer sign-in"
-      description="Use a local token seed to normalize a developer identity through the backend GitHub callback flow."
+      title="Espace développeur"
+      description="Provisionne un projet à partir d'un dépôt, choisis un modèle et ouvre une session que ton PM pourra rejoindre."
     >
       <form
         className="space-y-4"
@@ -39,9 +40,9 @@ export function DeveloperLoginCard({ onAuthenticated }: DeveloperLoginCardProps)
             const inputId = 'developer-seed';
 
             return (
-              <div className="space-y-2 text-sm text-slate-300">
+              <div className="space-y-2 text-sm text-[#cdd2dc]">
                 <label className="block" htmlFor={inputId}>
-                  Developer seed
+                  Identité GitHub locale
                 </label>
                 <TextInput
                   id={inputId}
@@ -55,11 +56,14 @@ export function DeveloperLoginCard({ onAuthenticated }: DeveloperLoginCardProps)
           }}
         </form.Field>
         {errorMessage ? <p className="text-sm text-rose-300">{errorMessage}</p> : null}
-        <div className="flex items-center justify-between gap-3">
-          <p className="text-sm text-slate-500">
-            Opens project creation, PM sharing, model selection, session start, and cleanup controls.
+        <div className="space-y-3">
+          <Button className="w-full" type="submit">
+            {isSubmitting ? 'Connexion…' : 'Continuer avec GitHub'}
+          </Button>
+          <p className="flex items-center gap-2 font-mono text-[11.5px] text-[#6f7686]">
+            <span className="size-1.5 rounded-full bg-[#5fdf9b]" />
+            gh CLI requis · accès dépôts
           </p>
-          <Button type="submit">{isSubmitting ? 'Signing in…' : 'Sign in as developer'}</Button>
         </div>
       </form>
     </SectionCard>

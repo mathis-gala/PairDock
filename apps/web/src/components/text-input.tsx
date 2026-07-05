@@ -6,7 +6,7 @@ export function TextInput(props: InputHTMLAttributes<HTMLInputElement>) {
     <input
       {...props}
       className={classNames(
-        'w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-sm text-slate-100 outline-none transition placeholder:text-slate-500 focus:border-sky-400',
+        'min-h-10 w-full rounded-[9px] border border-white/10 bg-[#1f232b] px-3 py-2 text-[13px] text-[#eef0f4] outline-none transition placeholder:text-[#565d6b] focus:border-[#5fdf9b]',
         props.className,
       )}
     />
