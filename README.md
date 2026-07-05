@@ -1,6 +1,6 @@
 # PairDock
 
-Monorepo skeleton for the PairDock MVP described in `docs/architecture/pairdock-mvp/`.
+PairDock MVP monorepo described in `docs/architecture/pairdock-mvp/`.
 
 ## Workspace
 
@@ -16,6 +16,9 @@ Monorepo skeleton for the PairDock MVP described in `docs/architecture/pairdock-
 bun install
 bun run prisma:generate
 bun run typecheck
+bun run lint
+bun run test
+bun run build
 bun run db:status
 bun run db:migrate:dev -- --name init
 bun run dev:web
@@ -25,6 +28,6 @@ bun run dev:agent
 
 ## Notes
 
-This skeleton does not include MVP business logic yet. It establishes the `apps/*` and `packages/*` boundaries for the next tasks.
-
 Persistence uses Prisma from the backend workspace. Set `DATABASE_URL` before running migration, reset, status, or persistence test commands. Use `bun run db:migrate:dev -- --name <migration-name>` while developing and keep `bun run db:migrate` for applying existing migrations.
+
+The automated MVP scenario is documented in `docs/architecture/pairdock-mvp/mvp-e2e.md` and runs through `bun run --filter @pairdock/api test:e2e` after Prisma generation and migrations are applied.
