@@ -59,10 +59,6 @@ export class AuthService {
   getDeveloperStartUrl(): string {
     const config = readOAuthStartUrlConfig();
 
-    if (config.githubAppSlug) {
-      return `${config.githubOAuthBaseUrl}/apps/${config.githubAppSlug}/installations/new`;
-    }
-
     if (!config.githubClientId) {
       throw new BadRequestException('GitHub App client id is not configured.');
     }
