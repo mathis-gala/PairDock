@@ -17,8 +17,13 @@ import {
   type ErrorEventEnvelope,
 } from '@pairdock/shared-contracts';
 import type { Server, Socket } from 'socket.io';
-import { AGENT_EVENTS_REPOSITORY, PERSISTENCE_UNIT_OF_WORK } from '../persistence/persistence.tokens.js';
+import {
+  AGENT_EVENTS_REPOSITORY,
+  AGENT_REGISTRATIONS_REPOSITORY,
+  PERSISTENCE_UNIT_OF_WORK,
+} from '../persistence/persistence.tokens.js';
 import type { AgentEventsRepository } from '../persistence/ports/agent-events.repository.js';
+import type { AgentRegistrationsRepository } from '../persistence/ports/agent-registrations.repository.js';
 import type { PersistenceUnitOfWork } from '../persistence/ports/persistence-unit-of-work.js';
 import { type SessionAgentEvent, SessionStateMachine } from '../sessions/session-state-machine.js';
 import { UiGateway } from '../ui-gateway/ui.gateway.js';
@@ -35,6 +40,8 @@ export class AgentGateway implements OnGatewayDisconnect {
   constructor(
     @Inject(AGENT_EVENTS_REPOSITORY)
     private readonly agentEventsRepository: AgentEventsRepository,
+    @Inject(AGENT_REGISTRATIONS_REPOSITORY)
+    private readonly agentRegistrationsRepository: AgentRegistrationsRepository,
     @Inject(PERSISTENCE_UNIT_OF_WORK)
     private readonly persistenceUnitOfWork: PersistenceUnitOfWork,
     @Inject(UiGateway)
@@ -45,8 +52,13 @@ export class AgentGateway implements OnGatewayDisconnect {
     private readonly validationService: ValidationService,
   ) {}
 
-  handleDisconnect(client: Socket): void {
+  async handleDisconnect(client: Socket): Promise<void> {
+    const agentId = this.connectedAgentsRegistry.findAgentId(client.id);
     this.connectedAgentsRegistry.unregister(client.id);
+
+    if (agentId) {
+      await this.agentRegistrationsRepository.markDisconnected(agentId);
+    }
   }
 
   @SubscribeMessage(agentProtocolMessageEventName)
@@ -57,6 +69,13 @@ export class AgentGateway implements OnGatewayDisconnect {
 
     if (this.isAgentConnectedEvent(event)) {
       this.connectedAgentsRegistry.register(client.id, event.payload);
+      await this.agentRegistrationsRepository.markConnected({
+        agentId: event.payload.agentId,
+        protocolVersion: event.protocolVersion,
+        capabilities: event.payload.capabilities,
+        models: event.payload.models,
+        projects: event.payload.projects,
+      });
     }
 
     await this.persistEvent(agentId, sessionId, event);
