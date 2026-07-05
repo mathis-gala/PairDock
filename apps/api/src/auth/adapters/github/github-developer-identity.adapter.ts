@@ -3,6 +3,10 @@ import type { DeveloperIdentityPort, NormalizedIdentity } from '@pairdock/domain
 
 interface GithubDeveloperIdentityConfig {
   apiBaseUrl: string;
+  oauthBaseUrl: string;
+  clientId?: string;
+  clientSecret?: string;
+  redirectUri?: string;
 }
 
 interface GithubUserResponse {
@@ -16,6 +20,12 @@ interface GithubEmailResponse {
   email?: unknown;
   primary?: unknown;
   verified?: unknown;
+}
+
+interface GithubOAuthResponse {
+  access_token?: unknown;
+  error?: unknown;
+  error_description?: unknown;
 }
 
 type Fetcher = (input: string, init?: RequestInit) => Promise<Response>;
@@ -32,10 +42,48 @@ export class GithubDeveloperIdentityAdapter implements DeveloperIdentityPort {
       return parseFixtureIdentity(accessToken);
     }
 
+    if (accessToken.startsWith('code:')) {
+      const callback = parseCodeCallback(accessToken);
+      const token = await this.exchangeCode(callback.code);
+      return this.fetchGithubIdentity(token, callback.installationId);
+    }
+
     return this.fetchGithubIdentity(accessToken);
   }
 
-  private async fetchGithubIdentity(accessToken: string): Promise<NormalizedIdentity> {
+  private async exchangeCode(code: string): Promise<string> {
+    if (!this.config.clientId || !this.config.clientSecret) {
+      throw new UnauthorizedException('GitHub OAuth client credentials are not configured.');
+    }
+
+    const body = new URLSearchParams({
+      client_id: this.config.clientId,
+      client_secret: this.config.clientSecret,
+      code,
+    });
+
+    if (this.config.redirectUri) {
+      body.set('redirect_uri', this.config.redirectUri);
+    }
+
+    const response = await this.fetcher(`${this.config.oauthBaseUrl}/login/oauth/access_token`, {
+      method: 'POST',
+      headers: {
+        accept: 'application/json',
+        'content-type': 'application/x-www-form-urlencoded',
+      },
+      body,
+    });
+    const payload = (await response.json()) as GithubOAuthResponse;
+
+    if (!response.ok || typeof payload.access_token !== 'string' || !payload.access_token) {
+      throw new UnauthorizedException('GitHub OAuth code exchange failed.');
+    }
+
+    return payload.access_token;
+  }
+
+  private async fetchGithubIdentity(accessToken: string, installationId?: string): Promise<NormalizedIdentity> {
     const userResponse = await this.fetcher(`${this.config.apiBaseUrl}/user`, {
       method: 'GET',
       headers: githubHeaders(accessToken),
@@ -68,6 +116,7 @@ export class GithubDeveloperIdentityAdapter implements DeveloperIdentityPort {
       kind: 'developer',
       metadata: {
         login,
+        ...(installationId ? { installationId } : {}),
       },
     };
   }
@@ -112,6 +161,10 @@ function parseFixtureIdentity(accessToken: string): NormalizedIdentity {
 function readGithubConfig(): GithubDeveloperIdentityConfig {
   return {
     apiBaseUrl: process.env.GITHUB_API_BASE_URL ?? 'https://api.github.com',
+    oauthBaseUrl: process.env.GITHUB_OAUTH_BASE_URL ?? 'https://github.com',
+    clientId: process.env.GITHUB_CLIENT_ID,
+    clientSecret: process.env.GITHUB_CLIENT_SECRET,
+    redirectUri: process.env.GITHUB_REDIRECT_URI,
   };
 }
 
@@ -120,5 +173,22 @@ function githubHeaders(accessToken: string): Record<string, string> {
     accept: 'application/vnd.github+json',
     authorization: `Bearer ${accessToken}`,
     'x-github-api-version': '2022-11-28',
+  };
+}
+
+function parseCodeCallback(accessToken: string): { code: string; installationId?: string } {
+  const parts = accessToken.split(':');
+  const code = parts[1];
+
+  if (!code) {
+    throw new UnauthorizedException('Invalid GitHub OAuth callback token.');
+  }
+
+  const installationMarkerIndex = parts.indexOf('installation');
+  const installationId = installationMarkerIndex >= 0 ? parts[installationMarkerIndex + 1] : undefined;
+
+  return {
+    code,
+    ...(installationId ? { installationId } : {}),
   };
 }

@@ -60,10 +60,12 @@ export const createDeveloperProjectInputSchema = z.object({
   defaultModelId: z.string().trim().min(1),
   agentProjectKey: z.string().trim().min(1),
   pmCanStartSessions: z.boolean().optional(),
-  sourceControl: z.object({
-    providerConnectionId: z.string().trim().min(1),
-    accountLogin: z.string().trim().min(1),
-  }),
+  sourceControl: z
+    .object({
+      providerConnectionId: z.string().trim().min(1),
+      accountLogin: z.string().trim().min(1),
+    })
+    .optional(),
 });
 
 export const shareDeveloperProjectInputSchema = z.object({

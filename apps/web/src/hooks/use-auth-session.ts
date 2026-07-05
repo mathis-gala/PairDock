@@ -47,6 +47,14 @@ export function getAuthSessionSnapshot(): AuthSession | null {
     return null;
   }
 
+  const callbackSession = readCallbackSession();
+
+  if (callbackSession) {
+    window.localStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(callbackSession));
+    cachedSerializedSession = undefined;
+    cleanCallbackHash();
+  }
+
   const serializedSession = window.localStorage.getItem(AUTH_STORAGE_KEY);
 
   if (serializedSession === cachedSerializedSession) {
@@ -68,4 +76,32 @@ export function getAuthSessionSnapshot(): AuthSession | null {
     cachedAuthSession = null;
     return null;
   }
+}
+
+function readCallbackSession(): AuthSession | null {
+  if (!window.location) {
+    return null;
+  }
+
+  const params = new URLSearchParams(window.location.hash.replace(/^#/, ''));
+  const serializedSession = params.get('pairdock_auth');
+
+  if (!serializedSession) {
+    return null;
+  }
+
+  try {
+    const parsed = authSessionSchema.safeParse(JSON.parse(serializedSession));
+    return parsed.success ? parsed.data : null;
+  } catch {
+    return null;
+  }
+}
+
+function cleanCallbackHash(): void {
+  if (!window.location || !window.history) {
+    return;
+  }
+
+  window.history.replaceState(null, '', `${window.location.pathname}${window.location.search}`);
 }

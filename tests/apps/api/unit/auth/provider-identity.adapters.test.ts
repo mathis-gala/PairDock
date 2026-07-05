@@ -5,15 +5,18 @@ import { SlackPmIdentityAdapter } from '../../../../../apps/api/src/auth/adapter
 
 test('GithubDeveloperIdentityAdapter resolves a developer from GitHub user and primary email APIs', async () => {
   const requestedUrls: string[] = [];
-  const adapter = new GithubDeveloperIdentityAdapter({ apiBaseUrl: 'https://api.github.test' }, async (url) => {
-    requestedUrls.push(url);
+  const adapter = new GithubDeveloperIdentityAdapter(
+    { apiBaseUrl: 'https://api.github.test', oauthBaseUrl: 'https://github.test' },
+    async (url) => {
+      requestedUrls.push(url);
 
-    if (url.endsWith('/user')) {
-      return jsonResponse({ id: 42, login: 'mathis-gala', name: 'Mathis Gala', email: null });
-    }
+      if (url.endsWith('/user')) {
+        return jsonResponse({ id: 42, login: 'mathis-gala', name: 'Mathis Gala', email: null });
+      }
 
-    return jsonResponse([{ email: 'mathis@example.com', primary: true, verified: true }]);
-  });
+      return jsonResponse([{ email: 'mathis@example.com', primary: true, verified: true }]);
+    },
+  );
 
   const identity = await adapter.getDeveloperIdentity('github-user-token');
 
@@ -28,6 +31,40 @@ test('GithubDeveloperIdentityAdapter resolves a developer from GitHub user and p
     metadata: {
       login: 'mathis-gala',
     },
+  });
+});
+
+test('GithubDeveloperIdentityAdapter exchanges GitHub App callback code and preserves installation metadata', async () => {
+  const requestedUrls: string[] = [];
+  const adapter = new GithubDeveloperIdentityAdapter(
+    {
+      apiBaseUrl: 'https://api.github.test',
+      oauthBaseUrl: 'https://github.test',
+      clientId: 'client-id',
+      clientSecret: 'client-secret',
+      redirectUri: 'https://pairdock.test/auth/developer/callback',
+    },
+    async (url) => {
+      requestedUrls.push(url);
+
+      if (url.endsWith('/login/oauth/access_token')) {
+        return jsonResponse({ access_token: 'github-user-token' });
+      }
+
+      if (url.endsWith('/user')) {
+        return jsonResponse({ id: 42, login: 'mathis-gala', name: 'Mathis Gala', email: 'mathis@example.com' });
+      }
+
+      throw new Error(`Unexpected URL ${url}`);
+    },
+  );
+
+  const identity = await adapter.getDeveloperIdentity('code:oauth-code:installation:98765');
+
+  assert.deepEqual(requestedUrls, ['https://github.test/login/oauth/access_token', 'https://api.github.test/user']);
+  assert.deepEqual(identity.metadata, {
+    installationId: '98765',
+    login: 'mathis-gala',
   });
 });
 

@@ -17,6 +17,7 @@ import {
 } from '@pairdock/shared-contracts';
 import { ConnectedAgentsRegistry } from '../agent-gateway/connected-agents.registry.js';
 import {
+  EXTERNAL_IDENTITIES_REPOSITORY,
   PROJECT_MEMBERS_REPOSITORY,
   PROJECT_READINESS_REPOSITORY,
   PROJECTS_REPOSITORY,
@@ -25,6 +26,7 @@ import {
   SOURCE_CONTROL_CONNECTIONS_REPOSITORY,
   USERS_REPOSITORY,
 } from '../persistence/persistence.tokens.js';
+import type { ExternalIdentitiesRepository } from '../persistence/ports/external-identities.repository.js';
 import type { ProjectMembersRepository } from '../persistence/ports/project-members.repository.js';
 import type { ProjectReadinessRepository } from '../persistence/ports/project-readiness.repository.js';
 import type { DeveloperProjectRecord, ProjectsRepository } from '../persistence/ports/projects.repository.js';
@@ -38,6 +40,8 @@ export class ProjectsService {
   constructor(
     @Inject(PROJECTS_REPOSITORY)
     private readonly projectsRepository: ProjectsRepository,
+    @Inject(EXTERNAL_IDENTITIES_REPOSITORY)
+    private readonly externalIdentitiesRepository: ExternalIdentitiesRepository,
     @Inject(PROJECT_READINESS_REPOSITORY)
     private readonly projectReadinessRepository: ProjectReadinessRepository,
     @Inject(PROJECT_MEMBERS_REPOSITORY)
@@ -151,16 +155,17 @@ export class ProjectsService {
     input: CreateDeveloperProjectInput,
     user: PairDockIdentity,
   ): Promise<DeveloperProjectSummary> {
+    const sourceControlInput = await this.resolveSourceControlInput(input, user);
     const sourceControlConnection =
       (await this.sourceControlConnectionsRepository.findByOwnerAndProviderConnection({
         ownerUserId: user.id,
-        providerConnectionId: input.sourceControl.providerConnectionId,
+        providerConnectionId: sourceControlInput.providerConnectionId,
       })) ??
       (await this.sourceControlConnectionsRepository.create({
         ownerUserId: user.id,
         provider: 'github',
-        providerConnectionId: input.sourceControl.providerConnectionId,
-        accountLogin: input.sourceControl.accountLogin,
+        providerConnectionId: sourceControlInput.providerConnectionId,
+        accountLogin: sourceControlInput.accountLogin,
       }));
 
     const project = await this.projectsRepository.create({
@@ -220,6 +225,31 @@ export class ProjectsService {
     }
 
     return parsed.data;
+  }
+
+  private async resolveSourceControlInput(
+    input: CreateDeveloperProjectInput,
+    user: PairDockIdentity,
+  ): Promise<{ providerConnectionId: string; accountLogin: string }> {
+    if (input.sourceControl) {
+      return input.sourceControl;
+    }
+
+    const githubIdentity = await this.externalIdentitiesRepository.findByUserAndProvider({
+      userId: user.id,
+      provider: 'github',
+    });
+    const installationId = githubIdentity?.metadata.installationId;
+    const login = githubIdentity?.metadata.login;
+
+    if (typeof installationId !== 'string' || !installationId) {
+      throw new BadRequestException('Install the GitHub App before creating a project.');
+    }
+
+    return {
+      providerConnectionId: installationId,
+      accountLogin: typeof login === 'string' && login ? login : (user.displayName ?? user.email),
+    };
   }
 
   private async findOwnedProjectRecord(projectId: string, ownerUserId: string): Promise<DeveloperProjectRecord> {

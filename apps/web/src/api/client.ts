@@ -148,9 +148,19 @@ export function createApiClient(accessToken: string): ApiClient {
 }
 
 export const authApi: {
+  developerStartUrl(): string;
+  pmStartUrl(): string;
   authenticateDeveloper(rawAccessToken: string): Promise<AuthSession>;
   authenticatePm(rawAccessToken: string): Promise<AuthSession>;
 } = {
+  developerStartUrl(): string {
+    return `${getBackendUrl()}/auth/developer/start`;
+  },
+
+  pmStartUrl(): string {
+    return `${getBackendUrl()}/auth/pm/start`;
+  },
+
   async authenticateDeveloper(rawAccessToken: string): Promise<AuthSession> {
     const response = await fetch(`${getBackendUrl()}/auth/developer/callback`, {
       method: 'POST',

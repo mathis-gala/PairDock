@@ -187,3 +187,46 @@ test('BT-028/BT-029/BT-049: developer creates a project, shares it, starts a mod
   assert.equal(developerProjects[0]?.sessions[0]?.id, createdSession.id);
   assert.equal(developerProjects[0]?.sessions[0]?.status, 'CLOSED');
 });
+
+test('developer project creation derives GitHub App installation from developer identity metadata', async () => {
+  const developerLogin = await authenticateDeveloper();
+
+  await prisma.externalIdentity.updateMany({
+    where: {
+      userId: developerLogin.body.user.id,
+      provider: 'github',
+    },
+    data: {
+      metadata: {
+        installationId: '98765',
+        login: 'mathis-gala',
+      },
+    },
+  });
+
+  const createProjectResponse = await fetch(`${baseUrl}/projects`, {
+    method: 'POST',
+    headers: {
+      authorization: `Bearer ${developerLogin.body.accessToken}`,
+      'content-type': 'application/json',
+    },
+    body: JSON.stringify({
+      name: 'GitHub App project',
+      repoFullName: 'mathis/github-app-project',
+      defaultBranch: 'main',
+      defaultModelId: 'codex-cli/gpt-5.5',
+      agentProjectKey: 'github-app-project',
+    }),
+  });
+
+  assert.equal(createProjectResponse.status, 201);
+  const createdProject = await parseJsonResponse(createProjectResponse, developerProjectResponseSchema);
+  const connection = await prisma.sourceControlConnection.findUnique({
+    where: {
+      id: (await prisma.project.findUniqueOrThrow({ where: { id: createdProject.id } })).sourceControlConnectionId,
+    },
+  });
+
+  assert.equal(createdProject.sourceControlAccountLogin, 'mathis-gala');
+  assert.equal(connection?.providerConnectionId, '98765');
+});

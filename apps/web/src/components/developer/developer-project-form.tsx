@@ -11,14 +11,7 @@ interface DeveloperProjectFormProps {
   onSubmit: (input: CreateDeveloperProjectInput) => Promise<void>;
 }
 
-type ProjectTextFieldName =
-  | 'name'
-  | 'repoFullName'
-  | 'defaultBranch'
-  | 'defaultModelId'
-  | 'agentProjectKey'
-  | 'providerConnectionId'
-  | 'accountLogin';
+type ProjectTextFieldName = 'name' | 'repoFullName' | 'defaultBranch' | 'defaultModelId' | 'agentProjectKey';
 
 export function DeveloperProjectForm({ developerSeed, isSubmitting, onSubmit }: DeveloperProjectFormProps) {
   const normalizedSeed = developerSeed.replace(/[^a-z0-9-]/gi, '-').toLowerCase();
@@ -30,8 +23,6 @@ export function DeveloperProjectForm({ developerSeed, isSubmitting, onSubmit }: 
       defaultBranch: 'main',
       defaultModelId: 'codex-cli/gpt-5.4',
       agentProjectKey: `local-${normalizedSeed || 'developer'}`,
-      providerConnectionId: `gh-install-${normalizedSeed || 'developer'}`,
-      accountLogin: 'mathis',
       pmCanStartSessions: true,
     },
     onSubmit: async ({ value }) => {
@@ -43,10 +34,6 @@ export function DeveloperProjectForm({ developerSeed, isSubmitting, onSubmit }: 
         defaultModelId: value.defaultModelId,
         agentProjectKey: value.agentProjectKey,
         pmCanStartSessions: value.pmCanStartSessions,
-        sourceControl: {
-          providerConnectionId: value.providerConnectionId,
-          accountLogin: value.accountLogin,
-        },
       });
       form.reset();
     },
@@ -78,7 +65,7 @@ export function DeveloperProjectForm({ developerSeed, isSubmitting, onSubmit }: 
     <SectionCard
       eyebrow="Project creation"
       title="Create a developer-controlled project"
-      description="Register the repository, owning local-agent project key, source-control connection, and default model used when sessions start."
+      description="Register the repository, owning local-agent project key, and default model used when sessions start."
     >
       <form
         className="grid gap-4 lg:grid-cols-2"
@@ -92,8 +79,6 @@ export function DeveloperProjectForm({ developerSeed, isSubmitting, onSubmit }: 
         {renderTextField('defaultBranch', 'Default branch')}
         {renderTextField('defaultModelId', 'Default model')}
         {renderTextField('agentProjectKey', 'Agent project key')}
-        {renderTextField('providerConnectionId', 'GitHub installation id')}
-        {renderTextField('accountLogin', 'GitHub account')}
         <form.Field name="pmCanStartSessions">
           {(field) => (
             <label className="flex items-center gap-2 self-end rounded-lg border border-slate-800 bg-slate-950 px-3 py-2 text-sm text-slate-300">

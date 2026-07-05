@@ -32,6 +32,20 @@ export class ExternalIdentitiesRepositoryAdapter implements ExternalIdentitiesRe
     return record ? mapExternalIdentity(record) : null;
   }
 
+  async findByUserAndProvider(input: {
+    userId: string;
+    provider: ExternalIdentity['provider'];
+  }): Promise<ExternalIdentity | null> {
+    const record = await this.prisma.externalIdentity.findFirst({
+      where: {
+        userId: input.userId,
+        provider: input.provider,
+      },
+    });
+
+    return record ? mapExternalIdentity(record) : null;
+  }
+
   async findByProviderIdentity(input: {
     provider: ExternalIdentity['provider'];
     providerUserId: string;
@@ -46,5 +60,14 @@ export class ExternalIdentitiesRepositoryAdapter implements ExternalIdentitiesRe
     });
 
     return record ? mapExternalIdentity(record) : null;
+  }
+
+  async updateMetadata(id: string, metadata: Record<string, unknown>): Promise<ExternalIdentity> {
+    const record = await this.prisma.externalIdentity.update({
+      where: { id },
+      data: { metadata: serializeJsonObject(metadata) },
+    });
+
+    return mapExternalIdentity(record);
   }
 }
