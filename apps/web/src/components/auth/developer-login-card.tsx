@@ -1,4 +1,5 @@
 import { authApi } from '../../api/client.js';
+import { GitHubIcon } from '../brand-icons.js';
 import { Button } from '../button.js';
 
 export function DeveloperLoginCard() {
@@ -29,6 +30,7 @@ export function DeveloperLoginCard() {
       </p>
       <div className="mt-auto pt-6">
         <Button className="w-full" onClick={handleGithubAppAuth} type="button">
+          <GitHubIcon />
           Continuer avec GitHub App
         </Button>
         <p className="mt-4 flex items-center gap-2 font-mono text-[11.5px] text-[#6f7686]">

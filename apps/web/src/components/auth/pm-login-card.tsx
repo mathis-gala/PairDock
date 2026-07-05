@@ -1,4 +1,5 @@
 import { authApi } from '../../api/client.js';
+import { SlackIcon } from '../brand-icons.js';
 import { Button } from '../button.js';
 
 export function PmLoginCard() {
@@ -29,6 +30,7 @@ export function PmLoginCard() {
           onClick={handleSlackAppAuth}
           type="button"
         >
+          <SlackIcon />
           Continuer avec Slack App
         </Button>
         <p className="mt-4 flex items-center gap-2 font-mono text-[11.5px] text-[#6f7686]">
