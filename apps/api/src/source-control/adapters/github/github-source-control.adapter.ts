@@ -20,8 +20,20 @@ export class GithubSourceControlAdapter implements SourceControlPort {
     private readonly fetcher: Fetcher = fetch,
   ) {}
 
-  async assertProjectAccess(): Promise<void> {
-    return;
+  async assertProjectAccess(input: Parameters<SourceControlPort['assertProjectAccess']>[0]): Promise<void> {
+    if (!this.config.token || isTestConnection(input.repoFullName)) {
+      return;
+    }
+
+    const response = await this.fetcher(`${this.config.apiBaseUrl}/repos/${input.repoFullName}`, {
+      method: 'GET',
+      headers: githubHeaders(this.config.token),
+    });
+
+    if (!response.ok) {
+      const message = await response.text().catch(() => '');
+      throw new Error(`GitHub repository access check failed with ${response.status}: ${message}`.trim());
+    }
   }
 
   async createDraftReviewRequest(
@@ -40,12 +52,7 @@ export class GithubSourceControlAdapter implements SourceControlPort {
 
     const response = await this.fetcher(`${this.config.apiBaseUrl}/repos/${input.repoFullName}/pulls`, {
       method: 'POST',
-      headers: {
-        accept: 'application/vnd.github+json',
-        authorization: `Bearer ${this.config.token}`,
-        'content-type': 'application/json',
-        'x-github-api-version': '2022-11-28',
-      },
+      headers: { ...githubHeaders(this.config.token), 'content-type': 'application/json' },
       body: JSON.stringify({
         base: input.baseBranch,
         body: input.body,
@@ -82,6 +89,14 @@ function readGithubConfig(): GithubSourceControlConfig {
 
 function isTestConnection(providerConnectionId: string): boolean {
   return providerConnectionId.startsWith('test-') || providerConnectionId.startsWith('test:');
+}
+
+function githubHeaders(token: string): Record<string, string> {
+  return {
+    accept: 'application/vnd.github+json',
+    authorization: `Bearer ${token}`,
+    'x-github-api-version': '2022-11-28',
+  };
 }
 
 function deterministicReviewRequestNumber(sessionId: string): number {

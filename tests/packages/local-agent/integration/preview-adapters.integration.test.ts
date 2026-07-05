@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import { EventEmitter } from 'node:events';
 import { access, mkdtemp, readFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
@@ -72,4 +73,41 @@ test('Task 8: CloudflarePreviewTunnelAdapter runs the close command in the sessi
 
   await access(closeMarkerPath);
   assert.equal(await readFile(closeMarkerPath, 'utf8'), 'done');
+});
+
+test('Task 8: CloudflarePreviewTunnelAdapter defaults to cloudflared quick tunnel for the local URL', async () => {
+  const worktreePath = await createTempWorkspace();
+  let capturedCommand = '';
+  const adapter = new CloudflarePreviewTunnelAdapter({
+    spawn(command, _options) {
+      capturedCommand = command;
+      const process = Object.assign(new EventEmitter(), {
+        killed: false,
+        exitCode: null as number | null,
+        stderr: null,
+        stdout: null,
+        kill(signal?: NodeJS.Signals) {
+          void signal;
+          process.killed = true;
+          process.exitCode = 0;
+          process.emit('exit', 0);
+          return true;
+        },
+      });
+
+      return process;
+    },
+    waitForPublicUrl: async () => 'https://pairdock-default.trycloudflare.com',
+  });
+
+  const tunnelRef = await adapter.open({
+    sessionId: 'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb',
+    projectKey: 'pairdock',
+    localUrl: 'http://127.0.0.1:3100',
+    worktreePath,
+    previewConfig: {},
+  });
+
+  assert.equal(capturedCommand, 'cloudflared tunnel --url http://127.0.0.1:3100');
+  assert.equal(tunnelRef.publicUrl, 'https://pairdock-default.trycloudflare.com');
 });

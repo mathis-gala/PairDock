@@ -45,3 +45,30 @@ test('BT-032: GithubSourceControlAdapter maps provider-neutral draft review requ
   assert.equal(result.reviewRequestNumber, 7);
   assert.equal(result.reviewRequestUrl, 'https://github.com/mathis/pairdock-test/pull/7');
 });
+
+test('GithubSourceControlAdapter verifies repository access through GitHub repo API', async () => {
+  let capturedUrl = '';
+  let capturedInit: RequestInit | undefined;
+  const adapter = new GithubSourceControlAdapter(
+    {
+      apiBaseUrl: 'https://api.github.test',
+      token: 'github-token',
+    },
+    async (url, init) => {
+      capturedUrl = url;
+      capturedInit = init;
+      return new Response(JSON.stringify({ full_name: 'mathis/pairdock-test' }), {
+        status: 200,
+        headers: { 'content-type': 'application/json' },
+      });
+    },
+  );
+
+  await adapter.assertProjectAccess({
+    ownerUserId: '10000000-0000-4000-8000-000000000001',
+    repoFullName: 'mathis/pairdock-test',
+  });
+
+  assert.equal(capturedUrl, 'https://api.github.test/repos/mathis/pairdock-test');
+  assert.equal(capturedInit?.method, 'GET');
+});
