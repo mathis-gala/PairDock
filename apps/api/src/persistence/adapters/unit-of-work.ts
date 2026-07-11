@@ -3,7 +3,7 @@ import { DatabaseClient, type DatabaseExecutor } from '../client.js';
 import type { PersistenceRepositories, PersistenceUnitOfWork } from '../ports/persistence-unit-of-work.js';
 import { AgentEventsRepositoryAdapter } from './agent-events.repository.js';
 import { ExternalIdentitiesRepositoryAdapter } from './external-identities.repository.js';
-import { NotificationsRepositoryAdapter } from './notifications.repository.js';
+
 import { ProjectMembersRepositoryAdapter } from './project-members.repository.js';
 import { ProjectReadinessRepositoryAdapter } from './project-readiness.repository.js';
 import { ProjectsRepositoryAdapter } from './projects.repository.js';
@@ -27,7 +27,6 @@ function createPersistenceRepositories(prisma: DatabaseExecutor): PersistenceRep
     agentEvents: new AgentEventsRepositoryAdapter(prisma),
     validationRuns: new ValidationRunsRepositoryAdapter(prisma),
     reviewRequests: new ReviewRequestsRepositoryAdapter(prisma),
-    notifications: new NotificationsRepositoryAdapter(prisma),
   };
 }
 

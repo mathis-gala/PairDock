@@ -175,4 +175,6 @@ PM users can start sessions only after required readiness checks are green.
 
 Persistence uses Prisma from the backend workspace. Set `DATABASE_URL` before running migration, reset, status, or persistence test commands. Use `bun run db:migrate:dev -- --name <migration-name>` while developing and keep `bun run db:migrate` for applying existing migrations.
 
+When deploying the notification-removal migration, first deploy the API version that no longer accesses notifications and wait for old instances to stop before applying the table drop. A coordinated V1 deployment may stop the API, apply migrations, and then start the new version.
+
 The automated MVP scenario is documented in `docs/architecture/pairdock-mvp/mvp-e2e.md` and runs through `bun run --filter @pairdock/api test:e2e` after Prisma generation and migrations are applied.

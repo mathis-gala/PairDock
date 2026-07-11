@@ -11,7 +11,6 @@ sequenceDiagram
   participant Tunnel as Cloudflare Tunnel
   participant SC as SourceControlPort
   participant GH as GitHub Adapter
-  participant Notify as NotificationPort
 
   Dev->>Web: Share/configure project
   Web->>API: POST /projects/:id/members
@@ -56,8 +55,6 @@ sequenceDiagram
   GH-->>SC: reviewRequestUrl
   SC-->>API: ReviewRequestRef
   API->>DB: persist REVIEW_REQUEST_CREATED
-  API->>Notify: send review-request-created to developer owner
-  API->>DB: persist notification status
   API-->>Web: show review request URL
 
   Dev->>Web: close session

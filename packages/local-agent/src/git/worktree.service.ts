@@ -5,6 +5,7 @@ import { homedir } from 'node:os';
 import { relative, resolve, sep } from 'node:path';
 import { promisify } from 'node:util';
 import type { SessionCloseCommandEnvelope, SessionPrepareCommandEnvelope } from '@pairdock/shared-contracts';
+import { SensitiveFilesPolicy } from './sensitive-files.policy.js';
 
 const execFileAsync = promisify(execFile);
 
@@ -15,7 +16,10 @@ export interface PreparedWorktree {
 }
 
 export class WorktreeService {
-  constructor(private readonly managedRoot = resolve(homedir(), '.pairdock', 'worktrees')) {}
+  constructor(
+    private readonly managedRoot = resolve(homedir(), '.pairdock', 'worktrees'),
+    private readonly sensitiveFilesPolicy = new SensitiveFilesPolicy(),
+  ) {}
 
   async prepare(command: SessionPrepareCommandEnvelope, repositoryPath: string): Promise<PreparedWorktree> {
     const normalizedRepositoryPath = await this.requireGitRepository(repositoryPath);
@@ -23,6 +27,7 @@ export class WorktreeService {
 
     await mkdir(this.managedRoot, { recursive: true });
     this.assertNotMainRepository(normalizedRepositoryPath, worktreePath);
+    const baseRef = await this.resolveBaseRef(normalizedRepositoryPath, command.payload.baseBranch);
 
     await execGit(normalizedRepositoryPath, [
       'worktree',
@@ -30,7 +35,7 @@ export class WorktreeService {
       '-b',
       command.payload.branchName,
       worktreePath,
-      'HEAD',
+      baseRef,
     ]);
 
     return {
@@ -58,8 +63,50 @@ export class WorktreeService {
     const normalizedRepositoryPath = await this.requireGitRepository(input.repositoryPath);
 
     this.assertNotMainRepository(normalizedRepositoryPath, input.worktreePath);
+    await this.commitChanges(input);
     await execGit(input.worktreePath, ['push', '--set-upstream', 'origin', input.branchName]);
     return input.branchName;
+  }
+
+  private async commitChanges(input: PreparedWorktree): Promise<void> {
+    await execGit(input.worktreePath, ['add', '--all']);
+    const stagedFiles = (await execGit(input.worktreePath, ['diff', '--cached', '--name-only', '-z']))
+      .split('\0')
+      .filter(Boolean);
+    const sensitiveFiles = stagedFiles.filter((path) => this.sensitiveFilesPolicy.isSensitive(path));
+
+    if (sensitiveFiles.length > 0) {
+      await execGit(input.worktreePath, ['reset', '--quiet']);
+      throw new Error(`Refusing to commit sensitive files: ${sensitiveFiles.join(', ')}.`);
+    }
+
+    if (stagedFiles.length === 0) {
+      return;
+    }
+
+    await execGit(input.worktreePath, [
+      '-c',
+      'user.name=PairDock',
+      '-c',
+      'user.email=pairdock@localhost',
+      'commit',
+      '-m',
+      `PairDock session ${input.branchName}`,
+    ]);
+  }
+
+  private async resolveBaseRef(repositoryPath: string, baseBranch: string): Promise<string> {
+    await execGit(repositoryPath, ['check-ref-format', '--branch', baseBranch]);
+
+    if (await remoteExists(repositoryPath, 'origin')) {
+      const remoteRef = `refs/remotes/origin/${baseBranch}`;
+      await execGit(repositoryPath, ['fetch', 'origin', `+refs/heads/${baseBranch}:${remoteRef}`]);
+      return remoteRef;
+    }
+
+    const localRef = `refs/heads/${baseBranch}`;
+    await execGit(repositoryPath, ['rev-parse', '--verify', localRef]);
+    return localRef;
   }
 
   private resolveWorktreePath(sessionId: string): string {
@@ -97,6 +144,15 @@ async function execGit(cwd: string, args: string[]): Promise<string> {
 async function branchExists(cwd: string, branchName: string): Promise<boolean> {
   try {
     await execGit(cwd, ['rev-parse', '--verify', `refs/heads/${branchName}`]);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+async function remoteExists(cwd: string, remoteName: string): Promise<boolean> {
+  try {
+    await execGit(cwd, ['remote', 'get-url', remoteName]);
     return true;
   } catch {
     return false;

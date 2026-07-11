@@ -51,7 +51,7 @@ Validation commands:
 
 Owner: Software Engineer
 
-Purpose: set up Prisma as the ORM and materialize identity, project sharing, session, event, validation, review request, and notification entities.
+Purpose: set up Prisma as the ORM and materialize identity, project sharing, session, event, validation, and review request entities.
 
 Input artifacts:
 - data model from `architecture.md`
@@ -66,7 +66,7 @@ Expected files/modules:
 - shared Prisma executor/mapper/repository factory utilities
 
 Public behavior:
-- the API can create/read external identities, projects, project members, sessions, session members, events, review requests, and notification records.
+- the API can create/read external identities, projects, project members, sessions, session members, events, and review requests.
 
 Related tests: BT-002, BT-003, BT-037, BT-038, BT-040, BT-041
 
@@ -417,8 +417,6 @@ Purpose: create a draft review request after validation.
 Expected files/modules:
 - GithubModule
 - SourceControlPort + GithubSourceControlAdapter
-- NotificationsModule
-- NotificationPort + SlackNotificationAdapter
 - review request use case
 - branch push command integration
 
@@ -427,19 +425,15 @@ Public behavior:
 - backend creates a draft review request through SourceControlPort.
 - GitHub adapter maps the generic review request to a GitHub draft PR.
 - review request URL is persisted and displayed.
-- developer owner is notified when a PM-created or PM-submitted review request is ready.
-
-Related tests: BT-030, BT-031, BT-032, BT-050
+Related tests: BT-030, BT-031, BT-032
 
 Constraints:
 - review request is blocked if validations are not OK.
 - review request is draft only.
 - review request use case depends on SourceControlPort, not GitHub SDK or GitHub PR vocabulary.
-- notification use case depends on NotificationPort, not Slack SDK or Slack vocabulary.
-
 Done criteria:
 - draft review request created on a test repository
-- notification adapter called through `NotificationPort` when required
+- review request URL and status are visible in the shared session
 
 ## T15 — MVP E2E
 

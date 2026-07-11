@@ -8,7 +8,7 @@ import {
   InternalServerErrorException,
   NotFoundException,
 } from '@nestjs/common';
-import type { PairDockIdentity, Session, SessionStatus } from '@pairdock/domain';
+import type { PairDockIdentity, Project, Session, SessionStatus } from '@pairdock/domain';
 import { AGENT_PROTOCOL_VERSION, type SessionPrepareCommandEnvelope } from '@pairdock/shared-contracts';
 import { AgentCommandRouterService } from '../agent-gateway/agent-command-router.service.js';
 import { ConnectedAgentsRegistry } from '../agent-gateway/connected-agents.registry.js';
@@ -159,7 +159,7 @@ export class SessionsService {
       return session;
     });
 
-    await this.prepareSessionIfAgentOnline(session, project.agentProjectKey);
+    await this.prepareSessionIfAgentOnline(session, project);
     return session;
   }
 
@@ -315,16 +315,23 @@ export class SessionsService {
     }
   }
 
-  private async prepareSessionIfAgentOnline(session: Session, agentProjectKey: string): Promise<void> {
-    if (!this.connectedAgentsRegistry.findSocketId(agentProjectKey)) {
+  private async prepareSessionIfAgentOnline(session: Session, project: Project): Promise<void> {
+    if (!this.connectedAgentsRegistry.findSocketId(project.agentProjectKey)) {
       return;
     }
 
-    await this.agentCommandRouter.routeToOwningAgent(session.id, buildSessionPrepareCommand(session, agentProjectKey));
+    await this.agentCommandRouter.routeToOwningAgent(
+      session.id,
+      buildSessionPrepareCommand(session, project.agentProjectKey, project.defaultBranch),
+    );
   }
 }
 
-function buildSessionPrepareCommand(session: Session, agentProjectKey: string): SessionPrepareCommandEnvelope {
+function buildSessionPrepareCommand(
+  session: Session,
+  agentProjectKey: string,
+  baseBranch: string,
+): SessionPrepareCommandEnvelope {
   return {
     protocolVersion: AGENT_PROTOCOL_VERSION,
     messageId: randomUUID(),
@@ -335,6 +342,7 @@ function buildSessionPrepareCommand(session: Session, agentProjectKey: string): 
       sessionId: session.id,
       projectKey: agentProjectKey,
       branchName: session.branchName ?? `pairdock/session-${session.id.slice(0, 8)}`,
+      baseBranch,
       modelId: session.modelId,
     },
   };

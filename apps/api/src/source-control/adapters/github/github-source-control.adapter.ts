@@ -70,7 +70,7 @@ export class GithubSourceControlAdapter implements SourceControlPort {
         {
           fullName: 'pairdock/mvp-e2e-fixture',
           name: 'mvp-e2e-fixture',
-          defaultBranch: 'main',
+          defaultBranch: 'release',
         },
         {
           fullName: 'mathis/readiness-project',
@@ -127,7 +127,7 @@ export class GithubSourceControlAdapter implements SourceControlPort {
     input: Parameters<SourceControlPort['listRepositoryBranches']>[0],
   ): Promise<Awaited<ReturnType<SourceControlPort['listRepositoryBranches']>>> {
     if (isTestConnection(input.providerConnectionId)) {
-      return ['main', 'develop', 'dev'];
+      return ['main', 'release', 'develop', 'dev'];
     }
 
     const token = await this.resolveToken(input.providerConnectionId);

@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import type { INestApplication } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
+import { AGENT_PROTOCOL_VERSION } from '@pairdock/shared-contracts';
 import { ConnectedAgentsRegistry } from '../../../../../apps/api/src/agent-gateway/connected-agents.registry.js';
 import { AppModule } from '../../../../../apps/api/src/app.module.js';
 import { DatabaseClient } from '../../../../../apps/api/src/persistence/client.js';
@@ -142,7 +143,7 @@ test('BT-012: a started local agent is visible from the backend after it announc
       'Expected backend persistence to upsert agent registration.',
     );
 
-    assert.equal(registration.protocolVersion, '2026-06-27');
+    assert.equal(registration.protocolVersion, AGENT_PROTOCOL_VERSION);
     assert.deepEqual(registration.capabilities, ['session.prepare', 'agent.prompt']);
     assert.deepEqual(registration.models, [{ id: 'agent/gpt-5', label: 'GPT-5', provider: 'local-agent' }]);
     assert.equal(registration.disconnectedAt, null);

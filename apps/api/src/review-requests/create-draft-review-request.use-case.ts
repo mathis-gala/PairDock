@@ -1,16 +1,14 @@
 import { randomUUID } from 'node:crypto';
 import { ConflictException, Inject, Injectable, NotFoundException } from '@nestjs/common';
-import type { NotificationPort, PairDockIdentity, Project, Session, SourceControlConnection } from '@pairdock/domain';
+import type { PairDockIdentity, Project, Session, SourceControlConnection } from '@pairdock/domain';
 import { AGENT_PROTOCOL_VERSION, type GitPushBranchCommandEnvelope } from '@pairdock/shared-contracts';
 import { AgentCommandRouterService } from '../agent-gateway/agent-command-router.service.js';
-import { NOTIFICATION_PORT } from '../notifications/notifications.tokens.js';
 import {
   PERSISTENCE_UNIT_OF_WORK,
   PROJECTS_REPOSITORY,
   SESSION_MEMBERS_REPOSITORY,
   SESSIONS_REPOSITORY,
   SOURCE_CONTROL_CONNECTIONS_REPOSITORY,
-  USERS_REPOSITORY,
   VALIDATION_RUNS_REPOSITORY,
 } from '../persistence/persistence.tokens.js';
 import type { PersistenceUnitOfWork } from '../persistence/ports/persistence-unit-of-work.js';
@@ -18,7 +16,6 @@ import type { ProjectsRepository } from '../persistence/ports/projects.repositor
 import type { SessionMembersRepository } from '../persistence/ports/session-members.repository.js';
 import type { SessionsRepository } from '../persistence/ports/sessions.repository.js';
 import type { SourceControlConnectionsRepository } from '../persistence/ports/source-control-connections.repository.js';
-import type { UsersRepository } from '../persistence/ports/users.repository.js';
 import type { ValidationRunsRepository } from '../persistence/ports/validation-runs.repository.js';
 import type { SourceControlPort } from '../source-control/source-control.port.js';
 import { SOURCE_CONTROL_PORT } from '../source-control/source-control.tokens.js';
@@ -44,16 +41,12 @@ export class CreateDraftReviewRequestUseCase {
     private readonly sourceControlConnectionsRepository: SourceControlConnectionsRepository,
     @Inject(SESSION_MEMBERS_REPOSITORY)
     private readonly sessionMembersRepository: SessionMembersRepository,
-    @Inject(USERS_REPOSITORY)
-    private readonly usersRepository: UsersRepository,
     @Inject(PERSISTENCE_UNIT_OF_WORK)
     private readonly persistenceUnitOfWork: PersistenceUnitOfWork,
     @Inject(AgentCommandRouterService)
     private readonly agentCommandRouter: AgentCommandRouterService,
     @Inject(SOURCE_CONTROL_PORT)
     private readonly sourceControl: SourceControlPort,
-    @Inject(NOTIFICATION_PORT)
-    private readonly notifications: NotificationPort,
     @Inject(ValidationPolicy)
     private readonly validationPolicy: ValidationPolicy,
   ) {}
@@ -105,45 +98,12 @@ export class CreateDraftReviewRequestUseCase {
       });
     });
 
-    if (this.shouldNotifyDeveloper(session, actor, project)) {
-      await this.notifyDeveloperOwner(session, project, reviewRequest.reviewRequestUrl);
-    }
-
     return {
       sessionId,
       reviewRequestNumber: reviewRequest.reviewRequestNumber,
       reviewRequestUrl: reviewRequest.reviewRequestUrl,
       status: 'draft',
     };
-  }
-
-  private async notifyDeveloperOwner(session: Session, project: Project, reviewRequestUrl: string): Promise<void> {
-    const owner = await this.usersRepository.findById(project.ownerUserId);
-
-    if (!owner) {
-      throw new NotFoundException(`Developer owner ${project.ownerUserId} was not found.`);
-    }
-
-    const result = await this.notifications.send({
-      recipientUserId: owner.id,
-      recipientEmail: owner.email,
-      recipientDisplayName: owner.displayName,
-      sessionId: session.id,
-      type: 'review-request-created',
-      reviewRequestUrl,
-      projectName: project.name,
-    });
-
-    await this.persistenceUnitOfWork.execute(async (repositories) => {
-      await repositories.notifications.create({
-        userId: owner.id,
-        sessionId: session.id,
-        type: 'review-request-created',
-        provider: result.provider,
-        providerMessageId: result.providerMessageId,
-        status: result.status,
-      });
-    });
   }
 
   private async requireSession(sessionId: string): Promise<Session> {
@@ -192,10 +152,6 @@ export class CreateDraftReviewRequestUseCase {
     }
 
     throw new ConflictException('Only the developer owner or a PM session member can create a draft review request.');
-  }
-
-  private shouldNotifyDeveloper(session: Session, actor: PairDockIdentity, project: Project): boolean {
-    return actor.kind === 'pm' || session.createdByUserId !== project.ownerUserId;
   }
 }
 

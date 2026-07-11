@@ -1,0 +1,9 @@
+Traversal: BFS depth=2 | Start: ['bootstrap()', 'startApplication()', 'startApplication()', 'App()', 'startApplication()', 'Module', '.start()'] | Context: import (heuristic) | 7 nodes found
+
+NODE App() [src=apps/web/src/App.tsx loc=L3 community=11]
+NODE .start() [src=packages/local-agent/src/websocket/agent-client.ts loc=L100 community=5]
+NODE startApplication() [src=tests/apps/api/e2e/mvp-flow.e2e.test.ts loc=L61 community=23]
+NODE startApplication() [src=tests/apps/api/integration/projects/developer-project-control.integration.test.ts loc=L39 community=17]
+NODE bootstrap() [src=apps/api/src/main.ts loc=L5 community=23]
+NODE startApplication() [src=tests/apps/api/integration/sessions/pm-session-start.integration.test.ts loc=L37 community=86]
+NODE Module [src= loc= community=8]

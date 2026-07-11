@@ -12,6 +12,7 @@ export const sessionPrepareCommandEnvelopeSchema = sessionEnvelope(
     sessionId: uuidSchema,
     projectKey: z.string().min(1),
     branchName: z.string().min(1),
+    baseBranch: z.string().min(1),
     modelId: z.string().min(1),
   }),
 ).refine(({ sessionId, payload }) => payload.sessionId === sessionId, sessionIdConsistencyRule);

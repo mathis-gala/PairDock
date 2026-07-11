@@ -49,11 +49,11 @@ async function startApplication() {
   baseUrl = `http://127.0.0.1:${address.port}`;
 }
 
-async function authenticateDeveloper(tokenSeed = randomUUID()) {
+async function authenticateDeveloper(tokenSeed = randomUUID(), email = `dev-${tokenSeed}@pairdock.test`) {
   const response = await fetch(`${baseUrl}/auth/developer/callback`, {
     method: 'POST',
     headers: { 'content-type': 'application/json' },
-    body: JSON.stringify({ accessToken: `github:${tokenSeed}:dev-${tokenSeed}@pairdock.test:Dev ${tokenSeed}` }),
+    body: JSON.stringify({ accessToken: `github:${tokenSeed}:${email}:Dev ${tokenSeed}` }),
   });
 
   return {
@@ -62,11 +62,15 @@ async function authenticateDeveloper(tokenSeed = randomUUID()) {
   };
 }
 
-async function authenticatePm(tokenSeed = randomUUID(), teamId = 'pairdock-testers') {
+async function authenticatePm(
+  tokenSeed = randomUUID(),
+  teamId = 'pairdock-testers',
+  email = `pm-${tokenSeed}@pairdock.test`,
+) {
   const response = await fetch(`${baseUrl}/auth/pm/callback`, {
     method: 'POST',
     headers: { 'content-type': 'application/json' },
-    body: JSON.stringify({ accessToken: `slack:${tokenSeed}:${teamId}:pm-${tokenSeed}@pairdock.test:PM ${tokenSeed}` }),
+    body: JSON.stringify({ accessToken: `slack:${tokenSeed}:${teamId}:${email}:PM ${tokenSeed}` }),
   });
 
   return {
@@ -90,8 +94,9 @@ test.beforeEach(async () => {
 });
 
 test('BT-028/BT-029/BT-049: developer creates a project, shares it, starts a modeled session, and closes it', async () => {
-  const developerLogin = await authenticateDeveloper();
-  const pmLogin = await authenticatePm();
+  const sharedEmail = `cross-role-${randomUUID()}@pairdock.test`;
+  const developerLogin = await authenticateDeveloper(randomUUID(), sharedEmail);
+  const pmLogin = await authenticatePm(randomUUID(), 'pairdock-testers', sharedEmail);
 
   assert.equal(developerLogin.status >= 200 && developerLogin.status < 300, true);
   assert.equal(pmLogin.status >= 200 && pmLogin.status < 300, true);

@@ -388,6 +388,17 @@ Then the backend creates or finds a PairDock `User` and `ExternalIdentity` witho
 Why: preserve hexagonal architecture and provider replaceability
 Do not test: real GitHub/Slack SDKs in unit tests
 
+## BT-050 — Same-email cross-role accounts remain independent
+
+Level: integration/unit
+Priority: P0
+Public interface: AuthModule + project sharing + browser auth session
+Given a GitHub developer and Slack PM whose providers return the same normalized email
+When they authenticate in separate browsers or browser profiles and the developer shares a project with that email
+Then PairDock creates distinct `(email, kind)` users and external identities, each browser retains its own role-specific `localStorage` session, and the PM can access the shared project and start a session
+Why: developers must be able to test both V1 roles with one email without either identity inheriting the other role
+Do not test: provider token internals
+
 ## BT-036 — Use cases decoupled from external providers
 
 Level: unit/static architecture
@@ -545,16 +556,4 @@ When the developer invites or grants the PM project access
 Then a project membership exists and the project appears in the PM shared-project list
 Why: shared-project access is now distinct from per-session membership
 Do not test: Slack invitation delivery unless the implementation explicitly sends invitations
-
-## BT-050 — Review request notification uses notification port
-
-Level: integration
-Priority: P1
-Public interface: CreateDraftReviewRequestUseCase + NotificationPort
-Behavior: developer review notification is emitted after PM-submitted review request creation.
-Given a PM-started or PM-submitted session with passing validations
-When the draft review request is created
-Then the developer owner is notified through `NotificationPort` and the notification result is persisted
-Why: the UI promises the developer is notified when the review request is ready
-Do not test: Slack API internals outside the Slack adapter contract test
 

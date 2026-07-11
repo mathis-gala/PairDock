@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import { getAppRouteSnapshot } from '../../../../apps/web/src/hooks/use-app-route.js';
-import { getAuthSessionSnapshot } from '../../../../apps/web/src/hooks/use-auth-session.js';
+import { getAuthSessionSnapshot, setAuthSession } from '../../../../apps/web/src/hooks/use-auth-session.js';
 
 const authStorageKey = 'pairdock.auth.session';
 
@@ -92,5 +92,46 @@ test('useAuthSession snapshot consumes and cleans OAuth callback hash', () => {
 
     assert.equal(snapshot?.accessToken, 'local-token');
     assert.equal(cleanedUrl, '/developer');
+  });
+});
+
+test('useAuthSession lets independent browsers persist developer and PM authentication', () => {
+  const createStorage = () => {
+    const values = new Map<string, string>();
+    return {
+      getItem: (key: string) => values.get(key) ?? null,
+      setItem: (key: string, value: string) => values.set(key, value),
+    };
+  };
+  const developerBrowserStorage = createStorage();
+  const pmBrowserStorage = createStorage();
+  const developerSession = {
+    accessToken: 'developer-token',
+    provider: 'github' as const,
+    user: {
+      id: '123e4567-e89b-12d3-a456-426614174001',
+      email: 'same@example.com',
+      displayName: 'Developer',
+      kind: 'developer' as const,
+    },
+  };
+  const pmSession = {
+    accessToken: 'pm-token',
+    provider: 'slack' as const,
+    user: {
+      id: '123e4567-e89b-12d3-a456-426614174002',
+      email: 'same@example.com',
+      displayName: 'PM',
+      kind: 'pm' as const,
+    },
+  };
+
+  withWindow({ dispatchEvent() {}, localStorage: developerBrowserStorage }, () => setAuthSession(developerSession));
+  withWindow({ dispatchEvent() {}, localStorage: pmBrowserStorage }, () => setAuthSession(pmSession));
+  withWindow({ localStorage: developerBrowserStorage }, () => {
+    assert.equal(getAuthSessionSnapshot()?.accessToken, 'developer-token');
+  });
+  withWindow({ localStorage: pmBrowserStorage }, () => {
+    assert.equal(getAuthSessionSnapshot()?.accessToken, 'pm-token');
   });
 });

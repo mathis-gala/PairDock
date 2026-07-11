@@ -15,7 +15,6 @@ The product/UI reference prototype is stored in `prototype/`, with notes in `doc
 - Show a remote preview through Cloudflare Tunnel inside a responsive iframe.
 - Block review request creation until build, tests, linter, and preview checks pass.
 - Create a draft review request through the source-control adapter after PM validation. GitHub App creates a draft PR in the MVP.
-- Notify the developer when a PM-created review request is ready for review; Slack is the MVP notification adapter.
 - Let the developer close a session and clean up the worktree, container, and tunnel.
 
 ## Non-goals for MVP
@@ -34,7 +33,7 @@ The product/UI reference prototype is stored in `prototype/`, with notes in `doc
 - Local Agent: Node.js/TypeScript CLI connected to the backend over WebSocket.
 - PairDock Backend: NestJS API, session orchestration, DB, GitHub App integration, WebSockets.
 - GitHub App: developer connection, repository access, and draft review request creation as the MVP source-control adapter; internally maps to GitHub draft PRs.
-- Slack App/OAuth: PM login, invitation/session identity binding, and MVP developer notifications through a notification adapter.
+- Slack App/OAuth: PM login and invitation/session identity binding only.
 - Codex CLI: MVP local agent harness adapter.
 
 ## Functional requirements
@@ -57,7 +56,7 @@ The product/UI reference prototype is stored in `prototype/`, with notes in `doc
 - The agent runs build, tests, linter, and preview availability checks.
 - The draft review request button is disabled until all P0 validations pass.
 - The draft review request is created through `SourceControlPort` after PM validation; GitHub App creates a draft PR in the MVP.
-- After a draft review request is created from a PM flow, the developer receives a provider-neutral notification; Slack is the MVP adapter.
+- After a draft review request is created, its URL and status are visible in the shared session.
 - The developer can close a session and trigger local cleanup.
 - A session cannot start while required developer-side checks are failing: local agent online, Git repository available, GitHub App/repository access, agent harness configured, Docker available, preview tunnel available or explicitly marked optional, and project commands discoverable.
 - PairDock repository pull requests run CI gates before merge: install, typecheck, lint, tests, build, Prisma generate, and Prisma migration status/checks.
@@ -124,7 +123,7 @@ The product/UI reference prototype is stored in `prototype/`, with notes in `doc
 ## Open questions
 
 - Is the repository always GitHub, or should GitLab be planned later through another adapter?
-- Should Slack invitations be sent proactively, or is Slack only used for login plus review-request notifications in the MVP?
+- Slack invitations are not sent proactively in V1; project access is granted inside PairDock after PM login.
 - Do build/test/lint commands come only from AGENTS.md, or also from PairDock config?
 - Should the SaaS backend store the local project path, or only an agent-side project alias?
 - What is the exact policy for deleting or keeping the remote branch on session close?
@@ -139,7 +138,7 @@ The product/UI reference prototype is stored in `prototype/`, with notes in `doc
 
 ## Handoff summary
 
-Start with shared contracts, then backend project sharing/session/WebSocket orchestration, then local agent worktree/preview/checks, then PM/developer UI, then source-control draft review request creation and notification.
+Start with shared contracts, then backend project sharing/session/WebSocket orchestration, then local agent worktree/preview/checks, then PM/developer UI, then source-control draft review request creation.
 
 Persistence implementation uses Prisma from the first backend slice: Prisma schema, migrations, generated client, and repository adapters are part of the MVP foundation.
 

@@ -186,6 +186,7 @@ test('Task 8: backend command routing persists preview progress, preview URL, an
         sessionId,
         projectKey: 'pairdock',
         branchName,
+        baseBranch: 'main',
         modelId: 'codex-cli/gpt-5.4',
       },
     });

@@ -129,7 +129,7 @@ export class AuthService {
       return this.buildResult(await this.syncUserProfile(existingUser, identity), false);
     }
 
-    const existingUserByEmail = await this.usersService.findByEmail(identity.email);
+    const existingUserByEmail = await this.usersService.findByEmail(identity.email, identity.kind);
     const user =
       (existingUserByEmail ? await this.syncUserProfile(existingUserByEmail, identity) : null) ??
       (await this.usersService.create({

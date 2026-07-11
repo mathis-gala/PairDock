@@ -11,8 +11,8 @@ export class UsersService {
     return this.usersRepository.findById(id);
   }
 
-  findByEmail(email: string): Promise<PairDockUser | null> {
-    return this.usersRepository.findByEmail(email);
+  findByEmail(email: string, kind: PairDockUser['kind']): Promise<PairDockUser | null> {
+    return this.usersRepository.findByEmail(email, kind);
   }
 
   create(input: { email: string; displayName?: string | null; kind: PairDockUser['kind'] }): Promise<PairDockUser> {

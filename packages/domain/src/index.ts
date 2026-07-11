@@ -179,20 +179,6 @@ export interface ReviewRequestRecord {
   createdAt: Date;
 }
 
-export type NotificationType = 'review-request-created';
-export type NotificationStatus = 'sent' | 'queued' | 'failed';
-
-export interface NotificationRecord {
-  id: string;
-  userId: string;
-  sessionId: string | null;
-  type: NotificationType;
-  provider: string | null;
-  providerMessageId: string | null;
-  status: NotificationStatus;
-  createdAt: Date;
-}
-
 export interface PairDockIdentity {
   id: string;
   email: string;
@@ -241,20 +227,4 @@ export interface SourceControlPort {
     branchName: string;
     baseBranch: string;
   }): Promise<{ reviewRequestNumber: number | null; reviewRequestUrl: string }>;
-}
-
-export interface NotificationPort {
-  send(input: {
-    recipientUserId: string;
-    recipientEmail: string;
-    recipientDisplayName: string | null;
-    sessionId: string;
-    type: NotificationType;
-    reviewRequestUrl: string;
-    projectName: string;
-  }): Promise<{
-    provider: string | null;
-    providerMessageId: string | null;
-    status: NotificationStatus;
-  }>;
 }

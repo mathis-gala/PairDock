@@ -48,8 +48,8 @@ This prototype is the visual/product reference for the PairDock MVP. It should g
 - Agent progress is visible as steps: worktree creation, component/file localization, fix application, preview rebuild.
 - Preview can show a rebuilding overlay while the agent is running.
 - Once fixed, status becomes ready and draft review request action is enabled.
-- Review-request modal confirms PR creation and says the developer receives a Slack notification.
-- Architecture impact: review request creation goes through `SourceControlPort`; developer notification goes through provider-neutral `NotificationPort` with Slack as MVP adapter.
+- Review-request modal confirms PR creation and exposes the draft review-request URL in the shared session.
+- Architecture impact: review request creation goes through `SourceControlPort`; V1 has no notification subsystem.
 
 ## Implementation guidance
 

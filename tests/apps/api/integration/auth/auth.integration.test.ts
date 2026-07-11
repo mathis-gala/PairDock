@@ -204,6 +204,37 @@ test('BT-035: AuthModule normalizes GitHub and Slack callbacks into PairDock use
   assert.equal(externalIdentities[1]?.provider, 'slack');
 });
 
+test('V1: GitHub developer and Slack PM accounts may use the same email without sharing a role', async () => {
+  const seed = randomUUID();
+  const email = `cross-role-${seed}@pairdock.test`;
+  const developerResponse = await fetch(`${baseUrl}/auth/developer/callback`, {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({ accessToken: `github:dev-${seed}:${email}:Cross Role Dev` }),
+  });
+  const pmResponse = await fetch(`${baseUrl}/auth/pm/callback`, {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({ accessToken: `slack:pm-${seed}:cross-role-team:${email}:Cross Role PM` }),
+  });
+  const developerLogin = await parseJsonResponse(developerResponse, authResponseSchema);
+  const pmLogin = await parseJsonResponse(pmResponse, authResponseSchema);
+
+  assert.equal(developerResponse.status, 200);
+  assert.equal(pmResponse.status, 200);
+  assert.equal(developerLogin.user.kind, 'developer');
+  assert.equal(pmLogin.user.kind, 'pm');
+  assert.notEqual(developerLogin.user.id, pmLogin.user.id);
+
+  const users = await prisma.user.findMany({ where: { email }, orderBy: { kind: 'asc' } });
+  const externalIdentities = await prisma.externalIdentity.findMany({
+    where: { userId: { in: users.map((user) => user.id) } },
+  });
+  assert.deepEqual(users.map((user) => user.kind).sort(), ['developer', 'pm']);
+  assert.equal(externalIdentities.length, 2);
+  assert.equal(new Set(externalIdentities.map((identity) => identity.userId)).size, 2);
+});
+
 test('BT-035: Slack login updates an invited PM placeholder with the Slack display name', async () => {
   const invitedPm = await prisma.user.create({
     data: {

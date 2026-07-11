@@ -25,8 +25,8 @@ export class UsersRepositoryAdapter implements UsersRepository {
     return record ? mapUser(record) : null;
   }
 
-  async findByEmail(email: string): Promise<PairDockUser | null> {
-    const record = await this.prisma.user.findUnique({ where: { email } });
+  async findByEmail(email: string, kind: PairDockUser['kind']): Promise<PairDockUser | null> {
+    const record = await this.prisma.user.findUnique({ where: { email_kind: { email, kind } } });
     return record ? mapUser(record) : null;
   }
 

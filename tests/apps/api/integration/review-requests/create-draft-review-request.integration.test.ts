@@ -4,11 +4,6 @@ import test from 'node:test';
 import type { PairDockIdentity, Project, ReviewRequestRecord, Session, ValidationRun } from '@pairdock/domain';
 import type { AgentCommandEnvelope } from '@pairdock/shared-contracts';
 import type { AgentCommandRouterService } from '../../../../../apps/api/src/agent-gateway/agent-command-router.service.js';
-import type { NotificationPort } from '../../../../../apps/api/src/notifications/notification.port.js';
-import type {
-  NotificationRecord,
-  NotificationsRepository,
-} from '../../../../../apps/api/src/persistence/ports/notifications.repository.js';
 import type {
   PersistenceRepositories,
   PersistenceUnitOfWork,
@@ -18,7 +13,6 @@ import type { ReviewRequestsRepository } from '../../../../../apps/api/src/persi
 import type { SessionMembersRepository } from '../../../../../apps/api/src/persistence/ports/session-members.repository.js';
 import type { SessionsRepository } from '../../../../../apps/api/src/persistence/ports/sessions.repository.js';
 import type { SourceControlConnectionsRepository } from '../../../../../apps/api/src/persistence/ports/source-control-connections.repository.js';
-import type { UsersRepository } from '../../../../../apps/api/src/persistence/ports/users.repository.js';
 import type { ValidationRunsRepository } from '../../../../../apps/api/src/persistence/ports/validation-runs.repository.js';
 import { CreateDraftReviewRequestUseCase } from '../../../../../apps/api/src/review-requests/create-draft-review-request.use-case.js';
 import type { SourceControlPort } from '../../../../../apps/api/src/source-control/source-control.port.js';
@@ -91,22 +85,19 @@ function buildFixture(overrides: { validation?: Partial<ValidationRun>; session?
   });
   const router = new RecordingAgentCommandRouter(repositories.callOrder);
   const sourceControl = new RecordingSourceControlPort(repositories.callOrder);
-  const notifications = new RecordingNotificationPort();
   const useCase = new CreateDraftReviewRequestUseCase(
     repositories.sessions,
     repositories.projects,
     repositories.validationRuns,
     repositories.sourceControlConnections,
     repositories.sessionMembers,
-    repositories.users,
     repositories.unitOfWork,
     router as unknown as AgentCommandRouterService,
     sourceControl,
-    notifications,
     new ValidationPolicy(),
   );
 
-  return { notifications, repositories, router, sessionId, sourceControl, useCase };
+  return { repositories, router, sessionId, sourceControl, useCase };
 }
 
 test('BT-030: failed validation blocks draft review request creation before push or source-control calls', async () => {
@@ -151,20 +142,6 @@ test('BT-031 and BT-032: branch push is requested before draft review request cr
   assert.equal(repositories.currentSession.status, 'REVIEW_REQUEST_CREATED');
 });
 
-test('BT-050: PM-submitted review request notifies the developer through NotificationPort and persists the result', async () => {
-  const { notifications, repositories, sessionId, useCase } = buildFixture();
-
-  await useCase.create(sessionId, pm);
-
-  assert.equal(notifications.requests.length, 1);
-  assert.equal(notifications.requests[0]?.recipientUserId, developer.id);
-  assert.equal(notifications.requests[0]?.type, 'review-request-created');
-  assert.equal(notifications.requests[0]?.reviewRequestUrl, 'https://github.test/mathis/pairdock-test/pull/42');
-  assert.equal(repositories.notifications.records.length, 1);
-  assert.equal(repositories.notifications.records[0]?.providerMessageId, 'slack-test-message-1');
-  assert.equal(repositories.notifications.records[0]?.status, 'sent');
-});
-
 class RecordingAgentCommandRouter {
   readonly commands: AgentCommandEnvelope[] = [];
 
@@ -201,29 +178,16 @@ class RecordingSourceControlPort implements SourceControlPort {
   }
 }
 
-class RecordingNotificationPort implements NotificationPort {
-  readonly requests: Parameters<NotificationPort['send']>[0][] = [];
-
-  async send(input: Parameters<NotificationPort['send']>[0]): ReturnType<NotificationPort['send']> {
-    this.requests.push(input);
-    return {
-      provider: 'slack',
-      providerMessageId: 'slack-test-message-1',
-      status: 'sent',
-    };
-  }
-}
-
 class InMemoryRepositories {
   readonly callOrder: string[] = [];
   readonly reviewRequests = new InMemoryReviewRequestsRepository(this.callOrder);
-  readonly notifications = new InMemoryNotificationsRepository();
+
   readonly sessions: SessionsRepository;
   readonly projects: ProjectsRepository;
   readonly validationRuns: ValidationRunsRepository;
   readonly sourceControlConnections: SourceControlConnectionsRepository;
   readonly sessionMembers: SessionMembersRepository;
-  readonly users: UsersRepository;
+
   readonly unitOfWork: PersistenceUnitOfWork;
   currentSession: Session;
 
@@ -276,39 +240,12 @@ class InMemoryRepositories {
         { id: randomUUID(), sessionId: session.id, userId: pm.id, role: 'pm' },
       ],
     };
-    this.users = {
-      create: async () => ({
-        id: developer.id,
-        email: developer.email,
-        displayName: developer.displayName,
-        kind: 'developer',
-        createdAt: new Date('2026-07-04T09:00:00.000Z'),
-      }),
-      findByEmail: async () => null,
-      findById: async (id: string) =>
-        id === developer.id
-          ? {
-              id: developer.id,
-              email: developer.email,
-              displayName: developer.displayName,
-              kind: 'developer',
-              createdAt: new Date('2026-07-04T09:00:00.000Z'),
-            }
-          : null,
-      updateProfile: async () => ({
-        id: developer.id,
-        email: developer.email,
-        displayName: developer.displayName,
-        kind: 'developer',
-        createdAt: new Date('2026-07-04T09:00:00.000Z'),
-      }),
-    };
+
     this.unitOfWork = {
       execute: async (work) =>
         work({
           reviewRequests: this.reviewRequests,
           sessions: this.sessions,
-          notifications: this.notifications,
         } as unknown as PersistenceRepositories),
     };
   }
@@ -339,28 +276,5 @@ class InMemoryReviewRequestsRepository implements ReviewRequestsRepository {
 
   async findManyBySessionIds(sessionIds: string[]): Promise<ReviewRequestRecord[]> {
     return this.records.filter((record) => sessionIds.includes(record.sessionId));
-  }
-}
-
-class InMemoryNotificationsRepository implements NotificationsRepository {
-  readonly records: NotificationRecord[] = [];
-
-  async create(input: Parameters<NotificationsRepository['create']>[0]): Promise<NotificationRecord> {
-    const record: NotificationRecord = {
-      id: randomUUID(),
-      createdAt: new Date('2026-07-04T10:11:00.000Z'),
-      provider: input.provider ?? null,
-      providerMessageId: input.providerMessageId ?? null,
-      sessionId: input.sessionId ?? null,
-      status: input.status,
-      type: input.type,
-      userId: input.userId,
-    };
-    this.records.push(record);
-    return record;
-  }
-
-  async findManyBySessionId(sessionId: string): Promise<NotificationRecord[]> {
-    return this.records.filter((record) => record.sessionId === sessionId);
   }
 }

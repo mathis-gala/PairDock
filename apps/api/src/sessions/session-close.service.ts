@@ -30,30 +30,25 @@ export class SessionCloseService {
       return session;
     }
 
-    const cleanupError = await this.requestLocalCleanup(session);
+    await this.requestLocalCleanup(session);
     const nextSession = this.stateMachine.closeSession(session, new Date());
 
     return this.sessionsRepository.updateStatus({
       id: nextSession.id,
       status: nextSession.status,
-      lastError: cleanupError,
+      lastError: null,
       closedAt: nextSession.closedAt,
     });
   }
 
-  private async requestLocalCleanup(session: Session): Promise<string | null> {
-    if (!this.agentCommandRouter || session.status === 'CREATED' || session.status === 'FAILED') {
-      return null;
+  private async requestLocalCleanup(session: Session): Promise<void> {
+    if (!this.agentCommandRouter || session.status === 'CREATED') {
+      return;
     }
 
-    try {
-      await this.agentCommandRouter.routeToOwningAgent(session.id, buildSessionCloseCommand(session.id), {
-        waitForCompletion: true,
-      });
-      return null;
-    } catch (error) {
-      return error instanceof Error ? error.message : String(error);
-    }
+    await this.agentCommandRouter.routeToOwningAgent(session.id, buildSessionCloseCommand(session.id), {
+      waitForCompletion: true,
+    });
   }
 }
 

@@ -298,6 +298,7 @@ export class AgentClient {
       );
     } catch (error) {
       await this.emitError('session.close.failed', command.sessionId, error, false);
+      throw error;
     }
   }
 

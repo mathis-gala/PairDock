@@ -1,0 +1,32 @@
+Traversal: BFS depth=2 | Start: ['private', 'version', 'private', 'name'] | 16 nodes found
+
+NODE dependencies [src=apps/api/package.json loc=L21 community=54]
+NODE scripts [src=apps/api/package.json loc=L6 community=58]
+NODE dependencies [src=apps/web/package.json loc=L13 community=0]
+NODE package.json [src=apps/api/package.json loc=L1 community=87]
+NODE devDependencies [src=apps/web/package.json loc=L22 community=25]
+NODE package.json [src=apps/web/package.json loc=L1 community=25]
+NODE scripts [src=apps/web/package.json loc=L6 community=25]
+NODE devDependencies [src=apps/api/package.json loc=L36 community=87]
+NODE name [src=apps/web/package.json loc=L2 community=25]
+NODE private [src=apps/web/package.json loc=L3 community=25]
+NODE type [src=apps/web/package.json loc=L5 community=25]
+NODE type [src=apps/api/package.json loc=L5 community=87]
+NODE name [src=apps/api/package.json loc=L2 community=87]
+NODE private [src=apps/api/package.json loc=L3 community=87]
+NODE version [src=apps/web/package.json loc=L4 community=25]
+NODE version [src=apps/api/package.json loc=L4 community=87]
+EDGE name --contains [EXTRACTED]--> package.json
+EDGE private --contains [EXTRACTED]--> package.json
+EDGE private --contains [EXTRACTED]--> package.json
+EDGE version --contains [EXTRACTED]--> package.json
+EDGE package.json --contains [EXTRACTED]--> dependencies
+EDGE package.json --contains [EXTRACTED]--> devDependencies
+EDGE package.json --contains [EXTRACTED]--> scripts
+EDGE package.json --contains [EXTRACTED]--> type
+EDGE package.json --contains [EXTRACTED]--> dependencies
+EDGE package.json --contains [EXTRACTED]--> devDependencies
+EDGE package.json --contains [EXTRACTED]--> name
+EDGE package.json --contains [EXTRACTED]--> scripts
+EDGE package.json --contains [EXTRACTED]--> type
+EDGE package.json --contains [EXTRACTED]--> version

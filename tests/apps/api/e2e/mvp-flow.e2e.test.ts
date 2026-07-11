@@ -43,7 +43,6 @@ let app: INestApplication;
 let baseUrl: string;
 
 async function resetDatabase() {
-  await prisma.notification.deleteMany();
   await prisma.pullRequest.deleteMany();
   await prisma.validationRun.deleteMany();
   await prisma.agentEvent.deleteMany();
@@ -103,7 +102,7 @@ async function createDeveloperProject(accessToken: string, agentProjectKey: stri
         name: 'MVP E2E Fixture',
         repoFullName: 'pairdock/mvp-e2e-fixture',
         pathAlias: 'example-repository',
-        defaultBranch: 'main',
+        defaultBranch: 'release',
         models: ['codex-cli/gpt-5.4'],
       },
     ],
@@ -118,7 +117,7 @@ async function createDeveloperProject(accessToken: string, agentProjectKey: stri
       name: 'MVP E2E Fixture',
       description: 'Hermetic test repository for the PairDock MVP critical path.',
       repoFullName: 'pairdock/mvp-e2e-fixture',
-      defaultBranch: 'main',
+      defaultBranch: 'release',
       defaultModelId: 'codex-cli/gpt-5.4',
       agentProjectKey,
       pmCanStartSessions: true,
@@ -129,7 +128,9 @@ async function createDeveloperProject(accessToken: string, agentProjectKey: stri
     }),
   });
 
-  assert.equal(response.status, 201);
+  if (response.status !== 201) {
+    throw new Error(`Expected project creation to return 201, received ${response.status}: ${await response.text()}`);
+  }
   return parseJsonResponse(response, developerProjectResponseSchema);
 }
 
@@ -229,8 +230,15 @@ async function createTestRepository() {
   await execGit(repositoryPath, ['commit', '-m', 'initial fixture']);
   await execGit(repositoryPath, ['remote', 'add', 'origin', remotePath]);
   await execGit(repositoryPath, ['push', '--set-upstream', 'origin', 'main']);
+  await execGit(repositoryPath, ['switch', '-c', 'release']);
+  await writeFile(join(repositoryPath, 'release-base.txt'), 'release base');
+  await execGit(repositoryPath, ['add', 'release-base.txt']);
+  await execGit(repositoryPath, ['commit', '-m', 'release base']);
+  const releaseCommit = await execGit(repositoryPath, ['rev-parse', 'HEAD']);
+  await execGit(repositoryPath, ['push', '--set-upstream', 'origin', 'release']);
+  await execGit(repositoryPath, ['switch', 'main']);
 
-  return { remotePath, repositoryPath, root };
+  return { releaseCommit, remotePath, repositoryPath, root };
 }
 
 async function startPreviewServer() {
@@ -342,6 +350,7 @@ test('BT-033: full MVP flow starts a session, runs a PM prompt, creates a draft 
 
     assert.equal(readySession.previewUrl, preview.url);
     assert.equal(await execGit(worktreePath, ['branch', '--show-current']), readySession.branchName);
+    assert.equal(await execGit(worktreePath, ['rev-parse', 'HEAD']), repository.releaseCommit);
 
     const prompt = await sendPrompt(pmLogin.accessToken, createdSession.id);
     assert.equal(prompt.role, 'pm');

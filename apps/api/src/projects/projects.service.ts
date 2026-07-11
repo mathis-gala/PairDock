@@ -1,6 +1,5 @@
 import {
   BadRequestException,
-  ConflictException,
   ForbiddenException,
   Inject,
   Injectable,
@@ -374,13 +373,9 @@ export class ProjectsService {
   }
 
   private async findOrCreatePmUser(pmEmail: string): Promise<PairDockUser> {
-    const existingUser = await this.usersRepository.findByEmail(pmEmail);
+    const existingUser = await this.usersRepository.findByEmail(pmEmail, 'pm');
 
     if (existingUser) {
-      if (existingUser.kind !== 'pm') {
-        throw new ConflictException('Project access can only be shared with a PM identity.');
-      }
-
       return existingUser;
     }
 

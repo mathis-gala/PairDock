@@ -4,7 +4,7 @@
 
 The repository is early-stage. Technical choices are defined by the provided product decisions: Bun workspaces, React/TanStack/Zod/Tailwind CSS with shadcn/ui components, NestJS/zodValidatorPipe/PostgreSQL with Prisma ORM, local Node.js/TypeScript agent, pluggable agent harness adapters, optional Docker/Compose preview commands, Cloudflare Tunnel, GitHub App, and Slack PM login.
 
-Prototype reference: the collaborative developer/PM prototype is stored at `prototype/`; implementation notes live at `docs/prototypes/pairdock-collaborative-developer-pm.md`. Treat it as product evidence for role entry, project sharing, PM-started sessions, session workspace behavior, responsive preview presets, and review-request notification UX.
+Prototype reference: the collaborative developer/PM prototype is stored at `prototype/`; implementation notes live at `docs/prototypes/pairdock-collaborative-developer-pm.md`. Treat it as product evidence for role entry, project sharing, PM-started sessions, session workspace behavior, responsive preview presets, and draft review-request UX.
 
 ## Architecture style
 
@@ -43,6 +43,8 @@ Responsibilities:
 - Authenticate developers through GitHub and PMs through Slack.
 - Issue API/UI tokens.
 - Identify the current user.
+- Resolve users by `(normalized email, role kind)`, so one email may own distinct developer and PM identities without collapsing authorization roles.
+- Persist browser authentication in `localStorage`; simultaneous developer and PM testing with the same email uses separate browsers or browser profiles.
 
 Ports:
 - `DeveloperIdentityPort`, implemented in MVP by `GithubDeveloperIdentityAdapter`.
@@ -53,6 +55,7 @@ Ports:
 Responsibilities:
 - User profiles.
 - Minimal global role/kind.
+- Role-specific uniqueness: `(email, kind)` is unique, while the same email may exist once as `developer` and once as `pm`.
 
 ### PersistenceModule
 
@@ -129,18 +132,6 @@ Responsibilities:
 - PM invitations.
 - Project membership and role.
 - Session membership and role.
-
-### NotificationsModule
-
-Responsibilities:
-- Send provider-neutral product notifications such as review-request-created and session-needs-attention.
-- Keep notification delivery out of session and review-request use cases.
-
-Domain port:
-- `NotificationPort`.
-
-MVP adapter:
-- `SlackNotificationAdapter`.
 
 ### AgentGatewayModule
 
@@ -457,16 +448,7 @@ review_requests (
   created_at timestamptz not null default now()
 );
 
-notifications (
-  id uuid primary key,
-  user_id uuid not null references users(id),
-  session_id uuid references sessions(id),
-  type text not null,
-  provider text,
-  provider_message_id text,
-  status text not null,
-  created_at timestamptz not null default now()
-);
+
 ```
 
 ## Session states
@@ -505,7 +487,7 @@ Session creation entry points:
 
 ```ts
 interface AgentProtocolEnvelope<TPayload> {
-  protocolVersion: "2026-06-27";
+  protocolVersion: "2026-07-11";
   messageId: string;
   sessionId?: string;
   type: string;
@@ -621,10 +603,6 @@ interface SourceControlPort {
   verifyRepositoryAccess(input: RepositoryAccessInput): Promise<RepositoryAccessResult>;
 }
 
-interface NotificationPort {
-  send(input: NotificationInput): Promise<NotificationRef>;
-}
-
 interface PreviewTunnelPort {
   open(input: PreviewTunnelInput): Promise<PreviewTunnelRef>;
   close(ref: PreviewTunnelRef): Promise<void>;
@@ -646,7 +624,6 @@ MVP adapters:
 - `GithubDeveloperIdentityAdapter` for developer login.
 - `SlackPmIdentityAdapter` for PM login.
 - `GithubSourceControlAdapter` for repositories and draft review requests. Internally it maps to GitHub draft PR APIs.
-- `SlackNotificationAdapter` for developer notifications after PM-created review requests.
 - `CodexHarnessAdapter` for Codex CLI.
 - `DockerSandboxAdapter` for sandbox execution.
 - `CloudflarePreviewTunnelAdapter` for preview.
@@ -654,7 +631,6 @@ MVP adapters:
 Possible future adapters:
 - GitLab/Bitbucket source control.
 - Microsoft Teams/Google Workspace PM identity.
-- Email/Slack/Teams notification adapters.
 - Claude Code/OpenCode/other agent harness.
 - Kubernetes/Firecracker sandbox.
 - Tailscale/ngrok/other preview tunnel.
@@ -712,7 +688,7 @@ MVP decision:
 1. The agent pushes the branch from the local worktree.
 2. The backend creates the draft review request through `SourceControlPort`.
 3. The GitHub adapter maps the generic review request to a GitHub draft PR.
-4. If the session was PM-started or PM-submitted, the backend emits a provider-neutral notification through `NotificationPort` to the developer owner.
+4. The backend persists the draft review-request URL and status so both session members can see it.
 
 Reason: the agent owns local Git operations; the backend keeps the controlled, auditable GitHub identity.
 

@@ -8,7 +8,7 @@ flowchart LR
 
   Api --> Db[(PostgreSQL)]
   Api --> Gh[GitHub App]
-  Api -->|PM identity + developer notifications| Slack[Slack App/OAuth]
+  Api -->|PM identity/authentication| Slack[Slack App/OAuth]
 
   Api <-->|Agent WebSocket Protocol| Agent[Local Agent CLI]
 

@@ -1,0 +1,302 @@
+{
+  "nodes": [
+    {
+      "id": "docs_architecture_pairdock_mvp_architecture_authmodule",
+      "label": "AuthModule",
+      "file_type": "document",
+      "source_file": "/Users/mathis/Documents/Github/PairDock/docs/architecture/pairdock-mvp/architecture.md",
+      "source_location": "lines 40-51",
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "docs_architecture_pairdock_mvp_architecture_role_specific_identity",
+      "label": "Role-specific identity",
+      "file_type": "concept",
+      "source_file": "/Users/mathis/Documents/Github/PairDock/docs/architecture/pairdock-mvp/architecture.md",
+      "source_location": "lines 43-47",
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null,
+      "rationale": "Developer and PM identities must remain authorization-distinct even when their normalized email is the same."
+    },
+    {
+      "id": "docs_architecture_pairdock_mvp_architecture_email_kind_uniqueness",
+      "label": "Email and kind uniqueness",
+      "file_type": "rationale",
+      "source_file": "/Users/mathis/Documents/Github/PairDock/docs/architecture/pairdock-mvp/architecture.md",
+      "source_location": "lines 46, 53-58",
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null,
+      "rationale": "Uniqueness on (email, kind) allows one normalized email to own separate developer and PM users without collapsing roles."
+    },
+    {
+      "id": "docs_architecture_pairdock_mvp_architecture_localstorage_browser_authentication",
+      "label": "localStorage browser authentication",
+      "file_type": "concept",
+      "source_file": "/Users/mathis/Documents/Github/PairDock/docs/architecture/pairdock-mvp/architecture.md",
+      "source_location": "line 47",
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null,
+      "rationale": "Browser authentication is persisted in localStorage."
+    },
+    {
+      "id": "docs_architecture_pairdock_mvp_architecture_separate_browsers_or_profiles",
+      "label": "Separate browsers or browser profiles",
+      "file_type": "rationale",
+      "source_file": "/Users/mathis/Documents/Github/PairDock/docs/architecture/pairdock-mvp/architecture.md",
+      "source_location": "line 47",
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null,
+      "rationale": "Because authentication persists in localStorage, simultaneous same-email developer and PM testing uses separate browsers or browser profiles rather than separate tabs."
+    },
+    {
+      "id": "docs_architecture_pairdock_mvp_architecture_project_and_session_membership",
+      "label": "Project and session membership",
+      "file_type": "concept",
+      "source_file": "/Users/mathis/Documents/Github/PairDock/docs/architecture/pairdock-mvp/architecture.md",
+      "source_location": "lines 104-113, 124-127",
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "docs_architecture_pairdock_mvp_test_plan_bt_050_same_email_cross_role_accounts_remain_independent",
+      "label": "BT-050 — Same-email cross-role accounts remain independent",
+      "file_type": "document",
+      "source_file": "/Users/mathis/Documents/Github/PairDock/docs/architecture/pairdock-mvp/test-plan.md",
+      "source_location": "lines 391-400",
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null,
+      "rationale": "Developers must be able to test both V1 roles with one email without either identity inheriting the other role."
+    },
+    {
+      "id": "docs_architecture_pairdock_mvp_test_plan_distinct_email_kind_users",
+      "label": "Distinct (email, kind) users",
+      "file_type": "concept",
+      "source_file": "/Users/mathis/Documents/Github/PairDock/docs/architecture/pairdock-mvp/test-plan.md",
+      "source_location": "lines 396-399",
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "docs_architecture_pairdock_mvp_test_plan_role_specific_localstorage_sessions",
+      "label": "Role-specific localStorage sessions",
+      "file_type": "concept",
+      "source_file": "/Users/mathis/Documents/Github/PairDock/docs/architecture/pairdock-mvp/test-plan.md",
+      "source_location": "lines 397-399",
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "docs_architecture_pairdock_mvp_test_plan_separate_browser_or_profile_authentication",
+      "label": "Separate-browser or profile authentication",
+      "file_type": "rationale",
+      "source_file": "/Users/mathis/Documents/Github/PairDock/docs/architecture/pairdock-mvp/test-plan.md",
+      "source_location": "lines 397-399",
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null,
+      "rationale": "The GitHub developer and Slack PM authenticate in separate browsers or browser profiles so each browser retains its own role-specific localStorage session."
+    },
+    {
+      "id": "docs_architecture_pairdock_mvp_test_plan_shared_project_session_start",
+      "label": "Shared project access and PM session start",
+      "file_type": "concept",
+      "source_file": "/Users/mathis/Documents/Github/PairDock/docs/architecture/pairdock-mvp/test-plan.md",
+      "source_location": "lines 396-399",
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    }
+  ],
+  "edges": [
+    {
+      "source": "docs_architecture_pairdock_mvp_architecture_authmodule",
+      "target": "docs_architecture_pairdock_mvp_architecture_role_specific_identity",
+      "relation": "implements",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "/Users/mathis/Documents/Github/PairDock/docs/architecture/pairdock-mvp/architecture.md",
+      "source_location": "lines 43-47",
+      "weight": 1.0
+    },
+    {
+      "source": "docs_architecture_pairdock_mvp_architecture_email_kind_uniqueness",
+      "target": "docs_architecture_pairdock_mvp_architecture_role_specific_identity",
+      "relation": "rationale_for",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "/Users/mathis/Documents/Github/PairDock/docs/architecture/pairdock-mvp/architecture.md",
+      "source_location": "lines 46, 58",
+      "weight": 1.0
+    },
+    {
+      "source": "docs_architecture_pairdock_mvp_architecture_authmodule",
+      "target": "docs_architecture_pairdock_mvp_architecture_localstorage_browser_authentication",
+      "relation": "implements",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "/Users/mathis/Documents/Github/PairDock/docs/architecture/pairdock-mvp/architecture.md",
+      "source_location": "line 47",
+      "weight": 1.0
+    },
+    {
+      "source": "docs_architecture_pairdock_mvp_architecture_separate_browsers_or_profiles",
+      "target": "docs_architecture_pairdock_mvp_architecture_localstorage_browser_authentication",
+      "relation": "rationale_for",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "/Users/mathis/Documents/Github/PairDock/docs/architecture/pairdock-mvp/architecture.md",
+      "source_location": "line 47",
+      "weight": 1.0
+    },
+    {
+      "source": "docs_architecture_pairdock_mvp_architecture_project_and_session_membership",
+      "target": "docs_architecture_pairdock_mvp_architecture_role_specific_identity",
+      "relation": "conceptually_related_to",
+      "confidence": "INFERRED",
+      "confidence_score": 0.85,
+      "source_file": "/Users/mathis/Documents/Github/PairDock/docs/architecture/pairdock-mvp/architecture.md",
+      "source_location": "lines 111-127",
+      "weight": 1.0
+    },
+    {
+      "source": "docs_architecture_pairdock_mvp_test_plan_bt_050_same_email_cross_role_accounts_remain_independent",
+      "target": "docs_architecture_pairdock_mvp_test_plan_distinct_email_kind_users",
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "/Users/mathis/Documents/Github/PairDock/docs/architecture/pairdock-mvp/test-plan.md",
+      "source_location": "lines 396-399",
+      "weight": 1.0
+    },
+    {
+      "source": "docs_architecture_pairdock_mvp_test_plan_bt_050_same_email_cross_role_accounts_remain_independent",
+      "target": "docs_architecture_pairdock_mvp_test_plan_role_specific_localstorage_sessions",
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "/Users/mathis/Documents/Github/PairDock/docs/architecture/pairdock-mvp/test-plan.md",
+      "source_location": "lines 397-399",
+      "weight": 1.0
+    },
+    {
+      "source": "docs_architecture_pairdock_mvp_test_plan_separate_browser_or_profile_authentication",
+      "target": "docs_architecture_pairdock_mvp_test_plan_role_specific_localstorage_sessions",
+      "relation": "rationale_for",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "/Users/mathis/Documents/Github/PairDock/docs/architecture/pairdock-mvp/test-plan.md",
+      "source_location": "lines 397-399",
+      "weight": 1.0
+    },
+    {
+      "source": "docs_architecture_pairdock_mvp_test_plan_bt_050_same_email_cross_role_accounts_remain_independent",
+      "target": "docs_architecture_pairdock_mvp_test_plan_separate_browser_or_profile_authentication",
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "/Users/mathis/Documents/Github/PairDock/docs/architecture/pairdock-mvp/test-plan.md",
+      "source_location": "lines 397-399",
+      "weight": 1.0
+    },
+    {
+      "source": "docs_architecture_pairdock_mvp_test_plan_bt_050_same_email_cross_role_accounts_remain_independent",
+      "target": "docs_architecture_pairdock_mvp_test_plan_shared_project_session_start",
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "/Users/mathis/Documents/Github/PairDock/docs/architecture/pairdock-mvp/test-plan.md",
+      "source_location": "lines 397-399",
+      "weight": 1.0
+    },
+    {
+      "source": "docs_architecture_pairdock_mvp_test_plan_distinct_email_kind_users",
+      "target": "docs_architecture_pairdock_mvp_architecture_email_kind_uniqueness",
+      "relation": "semantically_similar_to",
+      "confidence": "INFERRED",
+      "confidence_score": 0.95,
+      "source_file": "/Users/mathis/Documents/Github/PairDock/docs/architecture/pairdock-mvp/test-plan.md",
+      "source_location": "lines 396-399",
+      "weight": 1.0
+    },
+    {
+      "source": "docs_architecture_pairdock_mvp_test_plan_role_specific_localstorage_sessions",
+      "target": "docs_architecture_pairdock_mvp_architecture_localstorage_browser_authentication",
+      "relation": "semantically_similar_to",
+      "confidence": "INFERRED",
+      "confidence_score": 0.95,
+      "source_file": "/Users/mathis/Documents/Github/PairDock/docs/architecture/pairdock-mvp/test-plan.md",
+      "source_location": "lines 397-399",
+      "weight": 1.0
+    },
+    {
+      "source": "docs_architecture_pairdock_mvp_test_plan_separate_browser_or_profile_authentication",
+      "target": "docs_architecture_pairdock_mvp_architecture_separate_browsers_or_profiles",
+      "relation": "semantically_similar_to",
+      "confidence": "INFERRED",
+      "confidence_score": 0.95,
+      "source_file": "/Users/mathis/Documents/Github/PairDock/docs/architecture/pairdock-mvp/test-plan.md",
+      "source_location": "lines 397-399",
+      "weight": 1.0
+    },
+    {
+      "source": "docs_architecture_pairdock_mvp_test_plan_shared_project_session_start",
+      "target": "docs_architecture_pairdock_mvp_architecture_project_and_session_membership",
+      "relation": "semantically_similar_to",
+      "confidence": "INFERRED",
+      "confidence_score": 0.85,
+      "source_file": "/Users/mathis/Documents/Github/PairDock/docs/architecture/pairdock-mvp/test-plan.md",
+      "source_location": "lines 397-399",
+      "weight": 1.0
+    },
+    {
+      "source": "docs_architecture_pairdock_mvp_test_plan_bt_050_same_email_cross_role_accounts_remain_independent",
+      "target": "docs_architecture_pairdock_mvp_architecture_authmodule",
+      "relation": "references",
+      "confidence": "INFERRED",
+      "confidence_score": 0.95,
+      "source_file": "/Users/mathis/Documents/Github/PairDock/docs/architecture/pairdock-mvp/test-plan.md",
+      "source_location": "lines 395-399",
+      "weight": 1.0
+    }
+  ],
+  "hyperedges": [
+    {
+      "id": "same_email_cross_role_browser_isolation",
+      "label": "Same-email cross-role browser isolation",
+      "nodes": [
+        "docs_architecture_pairdock_mvp_architecture_email_kind_uniqueness",
+        "docs_architecture_pairdock_mvp_architecture_localstorage_browser_authentication",
+        "docs_architecture_pairdock_mvp_architecture_separate_browsers_or_profiles",
+        "docs_architecture_pairdock_mvp_test_plan_bt_050_same_email_cross_role_accounts_remain_independent",
+        "docs_architecture_pairdock_mvp_test_plan_role_specific_localstorage_sessions"
+      ],
+      "relation": "participate_in",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "/Users/mathis/Documents/Github/PairDock/docs/architecture/pairdock-mvp/test-plan.md"
+    }
+  ],
+  "input_tokens": 0,
+  "output_tokens": 0
+}

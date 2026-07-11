@@ -21,7 +21,6 @@ flowchart TB
     Diff[DiffModule]
     Validation[ValidationModule]
     Github[GithubModule]
-    Notifications[NotificationsModule]
     Audit[AuditLogModule]
     Persistence[PersistenceModule]
     Prisma[Prisma Client Adapter]
@@ -31,7 +30,6 @@ flowchart TB
     DevIdentityPort[DeveloperIdentityPort]
     PmIdentityPort[PmIdentityPort]
     SourceControlPort[SourceControlPort]
-    NotificationPort[NotificationPort]
     RepositoryPorts[Repository Ports]
     AgentHarnessPort[AgentHarnessPort]
     SandboxPort[SandboxPort]
@@ -77,7 +75,6 @@ flowchart TB
   Slack -.implements.-> PmIdentityPort
   Github -.implements.-> DevIdentityPort
   Github -.implements.-> SourceControlPort
-  Notifications -.implements.-> NotificationPort
   Sessions --> RepositoryPorts
   Projects --> RepositoryPorts
   Auth --> RepositoryPorts
@@ -89,8 +86,6 @@ flowchart TB
   AgentGw --> Diff
   AgentGw --> Validation
   Github --> Sessions
-  Sessions --> Notifications
-  Notifications --> RepositoryPorts
 
   AgentClient --> Runner
   Runner --> Worktree

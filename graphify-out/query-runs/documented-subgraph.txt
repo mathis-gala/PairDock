@@ -1,0 +1,48 @@
+DOC NODES 20
+NODE GitHub Actions Continuous Integration | .github/workflows/ci.yml | lines 1-267
+NODE PairDock MVP Monorepo | README.md | lines 1-12
+NODE Local Agent Setup | README.md | lines 122-158
+NODE PairDock Web Application Entrypoint | apps/web/index.html | lines 10-14
+NODE PairDock Collaborative Product | docs/architecture/pairdock-mvp/PRD.md | lines 3-19
+NODE Developer-PM Collaborative Session | docs/architecture/pairdock-mvp/PRD.md | lines 5, 44-61
+NODE Per-Session Worktree and Container Isolation | docs/architecture/pairdock-mvp/PRD.md | lines 83-90, 93-102
+NODE Hexagonal Modular Architecture | docs/architecture/pairdock-mvp/architecture.md | lines 9-22
+NODE Backend to Local Agent Boundary | docs/architecture/pairdock-mvp/architecture.md | lines 11-22
+NODE Versioned Agent WebSocket Contract | docs/architecture/pairdock-mvp/architecture.md | lines 502-560
+NODE Validation-Gated Draft Review Requests | docs/architecture/pairdock-mvp/architecture.md | lines 695-706
+NODE Source Control Port | docs/architecture/pairdock-mvp/architecture.md | lines 604-652
+NODE Automated Full MVP Flow | docs/architecture/pairdock-mvp/mvp-e2e.md | lines 3-37
+NODE MVP Implementation Handoff | docs/architecture/pairdock-mvp/tasks.md | lines 1-48
+NODE Repository CI Gates Task | docs/architecture/pairdock-mvp/tasks.md | lines 470-497
+NODE Behavior Test Plan | docs/architecture/pairdock-mvp/test-plan.md | lines 1-15
+NODE Prototype as Product Evidence | docs/prototypes/pairdock-collaborative-developer-pm.md | lines 7-10, 62-72
+NODE Interactive PairDock Prototype | prototype/PairDock.dc.html | lines 32-70, 73-395
+NODE Two-Pane Session Workspace | prototype/PairDock.dc.html | lines 214-385
+NODE Prototype Reference Package | prototype/README.md | lines 5-24
+DOC EDGES
+EDGE docs_architecture_pairdock_mvp_tasks_repository_ci_gates -- implemented_by EXTRACTED --> github_workflows_ci_continuous_integration | docs/architecture/pairdock-mvp/tasks.md lines 470-497
+EDGE github_workflows_ci_continuous_integration -- satisfies EXTRACTED --> docs_architecture_pairdock_mvp_test_plan_behavior_test_plan | .github/workflows/ci.yml lines 25-38, 69-79, 96-103, 134-145, 176-187, 239-243, 260-267
+EDGE readme_pairdock_monorepo -- includes EXTRACTED --> apps_web_index_pairdock_web_entrypoint | README.md lines 5-10
+EDGE readme_pairdock_monorepo -- documents EXTRACTED --> readme_pairdock_local_agent_setup | README.md lines 29-158
+EDGE readme_pairdock_local_agent_setup -- implements INFERRED --> docs_architecture_pairdock_mvp_architecture_backend_local_agent_boundary | README.md lines 157-158
+EDGE docs_architecture_pairdock_mvp_prd_pairdock_product -- implemented_by INFERRED --> docs_architecture_pairdock_mvp_architecture_hexagonal_architecture | docs/architecture/pairdock-mvp/architecture.md lines 3-22
+EDGE docs_architecture_pairdock_mvp_prd_pairdock_product -- defines EXTRACTED --> docs_architecture_pairdock_mvp_prd_collaborative_session | docs/architecture/pairdock-mvp/PRD.md lines 3-19
+EDGE docs_architecture_pairdock_mvp_architecture_source_control_port -- enables EXTRACTED --> docs_architecture_pairdock_mvp_prd_collaborative_session | docs/architecture/pairdock-mvp/architecture.md lines 619-622, 708-717
+EDGE docs_architecture_pairdock_mvp_architecture_websocket_contract -- supports INFERRED --> docs_architecture_pairdock_mvp_prd_collaborative_session | docs/architecture/pairdock-mvp/architecture.md lines 517-545
+EDGE docs_architecture_pairdock_mvp_mvp_e2e_full_mvp_flow -- validates EXTRACTED --> docs_architecture_pairdock_mvp_prd_collaborative_session | docs/architecture/pairdock-mvp/mvp-e2e.md lines 7-17
+EDGE docs_architecture_pairdock_mvp_prd_collaborative_session -- requires EXTRACTED --> docs_architecture_pairdock_mvp_prd_session_isolation | docs/architecture/pairdock-mvp/PRD.md lines 14-19, 85-90
+EDGE prototype_pairdock_dc_session_workspace -- illustrates INFERRED --> docs_architecture_pairdock_mvp_prd_collaborative_session | docs/prototypes/pairdock-collaborative-developer-pm.md lines 37-52
+EDGE docs_architecture_pairdock_mvp_prd_session_isolation -- implemented_by INFERRED --> docs_architecture_pairdock_mvp_architecture_backend_local_agent_boundary | docs/architecture/pairdock-mvp/architecture.md lines 13-20, 253-291
+EDGE docs_architecture_pairdock_mvp_architecture_hexagonal_architecture -- establishes EXTRACTED --> docs_architecture_pairdock_mvp_architecture_backend_local_agent_boundary | docs/architecture/pairdock-mvp/architecture.md lines 11-22
+EDGE docs_architecture_pairdock_mvp_tasks_implementation_handoff -- references EXTRACTED --> docs_architecture_pairdock_mvp_architecture_hexagonal_architecture | docs/architecture/pairdock-mvp/tasks.md lines 9-12
+EDGE docs_prototypes_pairdock_collaborative_developer_pm_prototype_product_evidence -- informs EXTRACTED --> docs_architecture_pairdock_mvp_architecture_hexagonal_architecture | docs/prototypes/pairdock-collaborative-developer-pm.md lines 19-20, 35, 44, 51-52
+EDGE docs_architecture_pairdock_mvp_architecture_backend_local_agent_boundary -- uses EXTRACTED --> docs_architecture_pairdock_mvp_architecture_websocket_contract | docs/architecture/pairdock-mvp/architecture.md lines 16-20, 502-545
+EDGE docs_architecture_pairdock_mvp_test_plan_behavior_test_plan -- tests EXTRACTED --> docs_architecture_pairdock_mvp_architecture_websocket_contract | docs/architecture/pairdock-mvp/test-plan.md lines 94-136
+EDGE docs_architecture_pairdock_mvp_architecture_validation_policy -- gates EXTRACTED --> docs_architecture_pairdock_mvp_architecture_source_control_port | docs/architecture/pairdock-mvp/architecture.md lines 695-717
+EDGE docs_architecture_pairdock_mvp_mvp_e2e_full_mvp_flow -- validates EXTRACTED --> docs_architecture_pairdock_mvp_architecture_validation_policy | docs/architecture/pairdock-mvp/mvp-e2e.md lines 13-17
+EDGE docs_architecture_pairdock_mvp_test_plan_behavior_test_plan -- tests EXTRACTED --> docs_architecture_pairdock_mvp_architecture_validation_policy | docs/architecture/pairdock-mvp/test-plan.md lines 248-279, 325-356
+EDGE prototype_pairdock_dc_session_workspace -- illustrates EXTRACTED --> docs_architecture_pairdock_mvp_architecture_validation_policy | prototype/PairDock.dc.html lines 354-360, 538-548
+EDGE docs_architecture_pairdock_mvp_tasks_implementation_handoff -- implements EXTRACTED --> docs_architecture_pairdock_mvp_test_plan_behavior_test_plan | docs/architecture/pairdock-mvp/tasks.md lines 29, 71, 110, 139, 164, 187, 210, 235, 260, 285, 308, 340, 372, 400, 432, 462, 486
+EDGE docs_prototypes_pairdock_collaborative_developer_pm_prototype_product_evidence -- references EXTRACTED --> prototype_pairdock_dc_interactive_prototype | docs/prototypes/pairdock-collaborative-developer-pm.md lines 1-10
+EDGE prototype_pairdock_dc_interactive_prototype -- contains EXTRACTED --> prototype_pairdock_dc_session_workspace | prototype/PairDock.dc.html lines 214-385
+EDGE prototype_readme_prototype_reference -- documents EXTRACTED --> prototype_pairdock_dc_interactive_prototype | prototype/README.md lines 5-20

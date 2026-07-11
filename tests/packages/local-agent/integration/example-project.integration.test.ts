@@ -45,6 +45,7 @@ function buildPrepareCommand(
       sessionId,
       projectKey: 'pairdock',
       branchName,
+      baseBranch: 'main',
       modelId: 'codex-cli/gpt-5.4',
     },
   };

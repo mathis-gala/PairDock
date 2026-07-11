@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import type { Session } from '@pairdock/domain';
+import type { AgentCommandRouterService } from '../../../../../apps/api/src/agent-gateway/agent-command-router.service.js';
 import type { SessionsRepository } from '../../../../../apps/api/src/persistence/ports/sessions.repository.js';
 import { SessionCloseService } from '../../../../../apps/api/src/sessions/session-close.service.js';
 
@@ -41,5 +42,30 @@ test('BT-008: SessionCloseService is idempotent when the session is already CLOS
 
   assert.equal(result.status, 'CLOSED');
   assert.equal(result.closedAt?.toISOString(), '2026-06-28T10:10:00.000Z');
+  assert.equal(updateCalls, 0);
+});
+
+test('V1: SessionCloseService leaves a failed session open when local cleanup fails so close can be retried', async () => {
+  const failedSession = buildSession('FAILED');
+  let updateCalls = 0;
+  const sessionsRepository: SessionsRepository = {
+    create: async () => {
+      throw new Error('not implemented');
+    },
+    findById: async () => failedSession,
+    listByProjectIds: async () => [],
+    updateStatus: async () => {
+      updateCalls += 1;
+      return failedSession;
+    },
+  };
+  const agentCommandRouter = {
+    routeToOwningAgent: async () => {
+      throw new Error('local cleanup failed');
+    },
+  } as unknown as AgentCommandRouterService;
+  const service = new SessionCloseService(sessionsRepository, agentCommandRouter);
+
+  await assert.rejects(() => service.closeSession(failedSession.id), /local cleanup failed/);
   assert.equal(updateCalls, 0);
 });

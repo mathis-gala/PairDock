@@ -53,11 +53,6 @@ classDiagram
     +createDraftReviewRequest(input) Promise~ReviewRequestRef~
   }
 
-  class NotificationPort {
-    <<interface>>
-    +send(input) Promise~NotificationRef~
-  }
-
   class AgentHarnessPort {
     <<interface>>
     +runPrompt(input) AsyncIterable~AgentRunEvent~
@@ -90,7 +85,6 @@ classDiagram
   class GithubDeveloperIdentityAdapter
   class SlackPmIdentityAdapter
   class GithubSourceControlAdapter
-  class SlackNotificationAdapter
   class PrismaSessionRepositoryAdapter
   class PrismaProjectMembershipRepositoryAdapter
   class PrismaUnitOfWorkAdapter
@@ -118,7 +112,6 @@ classDiagram
   DeveloperIdentityPort <|.. GithubDeveloperIdentityAdapter
   PmIdentityPort <|.. SlackPmIdentityAdapter
   SourceControlPort <|.. GithubSourceControlAdapter
-  NotificationPort <|.. SlackNotificationAdapter
   SessionRepositoryPort <|.. PrismaSessionRepositoryAdapter
   ProjectMembershipRepositoryPort <|.. PrismaProjectMembershipRepositoryAdapter
   UnitOfWorkPort <|.. PrismaUnitOfWorkAdapter
@@ -132,4 +125,3 @@ classDiagram
   WorktreeService --> ChecksRunner
   ValidationPolicy --> SourceControlPort
   ReviewRequestService --> SourceControlPort
-  ReviewRequestService --> NotificationPort
