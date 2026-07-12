@@ -45,12 +45,38 @@ CREATE TABLE "projects" (
     "owner_user_id" UUID NOT NULL,
     "github_installation_id" UUID NOT NULL,
     "name" TEXT NOT NULL,
+    "description" TEXT,
     "repo_full_name" TEXT NOT NULL,
     "default_branch" TEXT NOT NULL,
+    "default_model_id" TEXT NOT NULL DEFAULT 'codex-cli/gpt-5.4',
+    "pm_can_start_sessions" BOOLEAN NOT NULL DEFAULT true,
     "agent_project_key" TEXT NOT NULL,
     "created_at" TIMESTAMPTZ(6) NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
     CONSTRAINT "projects_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "project_members" (
+    "id" UUID NOT NULL,
+    "project_id" UUID NOT NULL,
+    "user_id" UUID NOT NULL,
+    "role" TEXT NOT NULL,
+    "created_at" TIMESTAMPTZ(6) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT "project_members_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "project_readiness_snapshots" (
+    "id" UUID NOT NULL,
+    "project_id" UUID NOT NULL,
+    "ok" BOOLEAN NOT NULL,
+    "checks" JSONB NOT NULL DEFAULT '[]',
+    "created_at" TIMESTAMPTZ(6) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updated_at" TIMESTAMPTZ(6) NOT NULL,
+
+    CONSTRAINT "project_readiness_snapshots_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateTable
@@ -105,6 +131,25 @@ CREATE TABLE "agent_events" (
 );
 
 -- CreateTable
+CREATE TABLE "agent_registrations" (
+    "id" UUID NOT NULL,
+    "agent_id" TEXT NOT NULL,
+    "owner_user_id" UUID,
+    "display_name" TEXT,
+    "protocol_version" TEXT NOT NULL,
+    "capabilities" JSONB NOT NULL DEFAULT '[]',
+    "models" JSONB NOT NULL DEFAULT '[]',
+    "projects" JSONB NOT NULL DEFAULT '[]',
+    "connected_at" TIMESTAMPTZ(6) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "last_seen_at" TIMESTAMPTZ(6) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "disconnected_at" TIMESTAMPTZ(6),
+    "created_at" TIMESTAMPTZ(6) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updated_at" TIMESTAMPTZ(6) NOT NULL,
+
+    CONSTRAINT "agent_registrations_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
 CREATE TABLE "validation_runs" (
     "id" UUID NOT NULL,
     "session_id" UUID NOT NULL,
@@ -132,7 +177,7 @@ CREATE TABLE "pull_requests" (
 );
 
 -- CreateIndex
-CREATE UNIQUE INDEX "users_email_key" ON "users"("email");
+CREATE UNIQUE INDEX "users_email_kind_key" ON "users"("email", "kind");
 
 -- CreateIndex
 CREATE INDEX "external_identities_user_id_idx" ON "external_identities"("user_id");
@@ -151,6 +196,21 @@ CREATE INDEX "projects_owner_user_id_idx" ON "projects"("owner_user_id");
 
 -- CreateIndex
 CREATE INDEX "projects_github_installation_id_idx" ON "projects"("github_installation_id");
+
+-- CreateIndex
+CREATE INDEX "project_members_project_id_idx" ON "project_members"("project_id");
+
+-- CreateIndex
+CREATE INDEX "project_members_user_id_idx" ON "project_members"("user_id");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "project_members_project_id_user_id_key" ON "project_members"("project_id", "user_id");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "project_readiness_snapshots_project_id_key" ON "project_readiness_snapshots"("project_id");
+
+-- CreateIndex
+CREATE INDEX "project_readiness_snapshots_project_id_idx" ON "project_readiness_snapshots"("project_id");
 
 -- CreateIndex
 CREATE INDEX "sessions_project_id_idx" ON "sessions"("project_id");
@@ -174,6 +234,15 @@ CREATE INDEX "messages_session_id_idx" ON "messages"("session_id");
 CREATE INDEX "agent_events_session_id_idx" ON "agent_events"("session_id");
 
 -- CreateIndex
+CREATE UNIQUE INDEX "agent_registrations_agent_id_key" ON "agent_registrations"("agent_id");
+
+-- CreateIndex
+CREATE INDEX "agent_registrations_owner_user_id_idx" ON "agent_registrations"("owner_user_id");
+
+-- CreateIndex
+CREATE INDEX "agent_registrations_last_seen_at_idx" ON "agent_registrations"("last_seen_at");
+
+-- CreateIndex
 CREATE INDEX "validation_runs_session_id_idx" ON "validation_runs"("session_id");
 
 -- CreateIndex
@@ -190,6 +259,15 @@ ALTER TABLE "projects" ADD CONSTRAINT "projects_owner_user_id_fkey" FOREIGN KEY 
 
 -- AddForeignKey
 ALTER TABLE "projects" ADD CONSTRAINT "projects_github_installation_id_fkey" FOREIGN KEY ("github_installation_id") REFERENCES "github_installations"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "project_members" ADD CONSTRAINT "project_members_project_id_fkey" FOREIGN KEY ("project_id") REFERENCES "projects"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "project_members" ADD CONSTRAINT "project_members_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "users"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "project_readiness_snapshots" ADD CONSTRAINT "project_readiness_snapshots_project_id_fkey" FOREIGN KEY ("project_id") REFERENCES "projects"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "sessions" ADD CONSTRAINT "sessions_project_id_fkey" FOREIGN KEY ("project_id") REFERENCES "projects"("id") ON DELETE CASCADE ON UPDATE CASCADE;
@@ -211,6 +289,9 @@ ALTER TABLE "messages" ADD CONSTRAINT "messages_user_id_fkey" FOREIGN KEY ("user
 
 -- AddForeignKey
 ALTER TABLE "agent_events" ADD CONSTRAINT "agent_events_session_id_fkey" FOREIGN KEY ("session_id") REFERENCES "sessions"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "agent_registrations" ADD CONSTRAINT "agent_registrations_owner_user_id_fkey" FOREIGN KEY ("owner_user_id") REFERENCES "users"("id") ON DELETE SET NULL ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "validation_runs" ADD CONSTRAINT "validation_runs_session_id_fkey" FOREIGN KEY ("session_id") REFERENCES "sessions"("id") ON DELETE CASCADE ON UPDATE CASCADE;
