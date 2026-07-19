@@ -1,10 +1,94 @@
 import assert from 'node:assert/strict';
 import { spawn } from 'node:child_process';
-import { mkdtemp, readFile } from 'node:fs/promises';
+import { mkdtemp, readFile, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 import test from 'node:test';
 import { normalizeAgentConfig } from '../../../../packages/local-agent/src/config/agent-config.js';
+import { enrichConfigWithCodexModels } from '../../../../packages/local-agent/src/config/codex-model-catalog.js';
+
+test('Codex-backed agent publishes visible cached models and their supported reasoning efforts', async () => {
+  const configDir = await mkdtemp(join(tmpdir(), 'pairdock-codex-models-'));
+  const cachePath = join(configDir, 'models_cache.json');
+  await writeFile(
+    cachePath,
+    JSON.stringify({
+      models: [
+        {
+          slug: 'gpt-5.6-sol',
+          display_name: 'GPT-5.6-Sol',
+          visibility: 'list',
+          default_reasoning_level: 'low',
+          supported_reasoning_levels: [
+            { effort: 'low', description: 'Fast responses' },
+            { effort: 'high', description: 'Deeper reasoning' },
+          ],
+        },
+        {
+          slug: 'gpt-hidden',
+          display_name: 'Hidden',
+          visibility: 'hide',
+          default_reasoning_level: 'medium',
+          supported_reasoning_levels: [{ effort: 'medium', description: 'Balanced' }],
+        },
+      ],
+    }),
+  );
+  const config = normalizeAgentConfig({
+    backendUrl: 'https://pairdock.test',
+    agentId: 'local-agent-1',
+    models: [],
+  });
+
+  const enriched = await enrichConfigWithCodexModels(config, cachePath);
+
+  assert.deepEqual(enriched.models, [
+    {
+      id: 'gpt-5.6-sol',
+      label: 'GPT-5.6-Sol',
+      provider: 'codex',
+      defaultReasoningEffort: 'low',
+      reasoningEfforts: [
+        { id: 'low', label: 'Low', description: 'Fast responses' },
+        { id: 'high', label: 'High', description: 'Deeper reasoning' },
+      ],
+    },
+  ]);
+});
+
+test('Codex-backed agent does not publish a catalog produced by a newer incompatible CLI', async () => {
+  const configDir = await mkdtemp(join(tmpdir(), 'pairdock-codex-model-version-'));
+  const cachePath = join(configDir, 'models_cache.json');
+  await writeFile(
+    cachePath,
+    JSON.stringify({
+      client_version: '0.145.0',
+      models: [
+        {
+          slug: 'gpt-5.6-luna',
+          display_name: 'GPT-5.6-Luna',
+          visibility: 'list',
+          default_reasoning_level: 'low',
+          supported_reasoning_levels: [{ effort: 'low' }],
+        },
+      ],
+    }),
+  );
+  const config = normalizeAgentConfig({
+    backendUrl: 'https://pairdock.test',
+    agentId: 'local-agent-1',
+    models: [{ id: 'gpt-5.5', label: 'GPT-5.5', provider: 'codex' }],
+  });
+  const warnings: string[] = [];
+
+  const enriched = await enrichConfigWithCodexModels(config, cachePath, {
+    installedCodexVersion: '0.143.0',
+    onWarning: (message) => warnings.push(message),
+  });
+
+  assert.deepEqual(enriched.models, config.models);
+  assert.match(warnings[0] ?? '', /codex update/);
+});
 
 test('BT-020: normalizeAgentConfig trims and preserves preview config fields', () => {
   const config = normalizeAgentConfig({

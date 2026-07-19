@@ -1,4 +1,5 @@
 import { type ChildProcess, spawn } from 'node:child_process';
+import { basename } from 'node:path';
 import { setTimeout as delay } from 'node:timers/promises';
 import type {
   AgentHarnessEvent,
@@ -9,6 +10,7 @@ import type {
 
 export class CodexHarnessAdapter implements AgentHarnessPort {
   private readonly activeRuns = new Map<string, ChildProcess>();
+  private readonly codexThreadIds = new Map<string, string>();
 
   constructor(private readonly projectConfigs: Record<string, ProjectAgentHarnessConfig> = {}) {}
 
@@ -18,13 +20,16 @@ export class CodexHarnessAdapter implements AgentHarnessPort {
     }
 
     const projectConfig = this.projectConfigs[input.projectKey] ?? {};
+    const reasoningEffort = input.reasoningEffort ?? 'medium';
     const command = projectConfig.command?.trim() || 'codex';
-    const args = buildCommandArgs(projectConfig, input);
+    const usesCodexJsonProtocol = !projectConfig.args?.length && isCodexCommand(command);
+    const args = buildCommandArgs(projectConfig, input, this.codexThreadIds.get(input.sessionId));
     const childProcess = spawn(command, args, {
       cwd: input.worktreePath,
       env: {
         ...process.env,
         PAIRDOCK_MODEL_ID: input.modelId,
+        PAIRDOCK_REASONING_EFFORT: reasoningEffort,
         PAIRDOCK_PROJECT_KEY: input.projectKey,
         PAIRDOCK_PROMPT: input.prompt,
         PAIRDOCK_SESSION_ID: input.sessionId,
@@ -33,6 +38,7 @@ export class CodexHarnessAdapter implements AgentHarnessPort {
       stdio: ['ignore', 'pipe', 'pipe'],
     });
     const queue = new AgentHarnessEventQueue();
+    let stdoutBuffer = '';
     let settled = false;
 
     this.activeRuns.set(input.sessionId, childProcess);
@@ -59,11 +65,17 @@ export class CodexHarnessAdapter implements AgentHarnessPort {
     };
 
     childProcess.stdout?.on('data', (chunk: Buffer | string) => {
-      queue.push({
-        type: 'output',
-        stream: 'stdout',
-        text: chunk.toString(),
-      });
+      if (!usesCodexJsonProtocol) {
+        queue.push({ type: 'output', stream: 'stdout', text: chunk.toString() });
+        return;
+      }
+
+      stdoutBuffer += chunk.toString();
+      const lines = stdoutBuffer.split('\n');
+      stdoutBuffer = lines.pop() ?? '';
+      for (const line of lines) {
+        this.handleCodexJsonLine(input.sessionId, line, queue);
+      }
     });
     childProcess.stderr?.on('data', (chunk: Buffer | string) => {
       queue.push({
@@ -73,6 +85,9 @@ export class CodexHarnessAdapter implements AgentHarnessPort {
       });
     });
     childProcess.once('close', (code: number | null, signal: NodeJS.Signals | null) => {
+      if (usesCodexJsonProtocol && stdoutBuffer.trim()) {
+        this.handleCodexJsonLine(input.sessionId, stdoutBuffer, queue);
+      }
       finish(normalizeExitCode(code, signal));
     });
     childProcess.once('error', (error: Error) => {
@@ -96,20 +111,106 @@ export class CodexHarnessAdapter implements AgentHarnessPort {
       activeRun.kill('SIGKILL');
     }
   }
+
+  private handleCodexJsonLine(sessionId: string, line: string, queue: AgentHarnessEventQueue): void {
+    const event = parseCodexJsonLine(line);
+
+    if (event.type === 'thread') {
+      this.codexThreadIds.set(sessionId, event.threadId);
+      return;
+    }
+
+    if (event.type === 'message') {
+      queue.push({ type: 'output', stream: 'stdout', text: event.text });
+      return;
+    }
+
+    if (event.type === 'error') {
+      queue.push({ type: 'output', stream: 'stderr', text: `ERROR: ${event.message}` });
+    }
+  }
 }
 
-function buildCommandArgs(projectConfig: ProjectAgentHarnessConfig, input: RunPromptInput): string[] {
+export function buildCommandArgs(
+  projectConfig: ProjectAgentHarnessConfig,
+  input: RunPromptInput,
+  codexThreadId?: string,
+): string[] {
+  const reasoningEffort = input.reasoningEffort ?? 'medium';
+
   if (projectConfig.args?.length) {
     return projectConfig.args.map((arg) =>
       arg
         .replaceAll('{{modelId}}', input.modelId)
+        .replaceAll('{{reasoningEffort}}', reasoningEffort)
         .replaceAll('{{projectKey}}', input.projectKey)
         .replaceAll('{{prompt}}', input.prompt)
         .replaceAll('{{sessionId}}', input.sessionId),
     );
   }
 
-  return ['exec', '--model', input.modelId, input.prompt];
+  if (codexThreadId) {
+    return [
+      'exec',
+      'resume',
+      '--json',
+      '--model',
+      input.modelId,
+      '--config',
+      `model_reasoning_effort="${reasoningEffort}"`,
+      codexThreadId,
+      input.prompt,
+    ];
+  }
+
+  return [
+    'exec',
+    '--json',
+    '--model',
+    input.modelId,
+    '--config',
+    `model_reasoning_effort="${reasoningEffort}"`,
+    input.prompt,
+  ];
+}
+
+export type ParsedCodexJsonLine =
+  | { type: 'thread'; threadId: string }
+  | { type: 'message'; text: string }
+  | { type: 'error'; message: string }
+  | { type: 'ignored' };
+
+export function parseCodexJsonLine(line: string): ParsedCodexJsonLine {
+  try {
+    const event = JSON.parse(line) as Record<string, unknown>;
+
+    if (event.type === 'thread.started' && typeof event.thread_id === 'string') {
+      return { type: 'thread', threadId: event.thread_id };
+    }
+
+    if (event.type === 'item.completed' && isRecord(event.item)) {
+      const item = event.item;
+      if (item.type === 'agent_message' && typeof item.text === 'string' && item.text.trim()) {
+        return { type: 'message', text: item.text.trim() };
+      }
+    }
+
+    if ((event.type === 'error' || event.type === 'turn.failed') && typeof event.message === 'string') {
+      return { type: 'error', message: event.message };
+    }
+  } catch {
+    return { type: 'ignored' };
+  }
+
+  return { type: 'ignored' };
+}
+
+function isCodexCommand(command: string): boolean {
+  return basename(command) === 'codex';
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return value !== null && typeof value === 'object' && !Array.isArray(value);
 }
 
 function normalizeExitCode(code: number | null, signal: NodeJS.Signals | null): number {

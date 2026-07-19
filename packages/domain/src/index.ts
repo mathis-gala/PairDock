@@ -66,6 +66,7 @@ export interface Project {
   repoFullName: string;
   defaultBranch: string;
   defaultModelId: string;
+  defaultReasoningEffort: string;
   pmCanStartSessions: boolean;
   agentProjectKey: string;
   createdAt: Date;
@@ -102,6 +103,7 @@ export interface Session {
   createdByUserId: string;
   status: SessionStatus;
   modelId: string;
+  reasoningEffort: string;
   branchName: string | null;
   worktreeRef: string | null;
   previewUrl: string | null;
@@ -142,7 +144,13 @@ export interface AgentRegistration {
   displayName: string | null;
   protocolVersion: string;
   capabilities: string[];
-  models: Array<{ id: string; label: string; provider: string }>;
+  models: Array<{
+    id: string;
+    label: string;
+    provider: string;
+    reasoningEfforts?: Array<{ id: string; label: string; description?: string }>;
+    defaultReasoningEffort?: string;
+  }>;
   projects: Array<{
     key: string;
     name: string;

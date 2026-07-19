@@ -5,24 +5,32 @@ import { Button } from './button.js';
 interface ProductShellProps {
   accent?: 'developer' | 'pm';
   children: ReactNode;
-  navItems: string[];
   onSignOut: () => void;
+  navItems: Array<{ active: boolean; href: string; label: string }>;
   user: AuthSession['user'];
+  viewLabel: string;
 }
 
-export function ProductShell({ accent = 'developer', children, navItems, onSignOut, user }: ProductShellProps) {
+export function ProductShell({
+  accent = 'developer',
+  children,
+  navItems,
+  onSignOut,
+  user,
+  viewLabel,
+}: ProductShellProps) {
   const color = accent === 'pm' ? '#d3a4ea' : '#5fdf9b';
   const activeBg = accent === 'pm' ? 'bg-[#d3a4ea]/10 text-[#f0e3fa]' : 'bg-[#5fdf9b]/10 text-[#dff7ea]';
   const initial = (user.displayName ?? user.email).slice(0, 1).toUpperCase();
 
   return (
-    <div className="min-h-screen bg-[#14161b] md:flex">
+    <div className="min-h-dvh bg-[#14161b] md:flex">
       <header className="sticky top-0 z-20 flex min-h-14 items-center justify-between border-b border-white/10 bg-[#16181e]/95 px-4 backdrop-blur md:hidden">
         <div className="flex min-w-0 items-center gap-2">
           <PairDockMark color={color} size="mobile" />
           <div className="min-w-0">
             <div className="font-['Space_Grotesk'] text-[15px] font-semibold">PairDock</div>
-            <div className="truncate text-[11px] text-[#6f7686]">{navItems[0]}</div>
+            <div className="truncate text-[11px] text-[#6f7686]">{viewLabel}</div>
           </div>
         </div>
         <div className="flex items-center gap-2">
@@ -40,19 +48,40 @@ export function ProductShell({ accent = 'developer', children, navItems, onSignO
           </Button>
         </div>
       </header>
-      <aside className="hidden w-[228px] flex-none flex-col border-r border-white/10 bg-[#16181e] p-[18px_14px] md:flex">
+      <nav
+        aria-label="Navigation principale"
+        className="flex gap-1 overflow-x-auto border-b border-white/10 bg-[#16181e] px-3 py-2 md:hidden"
+      >
+        {navItems.map((item) => (
+          <a
+            aria-current={item.active ? 'page' : undefined}
+            className={`min-h-10 whitespace-nowrap rounded-[9px] px-3 py-2 text-[13px] transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-current/40 ${
+              item.active ? activeBg : 'text-[#8b92a1] hover:bg-white/5 hover:text-[#eef0f4]'
+            }`}
+            href={item.href}
+            key={item.href}
+          >
+            {item.label}
+          </a>
+        ))}
+      </nav>
+      <aside className="sticky top-0 hidden h-dvh w-[228px] flex-none flex-col self-start overflow-y-auto border-r border-white/10 bg-[#16181e] p-[18px_14px] md:flex">
         <div className="flex items-center gap-2 px-1 pb-5">
           <PairDockMark color={color} />
           <span className="font-['Space_Grotesk'] text-base font-semibold">PairDock</span>
         </div>
-        <nav className="flex flex-col gap-0.5">
-          {navItems.map((item, index) => (
-            <span
-              className={`rounded-[9px] px-3 py-2 text-[13.5px] ${index === 0 ? activeBg : 'text-[#8b92a1]'}`}
-              key={item}
+        <nav aria-label="Navigation principale" className="space-y-1">
+          {navItems.map((item) => (
+            <a
+              aria-current={item.active ? 'page' : undefined}
+              className={`block min-h-10 rounded-[9px] px-3 py-2 text-[13.5px] transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-current/40 ${
+                item.active ? activeBg : 'text-[#8b92a1] hover:bg-white/5 hover:text-[#eef0f4]'
+              }`}
+              href={item.href}
+              key={item.href}
             >
-              {item}
-            </span>
+              {item.label}
+            </a>
           ))}
         </nav>
         <div className="mt-auto border-t border-white/10 pt-3">

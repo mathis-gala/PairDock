@@ -13,12 +13,15 @@ import {
   agentProtocolMessageEventName,
 } from '@pairdock/shared-contracts';
 import { Server, type Socket } from 'socket.io';
+import { ChecksRunner } from '../../../../packages/local-agent/src/checks/checks-runner.js';
 import { WorktreeService } from '../../../../packages/local-agent/src/git/worktree.service.js';
 import type {
   AgentHarnessEvent,
   AgentHarnessPort,
   RunPromptInput,
 } from '../../../../packages/local-agent/src/harness/agent-harness.port.js';
+import { FileSessionWorkspaceStore } from '../../../../packages/local-agent/src/session/file-session-workspace.store.js';
+import { SessionRegistry } from '../../../../packages/local-agent/src/session/session-registry.js';
 import { SessionRunner } from '../../../../packages/local-agent/src/session/session-runner.js';
 import type { PreviewTunnelPort } from '../../../../packages/local-agent/src/tunnel/preview-tunnel.port.js';
 import { AgentClient } from '../../../../packages/local-agent/src/websocket/agent-client.js';
@@ -152,6 +155,10 @@ function waitForAgentEvents(socket: Socket, count: number) {
   return new Promise<AgentEventEnvelope[]>((resolve) => {
     const events: AgentEventEnvelope[] = [];
     const listener = (event: AgentEventEnvelope) => {
+      if (!event.sessionId) {
+        return;
+      }
+
       events.push(event);
       if (events.length === count) {
         socket.off(agentProtocolMessageEventName, listener);
@@ -172,6 +179,7 @@ test('Task 9: AgentClient turns agent.prompt into AGENT_RUNNING, streamed output
   const sessionId = 'a1a1a1a1-a1a1-41a1-81a1-a1a1a1a1a1a1';
   const branchName = 'pairdock/session-a1a1';
   const harnessPort = new RecordingHarnessPort();
+  const checksRunner = new RecordingChecksRunner();
   const client = new AgentClient(
     {
       agentId: 'agent-local-1',
@@ -201,6 +209,7 @@ test('Task 9: AgentClient turns agent.prompt into AGENT_RUNNING, streamed output
         },
       ),
       agentHarnessPort: harnessPort,
+      checksRunner,
     },
   );
 
@@ -212,6 +221,11 @@ test('Task 9: AgentClient turns agent.prompt into AGENT_RUNNING, streamed output
     const prepareEventsPromise = waitForAgentEvents(socket, 5);
     socket.emit(agentProtocolMessageEventName, buildPrepareCommand(sessionId, branchName));
     await prepareEventsPromise;
+    await writeFile(
+      join(managedRoot, sessionId, 'existing-change.txt'),
+      'Already changed before this prompt.\n',
+      'utf8',
+    );
 
     const promptEventsPromise = waitForAgentEvents(socket, 3);
     socket.emit(agentProtocolMessageEventName, buildPromptCommand(sessionId, 'Ship the fix.'));
@@ -224,11 +238,15 @@ test('Task 9: AgentClient turns agent.prompt into AGENT_RUNNING, streamed output
     assert.equal(outputEvent.payload.text, 'stdout:Ship the fix.\n');
     assert.equal(doneEvent.type, 'agent.done');
     assert.equal(doneEvent.payload.exitCode, 0);
+    assert.equal(doneEvent.payload.changesDetected, false);
+    await new Promise<void>((resolve) => setImmediate(resolve));
+    assert.equal(checksRunner.runCount, 0);
     assert.deepEqual(harnessPort.lastInput, {
       sessionId,
       projectKey: 'pairdock',
       prompt: 'Ship the fix.',
       modelId: 'codex-cli/gpt-5.4',
+      reasoningEffort: 'medium',
       worktreePath: join(managedRoot, sessionId),
     });
 
@@ -319,6 +337,73 @@ test('Task 9: AgentClient forwards agent.cancel to the harness and emits the fin
   }
 });
 
+test('AgentClient accepts prompts for a session restored during agent startup', { concurrency: false }, async () => {
+  const repositoryPath = await createTempRepository();
+  const managedRoot = await createManagedWorktreeRoot();
+  const stateRoot = await mkdtemp(join(tmpdir(), 'pairdock-session-state-'));
+  const statePath = join(stateRoot, 'sessions.json');
+  const { backendUrl, io, socketPromise } = await createAgentServer();
+  const sessionId = 'b3b3b3b3-b3b3-43b3-83b3-b3b3b3b3b3b3';
+  const branchName = 'pairdock/session-b3b3';
+  const firstRunner = new SessionRunner(
+    { projectPaths: { pairdock: repositoryPath } },
+    {
+      sessionRegistry: new SessionRegistry(new FileSessionWorkspaceStore(statePath)),
+      worktreeService: new WorktreeService(managedRoot),
+      sandboxPort: new ReadySandboxPort(),
+      previewTunnelPort: new ReadyPreviewTunnelPort(),
+    },
+  );
+  await firstRunner.prepare(buildPrepareCommand(sessionId, branchName));
+  const restartedRunner = new SessionRunner(
+    { projectPaths: { pairdock: repositoryPath } },
+    {
+      sessionRegistry: new SessionRegistry(new FileSessionWorkspaceStore(statePath)),
+      worktreeService: new WorktreeService(managedRoot),
+      sandboxPort: new ReadySandboxPort(),
+      previewTunnelPort: new ReadyPreviewTunnelPort(),
+    },
+  );
+  const client = new AgentClient(
+    {
+      agentId: 'agent-local-1',
+      authToken: 'secret-token',
+      backendUrl,
+      capabilities: ['session.close', 'agent.prompt'],
+      projectPaths: { pairdock: repositoryPath },
+    },
+    { error() {}, info() {}, warn() {} },
+    {
+      sessionRunner: restartedRunner,
+      agentHarnessPort: new RecordingHarnessPort(),
+    },
+  );
+
+  try {
+    await client.start();
+    const socket = await socketPromise;
+    await waitForAgentEvent(socket, 'agent.connected');
+
+    const eventsPromise = waitForAgentEvents(socket, 3);
+    socket.emit(agentProtocolMessageEventName, buildPromptCommand(sessionId, 'Continue after restart.'));
+    const [runningEvent, outputEvent, doneEvent] = await eventsPromise;
+
+    assert.equal(runningEvent.type, 'session.progress');
+    assert.equal(runningEvent.payload.status, 'AGENT_RUNNING');
+    assert.equal(outputEvent.type, 'agent.output');
+    assert.equal(outputEvent.payload.text, 'stdout:Continue after restart.\n');
+    assert.equal(doneEvent.type, 'agent.done');
+
+    socket.emit(agentProtocolMessageEventName, buildCloseCommand(sessionId));
+    await waitForAgentEvent(socket, 'session.closed');
+  } finally {
+    await client.stop();
+    await new Promise<void>((resolve) => {
+      io.close(() => resolve());
+    });
+  }
+});
+
 test('BT-021: AgentClient emits a masked git.diff after prompt execution when sensitive files changed', {
   concurrency: false,
 }, async () => {
@@ -385,6 +470,7 @@ test('BT-021: AgentClient emits a masked git.diff after prompt execution when se
     assert.doesNotMatch(outputEvent.payload.text, /super-secret-token/);
     assert.equal(doneEvent.type, 'agent.done');
     assert.equal(doneEvent.payload.exitCode, 0);
+    assert.equal(doneEvent.payload.changesDetected, true);
     assert.equal(diffEvent.type, 'git.diff');
     assert.deepEqual(diffEvent.payload.changedFiles, ['README.md', '.env']);
     assert.match(diffEvent.payload.diff, /Updated README/);
@@ -418,6 +504,15 @@ class RecordingHarnessPort implements AgentHarnessPort {
   }
 
   async cancel(): Promise<void> {}
+}
+
+class RecordingChecksRunner extends ChecksRunner {
+  runCount = 0;
+
+  override async run(input: Parameters<ChecksRunner['run']>[0]) {
+    this.runCount += 1;
+    return super.run(input);
+  }
 }
 
 class CancellableHarnessPort implements AgentHarnessPort {

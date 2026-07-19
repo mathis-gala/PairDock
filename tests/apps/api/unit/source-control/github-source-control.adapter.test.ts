@@ -74,8 +74,21 @@ test('GithubSourceControlAdapter verifies repository access through GitHub repo 
   assert.equal(capturedInit?.method, 'GET');
 });
 
+test('GithubSourceControlAdapter never reports repository access without production credentials', async () => {
+  const adapter = new GithubSourceControlAdapter({ apiBaseUrl: 'https://api.github.test' });
+
+  await assert.rejects(
+    adapter.assertProjectAccess({
+      ownerUserId: '10000000-0000-4000-8000-000000000001',
+      repoFullName: 'mathis-gala/Booster-Break',
+    }),
+    /GitHub credentials are required to verify repository access/,
+  );
+});
+
 test('GithubSourceControlAdapter exposes TCG Collection repository for local dev fixture installations', async () => {
   const adapter = new GithubSourceControlAdapter({
+    allowFixtures: true,
     apiBaseUrl: 'https://api.github.test',
   });
 

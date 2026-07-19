@@ -212,6 +212,18 @@ test('BT-025: ValidationModule persists checks.result and exposes the latest fai
       previewStatus: 'passed',
     });
     assert.match(sessionPayload.lastError ?? '', /lint/i);
+    assert.match(sessionPayload.lastError ?? '', /Lint failed on src\/app\.ts/i);
+
+    await emitAgentEvent(agentSocket, buildSessionEvent(session.id, 'session.progress', { status: 'AGENT_RUNNING' }));
+    await emitAgentEvent(
+      agentSocket,
+      buildSessionEvent(session.id, 'agent.done', { exitCode: 0, changesDetected: false }),
+    );
+
+    const resumedSession = await prisma.session.findUnique({ where: { id: session.id } });
+    const validationCount = await prisma.validationRun.count({ where: { sessionId: session.id } });
+    assert.equal(resumedSession?.status, 'FAILED');
+    assert.equal(validationCount, 1);
   } finally {
     agentSocket.close();
   }
@@ -264,6 +276,17 @@ test('Task 11: successful checks move the session into AWAITING_PM_VALIDATION', 
       lintStatus: 'passed',
       previewStatus: 'passed',
     });
+
+    await emitAgentEvent(agentSocket, buildSessionEvent(session.id, 'session.progress', { status: 'AGENT_RUNNING' }));
+    await emitAgentEvent(
+      agentSocket,
+      buildSessionEvent(session.id, 'agent.done', { exitCode: 0, changesDetected: false }),
+    );
+
+    const resumedSession = await prisma.session.findUnique({ where: { id: session.id } });
+    const validationCount = await prisma.validationRun.count({ where: { sessionId: session.id } });
+    assert.equal(resumedSession?.status, 'AWAITING_PM_VALIDATION');
+    assert.equal(validationCount, 1);
   } finally {
     agentSocket.close();
   }

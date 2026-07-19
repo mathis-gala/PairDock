@@ -59,16 +59,46 @@ export class WorktreeService {
     }
   }
 
-  async pushBranch(input: PreparedWorktree): Promise<string> {
+  async validatePrepared(input: PreparedWorktree, configuredRepositoryPath: string): Promise<void> {
+    const normalizedRepositoryPath = await this.requireGitRepository(configuredRepositoryPath);
+    const persistedRepositoryPath = await realpath(input.repositoryPath);
+
+    if (persistedRepositoryPath !== normalizedRepositoryPath) {
+      throw new Error('Persisted workspace does not belong to the configured repository.');
+    }
+
+    this.assertNotMainRepository(normalizedRepositoryPath, input.worktreePath);
+
+    let normalizedWorktreePath: string;
+    try {
+      normalizedWorktreePath = await realpath(input.worktreePath);
+    } catch {
+      throw new Error(`Persisted Git worktree is missing: ${input.worktreePath}.`);
+    }
+
+    const gitRoot = await execGit(normalizedWorktreePath, ['rev-parse', '--show-toplevel']);
+    if ((await realpath(gitRoot)) !== normalizedWorktreePath) {
+      throw new Error(`Persisted Git worktree is invalid: ${input.worktreePath}.`);
+    }
+
+    const branchName = await execGit(normalizedWorktreePath, ['branch', '--show-current']);
+    if (branchName !== input.branchName) {
+      throw new Error(
+        `Persisted Git worktree branch changed from ${input.branchName} to ${branchName || 'detached HEAD'}.`,
+      );
+    }
+  }
+
+  async pushBranch(input: PreparedWorktree, commitMessage: string): Promise<string> {
     const normalizedRepositoryPath = await this.requireGitRepository(input.repositoryPath);
 
     this.assertNotMainRepository(normalizedRepositoryPath, input.worktreePath);
-    await this.commitChanges(input);
+    await this.commitChanges(input, commitMessage);
     await execGit(input.worktreePath, ['push', '--set-upstream', 'origin', input.branchName]);
     return input.branchName;
   }
 
-  private async commitChanges(input: PreparedWorktree): Promise<void> {
+  private async commitChanges(input: PreparedWorktree, commitMessage: string): Promise<void> {
     await execGit(input.worktreePath, ['add', '--all']);
     const stagedFiles = (await execGit(input.worktreePath, ['diff', '--cached', '--name-only', '-z']))
       .split('\0')
@@ -91,7 +121,7 @@ export class WorktreeService {
       'user.email=pairdock@localhost',
       'commit',
       '-m',
-      `PairDock session ${input.branchName}`,
+      commitMessage,
     ]);
   }
 

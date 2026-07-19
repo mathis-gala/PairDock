@@ -17,6 +17,7 @@
     "prisma:generate": "bun run --filter @pairdock/api prisma:generate",
     "db:migrate": "bun run --filter @pairdock/api db:migrate",
     "db:migrate:dev": "bun run --filter @pairdock/api db:migrate:dev",
+    "db:migrate:test": "bun run --filter @pairdock/api db:migrate:test",
     "db:reset": "bun run --filter @pairdock/api db:reset",
     "db:status": "bun run --filter @pairdock/api db:status",
     "dev:web": "bun run --filter @pairdock/web dev",

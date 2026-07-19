@@ -112,9 +112,37 @@ function parseModels(value: unknown): AgentRegistration['models'] {
       return [];
     }
 
-    return typeof item.id === 'string' && typeof item.label === 'string' && typeof item.provider === 'string'
-      ? [{ id: item.id, label: item.label, provider: item.provider }]
-      : [];
+    if (typeof item.id !== 'string' || typeof item.label !== 'string' || typeof item.provider !== 'string') {
+      return [];
+    }
+
+    const reasoningEfforts = Array.isArray(item.reasoningEfforts)
+      ? item.reasoningEfforts.flatMap((effort) => {
+          if (!isRecord(effort) || typeof effort.id !== 'string' || typeof effort.label !== 'string') {
+            return [];
+          }
+
+          return [
+            {
+              id: effort.id,
+              label: effort.label,
+              ...(typeof effort.description === 'string' ? { description: effort.description } : {}),
+            },
+          ];
+        })
+      : undefined;
+
+    return [
+      {
+        id: item.id,
+        label: item.label,
+        provider: item.provider,
+        ...(reasoningEfforts ? { reasoningEfforts } : {}),
+        ...(typeof item.defaultReasoningEffort === 'string'
+          ? { defaultReasoningEffort: item.defaultReasoningEffort }
+          : {}),
+      },
+    ];
   });
 }
 

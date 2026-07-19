@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { mkdtemp } from 'node:fs/promises';
+import { mkdtemp, readFile, writeFile } from 'node:fs/promises';
 import { createServer } from 'node:http';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
@@ -58,4 +58,38 @@ test('Task 11: ChecksRunner executes configured build, test, lint, and preview v
   } finally {
     await previewServer.close();
   }
+});
+
+test('ChecksRunner retries once when Bun fails to extract a dependency tarball', async () => {
+  const worktreePath = await mkdtemp(join(tmpdir(), 'pairdock-checks-retry-'));
+  const attemptFile = join(worktreePath, 'attempt.txt');
+  await writeFile(
+    join(worktreePath, 'transient-build.cjs'),
+    `const fs = require('node:fs');
+const attemptFile = 'attempt.txt';
+const attempt = fs.existsSync(attemptFile) ? Number(fs.readFileSync(attemptFile, 'utf8')) + 1 : 1;
+fs.writeFileSync(attemptFile, String(attempt));
+if (attempt === 1) {
+  console.error('error: Fail extracting tarball for "@prisma/client"');
+  process.exit(1);
+}
+console.log('build ok');
+`,
+    'utf8',
+  );
+  const runner = new ChecksRunner({
+    pairdock: {
+      build: 'node transient-build.cjs',
+    },
+  });
+
+  const result = await runner.run({
+    projectKey: 'pairdock',
+    previewUrl: null,
+    worktreePath,
+  });
+
+  assert.equal(result.build.status, 'passed');
+  assert.match(result.build.logs ?? '', /Retry 1\/1 after a transient package extraction failure/);
+  assert.equal(await readFile(attemptFile, 'utf8'), '2');
 });

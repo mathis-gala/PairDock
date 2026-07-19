@@ -45,6 +45,7 @@ function buildFixture(overrides: { validation?: Partial<ValidationRun>; session?
     repoFullName: 'mathis/pairdock-test',
     defaultBranch: 'main',
     defaultModelId: 'codex-cli/gpt-5.4',
+    defaultReasoningEffort: 'medium',
     pmCanStartSessions: true,
     agentProjectKey: 'agent-local-1',
     createdAt: new Date('2026-07-04T10:00:00.000Z'),
@@ -55,6 +56,7 @@ function buildFixture(overrides: { validation?: Partial<ValidationRun>; session?
     createdByUserId: developer.id,
     status: 'AWAITING_PM_VALIDATION',
     modelId: 'codex-cli/gpt-5.4',
+    reasoningEffort: 'medium',
     branchName: 'pairdock/session-30000000',
     worktreeRef: null,
     previewUrl: 'https://preview.pairdock.test',
@@ -108,7 +110,15 @@ test('BT-030: failed validation blocks draft review request creation before push
     },
   });
 
-  await assert.rejects(() => useCase.create(sessionId, pm), /Test validation must pass/);
+  await assert.rejects(
+    () =>
+      useCase.create(sessionId, pm, {
+        type: 'fix',
+        title: 'Fix validation',
+        description: 'Fixes validation.',
+      }),
+    /Test validation must pass/,
+  );
 
   assert.deepEqual(router.commands, []);
   assert.deepEqual(sourceControl.requests, []);
@@ -118,7 +128,11 @@ test('BT-030: failed validation blocks draft review request creation before push
 test('BT-031 and BT-032: branch push is requested before draft review request creation and persisted', async () => {
   const { repositories, router, sessionId, sourceControl, useCase } = buildFixture();
 
-  const response = await useCase.create(sessionId, pm);
+  const response = await useCase.create(sessionId, pm, {
+    type: 'feat',
+    title: 'Create the review request',
+    description: 'Creates the requested draft review request.',
+  });
 
   assert.deepEqual(
     router.commands.map((command) => command.type),
@@ -140,6 +154,40 @@ test('BT-031 and BT-032: branch push is requested before draft review request cr
     'https://github.test/mathis/pairdock-test/pull/42',
   );
   assert.equal(repositories.currentSession.status, 'REVIEW_REQUEST_CREATED');
+});
+
+test('PM review metadata controls the draft PR and produces a safe conventional commit message', async () => {
+  const { router, sessionId, sourceControl, useCase } = buildFixture();
+
+  await useCase.create(sessionId, pm, {
+    type: 'feat',
+    title: 'Nouvelle Édition: UX++',
+    description: 'Décrit précisément le changement demandé par le PM.',
+  });
+
+  assert.equal(router.commands[0]?.type, 'git.pushBranch');
+  assert.deepEqual(router.commands[0]?.payload, {
+    sessionId,
+    commitMessage: 'feat: nouvelle edition ux',
+  });
+  assert.equal(sourceControl.requests[0]?.title, 'Nouvelle Édition: UX++');
+  assert.equal(sourceControl.requests[0]?.body, 'Décrit précisément le changement demandé par le PM.');
+});
+
+test('style review requests use the style conventional commit prefix', async () => {
+  const { router, sessionId, useCase } = buildFixture();
+
+  await useCase.create(sessionId, pm, {
+    type: 'style',
+    title: 'Améliorer les Espacements !',
+    description: 'Ajuste uniquement la présentation visuelle.',
+  });
+
+  assert.equal(router.commands[0]?.type, 'git.pushBranch');
+  assert.deepEqual(router.commands[0]?.payload, {
+    sessionId,
+    commitMessage: 'style: ameliorer les espacements',
+  });
 });
 
 class RecordingAgentCommandRouter {
@@ -221,6 +269,7 @@ class InMemoryRepositories {
       listByAgentProjectKey: async () => [project],
       listOwnedByUserId: async () => [],
       listSharedByUserId: async () => [],
+      updateExecutionDefaults: async () => project,
     };
     this.validationRuns = {
       create: async () => validation,

@@ -14,6 +14,8 @@ import {
 import { HealthcheckService } from '../../../../packages/local-agent/src/docker/healthcheck.service.js';
 import type { SandboxPort, SandboxRef } from '../../../../packages/local-agent/src/docker/sandbox.port.js';
 import { WorktreeService } from '../../../../packages/local-agent/src/git/worktree.service.js';
+import { FileSessionWorkspaceStore } from '../../../../packages/local-agent/src/session/file-session-workspace.store.js';
+import { SessionRegistry } from '../../../../packages/local-agent/src/session/session-registry.js';
 import { SessionRunner } from '../../../../packages/local-agent/src/session/session-runner.js';
 import type { PreviewTunnelPort } from '../../../../packages/local-agent/src/tunnel/preview-tunnel.port.js';
 
@@ -74,7 +76,7 @@ function buildPushCommand(sessionId: string): GitPushBranchCommandEnvelope {
     sessionId,
     sentAt: new Date().toISOString(),
     type: 'git.pushBranch',
-    payload: { sessionId },
+    payload: { sessionId, commitMessage: 'feat: pairdock session changes' },
   };
 }
 
@@ -254,6 +256,210 @@ test('BT-016: SessionRunner.prepare returns a preview URL after the sandbox pass
   assert.equal(runner.findWorkspace(sessionId)?.previewUrl, 'https://preview.pairdock.test');
 });
 
+test('SessionRunner restores a prepared workspace after an agent restart', async () => {
+  const repositoryPath = await createTempRepository();
+  const managedRoot = await createManagedWorktreeRoot();
+  const stateRoot = await mkdtemp(join(tmpdir(), 'pairdock-session-state-'));
+  const statePath = join(stateRoot, 'sessions.json');
+  const store = new FileSessionWorkspaceStore(statePath);
+  const sessionId = '67676767-6767-4767-8767-676767676767';
+  const command = buildPrepareCommand({
+    sessionId,
+    payload: {
+      sessionId,
+      projectKey: 'pairdock',
+      branchName: 'pairdock/session-6767',
+      baseBranch: 'main',
+      modelId: 'codex-cli/gpt-5.4',
+    },
+  });
+  const firstSandbox = new FakeSandboxPort();
+  const firstRunner = new SessionRunner(
+    { projectPaths: { pairdock: repositoryPath } },
+    {
+      sessionRegistry: new SessionRegistry(store),
+      worktreeService: new WorktreeService(managedRoot),
+      sandboxPort: firstSandbox,
+      previewTunnelPort: new FakePreviewTunnelPort(),
+    },
+  );
+  const preparedWorkspace = await firstRunner.prepare(command);
+
+  const restoredSandbox = new FakeSandboxPort();
+  const restoredTunnel = new FakePreviewTunnelPort();
+  const restartedRunner = new SessionRunner(
+    { projectPaths: { pairdock: repositoryPath } },
+    {
+      sessionRegistry: new SessionRegistry(new FileSessionWorkspaceStore(statePath)),
+      worktreeService: new WorktreeService(managedRoot),
+      sandboxPort: restoredSandbox,
+      previewTunnelPort: restoredTunnel,
+    },
+  );
+
+  const recovery = await restartedRunner.restore();
+
+  assert.deepEqual(recovery.failures, []);
+  assert.deepEqual(recovery.recoveredSessionIds, [sessionId]);
+  assert.deepEqual(restartedRunner.findWorkspace(sessionId), preparedWorkspace);
+  assert.equal(restoredSandbox.startCalls.length, 0);
+  assert.equal(restoredSandbox.checkCalls.length, 1);
+  assert.equal(restoredTunnel.openCalls.length, 0);
+});
+
+test('SessionRunner keeps an unavailable workspace persisted but does not expose it to prompts', async () => {
+  const repositoryPath = await createTempRepository();
+  const managedRoot = await createManagedWorktreeRoot();
+  const stateRoot = await mkdtemp(join(tmpdir(), 'pairdock-session-state-'));
+  const statePath = join(stateRoot, 'sessions.json');
+  const sessionId = '68686868-6868-4868-8868-686868686868';
+  const command = buildPrepareCommand({
+    sessionId,
+    payload: {
+      sessionId,
+      projectKey: 'pairdock',
+      branchName: 'pairdock/session-6868',
+      baseBranch: 'main',
+      modelId: 'codex-cli/gpt-5.4',
+    },
+  });
+  const store = new FileSessionWorkspaceStore(statePath);
+  const firstRunner = new SessionRunner(
+    { projectPaths: { pairdock: repositoryPath } },
+    {
+      sessionRegistry: new SessionRegistry(store),
+      worktreeService: new WorktreeService(managedRoot),
+      sandboxPort: new FakeSandboxPort(),
+      previewTunnelPort: new FakePreviewTunnelPort(),
+    },
+  );
+  await firstRunner.prepare(command);
+
+  const unavailableRunner = new SessionRunner(
+    { projectPaths: { pairdock: repositoryPath } },
+    {
+      sessionRegistry: new SessionRegistry(new FileSessionWorkspaceStore(statePath)),
+      worktreeService: new WorktreeService(managedRoot),
+      sandboxPort: new UnavailableSandboxPort(),
+      previewTunnelPort: new FakePreviewTunnelPort(),
+    },
+  );
+  const failedRecovery = await unavailableRunner.restore();
+
+  assert.deepEqual(failedRecovery.recoveredSessionIds, []);
+  assert.match(failedRecovery.failures[0]?.message ?? '', /preview unavailable/);
+  assert.equal(unavailableRunner.findWorkspace(sessionId), null);
+  await assert.rejects(() => unavailableRunner.prepare(command), /could not be recovered/i);
+
+  const recoveredRunner = new SessionRunner(
+    { projectPaths: { pairdock: repositoryPath } },
+    {
+      sessionRegistry: new SessionRegistry(new FileSessionWorkspaceStore(statePath)),
+      worktreeService: new WorktreeService(managedRoot),
+      sandboxPort: new FakeSandboxPort(),
+      previewTunnelPort: new FakePreviewTunnelPort(),
+    },
+  );
+  assert.deepEqual((await recoveredRunner.restore()).recoveredSessionIds, [sessionId]);
+  assert.deepEqual(await recoveredRunner.close(buildCloseCommand(sessionId)), { cleaned: true });
+  assert.deepEqual(await store.load(), []);
+});
+
+test('SessionRunner refuses to recover a persisted workspace whose Git worktree disappeared', async () => {
+  const repositoryPath = await createTempRepository();
+  const managedRoot = await createManagedWorktreeRoot();
+  const worktreeService = new WorktreeService(managedRoot);
+  const stateRoot = await mkdtemp(join(tmpdir(), 'pairdock-session-state-'));
+  const statePath = join(stateRoot, 'sessions.json');
+  const store = new FileSessionWorkspaceStore(statePath);
+  const sessionId = '69696969-6969-4969-8969-696969696969';
+  const command = buildPrepareCommand({
+    sessionId,
+    payload: {
+      sessionId,
+      projectKey: 'pairdock',
+      branchName: 'pairdock/session-6969',
+      baseBranch: 'main',
+      modelId: 'codex-cli/gpt-5.4',
+    },
+  });
+  const firstRunner = new SessionRunner(
+    { projectPaths: { pairdock: repositoryPath } },
+    {
+      sessionRegistry: new SessionRegistry(store),
+      worktreeService,
+      sandboxPort: new FakeSandboxPort(),
+      previewTunnelPort: new FakePreviewTunnelPort(),
+    },
+  );
+  const workspace = await firstRunner.prepare(command);
+  await worktreeService.cleanup(workspace, 'keep-branch');
+
+  const restartedRunner = new SessionRunner(
+    { projectPaths: { pairdock: repositoryPath } },
+    {
+      sessionRegistry: new SessionRegistry(new FileSessionWorkspaceStore(statePath)),
+      worktreeService,
+      sandboxPort: new FakeSandboxPort(),
+      previewTunnelPort: new FakePreviewTunnelPort(),
+    },
+  );
+
+  const recovery = await restartedRunner.restore();
+
+  assert.deepEqual(recovery.recoveredSessionIds, []);
+  assert.match(recovery.failures[0]?.message ?? '', /worktree/i);
+  assert.equal(restartedRunner.findWorkspace(sessionId), null);
+  assert.deepEqual(await restartedRunner.close(buildCloseCommand(sessionId)), { cleaned: true });
+  assert.deepEqual(await store.load(), []);
+});
+
+test('SessionRunner keeps a suspended workspace inactive when cleanup must be retried', async () => {
+  const repositoryPath = await createTempRepository();
+  const managedRoot = await createManagedWorktreeRoot();
+  const stateRoot = await mkdtemp(join(tmpdir(), 'pairdock-session-state-'));
+  const statePath = join(stateRoot, 'sessions.json');
+  const sessionId = '70707070-7070-4070-8070-707070707070';
+  const command = buildPrepareCommand({
+    sessionId,
+    payload: {
+      sessionId,
+      projectKey: 'pairdock',
+      branchName: 'pairdock/session-7070',
+      baseBranch: 'main',
+      modelId: 'codex-cli/gpt-5.4',
+    },
+  });
+  const firstRunner = new SessionRunner(
+    { projectPaths: { pairdock: repositoryPath } },
+    {
+      sessionRegistry: new SessionRegistry(new FileSessionWorkspaceStore(statePath)),
+      worktreeService: new WorktreeService(managedRoot),
+      sandboxPort: new FakeSandboxPort(),
+      previewTunnelPort: new FakePreviewTunnelPort(),
+    },
+  );
+  await firstRunner.prepare(command);
+
+  const failingTunnel = new FailingClosePreviewTunnelPort();
+  const restartedRunner = new SessionRunner(
+    { projectPaths: { pairdock: repositoryPath } },
+    {
+      sessionRegistry: new SessionRegistry(new FileSessionWorkspaceStore(statePath)),
+      worktreeService: new WorktreeService(managedRoot),
+      sandboxPort: new UnavailableSandboxPort(),
+      previewTunnelPort: failingTunnel,
+    },
+  );
+  assert.equal((await restartedRunner.restore()).failures.length, 1);
+
+  await assert.rejects(() => restartedRunner.close(buildCloseCommand(sessionId)), /tunnel close failed/);
+  assert.equal(restartedRunner.findWorkspace(sessionId), null);
+
+  failingTunnel.shouldFailClose = false;
+  assert.deepEqual(await restartedRunner.close(buildCloseCommand(sessionId)), { cleaned: true });
+});
+
 test('V1: WorktreeService refuses to push sensitive generated files', async () => {
   const repositoryPath = await createTempRepository();
   const remotePath = await mkdtemp(join(tmpdir(), 'pairdock-remote-'));
@@ -264,7 +470,10 @@ test('V1: WorktreeService refuses to push sensitive generated files', async () =
   const workspace = await worktreeService.prepare(buildPrepareCommand(), repositoryPath);
   await writeFile(join(workspace.worktreePath, '.env'), 'SECRET=do-not-commit');
 
-  await assert.rejects(() => worktreeService.pushBranch(workspace), /Refusing to commit sensitive files: \.env/);
+  await assert.rejects(
+    () => worktreeService.pushBranch(workspace, 'fix: block sensitive files'),
+    /Refusing to commit sensitive files: \.env/,
+  );
   await assert.rejects(() => execGit(remotePath, ['rev-parse', '--verify', `refs/heads/${workspace.branchName}`]));
 });
 
@@ -394,7 +603,7 @@ class BlockingPushWorktreeService extends WorktreeService {
     this.resolvePushRelease = resolve;
   });
 
-  override async pushBranch(input: { branchName: string }): Promise<string> {
+  override async pushBranch(input: { branchName: string }, _commitMessage: string): Promise<string> {
     this.resolvePushStarted();
     await this.pushRelease;
     return input.branchName;
@@ -436,6 +645,17 @@ class FakeSandboxPort implements SandboxPort {
     return {
       ready: true,
       url: ref.healthcheckUrl,
+    };
+  }
+}
+
+class UnavailableSandboxPort extends FakeSandboxPort {
+  override async check(ref: SandboxRef) {
+    this.checkCalls.push(ref);
+    return {
+      ready: false,
+      url: ref.healthcheckUrl,
+      message: 'preview unavailable',
     };
   }
 }

@@ -1,11 +1,15 @@
 import type { Session, SessionStatus } from '@pairdock/domain';
 
 type ProgressStatus = Exclude<SessionStatus, 'CREATED' | 'READY' | 'CLOSING' | 'CLOSED' | 'FAILED'>;
+type NoChangesResumeStatus = Extract<SessionStatus, 'READY' | 'AWAITING_PM_VALIDATION' | 'FAILED'>;
 
 export type SessionAgentEvent =
   | { type: 'session.progress'; payload: { status: ProgressStatus; message?: string } }
   | { type: 'session.ready'; payload: { previewUrl: string } }
-  | { type: 'agent.done'; payload: { exitCode: number } }
+  | {
+      type: 'agent.done';
+      payload: { exitCode: number; changesDetected?: boolean; resumeStatus?: NoChangesResumeStatus };
+    }
   | { type: 'session.closed'; payload: { cleaned: boolean } }
   | { type: 'error'; payload: { message: string; retryable: boolean } };
 
@@ -24,7 +28,8 @@ const allowedProgressTransitions = new Map<Session['status'], SessionStatus[]>([
   ['READY', ['AGENT_RUNNING']],
   ['AGENT_RUNNING', ['CHECKS_RUNNING']],
   ['CHECKS_RUNNING', ['AWAITING_PM_VALIDATION']],
-  ['AWAITING_PM_VALIDATION', ['REVIEW_REQUEST_CREATING']],
+  ['AWAITING_PM_VALIDATION', ['AGENT_RUNNING', 'REVIEW_REQUEST_CREATING']],
+  ['FAILED', ['AGENT_RUNNING']],
   ['REVIEW_REQUEST_CREATING', ['REVIEW_REQUEST_CREATED']],
 ]);
 
@@ -43,6 +48,23 @@ export class SessionStateMachine {
         };
       case 'agent.done':
         if (event.payload.exitCode === 0) {
+          if (event.payload.changesDetected === false) {
+            if (session.status !== 'AGENT_RUNNING') {
+              throw new InvalidSessionTransitionError(
+                `Cannot resume a session without changes from ${session.status}.`,
+              );
+            }
+
+            return {
+              ...session,
+              status: event.payload.resumeStatus ?? 'READY',
+              lastError:
+                event.payload.resumeStatus === 'FAILED'
+                  ? 'The latest validation remains failed because this prompt made no file changes.'
+                  : null,
+            };
+          }
+
           this.assertTransition(session.status, 'CHECKS_RUNNING');
           return {
             ...session,

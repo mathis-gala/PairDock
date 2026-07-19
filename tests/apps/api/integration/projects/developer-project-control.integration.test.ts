@@ -49,11 +49,13 @@ async function startApplication() {
   baseUrl = `http://127.0.0.1:${address.port}`;
 }
 
-async function authenticateDeveloper(tokenSeed = randomUUID(), email = `dev-${tokenSeed}@pairdock.test`) {
+async function authenticateDeveloper(tokenSeed: string = randomUUID(), email = `dev-${tokenSeed}@pairdock.test`) {
   const response = await fetch(`${baseUrl}/auth/developer/callback`, {
     method: 'POST',
     headers: { 'content-type': 'application/json' },
-    body: JSON.stringify({ accessToken: `github:${tokenSeed}:${email}:Dev ${tokenSeed}` }),
+    body: JSON.stringify({
+      accessToken: `github:${tokenSeed}:${email}:Dev ${tokenSeed}:installation:test-gh-install-dev-control`,
+    }),
   });
 
   return {
@@ -95,7 +97,7 @@ test.beforeEach(async () => {
 
 test('BT-028/BT-029/BT-049: developer creates a project, shares it, starts a modeled session, and closes it', async () => {
   const sharedEmail = `cross-role-${randomUUID()}@pairdock.test`;
-  const developerLogin = await authenticateDeveloper(randomUUID(), sharedEmail);
+  const developerLogin = await authenticateDeveloper('mathis', sharedEmail);
   const pmLogin = await authenticatePm(randomUUID(), 'pairdock-testers', sharedEmail);
 
   assert.equal(developerLogin.status >= 200 && developerLogin.status < 300, true);
@@ -114,12 +116,9 @@ test('BT-028/BT-029/BT-049: developer creates a project, shares it, starts a mod
       repoFullName: 'mathis-gala/PairDock',
       defaultBranch: 'main',
       defaultModelId: 'agent-model/gpt-5',
+      defaultReasoningEffort: 'low',
       agentProjectKey: 'local-dev-control',
       pmCanStartSessions: true,
-      sourceControl: {
-        providerConnectionId: 'test-gh-install-dev-control',
-        accountLogin: 'mathis',
-      },
     }),
   });
 
@@ -127,8 +126,10 @@ test('BT-028/BT-029/BT-049: developer creates a project, shares it, starts a mod
   const createdProject = await parseJsonResponse(createProjectResponse, developerProjectResponseSchema);
   assert.equal(createdProject.name, 'Developer control project');
   assert.equal(createdProject.defaultModelId, 'agent-model/gpt-5');
+  assert.equal(createdProject.defaultReasoningEffort, 'low');
   assert.equal(createdProject.sourceControlAccountLogin, 'mathis');
   assert.equal(createdProject.pmMemberCount, 0);
+  assert.deepEqual(createdProject.pmMembers, []);
   assert.deepEqual(createdProject.sessions, []);
 
   const shareResponse = await fetch(`${baseUrl}/projects/${createdProject.id}/members`, {
@@ -152,6 +153,18 @@ test('BT-028/BT-029/BT-049: developer creates a project, shares it, starts a mod
   const pmSharedProjects = await parseJsonResponse(pmSharedProjectsResponse, sharedProjectListResponseSchema);
   assert.equal(pmSharedProjects[0]?.id, createdProject.id);
 
+  const updateDefaultsResponse = await fetch(`${baseUrl}/projects/${createdProject.id}/execution-defaults`, {
+    method: 'PATCH',
+    headers: {
+      authorization: `Bearer ${developerLogin.body.accessToken}`,
+      'content-type': 'application/json',
+    },
+    body: JSON.stringify({ modelId: 'agent-model/gpt-5', reasoningEffort: 'high' }),
+  });
+  assert.equal(updateDefaultsResponse.status, 200);
+  const updatedProject = await parseJsonResponse(updateDefaultsResponse, developerProjectResponseSchema);
+  assert.equal(updatedProject.defaultReasoningEffort, 'high');
+
   const startSessionResponse = await fetch(`${baseUrl}/sessions`, {
     method: 'POST',
     headers: {
@@ -160,7 +173,6 @@ test('BT-028/BT-029/BT-049: developer creates a project, shares it, starts a mod
     },
     body: JSON.stringify({
       projectId: createdProject.id,
-      modelId: 'agent-model/gpt-5',
       startSource: 'developer',
     }),
   });
@@ -170,6 +182,7 @@ test('BT-028/BT-029/BT-049: developer creates a project, shares it, starts a mod
   assert.equal(createdSession.projectId, createdProject.id);
   assert.equal(createdSession.createdByUserId, developerLogin.body.user.id);
   assert.equal(createdSession.modelId, 'agent-model/gpt-5');
+  assert.equal(createdSession.reasoningEffort, 'high');
 
   const developerMembership = await prisma.sessionMember.findUnique({
     where: { sessionId_userId: { sessionId: createdSession.id, userId: developerLogin.body.user.id } },
@@ -193,6 +206,12 @@ test('BT-028/BT-029/BT-049: developer creates a project, shares it, starts a mod
   const developerProjects = await parseJsonResponse(dashboardResponse, developerProjectListResponseSchema);
   assert.equal(developerProjects.length, 1);
   assert.equal(developerProjects[0]?.pmMemberCount, 1);
+  assert.deepEqual(developerProjects[0]?.pmMembers, [
+    {
+      email: pmLogin.body.user.email,
+      displayName: pmLogin.body.user.displayName,
+    },
+  ]);
   assert.equal(developerProjects[0]?.sessions[0]?.id, createdSession.id);
   assert.equal(developerProjects[0]?.sessions[0]?.status, 'CLOSED');
 });
@@ -225,6 +244,7 @@ test('developer project creation derives GitHub App installation from developer 
       repoFullName: 'mathis-gala/PairDock',
       defaultBranch: 'main',
       defaultModelId: 'agent-model/gpt-5',
+      defaultReasoningEffort: 'low',
       agentProjectKey: 'github-app-project',
     }),
   });
@@ -245,7 +265,18 @@ function registerOnlineAgentProject(agentProjectKey: string, modelId: string) {
   connectedAgentsRegistry.register(`socket-${agentProjectKey}`, {
     agentId: agentProjectKey,
     capabilities: ['session.prepare', 'agent.prompt', 'preview'],
-    models: [{ id: modelId, label: 'GPT-5', provider: 'local-agent' }],
+    models: [
+      {
+        id: modelId,
+        label: 'GPT-5',
+        provider: 'local-agent',
+        reasoningEfforts: [
+          { id: 'low', label: 'Low' },
+          { id: 'high', label: 'High' },
+        ],
+        defaultReasoningEffort: 'low',
+      },
+    ],
     projects: [
       {
         key: agentProjectKey,

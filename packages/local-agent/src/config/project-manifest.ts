@@ -8,6 +8,9 @@ import type { ProjectPreviewConfig } from '../docker/sandbox.port.js';
 import type { AgentConfig, AgentProjectDescriptor } from './agent-config.js';
 
 const manifestFileName = 'pairdock.yml';
+const previewUrlTemplateSchema = z.string().min(1).refine(isValidPreviewUrlTemplate, {
+  message: 'Preview URL must be an HTTP(S) URL using only supported {{hostPort}} or {{sessionId}} templates.',
+});
 
 const pairdockManifestSchema = z.object({
   version: z.literal(1),
@@ -26,13 +29,13 @@ const pairdockManifestSchema = z.object({
     .optional(),
   preview: z.object({
     start: z.string().min(1),
-    healthcheck: z.string().url(),
+    healthcheck: previewUrlTemplateSchema,
     tunnel: z
       .union([
         z.literal('cloudflare'),
         z.object({
           provider: z.literal('cloudflare').optional(),
-          publicUrl: z.string().url().optional(),
+          publicUrl: previewUrlTemplateSchema.optional(),
           image: z.string().min(1).optional(),
           startupTimeoutMs: z.number().int().positive().optional(),
         }),
@@ -55,6 +58,20 @@ interface ProjectManifestLoadResult {
 interface CommandResult {
   ok: boolean;
   output: string;
+}
+
+function isValidPreviewUrlTemplate(value: string): boolean {
+  const unsupportedTemplate = /{{(?!hostPort}}|sessionId}})[^}]+}}/.test(value);
+  if (unsupportedTemplate) {
+    return false;
+  }
+
+  try {
+    const url = new URL(value.replaceAll('{{hostPort}}', '4000').replaceAll('{{sessionId}}', 'session'));
+    return url.protocol === 'http:' || url.protocol === 'https:';
+  } catch {
+    return false;
+  }
 }
 
 export async function enrichConfigWithProjectManifests(config: AgentConfig): Promise<AgentConfig> {

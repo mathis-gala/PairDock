@@ -5,7 +5,9 @@ import { basename, join, resolve } from 'node:path';
 import test from 'node:test';
 import {
   type AgentHarnessEvent,
+  buildCommandArgs,
   CodexHarnessAdapter,
+  parseCodexJsonLine,
 } from '../../../../packages/local-agent/src/harness/codex-harness.adapter.js';
 
 const HARNESS_SCRIPT_PATH = resolve(__dirname, '../../../fixtures/local-agent/mock-harness.mjs');
@@ -30,7 +32,7 @@ test('BT-018: CodexHarnessAdapter runs the agent harness inside the session work
   const adapter = new CodexHarnessAdapter({
     pairdock: {
       command: 'node',
-      args: [HARNESS_SCRIPT_PATH, '{{prompt}}', '{{modelId}}'],
+      args: [HARNESS_SCRIPT_PATH, '{{prompt}}', '{{modelId}}', '{{reasoningEffort}}'],
     },
   });
 
@@ -40,12 +42,80 @@ test('BT-018: CodexHarnessAdapter runs the agent harness inside the session work
       projectKey: 'pairdock',
       prompt: `record-cwd:${basename(cwdMarkerPath)}`,
       modelId: 'codex-cli/gpt-5.4',
+      reasoningEffort: 'high',
       worktreePath,
     }),
   );
 
   assert.equal(await readFile(cwdMarkerPath, 'utf8'), await realpath(worktreePath));
   assert.deepEqual(events.at(-1), { type: 'done', exitCode: 0 });
+});
+
+test('CodexHarnessAdapter forwards the selected reasoning effort to the configured harness', async () => {
+  const worktreePath = await createTempWorkspace();
+  const adapter = new CodexHarnessAdapter({
+    pairdock: {
+      command: 'node',
+      args: [HARNESS_SCRIPT_PATH, '{{prompt}}', '{{modelId}}', '{{reasoningEffort}}'],
+    },
+  });
+
+  const events = await collectEvents(
+    adapter.runPrompt({
+      sessionId: '11111111-1111-4111-8111-111111111111',
+      projectKey: 'pairdock',
+      prompt: 'explain-selection',
+      modelId: 'gpt-5.6-sol',
+      reasoningEffort: 'xhigh',
+      worktreePath,
+    }),
+  );
+
+  assert.ok(
+    events.some(
+      (event) => event.type === 'output' && event.stream === 'stderr' && event.text.includes('reasoning:xhigh'),
+    ),
+  );
+});
+
+test('default Codex harness starts and resumes one Codex thread per PairDock session', () => {
+  const input = {
+    sessionId: '11111111-1111-4111-8111-111111111111',
+    projectKey: 'pairdock',
+    prompt: 'Continue le correctif.',
+    modelId: 'gpt-5.6-luna',
+    reasoningEffort: 'low',
+    worktreePath: '/tmp/worktree',
+  };
+
+  assert.deepEqual(buildCommandArgs({}, input), [
+    'exec',
+    '--json',
+    '--model',
+    'gpt-5.6-luna',
+    '--config',
+    'model_reasoning_effort="low"',
+    'Continue le correctif.',
+  ]);
+  assert.deepEqual(buildCommandArgs({}, input, 'codex-thread-id'), [
+    'exec',
+    'resume',
+    '--json',
+    '--model',
+    'gpt-5.6-luna',
+    '--config',
+    'model_reasoning_effort="low"',
+    'codex-thread-id',
+    'Continue le correctif.',
+  ]);
+  assert.deepEqual(parseCodexJsonLine('{"type":"thread.started","thread_id":"thread-1"}'), {
+    type: 'thread',
+    threadId: 'thread-1',
+  });
+  assert.deepEqual(
+    parseCodexJsonLine('{"type":"item.completed","item":{"type":"agent_message","text":"Correction terminée."}}'),
+    { type: 'message', text: 'Correction terminée.' },
+  );
 });
 
 test('BT-019: CodexHarnessAdapter streams stdout and stderr before the process completes', async () => {

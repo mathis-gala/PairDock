@@ -2,7 +2,11 @@
 
 import { parseArgs } from 'node:util';
 import { loadAgentConfig, saveAgentConfig, summarizeAgentConfig } from './config/agent-config.js';
+import { enrichConfigWithCodexModels } from './config/codex-model-catalog.js';
 import { enrichConfigWithProjectManifests } from './config/project-manifest.js';
+import { FileSessionWorkspaceStore } from './session/file-session-workspace.store.js';
+import { SessionRegistry } from './session/session-registry.js';
+import { SessionRunner } from './session/session-runner.js';
 import { AgentClient } from './websocket/agent-client.js';
 
 async function main() {
@@ -62,8 +66,18 @@ async function runLogin() {
 }
 
 async function runStart() {
-  const config = await enrichConfigWithProjectManifests(await loadAgentConfig());
-  const client = new AgentClient(config);
+  const config = await enrichConfigWithProjectManifests(await enrichConfigWithCodexModels(await loadAgentConfig()));
+  const sessionRunner = new SessionRunner(
+    {
+      projectPaths: config.projectPaths,
+      previewConfigs: config.previewConfigs,
+      logger: console,
+    },
+    {
+      sessionRegistry: new SessionRegistry(new FileSessionWorkspaceStore()),
+    },
+  );
+  const client = new AgentClient(config, console, { sessionRunner });
 
   await client.start();
   await waitForShutdownSignal(async () => {
@@ -72,7 +86,7 @@ async function runStart() {
 }
 
 async function runStatus() {
-  const config = await enrichConfigWithProjectManifests(await loadAgentConfig());
+  const config = await enrichConfigWithProjectManifests(await enrichConfigWithCodexModels(await loadAgentConfig()));
   const summary = summarizeAgentConfig(config);
 
   console.log(`Backend URL: ${summary.backendUrl}`);

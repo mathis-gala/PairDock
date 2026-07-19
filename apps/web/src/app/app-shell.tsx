@@ -2,6 +2,7 @@ import { openDeveloperHome, openPmDashboard, openPmSession, useAppRoute } from '
 import { clearAuthSession, setAuthSession, useAuthSession } from '../hooks/use-auth-session.js';
 import { DeveloperHomePage } from '../views/developer-home-page.js';
 import { LoginPage } from '../views/login-page.js';
+import { PmActivityPage } from '../views/pm-activity-page.js';
 import { PmDashboardPage } from '../views/pm-dashboard-page.js';
 import { PmSessionPage } from '../views/pm-session-page.js';
 
@@ -31,6 +32,13 @@ export function AppShell() {
       {authSession.user.kind === 'pm' ? (
         route.kind === 'pm-session' ? (
           <PmSessionPage accessToken={authSession.accessToken} onBack={openPmDashboard} sessionId={route.sessionId} />
+        ) : route.kind === 'pm-session-history' || route.kind === 'pm-review-requests' ? (
+          <PmActivityPage
+            accessToken={authSession.accessToken}
+            mode={route.kind === 'pm-session-history' ? 'sessions' : 'review-requests'}
+            onOpenSession={openPmSession}
+            onSignOut={clearAuthSession}
+          />
         ) : (
           <PmDashboardPage
             accessToken={authSession.accessToken}

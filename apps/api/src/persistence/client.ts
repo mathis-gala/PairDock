@@ -4,16 +4,13 @@ import { Injectable, type OnModuleDestroy, type OnModuleInit } from '@nestjs/com
 import { PrismaPg } from '@prisma/adapter-pg';
 import { config as loadDotenv } from 'dotenv';
 import { type Prisma, PrismaClient } from '../generated/prisma/client.js';
+import { resolveDatabaseConnectionString } from './database-url.js';
 
 const currentDirectory = path.dirname(fileURLToPath(import.meta.url));
 loadDotenv({ path: path.join(currentDirectory, '..', '..', '.env') });
 
 function buildAdapter(): PrismaPg {
-  const connectionString = process.env.DATABASE_URL;
-
-  if (!connectionString) {
-    throw new Error('DATABASE_URL is required to initialize the database client.');
-  }
+  const connectionString = resolveDatabaseConnectionString(process.env);
 
   return new PrismaPg({ connectionString });
 }

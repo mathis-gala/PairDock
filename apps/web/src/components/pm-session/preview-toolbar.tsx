@@ -1,68 +1,101 @@
+import type { MouseEvent } from 'react';
 import { isPreviewPresetId, type PreviewPresetId, previewPresets } from '../../lib/preview-presets.js';
 import { Button } from '../button.js';
 
 interface PreviewToolbarProps {
   onPresetChange: (presetId: PreviewPresetId) => void;
-  onZoomChange: (zoomPercent: number) => void;
   presetId: PreviewPresetId;
   previewUrl: string | null;
-  zoomPercent: number;
 }
 
-const zoomLevels = [75, 100, 125];
+export function PreviewToolbar({ onPresetChange, presetId, previewUrl }: PreviewToolbarProps) {
+  function handlePresetClick(event: MouseEvent<HTMLButtonElement>) {
+    const nextPresetId = event.currentTarget.dataset.presetId;
 
-export function PreviewToolbar({
-  onPresetChange,
-  onZoomChange,
-  presetId,
-  previewUrl,
-  zoomPercent,
-}: PreviewToolbarProps) {
+    if (nextPresetId && isPreviewPresetId(nextPresetId)) {
+      onPresetChange(nextPresetId);
+    }
+  }
+
+  function handleOpenPreview() {
+    if (previewUrl) {
+      window.open(previewUrl, '_blank', 'noopener,noreferrer');
+    }
+  }
+
   return (
     <div className="flex flex-none flex-wrap items-center justify-center gap-2 border-t border-white/10 bg-[#15171c] px-3 py-2">
       <div className="flex flex-wrap items-center justify-center gap-2 text-[12px] text-[#cdd2dc]">
-        <label className="flex items-center gap-2 rounded-[8px] border border-white/10 bg-[#0f1115] px-3 py-1.5">
-          <span className="text-[#6f7686]">Preset</span>
-          <select
-            className="bg-transparent outline-none"
-            onChange={(event) => {
-              if (isPreviewPresetId(event.target.value)) {
-                onPresetChange(event.target.value);
-              }
-            }}
-            value={presetId}
-          >
-            {previewPresets.map((preset) => (
-              <option key={preset.id} value={preset.id}>
-                {preset.label}
-              </option>
-            ))}
-          </select>
-        </label>
-        <label className="flex items-center gap-2 rounded-[8px] border border-white/10 bg-[#0f1115] px-3 py-1.5">
-          <span className="text-[#6f7686]">Zoom</span>
-          <select
-            className="bg-transparent outline-none"
-            onChange={(event) => onZoomChange(Number(event.target.value))}
-            value={zoomPercent}
-          >
-            {zoomLevels.map((level) => (
-              <option key={level} value={level}>
-                {level}%
-              </option>
-            ))}
-          </select>
-        </label>
+        <fieldset className="flex flex-wrap items-center justify-center gap-1">
+          <legend className="sr-only">Format de preview</legend>
+          {previewPresets.map((preset) => {
+            const isSelected = preset.id === presetId;
+
+            return (
+              <button
+                aria-pressed={isSelected}
+                className={
+                  isSelected
+                    ? 'flex min-h-11 items-center gap-2 rounded-[9px] border border-[#5fdf9b]/50 bg-[#5fdf9b]/10 px-3 text-[#eafff3] transition hover:bg-[#5fdf9b]/15 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#5fdf9b]/40'
+                    : 'flex min-h-11 items-center gap-2 rounded-[9px] border border-transparent px-3 text-[#8b92a1] transition hover:border-white/10 hover:bg-white/5 hover:text-[#eef0f4] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#5fdf9b]/40'
+                }
+                data-preset-id={preset.id}
+                key={preset.id}
+                onClick={handlePresetClick}
+                title={preset.description}
+                type="button"
+              >
+                <PresetIcon presetId={preset.id} />
+                <span>{preset.label}</span>
+              </button>
+            );
+          })}
+        </fieldset>
+        <span className="hidden rounded-[8px] border border-white/10 bg-[#0f1115] px-3 py-1.5 text-[#8b92a1] sm:inline-flex">
+          Ajustement auto
+        </span>
         {previewUrl ? (
-          <Button
-            className="min-h-[30px] px-3 py-1.5 text-xs"
-            onClick={() => window.open(previewUrl, '_blank', 'noopener,noreferrer')}
-            variant="secondary"
-          >
+          <Button className="min-h-[30px] px-3 py-1.5 text-xs" onClick={handleOpenPreview} variant="secondary">
             Ouvrir
           </Button>
         ) : null}
       </div>
     </div>
+  );
+}
+
+function PresetIcon({ presetId }: { presetId: PreviewPresetId }) {
+  if (presetId === 'mobile') {
+    return (
+      <svg aria-hidden="true" className="size-4" fill="none" viewBox="0 0 24 24">
+        <rect height="18" rx="2" stroke="currentColor" strokeWidth="1.8" width="10" x="7" y="3" />
+        <path d="M10.5 18h3" stroke="currentColor" strokeLinecap="round" strokeWidth="1.8" />
+      </svg>
+    );
+  }
+
+  if (presetId === 'tablet') {
+    return (
+      <svg aria-hidden="true" className="size-4" fill="none" viewBox="0 0 24 24">
+        <rect height="18" rx="2" stroke="currentColor" strokeWidth="1.8" width="14" x="5" y="3" />
+        <circle cx="12" cy="18" fill="currentColor" r="0.9" />
+      </svg>
+    );
+  }
+
+  if (presetId === 'laptop') {
+    return (
+      <svg aria-hidden="true" className="size-4" fill="none" viewBox="0 0 24 24">
+        <rect height="11" rx="1.5" stroke="currentColor" strokeWidth="1.8" width="16" x="4" y="4" />
+        <path d="M2.5 18h19l-1 2h-17l-1-2Z" stroke="currentColor" strokeLinejoin="round" strokeWidth="1.8" />
+      </svg>
+    );
+  }
+
+  return (
+    <svg aria-hidden="true" className="size-4" fill="none" viewBox="0 0 24 24">
+      <rect height="13" rx="1.5" stroke="currentColor" strokeWidth="1.8" width="18" x="3" y="3" />
+      <path d="M9 21h6M12 16v5" stroke="currentColor" strokeLinecap="round" strokeWidth="1.8" />
+    </svg>
   );
 }

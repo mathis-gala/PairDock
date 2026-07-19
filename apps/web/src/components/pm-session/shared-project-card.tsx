@@ -1,5 +1,4 @@
 import type { SharedProjectSummary } from '@pairdock/shared-contracts';
-import { classNames } from '../../lib/class-names.js';
 import { Button } from '../button.js';
 import { SectionCard } from '../section-card.js';
 import { StatusBadge } from '../status-badge.js';
@@ -40,15 +39,11 @@ export function SharedProjectCard({ onStart, project, startPending }: SharedProj
           <dt className="text-slate-500">Default branch</dt>
           <dd>{project.defaultBranch}</dd>
         </div>
-        <div>
-          <dt className="text-slate-500">Default model</dt>
-          <dd>{project.defaultModelId}</dd>
-        </div>
       </dl>
       {project.unavailableReason ? <p className="mt-4 text-sm text-amber-300">{project.unavailableReason}</p> : null}
-      <div className={classNames('mt-5 flex justify-end', project.canStartSession ? '' : 'opacity-90')}>
+      <div className="mt-5">
         <Button disabled={!project.canStartSession || startPending} onClick={() => onStart(project)}>
-          {startPending ? 'Opening session…' : 'Start PM session'}
+          {startPending ? 'Démarrage…' : 'Nouvelle demande'}
         </Button>
       </div>
     </SectionCard>

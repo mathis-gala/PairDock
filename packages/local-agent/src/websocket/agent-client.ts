@@ -10,6 +10,7 @@ import {
   type ReadinessCheckCommandEnvelope,
   type SessionCloseCommandEnvelope,
   type SessionPrepareCommandEnvelope,
+  summarizeChecksFailure,
 } from '@pairdock/shared-contracts';
 import { io, type Socket } from 'socket.io-client';
 import { type CheckResult, ChecksRunner, type ProjectChecksConfig } from '../checks/checks-runner.js';
@@ -102,6 +103,11 @@ export class AgentClient {
       throw new Error('AgentClient is already running.');
     }
 
+    const recovery = await this.sessionRunner.restore();
+    if (recovery.recoveredSessionIds.length > 0) {
+      this.logger.info(`Recovered ${recovery.recoveredSessionIds.length} prepared PairDock session(s).`);
+    }
+
     const socket = io(`${this.config.backendUrl}/agent`, {
       autoConnect: false,
       extraHeaders: this.config.authToken
@@ -123,6 +129,11 @@ export class AgentClient {
       });
 
       socket.emit(agentProtocolMessageEventName, event);
+      void this.publishRecoveryFailures(recovery.failures).catch((error: unknown) => {
+        this.logger.error(
+          `Failed to publish session recovery errors: ${error instanceof Error ? error.message : String(error)}`,
+        );
+      });
       void this.publishConfiguredProjectReadiness();
       this.logger.info(
         `Connected agent ${event.payload.agentId} to ${this.config.backendUrl} with ${event.payload.capabilities.length} capabilities.`,
@@ -188,6 +199,12 @@ export class AgentClient {
       socket.once('disconnect', () => resolve());
       socket.close();
     });
+  }
+
+  private async publishRecoveryFailures(failures: Array<{ sessionId: string; message: string }>): Promise<void> {
+    for (const failure of failures) {
+      await this.emitError('session.recovery.failed', failure.sessionId, new Error(failure.message), false);
+    }
   }
 
   private async handleProtocolMessage(payload: unknown): Promise<void> {
@@ -318,6 +335,10 @@ export class AgentClient {
     try {
       let exitCode: number | null = null;
 
+      this.logger.info(
+        `[session:${command.sessionId}] Starting agent prompt with model=${command.payload.modelId} reasoning=${command.payload.reasoningEffort ?? 'medium'}.`,
+      );
+
       await this.emitEvent(
         buildSessionProgressEvent({
           sessionId: command.sessionId,
@@ -325,11 +346,14 @@ export class AgentClient {
         }),
       );
 
+      const initialDiff = await this.diffService.collect(workspace.worktreePath);
+
       for await (const event of this.agentHarnessPort.runPrompt({
         sessionId: command.sessionId,
         projectKey: workspace.projectKey,
         prompt: command.payload.prompt,
         modelId: command.payload.modelId,
+        reasoningEffort: command.payload.reasoningEffort ?? 'medium',
         worktreePath: workspace.worktreePath,
       })) {
         if (event.type === 'output') {
@@ -350,37 +374,61 @@ export class AgentClient {
         throw new Error(`Agent harness completed without a final done event for session ${command.sessionId}.`);
       }
 
+      if (exitCode !== 0) {
+        await this.emitEvent(
+          buildAgentDoneEvent({
+            sessionId: command.sessionId,
+            exitCode,
+          }),
+        );
+        this.logger.info(`[session:${command.sessionId}] Agent prompt exited with code ${exitCode}.`);
+        this.logger.error(`[session:${command.sessionId}] Agent execution failed; validation checks were skipped.`);
+        return;
+      }
+
+      const diff = await this.diffService.collect(workspace.worktreePath);
+      const changesDetected = initialDiff.fingerprint !== diff.fingerprint;
+      this.logger.info(
+        `[session:${command.sessionId}] Collected ${diff.changedFiles.length} changed file${diff.changedFiles.length === 1 ? '' : 's'}; prompt changed worktree=${changesDetected}.`,
+      );
+
       await this.emitEvent(
         buildAgentDoneEvent({
           sessionId: command.sessionId,
           exitCode,
+          changesDetected,
         }),
       );
+      this.logger.info(`[session:${command.sessionId}] Agent prompt exited with code ${exitCode}.`);
 
-      const diff = await this.diffService.collect(workspace.worktreePath);
-
-      if (diff.changedFiles.length > 0) {
-        await this.emitEvent(
-          buildGitDiffEvent({
-            sessionId: command.sessionId,
-            diff: diff.diff,
-            changedFiles: diff.changedFiles,
-          }),
-        );
+      if (!changesDetected) {
+        this.logger.info(`[session:${command.sessionId}] Validation skipped because the worktree is unchanged.`);
+        return;
       }
 
       await this.emitEvent(
-        buildChecksResultEvent({
+        buildGitDiffEvent({
           sessionId: command.sessionId,
-          result: this.redactChecksResult(
-            await this.checksRunner.run({
-              projectKey: workspace.projectKey,
-              previewUrl: workspace.previewUrl,
-              worktreePath: workspace.worktreePath,
-            }),
-          ),
+          diff: diff.diff,
+          changedFiles: diff.changedFiles,
         }),
       );
+
+      const checks = this.redactChecksResult(
+        await this.checksRunner.run({
+          projectKey: workspace.projectKey,
+          previewUrl: workspace.previewUrl,
+          worktreePath: workspace.worktreePath,
+        }),
+      );
+      const checkSummary = `build=${checks.build.status} tests=${checks.tests.status} lint=${checks.lint.status} preview=${checks.preview.status}`;
+      this.logger.info(`[session:${command.sessionId}] Validation completed: ${checkSummary}.`);
+      const failure = summarizeChecksFailure({ sessionId: command.sessionId, ...checks });
+      if (failure) {
+        this.logger.error(`[session:${command.sessionId}] ${failure.message}`);
+      }
+
+      await this.emitEvent(buildChecksResultEvent({ sessionId: command.sessionId, result: checks }));
     } catch (error) {
       await this.emitError('agent.prompt.failed', command.sessionId, error, false);
     }
@@ -435,6 +483,7 @@ export class AgentClient {
     retryable: boolean,
   ): Promise<void> {
     const message = this.logRedactor.redact(error instanceof Error ? error.message : String(error));
+    this.logger.error(`[session:${sessionId ?? 'none'}] ${code}: ${message}`);
     await this.emitEvent(
       buildErrorEvent({
         code,

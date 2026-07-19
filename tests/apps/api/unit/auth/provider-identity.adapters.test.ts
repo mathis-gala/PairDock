@@ -55,21 +55,35 @@ test('GithubDeveloperIdentityAdapter exchanges GitHub App callback code and pres
         return jsonResponse({ id: 42, login: 'mathis-gala', name: 'Mathis Gala', email: 'mathis@example.com' });
       }
 
+      if (url.endsWith('/user/installations?per_page=100')) {
+        return jsonResponse({
+          installations: [{ id: 98765, account: { login: 'mathis-gala' } }],
+          total_count: 1,
+        });
+      }
+
       throw new Error(`Unexpected URL ${url}`);
     },
   );
 
   const identity = await adapter.getDeveloperIdentity('code:oauth-code:installation:98765');
 
-  assert.deepEqual(requestedUrls, ['https://github.test/login/oauth/access_token', 'https://api.github.test/user']);
+  assert.deepEqual(requestedUrls, [
+    'https://github.test/login/oauth/access_token',
+    'https://api.github.test/user',
+    'https://api.github.test/user/installations?per_page=100',
+  ]);
   assert.deepEqual(identity.metadata, {
+    installationAccountLogin: 'mathis-gala',
     installationId: '98765',
+    installations: [{ accountLogin: 'mathis-gala', installationId: '98765' }],
     login: 'mathis-gala',
   });
 });
 
 test('GithubDeveloperIdentityAdapter preserves fixture installation metadata for local dev', async () => {
   const adapter = new GithubDeveloperIdentityAdapter({
+    allowFixtures: true,
     apiBaseUrl: 'https://api.github.test',
     oauthBaseUrl: 'https://github.test',
   });
@@ -79,8 +93,27 @@ test('GithubDeveloperIdentityAdapter preserves fixture installation metadata for
   );
 
   assert.deepEqual(identity.metadata, {
+    installationAccountLogin: 'mathis-gala',
     installationId: 'test-tcg',
+    login: 'mathis-gala',
   });
+});
+
+test('provider identity adapters reject forged fixture credentials unless dev auth is explicitly enabled', async () => {
+  const github = new GithubDeveloperIdentityAdapter({
+    apiBaseUrl: 'https://api.github.test',
+    oauthBaseUrl: 'https://github.test',
+  });
+  const slack = new SlackPmIdentityAdapter({ apiBaseUrl: 'https://slack.test/api' });
+
+  await assert.rejects(
+    github.getDeveloperIdentity('github:attacker:admin@example.com:Admin'),
+    /Development authentication fixtures are disabled/,
+  );
+  await assert.rejects(
+    slack.getPmIdentity('slack:attacker:team:admin@example.com:Admin'),
+    /Development authentication fixtures are disabled/,
+  );
 });
 
 test('SlackPmIdentityAdapter resolves a PM from Slack auth and users APIs', async () => {

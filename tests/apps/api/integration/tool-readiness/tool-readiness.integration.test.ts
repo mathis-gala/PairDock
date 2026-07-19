@@ -56,7 +56,9 @@ async function authenticateDeveloper(tokenSeed = randomUUID()) {
   const response = await fetch(`${baseUrl}/auth/developer/callback`, {
     method: 'POST',
     headers: { 'content-type': 'application/json' },
-    body: JSON.stringify({ accessToken: `github:${tokenSeed}:dev-${tokenSeed}@pairdock.test:Dev ${tokenSeed}` }),
+    body: JSON.stringify({
+      accessToken: `github:${tokenSeed}:dev-${tokenSeed}@pairdock.test:Dev ${tokenSeed}:installation:test-readiness`,
+    }),
   });
 
   return {
@@ -106,12 +108,9 @@ async function createDeveloperProject(accessToken: string, agentProjectKey = `ag
       repoFullName: 'mathis/readiness-project',
       defaultBranch: 'main',
       defaultModelId: 'agent/gpt-5',
+      defaultReasoningEffort: 'medium',
       agentProjectKey,
       pmCanStartSessions: true,
-      sourceControl: {
-        providerConnectionId: `test-gh-install-${randomUUID()}`,
-        accountLogin: 'mathis',
-      },
     }),
   });
 

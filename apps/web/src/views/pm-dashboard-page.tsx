@@ -13,7 +13,7 @@ interface PmDashboardPageProps {
 export function PmDashboardPage({ accessToken, onOpenSession, onSignOut }: PmDashboardPageProps) {
   const authSession = useAuthSession();
   const { sharedProjectsQuery, startSessionMutation } = useSharedProjects(accessToken, onOpenSession);
-  const pendingProjectId = startSessionMutation.variables?.id ?? null;
+  const pendingProjectId = startSessionMutation.variables?.project.id ?? null;
 
   if (!authSession) {
     return null;
@@ -22,9 +22,14 @@ export function PmDashboardPage({ accessToken, onOpenSession, onSignOut }: PmDas
   return (
     <ProductShell
       accent="pm"
-      navItems={['Projets partagés', 'Mes sessions', 'Pull requests']}
+      navItems={[
+        { active: true, href: '#/pm', label: 'Projets partagés' },
+        { active: false, href: '#/pm/sessions', label: 'Sessions' },
+        { active: false, href: '#/pm/review-requests', label: 'Pull requests' },
+      ]}
       onSignOut={onSignOut}
       user={authSession.user}
+      viewLabel="Projets partagés"
     >
       <div className="px-6 py-8 lg:px-9">
         <div className="mb-6 max-w-3xl">
@@ -63,7 +68,7 @@ export function PmDashboardPage({ accessToken, onOpenSession, onSignOut }: PmDas
                 key={project.id}
                 onStart={(selectedProject) => {
                   startSessionMutation.reset();
-                  startSessionMutation.mutate(selectedProject);
+                  startSessionMutation.mutate({ project: selectedProject });
                 }}
                 project={project}
                 startPending={pendingProjectId === project.id && startSessionMutation.isPending}

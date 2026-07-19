@@ -11,6 +11,7 @@ import type { ExternalIdentitiesRepository } from '../persistence/ports/external
 import { UsersService } from '../users/users.service.js';
 import { DEVELOPER_IDENTITY_PORT, PM_IDENTITY_PORT } from './auth.tokens.js';
 import { AuthTokenService } from './auth-token.service.js';
+import { GithubAuthStateService } from './github-auth-state.service.js';
 
 export interface AuthResult {
   created: boolean;
@@ -44,6 +45,8 @@ export class AuthService {
     private readonly usersService: UsersService,
     @Inject(AuthTokenService)
     private readonly authTokenService: AuthTokenService,
+    @Inject(GithubAuthStateService)
+    private readonly githubAuthStateService: GithubAuthStateService,
   ) {}
 
   async authenticateDeveloper(accessToken: string): Promise<AuthResult> {
@@ -66,7 +69,43 @@ export class AuthService {
     const params = new URLSearchParams({
       client_id: config.githubClientId,
       scope: 'user:email',
-      state: 'pairdock-developer',
+      state: this.githubAuthStateService.issueAuthorizationState(),
+    });
+
+    if (config.githubRedirectUri) {
+      params.set('redirect_uri', config.githubRedirectUri);
+    }
+
+    return `${config.githubOAuthBaseUrl}/login/oauth/authorize?${params}`;
+  }
+
+  getDeveloperInstallationUrl(): string {
+    const config = readOAuthStartUrlConfig();
+
+    if (!config.githubAppSlug) {
+      throw new BadRequestException('GitHub App slug is not configured.');
+    }
+
+    const params = new URLSearchParams({
+      state: this.githubAuthStateService.issueInstallationState(),
+    });
+
+    return `${config.githubOAuthBaseUrl}/apps/${encodeURIComponent(config.githubAppSlug)}/installations/new?${params}`;
+  }
+
+  getDeveloperAuthorizationUrl(installationId: string, state: string): string {
+    this.githubAuthStateService.verifyInstallationState(state);
+
+    const config = readOAuthStartUrlConfig();
+
+    if (!config.githubClientId) {
+      throw new BadRequestException('GitHub App client id is not configured.');
+    }
+
+    const params = new URLSearchParams({
+      client_id: config.githubClientId,
+      scope: 'user:email',
+      state: this.githubAuthStateService.issueAuthorizationState(installationId),
     });
 
     if (config.githubRedirectUri) {
@@ -85,7 +124,7 @@ export class AuthService {
 
     const params = new URLSearchParams({
       client_id: config.slackClientId,
-      state: 'pairdock-pm',
+      state: this.githubAuthStateService.issueSlackAuthorizationState(),
       user_scope: 'users:read,users:read.email',
     });
 
@@ -96,13 +135,21 @@ export class AuthService {
     return `${config.slackOAuthBaseUrl}/oauth/v2/authorize?${params}`;
   }
 
-  async authenticateDeveloperRedirectUrl(code: string, installationId?: string): Promise<string> {
+  async authenticateDeveloperRedirectUrl(code: string, state: string): Promise<string> {
+    const installationId = this.githubAuthStateService.verifyAuthorizationState(state);
     const token = installationId ? `code:${code}:installation:${installationId}` : `code:${code}`;
-    const result = await this.authenticateDeveloper(token);
+    const identity = await this.developerIdentityPort.getDeveloperIdentity(token);
+
+    if (!installationId && !hasAccessibleGithubInstallation(identity)) {
+      return '/auth/developer/install';
+    }
+
+    const result = await this.authenticate(identity);
     return buildFrontendAuthRedirectUrl(result, 'github');
   }
 
-  async authenticatePmRedirectUrl(code: string): Promise<string> {
+  async authenticatePmRedirectUrl(code: string, state: string): Promise<string> {
+    this.githubAuthStateService.verifySlackAuthorizationState(state);
     const result = await this.authenticatePm(`code:${code}`);
     return buildFrontendAuthRedirectUrl(result, 'slack');
   }
@@ -199,4 +246,8 @@ function buildFrontendAuthRedirectUrl(result: AuthResult, provider: AuthProvider
 
   frontendUrl.hash = `pairdock_auth=${session}`;
   return frontendUrl.toString();
+}
+
+function hasAccessibleGithubInstallation(identity: NormalizedIdentity): boolean {
+  return Array.isArray(identity.metadata.installations) && identity.metadata.installations.length > 0;
 }

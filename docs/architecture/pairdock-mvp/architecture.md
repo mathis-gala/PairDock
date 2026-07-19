@@ -35,6 +35,15 @@ Hexagonal rule: use-case modules never depend directly on a provider SDK, CLI, t
 - Slack App/OAuth: PM login and invitation identity. V1 does not send Slack bot notifications.
 - Bun: package manager and workspace command runner for install, typecheck, Prisma commands, and local dev scripts.
 
+### Session recovery ownership
+
+- PostgreSQL remains the source of truth for session lifecycle, ownership, prompts, events, and validation state.
+- The local agent persists only machine-local runtime references required to reattach to prepared worktrees, Docker sandboxes, and preview tunnels after a process restart.
+- Local runtime state is written atomically to `~/.pairdock/sessions.json` with owner-only permissions. Preview environment variables and secrets are never persisted in this file.
+- On startup, the local agent validates the configured repository, Git worktree, branch, and preview healthcheck before exposing a recovered session to prompts.
+- Invalid recovered state remains available for explicit cleanup but is not considered prepared. The agent reports a non-retryable recovery failure to the backend.
+- Successful session cleanup removes the local runtime record. Docker and Cloudflare containers use deterministic names so cleanup remains possible without the original child-process handle.
+
 ## Backend NestJS modules
 
 ### AuthModule

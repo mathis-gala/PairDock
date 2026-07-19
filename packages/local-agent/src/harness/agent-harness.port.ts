@@ -8,6 +8,7 @@ export interface RunPromptInput {
   projectKey: string;
   prompt: string;
   modelId: string;
+  reasoningEffort?: string;
   worktreePath: string;
 }
 

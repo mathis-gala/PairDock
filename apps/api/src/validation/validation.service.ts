@@ -1,6 +1,6 @@
 import { Inject, Injectable } from '@nestjs/common';
 import type { ValidationRun } from '@pairdock/domain';
-import type { ChecksResultEventEnvelope } from '@pairdock/shared-contracts';
+import { type ChecksResultEventEnvelope, summarizeChecksFailure } from '@pairdock/shared-contracts';
 import { VALIDATION_RUNS_REPOSITORY } from '../persistence/persistence.tokens.js';
 import type {
   CreateValidationRunInput,
@@ -63,14 +63,7 @@ export class ValidationService {
   }
 
   private buildFailureMessage(payload: ChecksResultEventEnvelope['payload']): string {
-    const failedChecks = [
-      payload.build.status !== 'passed' ? 'build' : null,
-      payload.tests.status !== 'passed' ? 'tests' : null,
-      payload.lint.status !== 'passed' ? 'lint' : null,
-      payload.preview.status !== 'passed' ? 'preview' : null,
-    ].filter((value): value is string => value !== null);
-
-    return `Validation failed for: ${failedChecks.join(', ')}.`;
+    return summarizeChecksFailure(payload)?.message ?? 'Validation failed without a reported check failure.';
   }
 }
 

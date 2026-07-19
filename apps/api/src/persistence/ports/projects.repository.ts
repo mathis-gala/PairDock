@@ -8,6 +8,7 @@ export interface CreateProjectInput {
   repoFullName: string;
   defaultBranch: string;
   defaultModelId?: string;
+  defaultReasoningEffort: string;
   pmCanStartSessions?: boolean;
   agentProjectKey: string;
 }
@@ -21,6 +22,10 @@ export interface DeveloperProjectRecord {
   project: Project;
   sourceControlAccountLogin: string;
   pmMemberCount: number;
+  pmMembers: Array<{
+    email: string;
+    displayName: string | null;
+  }>;
 }
 
 export interface ProjectsRepository {
@@ -30,4 +35,9 @@ export interface ProjectsRepository {
   listByAgentProjectKey(agentProjectKey: string): Promise<Project[]>;
   listOwnedByUserId(userId: string): Promise<DeveloperProjectRecord[]>;
   listSharedByUserId(userId: string): Promise<SharedProjectRecord[]>;
+  updateExecutionDefaults(input: {
+    id: string;
+    defaultModelId: string;
+    defaultReasoningEffort: string;
+  }): Promise<Project>;
 }

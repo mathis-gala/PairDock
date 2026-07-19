@@ -19,21 +19,23 @@ export function DeveloperHomePage({ onSignOut, session }: DeveloperHomePageProps
     requestReadinessMutation,
     shareProjectMutation,
     setupQuery,
-    startSessionMutation,
+    updateExecutionDefaultsMutation,
   } = useDeveloperProjects(session.accessToken);
   const projects = projectsQuery.data ?? [];
   const createError = createProjectMutation.error instanceof Error ? createProjectMutation.error.message : null;
   const shareError = shareProjectMutation.error instanceof Error ? shareProjectMutation.error.message : null;
-  const startError = startSessionMutation.error instanceof Error ? startSessionMutation.error.message : null;
   const closeError = closeSessionMutation.error instanceof Error ? closeSessionMutation.error.message : null;
+  const updateDefaultsError =
+    updateExecutionDefaultsMutation.error instanceof Error ? updateExecutionDefaultsMutation.error.message : null;
   const readinessError =
     requestReadinessMutation.error instanceof Error ? requestReadinessMutation.error.message : null;
 
   return (
     <ProductShell
-      navItems={['Projets', 'Sessions actives', 'Modèles', 'Connexions']}
+      navItems={[{ active: true, href: '#/developer', label: 'Projets' }]}
       onSignOut={onSignOut}
       user={session.user}
+      viewLabel="Projets"
     >
       <div className="flex min-h-screen min-w-0">
         <div className="min-w-0 flex-1 overflow-auto px-6 py-8 lg:px-9">
@@ -60,8 +62,10 @@ export function DeveloperHomePage({ onSignOut, session }: DeveloperHomePageProps
             {createError ? <ErrorCard title="Could not create project" message={createError} /> : null}
             {shareError ? <ErrorCard title="Could not share project" message={shareError} /> : null}
             {readinessError ? <ErrorCard title="Could not request readiness check" message={readinessError} /> : null}
-            {startError ? <ErrorCard title="Could not start session" message={startError} /> : null}
             {closeError ? <ErrorCard title="Could not close session" message={closeError} /> : null}
+            {updateDefaultsError ? (
+              <ErrorCard title="Could not update agent configuration" message={updateDefaultsError} />
+            ) : null}
           </div>
 
           {projectsQuery.isLoading ? (
@@ -98,9 +102,9 @@ export function DeveloperHomePage({ onSignOut, session }: DeveloperHomePageProps
                     shareProjectMutation.reset();
                     await shareProjectMutation.mutateAsync({ projectId, pmEmail });
                   }}
-                  onStartSession={async (projectId, modelId) => {
-                    startSessionMutation.reset();
-                    await startSessionMutation.mutateAsync({ projectId, modelId });
+                  onUpdateExecutionDefaults={async (projectId, modelId, reasoningEffort) => {
+                    updateExecutionDefaultsMutation.reset();
+                    await updateExecutionDefaultsMutation.mutateAsync({ projectId, modelId, reasoningEffort });
                   }}
                   project={project}
                   readinessPendingProjectId={
@@ -109,8 +113,10 @@ export function DeveloperHomePage({ onSignOut, session }: DeveloperHomePageProps
                   sharePendingProjectId={
                     shareProjectMutation.isPending ? (shareProjectMutation.variables?.projectId ?? null) : null
                   }
-                  startPendingProjectId={
-                    startSessionMutation.isPending ? (startSessionMutation.variables?.projectId ?? null) : null
+                  updateDefaultsPendingProjectId={
+                    updateExecutionDefaultsMutation.isPending
+                      ? (updateExecutionDefaultsMutation.variables?.projectId ?? null)
+                      : null
                   }
                 />
               ))

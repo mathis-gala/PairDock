@@ -8,6 +8,7 @@ import { AuthService } from './auth.service.js';
 import { DEVELOPER_IDENTITY_PORT, PM_IDENTITY_PORT } from './auth.tokens.js';
 import { AuthTokenService } from './auth-token.service.js';
 import { AuthenticatedUserGuard } from './authenticated-user.guard.js';
+import { GithubAuthStateService } from './github-auth-state.service.js';
 
 @Module({
   imports: [PersistenceModule, UsersModule],
@@ -16,6 +17,7 @@ import { AuthenticatedUserGuard } from './authenticated-user.guard.js';
     GithubDeveloperIdentityAdapter,
     SlackPmIdentityAdapter,
     AuthTokenService,
+    GithubAuthStateService,
     AuthenticatedUserGuard,
     AuthService,
     { provide: DEVELOPER_IDENTITY_PORT, useExisting: GithubDeveloperIdentityAdapter },

@@ -23,6 +23,7 @@ export class ProjectsRepositoryAdapter implements ProjectsRepository {
         repoFullName: input.repoFullName,
         defaultBranch: input.defaultBranch,
         defaultModelId: input.defaultModelId,
+        defaultReasoningEffort: input.defaultReasoningEffort,
         pmCanStartSessions: input.pmCanStartSessions,
         agentProjectKey: input.agentProjectKey,
       },
@@ -55,6 +56,18 @@ export class ProjectsRepositoryAdapter implements ProjectsRepository {
             accountLogin: true,
           },
         },
+        projectMembers: {
+          where: { role: 'pm' },
+          select: {
+            user: {
+              select: {
+                email: true,
+                displayName: true,
+              },
+            },
+          },
+          orderBy: { createdAt: 'asc' },
+        },
         _count: {
           select: {
             projectMembers: true,
@@ -68,6 +81,10 @@ export class ProjectsRepositoryAdapter implements ProjectsRepository {
       project: mapProject(record),
       sourceControlAccountLogin: record.sourceControlConnection.accountLogin,
       pmMemberCount: record._count.projectMembers,
+      pmMembers: record.projectMembers.map(({ user }) => ({
+        email: user.email,
+        displayName: user.displayName,
+      })),
     }));
   }
 
@@ -95,5 +112,21 @@ export class ProjectsRepositoryAdapter implements ProjectsRepository {
       project: mapProject(record),
       ownerDisplayName: record.ownerUser.displayName ?? record.ownerUser.email,
     }));
+  }
+
+  async updateExecutionDefaults(input: {
+    id: string;
+    defaultModelId: string;
+    defaultReasoningEffort: string;
+  }): Promise<Project> {
+    const record = await this.prisma.project.update({
+      where: { id: input.id },
+      data: {
+        defaultModelId: input.defaultModelId,
+        defaultReasoningEffort: input.defaultReasoningEffort,
+      },
+    });
+
+    return mapProject(record);
   }
 }

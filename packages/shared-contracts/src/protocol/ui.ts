@@ -5,6 +5,22 @@ export const uiSessionSubscriptionSchema = z.object({
   sessionId: uuidSchema,
 });
 
+export const developerSetupAgentModelSchema = z.object({
+  id: z.string().min(1),
+  label: z.string().min(1),
+  provider: z.string().min(1),
+  reasoningEfforts: z
+    .array(
+      z.object({
+        id: z.string().min(1),
+        label: z.string().min(1),
+        description: z.string().min(1).optional(),
+      }),
+    )
+    .optional(),
+  defaultReasoningEffort: z.string().min(1).optional(),
+});
+
 export const sharedProjectSummarySchema = z.object({
   id: uuidSchema,
   name: z.string().min(1),
@@ -12,13 +28,31 @@ export const sharedProjectSummarySchema = z.object({
   ownerDisplayName: z.string().min(1),
   repoFullName: z.string().min(1),
   defaultBranch: z.string().min(1),
-  defaultModelId: z.string().min(1),
   agentAvailability: z.enum(['online', 'offline', 'unknown']),
   canStartSession: z.boolean(),
   unavailableReason: z.string().min(1).nullable().optional(),
 });
 
 export const sharedProjectSummaryListSchema = z.array(sharedProjectSummarySchema);
+
+export const sharedSessionHistoryItemSchema = z.object({
+  id: uuidSchema,
+  projectId: uuidSchema,
+  projectName: z.string().min(1),
+  repoFullName: z.string().min(1),
+  status: z.string().min(1),
+  reviewRequest: z
+    .object({
+      url: z.string().nullable(),
+      number: z.number().int().nullable(),
+      status: z.string().min(1),
+    })
+    .nullable(),
+  createdAt: z.string().min(1),
+  closedAt: z.string().nullable(),
+});
+
+export const sharedSessionHistoryListSchema = z.array(sharedSessionHistoryItemSchema);
 
 export const developerProjectSessionSummarySchema = z.object({
   id: uuidSchema,
@@ -41,10 +75,18 @@ export const developerProjectSummarySchema = z.object({
   repoFullName: z.string().min(1),
   defaultBranch: z.string().min(1),
   defaultModelId: z.string().min(1),
+  defaultReasoningEffort: z.string().min(1),
+  models: z.array(developerSetupAgentModelSchema).optional(),
   agentProjectKey: z.string().min(1),
   sourceControlAccountLogin: z.string().min(1),
   pmCanStartSessions: z.boolean(),
   pmMemberCount: z.number().int().nonnegative(),
+  pmMembers: z.array(
+    z.object({
+      email: z.string().email(),
+      displayName: z.string().nullable(),
+    }),
+  ),
   agentAvailability: z.enum(['online', 'offline']),
   readiness: developerProjectReadinessSchema.nullable(),
   sessions: z.array(developerProjectSessionSummarySchema),
@@ -57,12 +99,6 @@ export const developerSetupRepositorySchema = z.object({
   name: z.string().min(1),
   defaultBranch: z.string().min(1),
   branches: z.array(z.string().min(1)),
-});
-
-export const developerSetupAgentModelSchema = z.object({
-  id: z.string().min(1),
-  label: z.string().min(1),
-  provider: z.string().min(1),
 });
 
 export const developerSetupAgentProjectSchema = z.object({
@@ -87,28 +123,41 @@ export const developerProjectSetupSchema = z.object({
   agents: z.array(developerSetupAgentSchema),
 });
 
-export const createDeveloperProjectInputSchema = z.object({
-  name: z.string().trim().min(1),
-  description: z.string().trim().optional(),
-  repoFullName: z.string().trim().min(1),
-  defaultBranch: z.string().trim().min(1),
-  defaultModelId: z.string().trim().min(1),
-  agentProjectKey: z.string().trim().min(1),
-  pmCanStartSessions: z.boolean().optional(),
-  sourceControl: z
-    .object({
-      providerConnectionId: z.string().trim().min(1),
-      accountLogin: z.string().trim().min(1),
-    })
-    .optional(),
-});
+export const createDeveloperProjectInputSchema = z
+  .object({
+    name: z.string().trim().min(1),
+    description: z.string().trim().optional(),
+    repoFullName: z.string().trim().min(1),
+    defaultBranch: z.string().trim().min(1),
+    defaultModelId: z.string().trim().min(1),
+    defaultReasoningEffort: z.string().trim().min(1),
+    agentProjectKey: z.string().trim().min(1),
+    pmCanStartSessions: z.boolean().optional(),
+  })
+  .strict();
 
 export const shareDeveloperProjectInputSchema = z.object({
   pmEmail: z.string().trim().email(),
 });
 
+export const createDraftReviewRequestInputSchema = z
+  .object({
+    type: z.enum(['feat', 'fix', 'style']),
+    title: z.string().trim().min(1).max(120),
+    description: z.string().trim().min(1).max(10_000),
+  })
+  .strict();
+
+export const updateProjectExecutionDefaultsInputSchema = z
+  .object({
+    modelId: z.string().trim().min(1),
+    reasoningEffort: z.string().trim().min(1),
+  })
+  .strict();
+
 export type UiSessionSubscription = z.infer<typeof uiSessionSubscriptionSchema>;
 export type SharedProjectSummary = z.infer<typeof sharedProjectSummarySchema>;
+export type SharedSessionHistoryItem = z.infer<typeof sharedSessionHistoryItemSchema>;
 export type DeveloperProjectSessionSummary = z.infer<typeof developerProjectSessionSummarySchema>;
 export type DeveloperProjectReadiness = z.infer<typeof developerProjectReadinessSchema>;
 export type DeveloperProjectSummary = z.infer<typeof developerProjectSummarySchema>;
@@ -119,3 +168,5 @@ export type DeveloperSetupAgent = z.infer<typeof developerSetupAgentSchema>;
 export type DeveloperProjectSetup = z.infer<typeof developerProjectSetupSchema>;
 export type CreateDeveloperProjectInput = z.infer<typeof createDeveloperProjectInputSchema>;
 export type ShareDeveloperProjectInput = z.infer<typeof shareDeveloperProjectInputSchema>;
+export type CreateDraftReviewRequestInput = z.infer<typeof createDraftReviewRequestInputSchema>;
+export type UpdateProjectExecutionDefaultsInput = z.infer<typeof updateProjectExecutionDefaultsInputSchema>;

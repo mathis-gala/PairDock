@@ -1,4 +1,4 @@
-import { Inject, Injectable } from '@nestjs/common';
+import { Inject, Injectable, Logger } from '@nestjs/common';
 import {
   ConnectedSocket,
   MessageBody,
@@ -33,6 +33,7 @@ import { ConnectedAgentsRegistry } from './connected-agents.registry.js';
 @Injectable()
 @WebSocketGateway({ namespace: '/agent', cors: { origin: '*' } })
 export class AgentGateway implements OnGatewayDisconnect {
+  private readonly logger = new Logger(AgentGateway.name);
   @WebSocketServer()
   private server!: Server;
   private readonly stateMachine = new SessionStateMachine();
@@ -66,7 +67,7 @@ export class AgentGateway implements OnGatewayDisconnect {
     const parsedEvent = agentEventEnvelopeSchema.safeParse(payload);
 
     if (!parsedEvent.success) {
-      console.error('Rejected invalid agent event:', parsedEvent.error.message);
+      this.logger.error(`Rejected invalid agent event: ${parsedEvent.error.message}`);
       return { accepted: false, error: parsedEvent.error.message };
     }
 
@@ -89,7 +90,9 @@ export class AgentGateway implements OnGatewayDisconnect {
       await this.persistEvent(agentId, sessionId, event);
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
-      console.error(`Failed to persist agent event ${event.type}:`, message);
+      this.logger.error(
+        `[session:${sessionId ?? 'none'}] Failed to persist agent event ${event.type} from agent ${agentId ?? 'unknown'}: ${message}`,
+      );
       return { accepted: false, error: message };
     }
 
@@ -226,7 +229,29 @@ export class AgentGateway implements OnGatewayDisconnect {
         return;
       }
 
-      const nextSession = this.stateMachine.applyAgentEvent(currentSession, sessionEvent);
+      let resolvedSessionEvent = sessionEvent;
+
+      if (
+        sessionEvent.type === 'agent.done' &&
+        sessionEvent.payload.exitCode === 0 &&
+        sessionEvent.payload.changesDetected === false
+      ) {
+        const latestValidation = await repositories.validationRuns.findLatestBySessionId(sessionId);
+        resolvedSessionEvent = {
+          ...sessionEvent,
+          payload: {
+            ...sessionEvent.payload,
+            resumeStatus:
+              latestValidation?.status === 'passed'
+                ? 'AWAITING_PM_VALIDATION'
+                : latestValidation?.status === 'failed'
+                  ? 'FAILED'
+                  : 'READY',
+          },
+        };
+      }
+
+      const nextSession = this.stateMachine.applyAgentEvent(currentSession, resolvedSessionEvent);
 
       await repositories.agentEvents.create({
         sessionId,
@@ -300,6 +325,7 @@ function toSessionAgentEvent(event: AgentEventEnvelope): SessionAgentEvent | nul
         type: event.type,
         payload: {
           exitCode: event.payload.exitCode,
+          ...(event.payload.changesDetected !== undefined ? { changesDetected: event.payload.changesDetected } : {}),
         },
       };
     case 'session.closed':

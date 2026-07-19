@@ -1,7 +1,11 @@
 import { randomUUID } from 'node:crypto';
-import { ConflictException, Inject, Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, ConflictException, Inject, Injectable, NotFoundException } from '@nestjs/common';
 import type { PairDockIdentity, Project, Session, SourceControlConnection } from '@pairdock/domain';
-import { AGENT_PROTOCOL_VERSION, type GitPushBranchCommandEnvelope } from '@pairdock/shared-contracts';
+import {
+  AGENT_PROTOCOL_VERSION,
+  type CreateDraftReviewRequestInput,
+  type GitPushBranchCommandEnvelope,
+} from '@pairdock/shared-contracts';
 import { AgentCommandRouterService } from '../agent-gateway/agent-command-router.service.js';
 import {
   PERSISTENCE_UNIT_OF_WORK,
@@ -51,7 +55,11 @@ export class CreateDraftReviewRequestUseCase {
     private readonly validationPolicy: ValidationPolicy,
   ) {}
 
-  async create(sessionId: string, actor: PairDockIdentity): Promise<DraftReviewRequestResult> {
+  async create(
+    sessionId: string,
+    actor: PairDockIdentity,
+    input: CreateDraftReviewRequestInput,
+  ): Promise<DraftReviewRequestResult> {
     const session = await this.requireSession(sessionId);
     const project = await this.requireProject(session.projectId);
     const connection = await this.requireSourceControlConnection(project.sourceControlConnectionId);
@@ -65,7 +73,8 @@ export class CreateDraftReviewRequestUseCase {
     }
 
     const branchName = session.branchName ?? buildSessionBranchName(session.id);
-    await this.agentCommandRouter.routeToOwningAgent(sessionId, buildGitPushBranchCommand(sessionId), {
+    const commitMessage = buildConventionalCommitMessage(input.type, input.title);
+    await this.agentCommandRouter.routeToOwningAgent(sessionId, buildGitPushBranchCommand(sessionId, commitMessage), {
       waitForCompletion: true,
     });
 
@@ -76,8 +85,8 @@ export class CreateDraftReviewRequestUseCase {
       sourceControlConnectionId: connection.id,
       providerConnectionId: connection.providerConnectionId,
       sourceControlAccountLogin: connection.accountLogin,
-      title: `PairDock session ${session.id.slice(0, 8)}`,
-      body: buildReviewRequestBody(session, project),
+      title: input.title,
+      body: input.description,
       branchName,
       baseBranch: project.defaultBranch,
     });
@@ -155,7 +164,7 @@ export class CreateDraftReviewRequestUseCase {
   }
 }
 
-function buildGitPushBranchCommand(sessionId: string): GitPushBranchCommandEnvelope {
+function buildGitPushBranchCommand(sessionId: string, commitMessage: string): GitPushBranchCommandEnvelope {
   return {
     protocolVersion: AGENT_PROTOCOL_VERSION,
     messageId: randomUUID(),
@@ -164,6 +173,7 @@ function buildGitPushBranchCommand(sessionId: string): GitPushBranchCommandEnvel
     type: 'git.pushBranch',
     payload: {
       sessionId,
+      commitMessage,
     },
   };
 }
@@ -172,6 +182,21 @@ function buildSessionBranchName(sessionId: string): string {
   return `pairdock/session-${sessionId.slice(0, 8)}`;
 }
 
-function buildReviewRequestBody(session: Session, project: Project): string {
-  return [`PairDock generated draft review request for ${project.name}.`, '', `Session: ${session.id}`].join('\n');
+export function buildConventionalCommitMessage(type: CreateDraftReviewRequestInput['type'], title: string): string {
+  const prefix = `${type}: `;
+  const normalizedTitle = title
+    .normalize('NFKD')
+    .replace(/\p{Mark}+/gu, '')
+    .toLocaleLowerCase('en-US')
+    .replace(/[^\p{Letter}\p{Number}]+/gu, ' ')
+    .trim()
+    .replace(/\s+/g, ' ')
+    .slice(0, 72 - prefix.length)
+    .trim();
+
+  if (!normalizedTitle) {
+    throw new BadRequestException('PR title must contain at least one letter or number.');
+  }
+
+  return `${prefix}${normalizedTitle}`;
 }

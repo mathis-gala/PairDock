@@ -14,6 +14,7 @@ export const sessionPrepareCommandEnvelopeSchema = sessionEnvelope(
     branchName: z.string().min(1),
     baseBranch: z.string().min(1),
     modelId: z.string().min(1),
+    reasoningEffort: z.string().min(1).optional(),
   }),
 ).refine(({ sessionId, payload }) => payload.sessionId === sessionId, sessionIdConsistencyRule);
 
@@ -31,6 +32,7 @@ export const agentPromptCommandEnvelopeSchema = sessionEnvelope(
     sessionId: uuidSchema,
     prompt: z.string().min(1),
     modelId: z.string().min(1),
+    reasoningEffort: z.string().min(1).optional(),
   }),
 ).refine(({ sessionId, payload }) => payload.sessionId === sessionId, sessionIdConsistencyRule);
 
@@ -59,6 +61,7 @@ export const gitPushBranchCommandEnvelopeSchema = sessionEnvelope(
   'git.pushBranch',
   z.object({
     sessionId: uuidSchema,
+    commitMessage: z.string().trim().min(1).max(72),
   }),
 ).refine(({ sessionId, payload }) => payload.sessionId === sessionId, sessionIdConsistencyRule);
 

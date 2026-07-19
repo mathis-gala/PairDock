@@ -1,5 +1,5 @@
 import type { DeveloperProjectSummary } from '@pairdock/shared-contracts';
-import { Button } from '../button.js';
+import { ExecutionSelectionControls } from '../execution-selection.js';
 import { SectionCard } from '../section-card.js';
 import { StatusBadge } from '../status-badge.js';
 import { ProjectShareForm } from './project-share-form.js';
@@ -11,11 +11,11 @@ interface DeveloperProjectCardProps {
   onCloseSession: (sessionId: string) => Promise<void>;
   onRequestReadiness: (projectId: string) => Promise<void>;
   onShareProject: (projectId: string, pmEmail: string) => Promise<void>;
-  onStartSession: (projectId: string, modelId: string) => Promise<void>;
+  onUpdateExecutionDefaults: (projectId: string, modelId: string, reasoningEffort: string) => Promise<void>;
   project: DeveloperProjectSummary;
   readinessPendingProjectId: string | null;
   sharePendingProjectId: string | null;
-  startPendingProjectId: string | null;
+  updateDefaultsPendingProjectId: string | null;
 }
 
 export function DeveloperProjectCard({
@@ -23,15 +23,14 @@ export function DeveloperProjectCard({
   onCloseSession,
   onRequestReadiness,
   onShareProject,
-  onStartSession,
+  onUpdateExecutionDefaults,
   project,
   readinessPendingProjectId,
   sharePendingProjectId,
-  startPendingProjectId,
+  updateDefaultsPendingProjectId,
 }: DeveloperProjectCardProps) {
-  const startPending = startPendingProjectId === project.id;
+  const updateDefaultsPending = updateDefaultsPendingProjectId === project.id;
   const readinessPending = readinessPendingProjectId === project.id;
-  const startBlockedByReadiness = project.agentAvailability !== 'online' || project.readiness?.ok !== true;
   const sharePending = sharePendingProjectId === project.id;
 
   return (
@@ -57,20 +56,25 @@ export function DeveloperProjectCard({
             />
             <ProjectFact label="Agent key" value={project.agentProjectKey} />
             <ProjectFact label="Default model" value={project.defaultModelId} />
+            <ProjectFact label="Default reasoning" value={project.defaultReasoningEffort} />
             <ProjectFact label="PM-start policy" value={project.pmCanStartSessions ? 'Enabled' : 'Disabled'} />
           </dl>
           <div className="rounded-xl border border-slate-800 bg-slate-950/70 p-3">
-            <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">Developer session</p>
-            <p className="mt-1 break-all text-sm text-slate-300">
-              Uses the saved agent model: {project.defaultModelId}
+            <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">Agent du projet</p>
+            <p className="mb-3 mt-1 text-sm text-slate-300">
+              Ce modèle et ce raisonnement seront utilisés pour toutes les nouvelles demandes PM et développeur.
             </p>
-            <Button
-              className="mt-3"
-              disabled={startPending || startBlockedByReadiness}
-              onClick={async () => onStartSession(project.id, project.defaultModelId)}
-            >
-              {startPending ? 'Starting session…' : 'Start developer session'}
-            </Button>
+            <ExecutionSelectionControls
+              defaultModelId={project.defaultModelId}
+              defaultReasoningEffort={project.defaultReasoningEffort}
+              disabled={project.agentAvailability !== 'online'}
+              models={project.models}
+              onStart={async ({ modelId, reasoningEffort }) =>
+                onUpdateExecutionDefaults(project.id, modelId, reasoningEffort)
+              }
+              pending={updateDefaultsPending}
+              startLabel="Enregistrer la configuration"
+            />
           </div>
           <ToolReadinessPanel
             agentAvailability={project.agentAvailability}
@@ -79,15 +83,41 @@ export function DeveloperProjectCard({
             readiness={project.readiness}
           />
           <div className="rounded-xl border border-slate-800 bg-slate-950/70 p-3">
-            <p className="mb-2 text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">Share with PM</p>
+            <div className="mb-3 flex items-center justify-between gap-3">
+              <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">PM invités</p>
+              <span className="font-mono text-xs text-slate-500">{project.pmMembers.length}</span>
+            </div>
             <ProjectShareForm
               isSubmitting={sharePending}
               onShare={async (pmEmail) => onShareProject(project.id, pmEmail)}
             />
+            {project.pmMembers.length > 0 ? (
+              <ul className="mt-3 divide-y divide-white/5 border-t border-white/10" aria-label="PM invités">
+                {project.pmMembers.map((member) => (
+                  <li className="flex min-w-0 items-center gap-3 py-3" key={member.email}>
+                    <span className="flex size-9 flex-none items-center justify-center rounded-[9px] bg-[#2f7a52] text-sm font-semibold text-[#eafff3]">
+                      {(member.displayName ?? member.email).slice(0, 1).toUpperCase()}
+                    </span>
+                    <span className="min-w-0">
+                      <span className="block truncate font-medium text-slate-200">
+                        {member.displayName ?? member.email}
+                      </span>
+                      {member.displayName ? (
+                        <span className="block truncate text-xs text-slate-500">{member.email}</span>
+                      ) : null}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <p className="mt-3 border-t border-white/10 pt-3 text-xs leading-5 text-slate-500">
+                Aucun PM invité pour ce projet.
+              </p>
+            )}
           </div>
         </div>
         <div className="space-y-3">
-          <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">Sessions and cleanup</p>
+          <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">Sessions et nettoyage</p>
           {project.sessions.length > 0 ? (
             project.sessions.map((session) => (
               <SessionControlCard
@@ -99,7 +129,7 @@ export function DeveloperProjectCard({
             ))
           ) : (
             <div className="rounded-xl border border-slate-800 bg-slate-950/70 p-3 text-sm text-slate-500">
-              No sessions yet. Start a developer session with the configured agent model.
+              Aucune demande PM active pour ce projet.
             </div>
           )}
         </div>

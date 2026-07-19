@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   Body,
   Controller,
   Get,
@@ -9,6 +10,7 @@ import {
   Post,
   Req,
 } from '@nestjs/common';
+import { createDraftReviewRequestInputSchema } from '@pairdock/shared-contracts';
 import type { AuthenticatedRequest } from '../auth/authenticated-request.js';
 import { RequireAuth } from '../auth/require-auth.decorator.js';
 import { RequireSessionAccess } from '../auth/require-session-access.decorator.js';
@@ -23,7 +25,6 @@ interface CreatePromptBody {
 
 interface CreateSessionBody {
   projectId?: string;
-  modelId?: string;
   startSource?: SessionStartSource;
 }
 
@@ -97,11 +98,21 @@ export class SessionsController {
 
   @Post(':sessionId/review-request')
   @RequireSessionAccess()
-  createDraftReviewRequest(@Param('sessionId') sessionId: string, @Req() request: AuthenticatedRequest) {
+  createDraftReviewRequest(
+    @Param('sessionId') sessionId: string,
+    @Body() body: unknown,
+    @Req() request: AuthenticatedRequest,
+  ) {
     if (!request.user) {
       throw new InternalServerErrorException('Authenticated user was not resolved.');
     }
 
-    return this.createDraftReviewRequestUseCase.create(sessionId, request.user);
+    const input = createDraftReviewRequestInputSchema.safeParse(body);
+
+    if (!input.success) {
+      throw new BadRequestException('PR type, title, and description are required.');
+    }
+
+    return this.createDraftReviewRequestUseCase.create(sessionId, request.user, input.data);
   }
 }

@@ -87,6 +87,7 @@ model Project {
   repoFullName              String                  @map("repo_full_name")
   defaultBranch             String                  @map("default_branch")
   defaultModelId            String                  @default("codex-cli/gpt-5.4") @map("default_model_id")
+  defaultReasoningEffort     String                  @default("medium") @map("default_reasoning_effort")
   pmCanStartSessions        Boolean                 @default(true) @map("pm_can_start_sessions")
   agentProjectKey           String                  @map("agent_project_key")
   createdAt                 DateTime                @default(now()) @map("created_at") @db.Timestamptz(6)
@@ -135,6 +136,7 @@ model Session {
   createdByUserId String         @map("created_by_user_id") @db.Uuid
   status          SessionStatus
   modelId         String         @map("model_id")
+  reasoningEffort String         @default("medium") @map("reasoning_effort")
   branchName      String?        @map("branch_name")
   worktreeRef     String?        @map("worktree_ref")
   previewUrl      String?        @map("preview_url")

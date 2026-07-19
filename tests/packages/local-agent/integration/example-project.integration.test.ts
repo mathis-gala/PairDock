@@ -110,7 +110,7 @@ test('Task 8 and Task 9: an example project prepares a preview and a dummy promp
   const harnessAdapter = new CodexHarnessAdapter({
     pairdock: {
       command: 'node',
-      args: [HARNESS_SCRIPT_PATH, '{{prompt}}', '{{modelId}}'],
+      args: [HARNESS_SCRIPT_PATH, '{{prompt}}', '{{modelId}}', '{{reasoningEffort}}'],
     },
   });
 
@@ -127,26 +127,28 @@ test('Task 8 and Task 9: an example project prepares a preview and a dummy promp
         projectKey: workspace.projectKey,
         prompt: 'ship-it',
         modelId: 'codex-cli/gpt-5.4',
+        reasoningEffort: 'medium',
         worktreePath: workspace.worktreePath,
       }),
     );
 
-    assert.deepEqual(events, [
-      {
-        type: 'output',
-        stream: 'stdout',
-        text: 'prompt:ship-it\n',
-      },
-      {
-        type: 'output',
-        stream: 'stderr',
-        text: 'model:codex-cli/gpt-5.4\n',
-      },
-      {
-        type: 'done',
-        exitCode: 0,
-      },
-    ]);
+    const outputEvents = events.filter((event) => event.type === 'output');
+
+    assert.equal(
+      outputEvents
+        .filter((event) => event.stream === 'stdout')
+        .map((event) => event.text)
+        .join(''),
+      'prompt:ship-it\n',
+    );
+    assert.equal(
+      outputEvents
+        .filter((event) => event.stream === 'stderr')
+        .map((event) => event.text)
+        .join(''),
+      'model:codex-cli/gpt-5.4\nreasoning:medium\n',
+    );
+    assert.deepEqual(events.at(-1), { type: 'done', exitCode: 0 });
   } finally {
     await sessionRunner.close(buildCloseCommand(sessionId));
   }

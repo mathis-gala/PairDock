@@ -1,4 +1,5 @@
 import { type ExecFileException, execFile } from 'node:child_process';
+import { createHash } from 'node:crypto';
 import { access } from 'node:fs/promises';
 import { join } from 'node:path';
 import { promisify } from 'node:util';
@@ -15,6 +16,7 @@ interface ChangedFile {
 export interface CollectedDiff {
   diff: string;
   changedFiles: string[];
+  fingerprint: string;
 }
 
 export class DiffService {
@@ -24,18 +26,28 @@ export class DiffService {
     const changedFiles = await this.listChangedFiles(worktreePath);
 
     if (changedFiles.length === 0) {
-      return { diff: '', changedFiles: [] };
+      return { diff: '', changedFiles: [], fingerprint: createHash('sha256').digest('hex') };
     }
 
     const sections: string[] = [];
+    const fingerprint = createHash('sha256');
 
     for (const file of changedFiles) {
-      if (this.sensitiveFilesPolicy.isSensitive(file.path)) {
+      const isSensitive = this.sensitiveFilesPolicy.isSensitive(file.path);
+      const section = isSensitive
+        ? await this.renderSensitiveFileFingerprint(worktreePath, file.path)
+        : await this.renderDiffSection(worktreePath, file);
+      fingerprint.update(file.statusCode);
+      fingerprint.update('\0');
+      fingerprint.update(file.path);
+      fingerprint.update('\0');
+      fingerprint.update(section);
+      fingerprint.update('\0');
+
+      if (isSensitive) {
         sections.push(`${sensitiveFileMarker} Sensitive file omitted: ${file.path}`);
         continue;
       }
-
-      const section = await this.renderDiffSection(worktreePath, file);
 
       if (section) {
         sections.push(section.trim());
@@ -45,6 +57,7 @@ export class DiffService {
     return {
       diff: sections.join('\n\n').trim(),
       changedFiles: changedFiles.map((file) => file.path),
+      fingerprint: fingerprint.digest('hex'),
     };
   }
 
@@ -70,6 +83,16 @@ export class DiffService {
     }
 
     return execGit(worktreePath, ['diff', '--no-ext-diff', '--relative', 'HEAD', '--', file.path]);
+  }
+
+  private async renderSensitiveFileFingerprint(worktreePath: string, relativePath: string): Promise<string> {
+    try {
+      await access(join(worktreePath, relativePath));
+    } catch {
+      return 'missing';
+    }
+
+    return execGit(worktreePath, ['hash-object', '--', relativePath]);
   }
 
   private async renderUntrackedFileDiff(worktreePath: string, relativePath: string): Promise<string> {
