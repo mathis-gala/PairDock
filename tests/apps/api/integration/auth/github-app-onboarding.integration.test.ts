@@ -17,6 +17,7 @@ const previousEnv = {
   GITHUB_APP_SLUG: process.env.GITHUB_APP_SLUG,
   GITHUB_API_BASE_URL: process.env.GITHUB_API_BASE_URL,
   GITHUB_CLIENT_ID: process.env.GITHUB_CLIENT_ID,
+  GITHUB_CLIENT_SECRET: process.env.GITHUB_CLIENT_SECRET,
   GITHUB_OAUTH_BASE_URL: process.env.GITHUB_OAUTH_BASE_URL,
   GITHUB_REDIRECT_URI: process.env.GITHUB_REDIRECT_URI,
   GITHUB_TOKEN: process.env.GITHUB_TOKEN,
@@ -36,6 +37,7 @@ test.before(async () => {
   process.env.GITHUB_APP_SLUG = 'pairdock-test';
   process.env.GITHUB_API_BASE_URL = githubBaseUrl;
   process.env.GITHUB_CLIENT_ID = 'github-client-id';
+  process.env.GITHUB_CLIENT_SECRET = 'github-client-secret';
   process.env.GITHUB_OAUTH_BASE_URL = githubBaseUrl;
   process.env.GITHUB_REDIRECT_URI = 'http://127.0.0.1:3000/auth/developer/callback';
   process.env.GITHUB_TOKEN = 'source-control-test-token';
