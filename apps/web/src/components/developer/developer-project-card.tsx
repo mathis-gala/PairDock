@@ -83,11 +83,37 @@ export function DeveloperProjectCard({
             readiness={project.readiness}
           />
           <div className="rounded-xl border border-slate-800 bg-slate-950/70 p-3">
-            <p className="mb-2 text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">Share with PM</p>
+            <div className="mb-3 flex items-center justify-between gap-3">
+              <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">PM invités</p>
+              <span className="font-mono text-xs text-slate-500">{project.pmMembers.length}</span>
+            </div>
             <ProjectShareForm
               isSubmitting={sharePending}
               onShare={async (pmEmail) => onShareProject(project.id, pmEmail)}
             />
+            {project.pmMembers.length > 0 ? (
+              <ul className="mt-3 divide-y divide-white/5 border-t border-white/10" aria-label="PM invités">
+                {project.pmMembers.map((member) => (
+                  <li className="flex min-w-0 items-center gap-3 py-3" key={member.email}>
+                    <span className="flex size-9 flex-none items-center justify-center rounded-[9px] bg-[#2f7a52] text-sm font-semibold text-[#eafff3]">
+                      {(member.displayName ?? member.email).slice(0, 1).toUpperCase()}
+                    </span>
+                    <span className="min-w-0">
+                      <span className="block truncate font-medium text-slate-200">
+                        {member.displayName ?? member.email}
+                      </span>
+                      {member.displayName ? (
+                        <span className="block truncate text-xs text-slate-500">{member.email}</span>
+                      ) : null}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <p className="mt-3 border-t border-white/10 pt-3 text-xs leading-5 text-slate-500">
+                Aucun PM invité pour ce projet.
+              </p>
+            )}
           </div>
         </div>
         <div className="space-y-3">

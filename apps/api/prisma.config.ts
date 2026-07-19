@@ -1,10 +1,16 @@
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { config as loadDotenv } from 'dotenv';
-import { defineConfig, env } from 'prisma/config';
+import { defineConfig } from 'prisma/config';
+import { resolveDatabaseConnectionString } from './src/persistence/database-url.js';
 
 const currentDirectory = path.dirname(fileURLToPath(import.meta.url));
 loadDotenv({ path: path.join(currentDirectory, '.env') });
+
+const databaseTargetEnvironment = {
+  ...process.env,
+  NODE_ENV: process.env.PAIRDOCK_DATABASE_TARGET === 'test' ? 'test' : 'development',
+};
 
 export default defineConfig({
   schema: path.join('prisma', 'schema.prisma'),
@@ -12,6 +18,6 @@ export default defineConfig({
     path: path.join('prisma', 'migrations'),
   },
   datasource: {
-    url: env('DATABASE_URL'),
+    url: resolveDatabaseConnectionString(databaseTargetEnvironment),
   },
 });

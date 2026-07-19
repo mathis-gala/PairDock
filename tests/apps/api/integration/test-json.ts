@@ -103,6 +103,12 @@ export const developerProjectResponseSchema = z.object({
   sourceControlAccountLogin: z.string(),
   pmCanStartSessions: z.boolean(),
   pmMemberCount: z.number(),
+  pmMembers: z.array(
+    z.object({
+      email: z.string(),
+      displayName: z.string().nullable(),
+    }),
+  ),
   agentAvailability: z.string(),
   readiness: z
     .object({

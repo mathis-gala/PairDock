@@ -65,8 +65,30 @@ export function PreviewFrame({ presetId, previewUrl }: PreviewFrameProps) {
           </div>
         </div>
       ) : (
-        <div className="m-auto max-w-[320px] rounded-[12px] border border-dashed border-white/10 bg-[#15171c] px-4 py-12 text-center text-sm text-[#565d6b]">
-          L'agent local n'a pas encore publié d'URL de preview pour cette session.
+        <div
+          aria-live="polite"
+          className="m-auto flex max-w-[360px] flex-col items-center px-6 py-12 text-center"
+          role="status"
+        >
+          <svg
+            aria-hidden="true"
+            className="size-7 animate-spin text-[#5fdf9b] motion-reduce:animate-none"
+            fill="none"
+            viewBox="0 0 24 24"
+          >
+            <circle className="opacity-20" cx="12" cy="12" r="9" stroke="currentColor" strokeWidth="2.5" />
+            <path
+              className="opacity-90"
+              d="M21 12a9 9 0 0 0-9-9"
+              stroke="currentColor"
+              strokeLinecap="round"
+              strokeWidth="2.5"
+            />
+          </svg>
+          <p className="mt-4 text-sm font-medium text-[#cdd2dc]">L'agent local prépare la preview</p>
+          <p className="mt-1 max-w-[32ch] text-xs leading-5 text-[#6f7686]">
+            L'URL apparaîtra ici dès que l'application sera prête.
+          </p>
         </div>
       )}
     </div>

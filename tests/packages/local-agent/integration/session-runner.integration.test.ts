@@ -74,7 +74,7 @@ function buildPushCommand(sessionId: string): GitPushBranchCommandEnvelope {
     sessionId,
     sentAt: new Date().toISOString(),
     type: 'git.pushBranch',
-    payload: { sessionId },
+    payload: { sessionId, commitMessage: 'feat: pairdock session changes' },
   };
 }
 
@@ -264,7 +264,10 @@ test('V1: WorktreeService refuses to push sensitive generated files', async () =
   const workspace = await worktreeService.prepare(buildPrepareCommand(), repositoryPath);
   await writeFile(join(workspace.worktreePath, '.env'), 'SECRET=do-not-commit');
 
-  await assert.rejects(() => worktreeService.pushBranch(workspace), /Refusing to commit sensitive files: \.env/);
+  await assert.rejects(
+    () => worktreeService.pushBranch(workspace, 'fix: block sensitive files'),
+    /Refusing to commit sensitive files: \.env/,
+  );
   await assert.rejects(() => execGit(remotePath, ['rev-parse', '--verify', `refs/heads/${workspace.branchName}`]));
 });
 
@@ -394,7 +397,7 @@ class BlockingPushWorktreeService extends WorktreeService {
     this.resolvePushRelease = resolve;
   });
 
-  override async pushBranch(input: { branchName: string }): Promise<string> {
+  override async pushBranch(input: { branchName: string }, _commitMessage: string): Promise<string> {
     this.resolvePushStarted();
     await this.pushRelease;
     return input.branchName;

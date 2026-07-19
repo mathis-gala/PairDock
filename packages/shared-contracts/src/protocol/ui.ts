@@ -81,6 +81,12 @@ export const developerProjectSummarySchema = z.object({
   sourceControlAccountLogin: z.string().min(1),
   pmCanStartSessions: z.boolean(),
   pmMemberCount: z.number().int().nonnegative(),
+  pmMembers: z.array(
+    z.object({
+      email: z.string().email(),
+      displayName: z.string().nullable(),
+    }),
+  ),
   agentAvailability: z.enum(['online', 'offline']),
   readiness: developerProjectReadinessSchema.nullable(),
   sessions: z.array(developerProjectSessionSummarySchema),
@@ -134,6 +140,14 @@ export const shareDeveloperProjectInputSchema = z.object({
   pmEmail: z.string().trim().email(),
 });
 
+export const createDraftReviewRequestInputSchema = z
+  .object({
+    type: z.enum(['feat', 'fix']),
+    title: z.string().trim().min(1).max(120),
+    description: z.string().trim().min(1).max(10_000),
+  })
+  .strict();
+
 export const updateProjectExecutionDefaultsInputSchema = z
   .object({
     modelId: z.string().trim().min(1),
@@ -154,4 +168,5 @@ export type DeveloperSetupAgent = z.infer<typeof developerSetupAgentSchema>;
 export type DeveloperProjectSetup = z.infer<typeof developerProjectSetupSchema>;
 export type CreateDeveloperProjectInput = z.infer<typeof createDeveloperProjectInputSchema>;
 export type ShareDeveloperProjectInput = z.infer<typeof shareDeveloperProjectInputSchema>;
+export type CreateDraftReviewRequestInput = z.infer<typeof createDraftReviewRequestInputSchema>;
 export type UpdateProjectExecutionDefaultsInput = z.infer<typeof updateProjectExecutionDefaultsInputSchema>;

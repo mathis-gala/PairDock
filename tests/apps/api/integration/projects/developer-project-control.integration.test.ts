@@ -129,6 +129,7 @@ test('BT-028/BT-029/BT-049: developer creates a project, shares it, starts a mod
   assert.equal(createdProject.defaultReasoningEffort, 'low');
   assert.equal(createdProject.sourceControlAccountLogin, 'mathis');
   assert.equal(createdProject.pmMemberCount, 0);
+  assert.deepEqual(createdProject.pmMembers, []);
   assert.deepEqual(createdProject.sessions, []);
 
   const shareResponse = await fetch(`${baseUrl}/projects/${createdProject.id}/members`, {
@@ -205,6 +206,12 @@ test('BT-028/BT-029/BT-049: developer creates a project, shares it, starts a mod
   const developerProjects = await parseJsonResponse(dashboardResponse, developerProjectListResponseSchema);
   assert.equal(developerProjects.length, 1);
   assert.equal(developerProjects[0]?.pmMemberCount, 1);
+  assert.deepEqual(developerProjects[0]?.pmMembers, [
+    {
+      email: pmLogin.body.user.email,
+      displayName: pmLogin.body.user.displayName,
+    },
+  ]);
   assert.equal(developerProjects[0]?.sessions[0]?.id, createdSession.id);
   assert.equal(developerProjects[0]?.sessions[0]?.status, 'CLOSED');
 });

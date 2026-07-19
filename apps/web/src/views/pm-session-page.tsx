@@ -1,9 +1,11 @@
+import type { CreateDraftReviewRequestInput } from '@pairdock/shared-contracts';
 import { useState } from 'react';
 import { Button } from '../components/button.js';
 import { ConversationThread } from '../components/pm-session/conversation-thread.js';
 import { PreviewFrame } from '../components/pm-session/preview-frame.js';
 import { PreviewToolbar } from '../components/pm-session/preview-toolbar.js';
 import { PromptComposer } from '../components/pm-session/prompt-composer.js';
+import { ReviewRequestDialog } from '../components/pm-session/review-request-dialog.js';
 import { SectionCard } from '../components/section-card.js';
 import { useSessionData } from '../hooks/use-session-data.js';
 import { useSessionEventFeed } from '../hooks/use-session-event-feed.js';
@@ -18,6 +20,7 @@ interface PmSessionPageProps {
 
 export function PmSessionPage({ accessToken, onBack, sessionId }: PmSessionPageProps) {
   const [presetId, setPresetId] = useState<PreviewPresetId>('desktop');
+  const [isReviewDialogOpen, setIsReviewDialogOpen] = useState(false);
   useSessionEventFeed(accessToken, sessionId);
   const {
     sessionQuery,
@@ -82,9 +85,22 @@ export function PmSessionPage({ accessToken, onBack, sessionId }: PmSessionPageP
     await sendPromptMutation.mutateAsync(content);
   }
 
-  async function handleCreateReviewRequest() {
+  function handleOpenReviewDialog() {
     createReviewRequestMutation.reset();
-    await createReviewRequestMutation.mutateAsync();
+    setIsReviewDialogOpen(true);
+  }
+
+  function handleCloseReviewDialog() {
+    if (!createReviewRequestMutation.isPending) {
+      setIsReviewDialogOpen(false);
+    }
+  }
+
+  function handleCreateReviewRequest(input: CreateDraftReviewRequestInput) {
+    createReviewRequestMutation.reset();
+    createReviewRequestMutation.mutate(input, {
+      onSuccess: () => setIsReviewDialogOpen(false),
+    });
   }
 
   return (
@@ -213,14 +229,22 @@ export function PmSessionPage({ accessToken, onBack, sessionId }: PmSessionPageP
             ) : (
               <Button
                 disabled={!canCreateReviewRequest || createReviewRequestMutation.isPending}
-                onClick={handleCreateReviewRequest}
+                onClick={handleOpenReviewDialog}
               >
-                {createReviewRequestMutation.isPending ? 'Ouverture…' : 'Soumettre la PR'}
+                Soumettre la PR
               </Button>
             )}
           </div>
         </section>
       </div>
+      {isReviewDialogOpen ? (
+        <ReviewRequestDialog
+          error={reviewRequestError}
+          isSubmitting={createReviewRequestMutation.isPending}
+          onClose={handleCloseReviewDialog}
+          onSubmit={handleCreateReviewRequest}
+        />
+      ) : null}
     </div>
   );
 }

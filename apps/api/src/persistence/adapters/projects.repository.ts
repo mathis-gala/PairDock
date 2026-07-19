@@ -56,6 +56,18 @@ export class ProjectsRepositoryAdapter implements ProjectsRepository {
             accountLogin: true,
           },
         },
+        projectMembers: {
+          where: { role: 'pm' },
+          select: {
+            user: {
+              select: {
+                email: true,
+                displayName: true,
+              },
+            },
+          },
+          orderBy: { createdAt: 'asc' },
+        },
         _count: {
           select: {
             projectMembers: true,
@@ -69,6 +81,10 @@ export class ProjectsRepositoryAdapter implements ProjectsRepository {
       project: mapProject(record),
       sourceControlAccountLogin: record.sourceControlConnection.accountLogin,
       pmMemberCount: record._count.projectMembers,
+      pmMembers: record.projectMembers.map(({ user }) => ({
+        email: user.email,
+        displayName: user.displayName,
+      })),
     }));
   }
 

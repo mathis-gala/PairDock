@@ -22,6 +22,10 @@ export interface DeveloperProjectRecord {
   project: Project;
   sourceControlAccountLogin: string;
   pmMemberCount: number;
+  pmMembers: Array<{
+    email: string;
+    displayName: string | null;
+  }>;
 }
 
 export interface ProjectsRepository {

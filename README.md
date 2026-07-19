@@ -21,6 +21,7 @@ bun run test
 bun run build
 bun run db:status
 bun run db:migrate:dev -- --name init
+bun run db:migrate:test
 bun run dev:web
 bun run dev:api
 bun run dev:agent
@@ -80,6 +81,21 @@ Create a Slack App from `api.slack.com/apps`, add the redirect URL above under *
 You do not need a bot token, event subscriptions, slash commands, or incoming webhooks for V1 PM auth.
 
 ### 3. Start PairDock
+
+Keep application and automated-test data isolated. Create a dedicated `pairdock_test` database, then configure both URLs in `apps/api/.env`:
+
+```env
+DATABASE_URL=postgresql://postgres:pairdockdev@127.0.0.1:55432/pairdock
+TEST_DATABASE_URL=postgresql://postgres:pairdockdev@127.0.0.1:55432/pairdock_test
+```
+
+Apply test migrations once before running database-backed tests:
+
+```bash
+bun run db:migrate:test
+```
+
+PairDock refuses to start database-backed tests when `TEST_DATABASE_URL` is missing, points to the same physical database as `DATABASE_URL`, or its database name lacks an explicit `test` marker. A separate PostgreSQL schema is intentionally rejected because the runtime adapter does not guarantee schema isolation. Integration and E2E cleanup can therefore never fall back to the application database.
 
 ```bash
 bun run db:migrate:dev
@@ -200,7 +216,7 @@ PM users can start sessions only after required readiness checks are green.
 
 ## Notes
 
-Persistence uses Prisma from the backend workspace. Set `DATABASE_URL` before running migration, reset, status, or persistence test commands. Use `bun run db:migrate:dev -- --name <migration-name>` while developing and keep `bun run db:migrate` for applying existing migrations.
+Persistence uses Prisma from the backend workspace. Use `DATABASE_URL` for application migrations and `TEST_DATABASE_URL` for automated tests. Use `bun run db:migrate:dev -- --name <migration-name>` while developing, `bun run db:migrate` for applying existing application migrations, and `bun run db:migrate:test` only for the isolated test target.
 
 When deploying the notification-removal migration, first deploy the API version that no longer accesses notifications and wait for old instances to stop before applying the table drop. A coordinated V1 deployment may stop the API, apply migrations, and then start the new version.
 

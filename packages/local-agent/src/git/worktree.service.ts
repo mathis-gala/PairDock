@@ -59,16 +59,16 @@ export class WorktreeService {
     }
   }
 
-  async pushBranch(input: PreparedWorktree): Promise<string> {
+  async pushBranch(input: PreparedWorktree, commitMessage: string): Promise<string> {
     const normalizedRepositoryPath = await this.requireGitRepository(input.repositoryPath);
 
     this.assertNotMainRepository(normalizedRepositoryPath, input.worktreePath);
-    await this.commitChanges(input);
+    await this.commitChanges(input, commitMessage);
     await execGit(input.worktreePath, ['push', '--set-upstream', 'origin', input.branchName]);
     return input.branchName;
   }
 
-  private async commitChanges(input: PreparedWorktree): Promise<void> {
+  private async commitChanges(input: PreparedWorktree, commitMessage: string): Promise<void> {
     await execGit(input.worktreePath, ['add', '--all']);
     const stagedFiles = (await execGit(input.worktreePath, ['diff', '--cached', '--name-only', '-z']))
       .split('\0')
@@ -91,7 +91,7 @@ export class WorktreeService {
       'user.email=pairdock@localhost',
       'commit',
       '-m',
-      `PairDock session ${input.branchName}`,
+      commitMessage,
     ]);
   }
 

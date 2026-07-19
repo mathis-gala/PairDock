@@ -230,7 +230,7 @@ export class SessionRunner {
     }
 
     return {
-      branchName: await this.worktreeService.pushBranch(workspace),
+      branchName: await this.worktreeService.pushBranch(workspace, command.payload.commitMessage),
     };
   }
 

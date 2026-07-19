@@ -177,7 +177,15 @@ async function sendPrompt(accessToken: string, sessionId: string) {
 async function createReviewRequest(accessToken: string, sessionId: string) {
   const response = await fetch(`${baseUrl}/sessions/${sessionId}/review-request`, {
     method: 'POST',
-    headers: { authorization: `Bearer ${accessToken}` },
+    headers: {
+      authorization: `Bearer ${accessToken}`,
+      'content-type': 'application/json',
+    },
+    body: JSON.stringify({
+      type: 'feat',
+      title: 'Complete the PairDock MVP flow',
+      description: 'Creates the tested PairDock MVP draft review request.',
+    }),
   });
 
   assert.equal(response.status, 201);

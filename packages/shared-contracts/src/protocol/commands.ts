@@ -61,6 +61,7 @@ export const gitPushBranchCommandEnvelopeSchema = sessionEnvelope(
   'git.pushBranch',
   z.object({
     sessionId: uuidSchema,
+    commitMessage: z.string().trim().min(1).max(72),
   }),
 ).refine(({ sessionId, payload }) => payload.sessionId === sessionId, sessionIdConsistencyRule);
 

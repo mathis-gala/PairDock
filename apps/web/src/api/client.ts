@@ -1,5 +1,6 @@
 import {
   type CreateDeveloperProjectInput,
+  type CreateDraftReviewRequestInput,
   type DeveloperProjectSetup,
   type DeveloperProjectSummary,
   developerProjectSetupSchema,
@@ -50,7 +51,10 @@ export interface ApiClient {
     listEvents(sessionId: string): Promise<SessionEventRecordView[]>;
     sendPrompt(sessionId: string, content: string): Promise<SessionMessageView>;
     cancelPrompt(sessionId: string): Promise<void>;
-    createDraftReviewRequest(sessionId: string): Promise<{ reviewRequestUrl: string }>;
+    createDraftReviewRequest(
+      sessionId: string,
+      input: CreateDraftReviewRequestInput,
+    ): Promise<{ reviewRequestUrl: string }>;
     close(sessionId: string): Promise<SessionView>;
   };
 }
@@ -164,10 +168,14 @@ export function createApiClient(accessToken: string): ApiClient {
           headers: authHeaders(accessToken),
         });
       },
-      async createDraftReviewRequest(sessionId: string): Promise<{ reviewRequestUrl: string }> {
+      async createDraftReviewRequest(
+        sessionId: string,
+        input: CreateDraftReviewRequestInput,
+      ): Promise<{ reviewRequestUrl: string }> {
         const value = await requestJson(`/sessions/${sessionId}/review-request`, {
           method: 'POST',
-          headers: authHeaders(accessToken),
+          headers: jsonHeaders(accessToken),
+          body: JSON.stringify(input),
         });
         return z.object({ reviewRequestUrl: z.string() }).parse(value);
       },

@@ -257,6 +257,7 @@ export class ProjectsService {
         project,
         sourceControlAccountLogin: sourceControlConnection.accountLogin,
         pmMemberCount: 0,
+        pmMembers: [],
       },
       [],
       new Map(),
@@ -546,6 +547,7 @@ export class ProjectsService {
       sourceControlAccountLogin: record.sourceControlAccountLogin,
       pmCanStartSessions: record.project.pmCanStartSessions,
       pmMemberCount: record.pmMemberCount,
+      pmMembers: record.pmMembers,
       agentAvailability: this.connectedAgentsRegistry.findSocketId(record.project.agentProjectKey)
         ? 'online'
         : 'offline',

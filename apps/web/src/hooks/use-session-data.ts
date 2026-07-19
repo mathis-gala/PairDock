@@ -1,3 +1,4 @@
+import type { CreateDraftReviewRequestInput } from '@pairdock/shared-contracts';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { createApiClient } from '../api/client.js';
 import type { SessionMessageView } from '../schemas/session.js';
@@ -39,7 +40,7 @@ export function useSessionData(accessToken: string, sessionId: string) {
   });
 
   const createReviewRequestMutation = useMutation({
-    mutationFn: () => api.sessions.createDraftReviewRequest(sessionId),
+    mutationFn: (input: CreateDraftReviewRequestInput) => api.sessions.createDraftReviewRequest(sessionId, input),
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ['session', sessionId] });
       void queryClient.invalidateQueries({ queryKey: ['session-events', sessionId] });

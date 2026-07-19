@@ -29,6 +29,7 @@ const project: DeveloperProjectSummary = {
   sourceControlAccountLogin: 'mathis',
   pmCanStartSessions: true,
   pmMemberCount: 1,
+  pmMembers: [{ email: 'pm@pairdock.test', displayName: 'PM Reviewer' }],
   agentAvailability: 'offline',
   readiness: null,
   sessions: [
@@ -88,8 +89,10 @@ test('BT-028/BT-029/BT-049: developer project card exposes agent defaults, shari
   assert.match(html, /Enregistrer la configuration/);
   assert.match(html, /Raisonnement/);
   assert.match(html, /High/);
-  assert.match(html, /Share with PM/);
+  assert.match(html, /PM invités/);
   assert.match(html, /PM access/);
+  assert.match(html, /PM Reviewer/);
+  assert.match(html, /pm@pairdock\.test/);
   assert.match(html, /Open draft review request/);
   assert.match(html, /https:\/\/github\.com\/mathis\/developer-project\/pull\/14/);
   assert.match(html, /Close session/);
