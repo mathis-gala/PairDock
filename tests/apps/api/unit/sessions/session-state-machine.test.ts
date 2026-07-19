@@ -77,3 +77,17 @@ test('a PM can ask for another iteration after validation or a recoverable agent
     assert.equal(session.lastError, null);
   }
 });
+
+test('a successful agent answer without file changes resumes the relevant promptable status', () => {
+  const stateMachine = new SessionStateMachine();
+
+  for (const resumeStatus of ['READY', 'AWAITING_PM_VALIDATION', 'FAILED'] as const) {
+    const session = stateMachine.applyAgentEvent(buildSession('AGENT_RUNNING'), {
+      type: 'agent.done',
+      payload: { exitCode: 0, changesDetected: false, resumeStatus },
+    });
+
+    assert.equal(session.status, resumeStatus);
+    assert.equal(session.lastError === null, resumeStatus !== 'FAILED');
+  }
+});

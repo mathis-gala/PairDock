@@ -142,7 +142,7 @@ export const shareDeveloperProjectInputSchema = z.object({
 
 export const createDraftReviewRequestInputSchema = z
   .object({
-    type: z.enum(['feat', 'fix']),
+    type: z.enum(['feat', 'fix', 'style']),
     title: z.string().trim().min(1).max(120),
     description: z.string().trim().min(1).max(10_000),
   })

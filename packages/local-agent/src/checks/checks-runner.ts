@@ -56,6 +56,23 @@ export class ChecksRunner {
       };
     }
 
+    const firstAttempt = await this.runCommandAttempt(command, cwd);
+
+    if (firstAttempt.status !== 'failed' || !isTransientPackageExtractionFailure(firstAttempt.logs)) {
+      return firstAttempt;
+    }
+
+    const retry = await this.runCommandAttempt(command, cwd);
+    const retryNotice = 'Retry 1/1 after a transient package extraction failure.';
+    const logs = [firstAttempt.logs, retryNotice, retry.logs].filter(Boolean).join('\n').trim();
+
+    return {
+      ...retry,
+      ...(logs ? { logs: logs.slice(-MAX_LOG_CHARS) } : {}),
+    };
+  }
+
+  private runCommandAttempt(command: string, cwd: string): Promise<CheckResult> {
     return new Promise<CheckResult>((resolve, reject) => {
       let logs = '';
       const child = spawn(command, {
@@ -110,6 +127,10 @@ export class ChecksRunner {
       };
     }
   }
+}
+
+function isTransientPackageExtractionFailure(logs: string | undefined): boolean {
+  return /fail extracting tarball for/i.test(logs ?? '');
 }
 
 function appendLogs(current: string, next: string): string {

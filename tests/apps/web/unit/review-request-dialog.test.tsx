@@ -18,6 +18,7 @@ test('review request dialog collects type, title, and description accessibly', (
   assert.match(html, /aria-modal="true"/);
   assert.match(html, /Feature/);
   assert.match(html, /Fix/);
+  assert.match(html, /Style/);
   assert.match(html, /Titre de la PR/);
   assert.match(html, /Description de la PR/);
   assert.match(html, /Créer la draft PR/);

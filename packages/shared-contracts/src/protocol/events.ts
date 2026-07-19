@@ -93,6 +93,7 @@ export const agentDoneEventEnvelopeSchema = sessionEnvelope(
   z.object({
     sessionId: uuidSchema,
     exitCode: z.int(),
+    changesDetected: z.boolean().optional(),
   }),
 ).refine(({ sessionId, payload }) => payload.sessionId === sessionId, sessionIdConsistencyRule);
 

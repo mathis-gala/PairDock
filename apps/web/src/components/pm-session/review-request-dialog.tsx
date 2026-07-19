@@ -20,7 +20,7 @@ export function ReviewRequestDialog({ error, isSubmitting, onClose, onSubmit }: 
   const displayedError = validationError ?? error;
 
   function handleTypeChange(event: ChangeEvent<HTMLInputElement>) {
-    if (event.target.value === 'feat' || event.target.value === 'fix') {
+    if (event.target.value === 'feat' || event.target.value === 'fix' || event.target.value === 'style') {
       setType(event.target.value);
     }
   }
@@ -110,7 +110,7 @@ export function ReviewRequestDialog({ error, isSubmitting, onClose, onSubmit }: 
           </div>
           <button
             aria-label="Fermer"
-            className="flex size-11 flex-none items-center justify-center rounded-[10px] text-[#8b92a1] transition hover:bg-white/5 hover:text-[#eef0f4] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#5fdf9b]/40 disabled:cursor-not-allowed disabled:opacity-50"
+            className="flex size-11 flex-none cursor-pointer items-center justify-center rounded-[10px] text-[#8b92a1] transition hover:bg-white/5 hover:text-[#eef0f4] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#5fdf9b]/40 disabled:cursor-not-allowed disabled:opacity-50"
             disabled={isSubmitting}
             onClick={handleClose}
             type="button"
@@ -126,7 +126,7 @@ export function ReviewRequestDialog({ error, isSubmitting, onClose, onSubmit }: 
             <legend className="mb-2 text-xs font-semibold uppercase tracking-[0.14em] text-[#6f7686]">
               Type de changement
             </legend>
-            <div className="grid grid-cols-2 gap-2">
+            <div className="grid grid-cols-3 gap-2">
               <label className="cursor-pointer">
                 <input
                   checked={type === 'feat'}
@@ -151,6 +151,19 @@ export function ReviewRequestDialog({ error, isSubmitting, onClose, onSubmit }: 
                 />
                 <span className="flex min-h-11 items-center justify-center gap-2 rounded-[10px] border border-white/10 bg-[#15171c] px-3 text-sm text-[#8b92a1] transition peer-checked:border-[#5fdf9b]/50 peer-checked:bg-[#5fdf9b]/10 peer-checked:text-[#eafff3] peer-focus-visible:ring-2 peer-focus-visible:ring-[#5fdf9b]/40">
                   Fix
+                </span>
+              </label>
+              <label className="cursor-pointer">
+                <input
+                  checked={type === 'style'}
+                  className="peer sr-only"
+                  name="review-request-type"
+                  onChange={handleTypeChange}
+                  type="radio"
+                  value="style"
+                />
+                <span className="flex min-h-11 items-center justify-center gap-2 rounded-[10px] border border-white/10 bg-[#15171c] px-3 text-sm text-[#8b92a1] transition peer-checked:border-[#5fdf9b]/50 peer-checked:bg-[#5fdf9b]/10 peer-checked:text-[#eafff3] peer-focus-visible:ring-2 peer-focus-visible:ring-[#5fdf9b]/40">
+                  Style
                 </span>
               </label>
             </div>

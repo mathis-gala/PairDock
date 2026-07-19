@@ -31,6 +31,11 @@ export interface SessionCloseResult {
   cleaned: boolean;
 }
 
+export interface SessionRecoveryResult {
+  recoveredSessionIds: string[];
+  failures: Array<{ sessionId: string; message: string }>;
+}
+
 export class SessionRunner {
   private readonly sessionOperations = new Map<string, Promise<void>>();
   private readonly sessionRegistry: SessionRegistry;
@@ -70,14 +75,17 @@ export class SessionRunner {
     command: SessionPrepareCommandEnvelope,
     hooks: SessionPrepareHooks,
   ): Promise<SessionWorkspace> {
-    const existingWorkspace = this.sessionRegistry.find(command.sessionId);
+    const activeWorkspace = this.sessionRegistry.find(command.sessionId);
 
-    if (existingWorkspace?.sandboxRef && existingWorkspace.tunnelRef) {
-      return existingWorkspace;
+    if (activeWorkspace?.sandboxRef && activeWorkspace.tunnelRef) {
+      return activeWorkspace;
     }
 
-    if (existingWorkspace) {
-      throw new Error(`Session ${command.sessionId} has incomplete cleanup and cannot be prepared again yet.`);
+    const persistedWorkspace = this.sessionRegistry.findPersisted(command.sessionId);
+    if (persistedWorkspace) {
+      throw new Error(
+        `Session ${command.sessionId} could not be recovered and must be closed before preparing it again.`,
+      );
     }
 
     const repositoryPath = this.projectPaths[command.payload.projectKey];
@@ -98,7 +106,7 @@ export class SessionRunner {
         projectKey: command.payload.projectKey,
         sessionId: command.sessionId,
       };
-      this.sessionRegistry.register(workspace);
+      await this.sessionRegistry.register(workspace);
 
       await onProgress?.('DOCKER_STARTING');
       this.logger?.info(`Starting Docker sandbox for session ${command.sessionId}.`);
@@ -112,7 +120,7 @@ export class SessionRunner {
         worktreePath: preparedWorktree.worktreePath,
       });
       workspace = { ...workspace, sandboxRef };
-      this.sessionRegistry.register(workspace);
+      await this.sessionRegistry.register(workspace);
 
       await onProgress?.('PREVIEW_STARTING');
       this.logger?.info(`Waiting for preview healthcheck for session ${command.sessionId}.`);
@@ -136,7 +144,7 @@ export class SessionRunner {
         tunnelRef,
       };
 
-      this.sessionRegistry.register(workspace);
+      await this.sessionRegistry.register(workspace);
       return workspace;
     } catch (error) {
       if (!workspace) {
@@ -146,7 +154,7 @@ export class SessionRunner {
       const cleanupErrors = await this.cleanupWorkspace(workspace, 'delete-local');
 
       if (cleanupErrors.length === 0) {
-        this.sessionRegistry.unregister(command.sessionId);
+        await this.sessionRegistry.unregister(command.sessionId);
         throw error;
       }
 
@@ -162,7 +170,7 @@ export class SessionRunner {
   }
 
   private async closeUnlocked(command: SessionCloseCommandEnvelope): Promise<SessionCloseResult> {
-    const workspace = this.sessionRegistry.find(command.sessionId);
+    const workspace = this.sessionRegistry.findPersisted(command.sessionId);
 
     if (!workspace) {
       return { cleaned: true };
@@ -174,7 +182,7 @@ export class SessionRunner {
       throw new AggregateError(cleanupErrors, cleanupErrors.map(errorMessage).join('; '));
     }
 
-    this.sessionRegistry.unregister(command.sessionId);
+    await this.sessionRegistry.unregister(command.sessionId);
     return { cleaned: true };
   }
 
@@ -192,7 +200,7 @@ export class SessionRunner {
         await this.previewTunnelPort.close(remainingWorkspace.tunnelRef, resolvedPreviewConfig);
         const { previewUrl: _previewUrl, tunnelRef: _tunnelRef, ...withoutTunnel } = remainingWorkspace;
         remainingWorkspace = withoutTunnel;
-        this.sessionRegistry.register(remainingWorkspace);
+        await this.sessionRegistry.update(remainingWorkspace);
       } catch (error) {
         errors.push(error);
       }
@@ -203,7 +211,7 @@ export class SessionRunner {
         await this.sandboxPort.stop(remainingWorkspace.sandboxRef, resolvedPreviewConfig);
         const { sandboxRef: _sandboxRef, ...withoutSandbox } = remainingWorkspace;
         remainingWorkspace = withoutSandbox;
-        this.sessionRegistry.register(remainingWorkspace);
+        await this.sessionRegistry.update(remainingWorkspace);
       } catch (error) {
         errors.push(error);
       }
@@ -257,6 +265,39 @@ export class SessionRunner {
 
   findWorkspace(sessionId: string): SessionWorkspace | null {
     return this.sessionRegistry.find(sessionId);
+  }
+
+  async restore(): Promise<SessionRecoveryResult> {
+    const workspaces = await this.sessionRegistry.restore();
+    const recoveredSessionIds: string[] = [];
+    const failures: SessionRecoveryResult['failures'] = [];
+
+    for (const workspace of workspaces) {
+      try {
+        if (!workspace.sandboxRef || !workspace.tunnelRef || !workspace.previewUrl) {
+          throw new Error('Persisted workspace is incomplete.');
+        }
+
+        const configuredRepositoryPath = this.projectPaths[workspace.projectKey];
+        if (!configuredRepositoryPath) {
+          throw new Error(`Project ${workspace.projectKey} is no longer configured on this agent.`);
+        }
+
+        await this.worktreeService.validatePrepared(workspace, configuredRepositoryPath);
+
+        const healthcheck = await this.sandboxPort.check(workspace.sandboxRef);
+        if (!healthcheck.ready) {
+          throw new Error(healthcheck.message ?? 'Persisted preview is not reachable.');
+        }
+
+        recoveredSessionIds.push(workspace.sessionId);
+      } catch (error) {
+        this.sessionRegistry.suspend(workspace.sessionId);
+        failures.push({ sessionId: workspace.sessionId, message: errorMessage(error) });
+      }
+    }
+
+    return { recoveredSessionIds, failures };
   }
 }
 

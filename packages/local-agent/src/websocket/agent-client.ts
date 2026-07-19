@@ -103,6 +103,11 @@ export class AgentClient {
       throw new Error('AgentClient is already running.');
     }
 
+    const recovery = await this.sessionRunner.restore();
+    if (recovery.recoveredSessionIds.length > 0) {
+      this.logger.info(`Recovered ${recovery.recoveredSessionIds.length} prepared PairDock session(s).`);
+    }
+
     const socket = io(`${this.config.backendUrl}/agent`, {
       autoConnect: false,
       extraHeaders: this.config.authToken
@@ -124,6 +129,11 @@ export class AgentClient {
       });
 
       socket.emit(agentProtocolMessageEventName, event);
+      void this.publishRecoveryFailures(recovery.failures).catch((error: unknown) => {
+        this.logger.error(
+          `Failed to publish session recovery errors: ${error instanceof Error ? error.message : String(error)}`,
+        );
+      });
       void this.publishConfiguredProjectReadiness();
       this.logger.info(
         `Connected agent ${event.payload.agentId} to ${this.config.backendUrl} with ${event.payload.capabilities.length} capabilities.`,
@@ -189,6 +199,12 @@ export class AgentClient {
       socket.once('disconnect', () => resolve());
       socket.close();
     });
+  }
+
+  private async publishRecoveryFailures(failures: Array<{ sessionId: string; message: string }>): Promise<void> {
+    for (const failure of failures) {
+      await this.emitError('session.recovery.failed', failure.sessionId, new Error(failure.message), false);
+    }
   }
 
   private async handleProtocolMessage(payload: unknown): Promise<void> {
@@ -330,6 +346,8 @@ export class AgentClient {
         }),
       );
 
+      const initialDiff = await this.diffService.collect(workspace.worktreePath);
+
       for await (const event of this.agentHarnessPort.runPrompt({
         sessionId: command.sessionId,
         projectKey: workspace.projectKey,
@@ -356,33 +374,45 @@ export class AgentClient {
         throw new Error(`Agent harness completed without a final done event for session ${command.sessionId}.`);
       }
 
-      await this.emitEvent(
-        buildAgentDoneEvent({
-          sessionId: command.sessionId,
-          exitCode,
-        }),
-      );
-      this.logger.info(`[session:${command.sessionId}] Agent prompt exited with code ${exitCode}.`);
-
       if (exitCode !== 0) {
+        await this.emitEvent(
+          buildAgentDoneEvent({
+            sessionId: command.sessionId,
+            exitCode,
+          }),
+        );
+        this.logger.info(`[session:${command.sessionId}] Agent prompt exited with code ${exitCode}.`);
         this.logger.error(`[session:${command.sessionId}] Agent execution failed; validation checks were skipped.`);
         return;
       }
 
       const diff = await this.diffService.collect(workspace.worktreePath);
+      const changesDetected = initialDiff.fingerprint !== diff.fingerprint;
       this.logger.info(
-        `[session:${command.sessionId}] Collected ${diff.changedFiles.length} changed file${diff.changedFiles.length === 1 ? '' : 's'}.`,
+        `[session:${command.sessionId}] Collected ${diff.changedFiles.length} changed file${diff.changedFiles.length === 1 ? '' : 's'}; prompt changed worktree=${changesDetected}.`,
       );
 
-      if (diff.changedFiles.length > 0) {
-        await this.emitEvent(
-          buildGitDiffEvent({
-            sessionId: command.sessionId,
-            diff: diff.diff,
-            changedFiles: diff.changedFiles,
-          }),
-        );
+      await this.emitEvent(
+        buildAgentDoneEvent({
+          sessionId: command.sessionId,
+          exitCode,
+          changesDetected,
+        }),
+      );
+      this.logger.info(`[session:${command.sessionId}] Agent prompt exited with code ${exitCode}.`);
+
+      if (!changesDetected) {
+        this.logger.info(`[session:${command.sessionId}] Validation skipped because the worktree is unchanged.`);
+        return;
       }
+
+      await this.emitEvent(
+        buildGitDiffEvent({
+          sessionId: command.sessionId,
+          diff: diff.diff,
+          changedFiles: diff.changedFiles,
+        }),
+      );
 
       const checks = this.redactChecksResult(
         await this.checksRunner.run({

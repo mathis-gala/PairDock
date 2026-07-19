@@ -168,6 +168,38 @@ test('V1: DockerSandboxAdapter never accepts a stale healthcheck after its conta
   assert.match(result.message ?? '', /exited with code 125/i);
 });
 
+test('DockerSandboxAdapter stops a restored container without its original child process', async () => {
+  const spawnCalls: Array<{ command: string; args: string[] }> = [];
+  const adapter = new DockerSandboxAdapter({
+    spawn(command, args) {
+      spawnCalls.push({ command, args });
+      const process = createRunningProcess();
+      queueMicrotask(() => {
+        process.exitCode = 0;
+        process.emit('exit', 0);
+      });
+      return process as never;
+    },
+  });
+
+  await adapter.stop({
+    id: 'restored-sandbox',
+    sessionId: 'abababab-abab-4bab-8bab-abababababab',
+    healthcheckUrl: 'http://127.0.0.1:4100',
+    metadata: {
+      type: 'docker',
+      containerName: 'pairdock-abababababab4bab8bababab',
+    },
+  });
+
+  assert.deepEqual(spawnCalls, [
+    {
+      command: 'docker',
+      args: ['stop', 'pairdock-abababababab4bab8bababab'],
+    },
+  ]);
+});
+
 test('Task 8: CloudflarePreviewTunnelAdapter uses Docker cloudflared for the local URL', async () => {
   const worktreePath = await createTempWorkspace();
   let capturedCommand = '';
@@ -203,9 +235,37 @@ test('Task 8: CloudflarePreviewTunnelAdapter uses Docker cloudflared for the loc
 
   assert.equal(
     capturedCommand,
-    'docker run --rm --add-host host.docker.internal:host-gateway cloudflare/cloudflared:latest tunnel --url http://host.docker.internal:3100',
+    'docker run --rm --name pairdock-tunnel-bbbbbbbbbbbb4bbb8bbbbbbb --add-host host.docker.internal:host-gateway cloudflare/cloudflared:latest tunnel --url http://host.docker.internal:3100',
   );
   assert.equal(tunnelRef.publicUrl, 'https://pairdock-default.trycloudflare.com');
+  assert.equal(tunnelRef.metadata?.containerName, 'pairdock-tunnel-bbbbbbbbbbbb4bbb8bbbbbbb');
+});
+
+test('CloudflarePreviewTunnelAdapter stops a restored tunnel container', async () => {
+  const commands: string[] = [];
+  const adapter = new CloudflarePreviewTunnelAdapter({
+    spawn(command) {
+      commands.push(command);
+      const process = createRunningProcess();
+      queueMicrotask(() => {
+        process.exitCode = 0;
+        process.emit('exit', 0);
+      });
+      return process as never;
+    },
+  });
+
+  await adapter.close({
+    id: 'restored-tunnel',
+    sessionId: 'bcbcbcbc-bcbc-4cbc-8cbc-bcbcbcbcbcbc',
+    publicUrl: 'https://pairdock-restored.trycloudflare.com',
+    metadata: {
+      type: 'docker',
+      containerName: 'pairdock-tunnel-bcbcbcbcbcbc4cbc8cbcbcbc',
+    },
+  });
+
+  assert.deepEqual(commands, ['docker stop pairdock-tunnel-bcbcbcbcbcbc4cbc8cbcbcbc']);
 });
 
 interface FakeRunningProcess extends EventEmitter {

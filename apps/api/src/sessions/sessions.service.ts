@@ -388,12 +388,23 @@ function parseSessionAgentEvent(value: unknown): SessionAgentEvent {
 
   if (type === 'agent.done') {
     const exitCode = payload.exitCode;
+    const changesDetected = payload.changesDetected;
 
     if (typeof exitCode !== 'number') {
       throw new BadRequestException('Exit code is required.');
     }
 
-    return { type, payload: { exitCode } };
+    if (changesDetected !== undefined && typeof changesDetected !== 'boolean') {
+      throw new BadRequestException('Changes detected flag is invalid.');
+    }
+
+    return {
+      type,
+      payload: {
+        exitCode,
+        ...(changesDetected !== undefined ? { changesDetected } : {}),
+      },
+    };
   }
 
   if (type === 'session.closed') {

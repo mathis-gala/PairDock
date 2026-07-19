@@ -86,31 +86,28 @@ export class DockerSandboxAdapter implements SandboxPort {
   async stop(ref: SandboxRef, previewConfig?: ProjectPreviewConfig): Promise<void> {
     const sandboxConfig = previewConfig?.sandbox;
     const managedProcess = this.processes.get(ref.id);
+    const containerName = managedProcess?.containerName ?? resolveRestoredContainerName(ref);
 
-    if (sandboxConfig?.stopCommand && managedProcess) {
-      const stopProcess = this.spawn(
-        'docker',
-        ['exec', managedProcess.containerName, 'sh', '-lc', sandboxConfig.stopCommand],
-        {
-          cwd: managedProcess.cwd,
-          shell: false,
-          stdio: ['ignore', 'pipe', 'pipe'],
-        },
-      );
+    if (sandboxConfig?.stopCommand && containerName) {
+      const stopProcess = this.spawn('docker', ['exec', containerName, 'sh', '-lc', sandboxConfig.stopCommand], {
+        cwd: managedProcess?.cwd,
+        shell: false,
+        stdio: ['ignore', 'pipe', 'pipe'],
+      });
 
       await onceExit(stopProcess);
     }
 
-    if (managedProcess) {
-      const stopProcess = this.spawn('docker', ['stop', managedProcess.containerName], {
-        cwd: managedProcess.cwd,
+    if (containerName) {
+      const stopProcess = this.spawn('docker', ['stop', containerName], {
+        cwd: managedProcess?.cwd,
         shell: false,
         stdio: ['ignore', 'pipe', 'pipe'],
       });
       await Promise.race([onceExit(stopProcess), delay(5_000)]);
     }
 
-    if (managedProcess?.process && !managedProcess.process.killed) {
+    if (managedProcess?.process && !managedProcess.process.killed && managedProcess.process.exitCode === null) {
       managedProcess.process.kill('SIGTERM');
       await Promise.race([onceExit(managedProcess.process), delay(2_000)]);
       if (!managedProcess.process.killed && managedProcess.process.exitCode === null) {
@@ -171,6 +168,19 @@ export class DockerSandboxAdapter implements SandboxPort {
     const logSuffix = managedProcess.logs ? ` Startup logs: ${managedProcess.logs}` : '';
     return `Docker preview exited with code ${managedProcess.process.exitCode}.${logSuffix}`;
   }
+}
+
+function resolveRestoredContainerName(ref: SandboxRef): string | null {
+  if (ref.metadata?.type !== 'docker') {
+    return null;
+  }
+
+  const containerName = ref.metadata.containerName;
+  if (!containerName || !/^pairdock-[a-z0-9-]+$/.test(containerName)) {
+    throw new Error(`Invalid persisted Docker container name for session ${ref.sessionId}.`);
+  }
+
+  return containerName;
 }
 
 async function resolveSessionPreviewConfig(

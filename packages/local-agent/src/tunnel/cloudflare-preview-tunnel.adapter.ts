@@ -48,7 +48,8 @@ export class CloudflarePreviewTunnelAdapter implements PreviewTunnelPort {
       };
     }
 
-    const startCommand = buildCloudflareDockerCommand(input.localUrl, tunnelConfig?.image);
+    const containerName = buildTunnelContainerName(input.sessionId);
+    const startCommand = buildCloudflareDockerCommand(input.localUrl, containerName, tunnelConfig?.image);
 
     const { process, publicUrl } = await this.openTunnelProcess({
       command: startCommand,
@@ -59,6 +60,10 @@ export class CloudflarePreviewTunnelAdapter implements PreviewTunnelPort {
       id: randomUUID(),
       sessionId: input.sessionId,
       publicUrl,
+      metadata: {
+        type: 'docker',
+        containerName,
+      },
     };
 
     this.processes.set(ref.id, {
@@ -71,8 +76,18 @@ export class CloudflarePreviewTunnelAdapter implements PreviewTunnelPort {
   async close(ref: PreviewTunnelRef, previewConfig?: ProjectPreviewConfig): Promise<void> {
     void previewConfig;
     const managedProcess = this.processes.get(ref.id);
+    const containerName = resolveRestoredTunnelContainerName(ref);
 
-    if (managedProcess?.process && !managedProcess.process.killed) {
+    if (containerName) {
+      const stopProcess = this.spawn(`docker stop ${containerName}`, {
+        cwd: managedProcess?.cwd,
+        shell: true,
+        stdio: 'ignore',
+      });
+      await Promise.race([onceExit(stopProcess), delay(5_000)]);
+    }
+
+    if (managedProcess?.process && !managedProcess.process.killed && managedProcess.process.exitCode === null) {
       managedProcess.process.kill('SIGTERM');
       await Promise.race([onceExit(managedProcess.process), delay(2_000)]);
       if (!managedProcess.process.killed && managedProcess.process.exitCode === null) {
@@ -176,8 +191,33 @@ async function terminateProcess(process: TunnelProcessLike): Promise<void> {
   }
 }
 
-function buildCloudflareDockerCommand(localUrl: string, image = 'cloudflare/cloudflared:latest'): string {
-  return `docker run --rm --add-host host.docker.internal:host-gateway ${image} tunnel --url ${toHostDockerUrl(localUrl)}`;
+function buildCloudflareDockerCommand(
+  localUrl: string,
+  containerName: string,
+  image = 'cloudflare/cloudflared:latest',
+): string {
+  return `docker run --rm --name ${containerName} --add-host host.docker.internal:host-gateway ${image} tunnel --url ${toHostDockerUrl(localUrl)}`;
+}
+
+function buildTunnelContainerName(sessionId: string): string {
+  const normalizedSessionId = sessionId
+    .toLowerCase()
+    .replaceAll(/[^a-z0-9]/g, '')
+    .slice(0, 24);
+  return `pairdock-tunnel-${normalizedSessionId}`;
+}
+
+function resolveRestoredTunnelContainerName(ref: PreviewTunnelRef): string | null {
+  if (ref.metadata?.type !== 'docker') {
+    return null;
+  }
+
+  const expectedContainerName = buildTunnelContainerName(ref.sessionId);
+  if (ref.metadata.containerName !== expectedContainerName) {
+    throw new Error(`Invalid persisted Cloudflare container name for session ${ref.sessionId}.`);
+  }
+
+  return expectedContainerName;
 }
 
 function toHostDockerUrl(localUrl: string): string {

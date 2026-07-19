@@ -174,6 +174,22 @@ test('PM review metadata controls the draft PR and produces a safe conventional 
   assert.equal(sourceControl.requests[0]?.body, 'Décrit précisément le changement demandé par le PM.');
 });
 
+test('style review requests use the style conventional commit prefix', async () => {
+  const { router, sessionId, useCase } = buildFixture();
+
+  await useCase.create(sessionId, pm, {
+    type: 'style',
+    title: 'Améliorer les Espacements !',
+    description: 'Ajuste uniquement la présentation visuelle.',
+  });
+
+  assert.equal(router.commands[0]?.type, 'git.pushBranch');
+  assert.deepEqual(router.commands[0]?.payload, {
+    sessionId,
+    commitMessage: 'style: ameliorer les espacements',
+  });
+});
+
 class RecordingAgentCommandRouter {
   readonly commands: AgentCommandEnvelope[] = [];
 

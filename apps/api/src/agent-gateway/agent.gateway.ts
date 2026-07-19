@@ -229,7 +229,29 @@ export class AgentGateway implements OnGatewayDisconnect {
         return;
       }
 
-      const nextSession = this.stateMachine.applyAgentEvent(currentSession, sessionEvent);
+      let resolvedSessionEvent = sessionEvent;
+
+      if (
+        sessionEvent.type === 'agent.done' &&
+        sessionEvent.payload.exitCode === 0 &&
+        sessionEvent.payload.changesDetected === false
+      ) {
+        const latestValidation = await repositories.validationRuns.findLatestBySessionId(sessionId);
+        resolvedSessionEvent = {
+          ...sessionEvent,
+          payload: {
+            ...sessionEvent.payload,
+            resumeStatus:
+              latestValidation?.status === 'passed'
+                ? 'AWAITING_PM_VALIDATION'
+                : latestValidation?.status === 'failed'
+                  ? 'FAILED'
+                  : 'READY',
+          },
+        };
+      }
+
+      const nextSession = this.stateMachine.applyAgentEvent(currentSession, resolvedSessionEvent);
 
       await repositories.agentEvents.create({
         sessionId,
@@ -303,6 +325,7 @@ function toSessionAgentEvent(event: AgentEventEnvelope): SessionAgentEvent | nul
         type: event.type,
         payload: {
           exitCode: event.payload.exitCode,
+          ...(event.payload.changesDetected !== undefined ? { changesDetected: event.payload.changesDetected } : {}),
         },
       };
     case 'session.closed':

@@ -92,13 +92,18 @@ export function buildAgentOutputEvent(input: {
   });
 }
 
-export function buildAgentDoneEvent(input: { sessionId: string; exitCode: number }): AgentDoneEventEnvelope {
+export function buildAgentDoneEvent(input: {
+  sessionId: string;
+  exitCode: number;
+  changesDetected?: boolean;
+}): AgentDoneEventEnvelope {
   return buildEnvelope({
     sessionId: input.sessionId,
     type: 'agent.done',
     payload: {
       sessionId: input.sessionId,
       exitCode: input.exitCode,
+      ...(input.changesDetected !== undefined ? { changesDetected: input.changesDetected } : {}),
     },
   });
 }
