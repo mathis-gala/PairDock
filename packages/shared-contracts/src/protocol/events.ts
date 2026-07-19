@@ -12,42 +12,47 @@ const sessionIdConsistencyRule = {
   message: 'Envelope sessionId must match payload.sessionId.',
   path: ['sessionId'],
 };
+const MAX_AGENT_OUTPUT_LENGTH = 64 * 1024;
+const MAX_DIFF_LENGTH = 192 * 1024;
 
 export const agentConnectedEventEnvelopeSchema = envelopeBaseSchema.extend({
   type: z.literal('agent.connected'),
   payload: z.object({
-    agentId: z.string().min(1),
-    capabilities: z.array(z.string().min(1)),
+    agentId: z.string().min(1).max(128),
+    capabilities: z.array(z.string().min(1).max(128)).max(64),
     models: z
       .array(
         z.object({
-          id: z.string().min(1),
-          label: z.string().min(1),
-          provider: z.string().min(1),
+          id: z.string().min(1).max(128),
+          label: z.string().min(1).max(128),
+          provider: z.string().min(1).max(128),
           reasoningEfforts: z
             .array(
               z.object({
-                id: z.string().min(1),
-                label: z.string().min(1),
-                description: z.string().min(1).optional(),
+                id: z.string().min(1).max(64),
+                label: z.string().min(1).max(128),
+                description: z.string().min(1).max(512).optional(),
               }),
             )
+            .max(16)
             .optional(),
-          defaultReasoningEffort: z.string().min(1).optional(),
+          defaultReasoningEffort: z.string().min(1).max(64).optional(),
         }),
       )
+      .max(64)
       .default([]),
     projects: z
       .array(
         z.object({
-          key: z.string().min(1),
-          name: z.string().min(1),
-          repoFullName: z.string().min(1),
-          pathAlias: z.string().min(1),
-          defaultBranch: z.string().min(1).optional(),
-          models: z.array(z.string().min(1)).optional(),
+          key: z.string().min(1).max(128),
+          name: z.string().min(1).max(256),
+          repoFullName: z.string().min(1).max(256),
+          pathAlias: z.string().min(1).max(256),
+          defaultBranch: z.string().min(1).max(255).optional(),
+          models: z.array(z.string().min(1).max(128)).max(64).optional(),
         }),
       )
+      .max(128)
       .default([]),
   }),
 });
@@ -55,10 +60,10 @@ export const agentConnectedEventEnvelopeSchema = envelopeBaseSchema.extend({
 export const readinessResultEventEnvelopeSchema = envelopeBaseSchema.extend({
   type: z.literal('readiness.result'),
   payload: z.object({
-    projectKey: z.string().min(1),
+    projectKey: z.string().min(1).max(128),
     sessionId: uuidSchema.optional(),
     ok: z.boolean(),
-    checks: z.array(toolReadinessCheckSchema),
+    checks: z.array(toolReadinessCheckSchema).max(16),
   }),
 });
 
@@ -67,7 +72,7 @@ export const sessionProgressEventEnvelopeSchema = sessionEnvelope(
   z.object({
     sessionId: uuidSchema,
     status: sessionStatusSchema,
-    message: z.string().min(1).optional(),
+    message: z.string().min(1).max(2_048).optional(),
   }),
 ).refine(({ sessionId, payload }) => payload.sessionId === sessionId, sessionIdConsistencyRule);
 
@@ -84,7 +89,7 @@ export const agentOutputEventEnvelopeSchema = sessionEnvelope(
   z.object({
     sessionId: uuidSchema,
     stream: z.enum(['stdout', 'stderr']),
-    text: z.string(),
+    text: z.string().max(MAX_AGENT_OUTPUT_LENGTH),
   }),
 ).refine(({ sessionId, payload }) => payload.sessionId === sessionId, sessionIdConsistencyRule);
 
@@ -101,8 +106,8 @@ export const gitDiffEventEnvelopeSchema = sessionEnvelope(
   'git.diff',
   z.object({
     sessionId: uuidSchema,
-    diff: z.string(),
-    changedFiles: z.array(z.string().min(1)),
+    diff: z.string().max(MAX_DIFF_LENGTH),
+    changedFiles: z.array(z.string().min(1).max(1_024)).max(2_048),
   }),
 ).refine(({ sessionId, payload }) => payload.sessionId === sessionId, sessionIdConsistencyRule);
 
@@ -124,7 +129,7 @@ export const gitBranchPushedEventEnvelopeSchema = sessionEnvelope(
   'git.branchPushed',
   z.object({
     sessionId: uuidSchema,
-    branchName: z.string().min(1),
+    branchName: z.string().min(1).max(255),
   }),
 ).refine(({ sessionId, payload }) => payload.sessionId === sessionId, sessionIdConsistencyRule);
 
@@ -141,8 +146,8 @@ export const errorEventEnvelopeSchema = envelopeBaseSchema
     type: z.literal('error'),
     payload: z.object({
       sessionId: uuidSchema.optional(),
-      code: z.string().min(1),
-      message: z.string().min(1),
+      code: z.string().min(1).max(128),
+      message: z.string().min(1).max(4_096),
       retryable: z.boolean(),
     }),
   })

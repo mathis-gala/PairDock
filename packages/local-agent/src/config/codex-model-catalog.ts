@@ -143,7 +143,7 @@ function applyCodexCommandToProjects(config: AgentConfig, command: string) {
   return agentHarnessConfigs;
 }
 
-function compareVersions(left: string, right: string): number {
+export function compareVersions(left: string, right: string): number {
   const leftParts = left.split('.').map(Number);
   const rightParts = right.split('.').map(Number);
 

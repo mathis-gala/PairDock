@@ -5,6 +5,7 @@ import { setTimeout as delay } from 'node:timers/promises';
 import type {
   HealthcheckResult,
   ProjectPreviewConfig,
+  SandboxCommandResult,
   SandboxPort,
   SandboxRef,
   SandboxStartInput,
@@ -31,6 +32,9 @@ interface DockerSandboxAdapterDependencies {
 }
 
 const MAX_STARTUP_LOG_CHARS = 4_000;
+const CHECK_TIMEOUT_MS = 10 * 60 * 1_000;
+const DEFAULT_SANDBOX_IMAGE =
+  'node:22-bookworm-slim@sha256:6c74791e557ce11fc957704f6d4fe134a7bc8d6f5ca4403205b2966bd488f6b3';
 
 export class DockerSandboxAdapter implements SandboxPort {
   private readonly processes = new Map<string, ManagedSandboxProcess>();
@@ -154,6 +158,43 @@ export class DockerSandboxAdapter implements SandboxPort {
     }
   }
 
+  runCommand(ref: SandboxRef, command: string, worktreePath: string): Promise<SandboxCommandResult> {
+    if (!command.trim() || command.length > 8_192 || /[\0\r\n]/.test(command)) {
+      throw new Error('Sandbox validation command is invalid.');
+    }
+
+    return new Promise<SandboxCommandResult>((resolve, reject) => {
+      let logs = '';
+      let timedOut = false;
+      const process = this.spawn('docker', buildDockerCheckArgs(ref, worktreePath, command), {
+        cwd: worktreePath,
+        shell: false,
+        stdio: ['ignore', 'pipe', 'pipe'],
+      });
+      const appendCommandLogs = (chunk: Buffer | string) => {
+        logs = appendLogs(logs, chunk.toString());
+      };
+
+      process.stdout?.on('data', appendCommandLogs);
+      process.stderr?.on('data', appendCommandLogs);
+      const timeout = setTimeout(() => {
+        timedOut = true;
+        process.kill('SIGTERM');
+      }, CHECK_TIMEOUT_MS);
+      timeout.unref();
+      process.once('error', (error) => {
+        clearTimeout(timeout);
+        reject(error);
+      });
+      process.once('close', (code: number | null, signal: NodeJS.Signals | null) => {
+        clearTimeout(timeout);
+        const exitCode = typeof code === 'number' ? code : signal ? 130 : 1;
+        const timeoutMessage = timedOut ? `Validation timed out after ${CHECK_TIMEOUT_MS}ms.` : '';
+        resolve({ exitCode, logs: [logs.trim(), timeoutMessage].filter(Boolean).join('\n') });
+      });
+    });
+  }
+
   private spawn(command: string, args: string[], options: SandboxSpawnOptions): ChildProcess {
     return this.dependencies.spawn?.(command, args, options) ?? spawn(command, args, options);
   }
@@ -275,8 +316,10 @@ function buildDockerRunArgs(input: SandboxStartInput, containerName: string): st
   const args = [
     'run',
     '--rm',
+    '--init',
     '--name',
     containerName,
+    ...buildContainerHardeningArgs(),
     '--workdir',
     workdir,
     '--volume',
@@ -289,14 +332,79 @@ function buildDockerRunArgs(input: SandboxStartInput, containerName: string): st
 
   if (sandboxConfig.network === 'host-services') {
     args.push('--add-host', 'host.docker.internal:host-gateway');
+  } else {
+    args.push('--network', 'none');
   }
+
+  args.push('--env', 'HOME=/tmp');
 
   for (const [name, value] of Object.entries(sandboxConfig.env ?? {})) {
     args.push('--env', `${name}=${value}`);
   }
 
-  args.push(sandboxConfig.image ?? 'node:22-bookworm-slim', 'sh', '-lc', sandboxConfig.startCommand);
+  const image = sandboxConfig.image ?? DEFAULT_SANDBOX_IMAGE;
+  assertSafeContainerImage(image);
+  args.push(image, 'sh', '-lc', sandboxConfig.startCommand);
   return args;
+}
+
+function buildDockerCheckArgs(ref: SandboxRef, worktreePath: string, command: string): string[] {
+  const sandboxConfig = ref.previewConfig?.sandbox;
+
+  if (!sandboxConfig) {
+    throw new Error(`Docker sandbox config is missing for session ${ref.sessionId}.`);
+  }
+
+  const workdir = sandboxConfig.workdir ?? '/workspace';
+  const image = sandboxConfig.image ?? DEFAULT_SANDBOX_IMAGE;
+  assertSafeContainerImage(image);
+
+  return [
+    'run',
+    '--rm',
+    '--init',
+    ...buildContainerHardeningArgs(),
+    '--network',
+    'none',
+    '--workdir',
+    workdir,
+    '--volume',
+    `${worktreePath}:${workdir}`,
+    '--env',
+    'HOME=/tmp',
+    image,
+    'sh',
+    '-lc',
+    command,
+  ];
+}
+
+function buildContainerHardeningArgs(): string[] {
+  return [
+    '--read-only',
+    '--cap-drop',
+    'ALL',
+    '--security-opt',
+    'no-new-privileges',
+    '--pids-limit',
+    '512',
+    '--user',
+    `${process.getuid?.() ?? 1000}:${process.getgid?.() ?? 1000}`,
+    '--tmpfs',
+    '/tmp:rw,nosuid,nodev',
+  ];
+}
+
+function assertSafeContainerImage(image: string): void {
+  if (
+    image.length > 512 ||
+    image.startsWith('-') ||
+    image.includes('://') ||
+    /[\s\0]/.test(image) ||
+    !/^[a-z0-9][a-z0-9._\-/:@]+$/i.test(image)
+  ) {
+    throw new Error('Sandbox image must be a valid container image reference.');
+  }
 }
 
 function inferPortsFromHealthcheck(healthcheckUrl: string): string[] {

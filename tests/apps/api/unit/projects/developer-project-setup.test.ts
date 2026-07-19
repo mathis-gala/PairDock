@@ -36,7 +36,29 @@ test('developer setup lists repositories from every GitHub App installation acce
     {} as never,
     {} as never,
     {} as never,
-    { listSnapshots: () => [] } as never,
+    {
+      listSnapshots: () => [
+        {
+          agentId: 'agent-id',
+          capabilities: [],
+          models: [],
+          projects: [
+            {
+              key: 'accessible-project',
+              name: 'Accessible project',
+              repoFullName: 'pairdock-org/org-repo',
+              pathAlias: 'org-repo',
+            },
+            {
+              key: 'private-project',
+              name: 'Private project',
+              repoFullName: 'another-org/private-repo',
+              pathAlias: 'private-repo',
+            },
+          ],
+        },
+      ],
+    } as never,
     {
       listModelsForProject: () => [],
       resolveSessionSelection: (_key: string, selection: unknown) => selection,
@@ -49,6 +71,10 @@ test('developer setup lists repositories from every GitHub App installation acce
   assert.deepEqual(
     setup.repositories.map((repository) => repository.fullName),
     ['developer/personal-repo', 'pairdock-org/org-repo'],
+  );
+  assert.deepEqual(
+    setup.agents.flatMap((agent) => agent.projects.map((project) => project.key)),
+    ['accessible-project'],
   );
 });
 

@@ -1,8 +1,5 @@
 import assert from 'node:assert/strict';
-import { mkdtemp, readFile, writeFile } from 'node:fs/promises';
 import { createServer } from 'node:http';
-import { tmpdir } from 'node:os';
-import { join } from 'node:path';
 import test from 'node:test';
 import { ChecksRunner } from '../../../../packages/local-agent/src/checks/checks-runner.js';
 
@@ -31,21 +28,29 @@ async function createPreviewServer() {
 }
 
 test('Task 11: ChecksRunner executes configured build, test, lint, and preview validations', async () => {
-  const worktreePath = await mkdtemp(join(tmpdir(), 'pairdock-checks-'));
   const previewServer = await createPreviewServer();
-  const runner = new ChecksRunner({
-    pairdock: {
-      build: 'node -e "console.log(\'build ok\')"',
-      test: 'node -e "process.stderr.write(\'tests failed\\n\'); process.exit(1)"',
-      lint: 'node -e "console.log(\'lint ok\')"',
+  const executedCommands: Array<{ command: string; sessionId: string }> = [];
+  const runner = new ChecksRunner(
+    {
+      pairdock: {
+        build: 'bun run build',
+        test: 'bun test',
+        lint: 'bun run lint',
+      },
     },
-  });
+    async (input) => {
+      executedCommands.push({ command: input.command, sessionId: input.sessionId });
+      return input.command === 'bun test'
+        ? { exitCode: 1, logs: 'tests failed' }
+        : { exitCode: 0, logs: `${input.command} ok` };
+    },
+  );
 
   try {
     const result = await runner.run({
       projectKey: 'pairdock',
       previewUrl: previewServer.url,
-      worktreePath,
+      sessionId: '11111111-1111-4111-8111-111111111111',
     });
 
     assert.equal(result.ok, false);
@@ -53,43 +58,41 @@ test('Task 11: ChecksRunner executes configured build, test, lint, and preview v
     assert.equal(result.tests.status, 'failed');
     assert.equal(result.lint.status, 'passed');
     assert.equal(result.preview.status, 'passed');
-    assert.equal(result.build.command, 'node -e "console.log(\'build ok\')"');
+    assert.equal(result.build.command, 'bun run build');
     assert.match(result.tests.logs ?? '', /tests failed/);
+    assert.deepEqual(executedCommands, [
+      { command: 'bun run build', sessionId: '11111111-1111-4111-8111-111111111111' },
+      { command: 'bun test', sessionId: '11111111-1111-4111-8111-111111111111' },
+      { command: 'bun run lint', sessionId: '11111111-1111-4111-8111-111111111111' },
+    ]);
   } finally {
     await previewServer.close();
   }
 });
 
 test('ChecksRunner retries once when Bun fails to extract a dependency tarball', async () => {
-  const worktreePath = await mkdtemp(join(tmpdir(), 'pairdock-checks-retry-'));
-  const attemptFile = join(worktreePath, 'attempt.txt');
-  await writeFile(
-    join(worktreePath, 'transient-build.cjs'),
-    `const fs = require('node:fs');
-const attemptFile = 'attempt.txt';
-const attempt = fs.existsSync(attemptFile) ? Number(fs.readFileSync(attemptFile, 'utf8')) + 1 : 1;
-fs.writeFileSync(attemptFile, String(attempt));
-if (attempt === 1) {
-  console.error('error: Fail extracting tarball for "@prisma/client"');
-  process.exit(1);
-}
-console.log('build ok');
-`,
-    'utf8',
-  );
-  const runner = new ChecksRunner({
-    pairdock: {
-      build: 'node transient-build.cjs',
+  let attempt = 0;
+  const runner = new ChecksRunner(
+    {
+      pairdock: {
+        build: 'bun run build',
+      },
     },
-  });
+    async () => {
+      attempt += 1;
+      return attempt === 1
+        ? { exitCode: 1, logs: 'error: Fail extracting tarball for "@prisma/client"' }
+        : { exitCode: 0, logs: 'build ok' };
+    },
+  );
 
   const result = await runner.run({
     projectKey: 'pairdock',
     previewUrl: null,
-    worktreePath,
+    sessionId: '22222222-2222-4222-8222-222222222222',
   });
 
   assert.equal(result.build.status, 'passed');
   assert.match(result.build.logs ?? '', /Retry 1\/1 after a transient package extraction failure/);
-  assert.equal(await readFile(attemptFile, 'utf8'), '2');
+  assert.equal(attempt, 2);
 });

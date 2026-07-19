@@ -224,6 +224,7 @@ test('BT-044: developer can request local readiness checks through the ToolReadi
   const agentSocket = connectAgentSocket();
 
   try {
+    app.get(ConnectedAgentsRegistry).unregister(`setup-${project.agentProjectKey}`);
     await announceAgent(agentSocket, project.agentProjectKey);
     const commandPromise = waitForAgentCommand(agentSocket);
 

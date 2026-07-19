@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { envelopeBaseSchema, sessionEnvelope, uuidSchema } from './common.js';
+import { envelopeBaseSchema, MAX_AGENT_PROMPT_LENGTH, sessionEnvelope, uuidSchema } from './common.js';
 
 const sessionIdConsistencyRule = {
   message: 'Envelope sessionId must match payload.sessionId.',
@@ -10,18 +10,18 @@ export const sessionPrepareCommandEnvelopeSchema = sessionEnvelope(
   'session.prepare',
   z.object({
     sessionId: uuidSchema,
-    projectKey: z.string().min(1),
-    branchName: z.string().min(1),
-    baseBranch: z.string().min(1),
-    modelId: z.string().min(1),
-    reasoningEffort: z.string().min(1).optional(),
+    projectKey: z.string().min(1).max(128),
+    branchName: z.string().min(1).max(255),
+    baseBranch: z.string().min(1).max(255),
+    modelId: z.string().min(1).max(128),
+    reasoningEffort: z.string().min(1).max(64).optional(),
   }),
 ).refine(({ sessionId, payload }) => payload.sessionId === sessionId, sessionIdConsistencyRule);
 
 export const readinessCheckCommandEnvelopeSchema = envelopeBaseSchema.extend({
   type: z.literal('readiness.check'),
   payload: z.object({
-    projectKey: z.string().min(1),
+    projectKey: z.string().min(1).max(128),
     sessionId: uuidSchema.optional(),
   }),
 });
@@ -30,9 +30,9 @@ export const agentPromptCommandEnvelopeSchema = sessionEnvelope(
   'agent.prompt',
   z.object({
     sessionId: uuidSchema,
-    prompt: z.string().min(1),
-    modelId: z.string().min(1),
-    reasoningEffort: z.string().min(1).optional(),
+    prompt: z.string().min(1).max(MAX_AGENT_PROMPT_LENGTH),
+    modelId: z.string().min(1).max(128),
+    reasoningEffort: z.string().min(1).max(64).optional(),
   }),
 ).refine(({ sessionId, payload }) => payload.sessionId === sessionId, sessionIdConsistencyRule);
 

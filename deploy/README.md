@@ -27,13 +27,31 @@ The public configuration is environment-driven:
 
 `PAIRDOCK_API_URL` is injected into `/config.js` when the web container starts. The same published web image can therefore be deployed under any domain without rebuilding it.
 
-Generate `POSTGRES_PASSWORD`, `AUTH_TOKEN_SECRET`, `AUTH_STATE_SECRET`, and `AGENT_AUTH_TOKEN` independently:
+Generate `POSTGRES_PASSWORD`, `AUTH_TOKEN_SECRET`, `AUTH_STATE_SECRET`, and one token per local agent independently:
 
 ```bash
 openssl rand -hex 32
 ```
 
-Keep them stable across normal updates. In particular, changing `POSTGRES_PASSWORD` does not update the password already stored by PostgreSQL. `DEV_AUTH_ENABLED` is hard-disabled by Compose.
+Put the agent tokens in `AGENT_AUTH_CREDENTIALS_JSON`, keyed by the exact agent id. Each token must be unique and contain at least 32 bytes:
+
+```env
+AGENT_AUTH_CREDENTIALS_JSON='{"agent-local-1":{"token":"<first-generated-token>","projectKeys":["project-a"]},"agent-local-2":{"token":"<second-generated-token>","projectKeys":["project-b","project-c"]}}'
+```
+
+Every project key published by a workstation must be present in that agent's `projectKeys`, and a key may appear under only one credential. Keep credentials stable across normal updates. Give each workstation only its own token; never share the full JSON map with agent operators. In particular, changing `POSTGRES_PASSWORD` does not update the password already stored by PostgreSQL. `DEV_AUTH_ENABLED` is hard-disabled by Compose.
+
+## Security before exposing PairDock
+
+- Keep the PairDock API and web containers reachable only through Caddy on the external proxy network. The database is attached only to Compose's internal network.
+- Restrict SSH to keys, disable password login, keep Docker and the host patched, and allow administrative ports only from a trusted network.
+- In Cloudflare, keep TLS mode on **Full (strict)** and configure rate limits for authentication and prompt endpoints. Start conservatively (for example 30 authentication requests and 10 prompt submissions per minute and source IP), monitor legitimate usage, then tighten the limits.
+- Back up the `pairdock_database` volume and test restoration before the first production upgrade.
+- Never expose Docker's socket or TCP API. The local agent needs access to the developer workstation's Docker daemon, so run it only under a dedicated, trusted OS account.
+- Treat `sandbox.network: host-services` as privileged access to explicitly listed local test services. Use dedicated, least-privilege test credentials in `sandbox.env`; never put production credentials in a project manifest.
+- Keep GitHub App repository permissions at the documented minimum and install it only on repositories intended for PairDock.
+
+PairDock limits WebSocket frames, prompt sizes, captured output, and validation logs. It also runs Codex without inherited workstation secrets or network access, runs checks in disposable networkless containers, and binds preview ports to loopback. These controls reduce impact; they do not make arbitrary PM-requested code safe to run directly on a developer host.
 
 ## One-time server setup
 
@@ -112,14 +130,16 @@ docker compose --env-file pairdock.env logs --tail=200 migrate api web database
 
 ## Local developer agent and previews
 
-The agent stays on the developer workstation because it needs the source repository, Codex CLI, Git credentials, and Docker. It connects outbound to the public API with the same `AGENT_AUTH_TOKEN` stored on the server:
+The agent stays on the developer workstation because it needs the source repository, Codex CLI, Git credentials, and Docker. It connects outbound to the public API with the token mapped to its exact agent id in `AGENT_AUTH_CREDENTIALS_JSON`:
 
 ```bash
 pairdock-agent login \
   --backend-url "$PAIRDOCK_API_URL" \
   --agent-id <agent-id> \
-  --token <AGENT_AUTH_TOKEN> \
+  --token <token-for-this-agent-id> \
   --project <project-key>=<absolute-repository-path>
 ```
+
+Use Codex CLI 0.138.0 or newer. PairDock's readiness check rejects older versions because they cannot enforce the restricted filesystem permission profile used for PM-triggered work.
 
 Preview containers and Cloudflare quick tunnels still run on the developer workstation. The Caddy policy permits `https://*.trycloudflare.com` preview iframes. If the workstation sleeps or the agent stops, deployed PairDock remains online, but previews and new agent work are unavailable until the agent reconnects.

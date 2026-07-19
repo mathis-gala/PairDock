@@ -15,6 +15,7 @@ import { InvitationsService } from '../invitations/invitations.service.js';
 @WebSocketGateway({
   namespace: '/ui',
   cors: { origin: process.env.FRONTEND_URL ?? 'http://localhost:5173' },
+  maxHttpBufferSize: 64 * 1024,
 })
 export class UiGateway {
   @WebSocketServer()

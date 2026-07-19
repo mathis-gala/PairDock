@@ -53,7 +53,7 @@ export function PreviewFrame({ presetId, previewUrl }: PreviewFrameProps) {
             <iframe
               className="origin-top-left border-0"
               referrerPolicy="no-referrer"
-              sandbox="allow-forms allow-modals allow-popups allow-same-origin allow-scripts"
+              sandbox="allow-forms allow-modals allow-same-origin allow-scripts"
               src={previewUrl}
               style={{
                 width: frameStyle.width,

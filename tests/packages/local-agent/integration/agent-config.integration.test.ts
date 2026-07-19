@@ -146,6 +146,62 @@ test('BT-020: normalizeAgentConfig trims and preserves preview config fields', (
   });
 });
 
+test('normalizeAgentConfig refuses to send agent credentials over remote plaintext HTTP', () => {
+  assert.throws(
+    () => normalizeAgentConfig({ backendUrl: 'http://pairdock.example.test', agentId: 'local-agent-1' }),
+    /must use HTTPS/,
+  );
+  assert.throws(
+    () => normalizeAgentConfig({ backendUrl: 'https://user:password@pairdock.example.test', agentId: 'local-agent-1' }),
+    /must not contain credentials/,
+  );
+
+  assert.equal(
+    normalizeAgentConfig({ backendUrl: 'http://127.0.0.1:3000', agentId: 'local-agent-1' }).backendUrl,
+    'http://127.0.0.1:3000',
+  );
+});
+
+test('normalizeAgentConfig rejects preview settings that expose ports or enable Docker option injection', () => {
+  const baseConfig = {
+    backendUrl: 'https://pairdock.test',
+    agentId: 'local-agent-1',
+  };
+
+  assert.throws(
+    () =>
+      normalizeAgentConfig({
+        ...baseConfig,
+        previewConfigs: {
+          pairdock: {
+            sandbox: {
+              startCommand: 'bun dev',
+              healthcheckUrl: 'http://169.254.169.254/latest/meta-data',
+            },
+          },
+        },
+      }),
+    /must target a loopback address/,
+  );
+  assert.throws(
+    () =>
+      normalizeAgentConfig({
+        ...baseConfig,
+        previewConfigs: {
+          pairdock: {
+            sandbox: {
+              startCommand: 'bun dev',
+              healthcheckUrl: 'http://127.0.0.1:4000',
+              image: '--privileged',
+              ports: ['0.0.0.0:4000:4000'],
+            },
+          },
+        },
+      }),
+    /safe container image reference|must bind valid ports/,
+  );
+});
+
 test('V1: normalizeAgentConfig trims and deduplicates agent models and published projects', () => {
   const config = normalizeAgentConfig({
     backendUrl: 'https://pairdock.test',

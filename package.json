@@ -7,6 +7,10 @@
     "apps/*",
     "packages/*"
   ],
+  "overrides": {
+    "@hono/node-server": "1.19.13",
+    "multer": "2.2.0"
+  },
   "scripts": {
     "lint": "biome check .",
     "lint:fix": "biome check --write .",

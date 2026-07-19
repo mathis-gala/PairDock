@@ -8,8 +8,17 @@ import type { ProjectPreviewConfig } from '../docker/sandbox.port.js';
 import type { AgentConfig, AgentProjectDescriptor } from './agent-config.js';
 
 const manifestFileName = 'pairdock.yml';
-const previewUrlTemplateSchema = z.string().min(1).refine(isValidPreviewUrlTemplate, {
+const publicPreviewUrlTemplateSchema = z.string().min(1).refine(isValidPreviewUrlTemplate, {
   message: 'Preview URL must be an HTTP(S) URL using only supported {{hostPort}} or {{sessionId}} templates.',
+});
+const healthcheckUrlTemplateSchema = publicPreviewUrlTemplateSchema.refine(isLoopbackPreviewUrlTemplate, {
+  message: 'Preview healthcheck URL must target localhost or 127.0.0.1.',
+});
+const loopbackPortMappingSchema = z.string().min(1).refine(isLoopbackPortMappingTemplate, {
+  message: 'Preview ports must bind to 127.0.0.1 with valid host and container ports.',
+});
+const containerImageSchema = z.string().min(1).max(512).refine(isSafeContainerImage, {
+  message: 'Container image must be a valid image reference, not a Docker option.',
 });
 
 const pairdockManifestSchema = z.object({
@@ -20,23 +29,23 @@ const pairdockManifestSchema = z.object({
   models: z.array(z.string().min(1)).optional(),
   sandbox: z
     .object({
-      image: z.string().min(1).optional(),
+      image: containerImageSchema.optional(),
       workdir: z.string().min(1).optional(),
       network: z.enum(['isolated', 'host-services']).optional(),
       env: z.record(z.string().min(1), z.string()).optional(),
-      ports: z.array(z.string().min(1)).optional(),
+      ports: z.array(loopbackPortMappingSchema).optional(),
     })
     .optional(),
   preview: z.object({
     start: z.string().min(1),
-    healthcheck: previewUrlTemplateSchema,
+    healthcheck: healthcheckUrlTemplateSchema,
     tunnel: z
       .union([
         z.literal('cloudflare'),
         z.object({
           provider: z.literal('cloudflare').optional(),
-          publicUrl: previewUrlTemplateSchema.optional(),
-          image: z.string().min(1).optional(),
+          publicUrl: publicPreviewUrlTemplateSchema.optional(),
+          image: containerImageSchema.optional(),
           startupTimeoutMs: z.number().int().positive().optional(),
         }),
       ])
@@ -72,6 +81,44 @@ function isValidPreviewUrlTemplate(value: string): boolean {
   } catch {
     return false;
   }
+}
+
+function isLoopbackPreviewUrlTemplate(value: string): boolean {
+  try {
+    const url = new URL(value.replaceAll('{{hostPort}}', '4000').replaceAll('{{sessionId}}', 'session'));
+    return (
+      !url.username &&
+      !url.password &&
+      (url.hostname === '127.0.0.1' || url.hostname === 'localhost' || url.hostname === '[::1]')
+    );
+  } catch {
+    return false;
+  }
+}
+
+function isLoopbackPortMappingTemplate(value: string): boolean {
+  const normalized = value.replaceAll('{{hostPort}}', '4000');
+  const match = /^127\.0\.0\.1:(\d{1,5}):(\d{1,5})$/.exec(normalized);
+
+  return Boolean(match && isValidPort(match[1]) && isValidPort(match[2]));
+}
+
+function isValidPort(value: string | undefined): boolean {
+  if (!value) {
+    return false;
+  }
+
+  const port = Number(value);
+  return Number.isInteger(port) && port >= 1 && port <= 65_535;
+}
+
+function isSafeContainerImage(image: string): boolean {
+  return (
+    !image.startsWith('-') &&
+    !image.includes('://') &&
+    !/[\s\0]/.test(image) &&
+    /^[a-z0-9][a-z0-9._\-/:@]+$/i.test(image)
+  );
 }
 
 export async function enrichConfigWithProjectManifests(config: AgentConfig): Promise<AgentConfig> {

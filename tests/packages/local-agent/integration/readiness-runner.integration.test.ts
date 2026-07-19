@@ -51,3 +51,35 @@ test('BT-044: ReadinessRunner fails hanging developer commands with a clear time
   assert.equal(checksByKey.get('docker')?.status, 'failed');
   assert.match(checksByKey.get('docker')?.message ?? '', /timed out/i);
 });
+
+test('ReadinessRunner rejects Codex versions without restricted permission profiles', async () => {
+  const runner = new ReadinessRunner(
+    {
+      authToken: 'test-token',
+      projectPaths: { pairdock: '.' },
+      previewConfigs: {
+        pairdock: {
+          sandbox: { startCommand: 'npm start', healthcheckUrl: 'http://127.0.0.1:4000' },
+          tunnel: { provider: 'cloudflare' },
+        },
+      },
+      checksConfigs: { pairdock: { build: 'npm run build', test: 'npm test', lint: 'npm run lint' } },
+      agentHarnessConfigs: {},
+    },
+    async (command, args) => {
+      if (command === 'codex' && args[0] === '--version') {
+        return { ok: true, output: 'codex-cli 0.137.0' };
+      }
+
+      return { ok: true, output: 'ok' };
+    },
+  );
+
+  const result = await runner.run({ projectKey: 'pairdock' });
+  const harnessCheck = result.checks.find((check) => check.key === 'agent-harness');
+
+  assert.equal(result.ok, false);
+  assert.equal(harnessCheck?.status, 'failed');
+  assert.match(harnessCheck?.message ?? '', /0\.138\.0 or newer/);
+  assert.match(harnessCheck?.remediation ?? '', /codex update/);
+});

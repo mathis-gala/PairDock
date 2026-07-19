@@ -6,6 +6,7 @@ import test from 'node:test';
 import {
   type AgentHarnessEvent,
   buildCommandArgs,
+  buildHarnessEnvironment,
   CodexHarnessAdapter,
   parseCodexJsonLine,
 } from '../../../../packages/local-agent/src/harness/codex-harness.adapter.js';
@@ -90,6 +91,15 @@ test('default Codex harness starts and resumes one Codex thread per PairDock ses
 
   assert.deepEqual(buildCommandArgs({}, input), [
     'exec',
+    '--ignore-user-config',
+    '--config',
+    'approval_policy="never"',
+    '--config',
+    'default_permissions="pairdock-restricted"',
+    '--config',
+    'permissions.pairdock-restricted.filesystem={":minimal"="read",":workspace_roots"={"."="write","**/.env"="deny","**/.env.local"="deny","**/.env.*.local"="deny","**/.npmrc"="deny","**/.netrc"="deny","**/.pypirc"="deny","**/*.pem"="deny","**/*.key"="deny","**/*.p12"="deny","**/*.pfx"="deny"}}',
+    '--config',
+    'permissions.pairdock-restricted.network.enabled=false',
     '--json',
     '--model',
     'gpt-5.6-luna',
@@ -99,6 +109,15 @@ test('default Codex harness starts and resumes one Codex thread per PairDock ses
   ]);
   assert.deepEqual(buildCommandArgs({}, input, 'codex-thread-id'), [
     'exec',
+    '--ignore-user-config',
+    '--config',
+    'approval_policy="never"',
+    '--config',
+    'default_permissions="pairdock-restricted"',
+    '--config',
+    'permissions.pairdock-restricted.filesystem={":minimal"="read",":workspace_roots"={"."="write","**/.env"="deny","**/.env.local"="deny","**/.env.*.local"="deny","**/.npmrc"="deny","**/.netrc"="deny","**/.pypirc"="deny","**/*.pem"="deny","**/*.key"="deny","**/*.p12"="deny","**/*.pfx"="deny"}}',
+    '--config',
+    'permissions.pairdock-restricted.network.enabled=false',
     'resume',
     '--json',
     '--model',
@@ -116,6 +135,35 @@ test('default Codex harness starts and resumes one Codex thread per PairDock ses
     parseCodexJsonLine('{"type":"item.completed","item":{"type":"agent_message","text":"Correction terminée."}}'),
     { type: 'message', text: 'Correction terminée.' },
   );
+});
+
+test('Codex harness does not expose unrelated developer secrets to the agent process', () => {
+  const environment = buildHarnessEnvironment(
+    {
+      HOME: '/Users/developer',
+      PATH: '/usr/bin',
+      AWS_SECRET_ACCESS_KEY: 'must-not-leak',
+      DATABASE_URL: 'postgresql://user:password@localhost/database',
+      GITHUB_TOKEN: 'must-not-leak',
+      OPENAI_API_KEY: 'must-not-leak',
+    },
+    {
+      sessionId: '11111111-1111-4111-8111-111111111111',
+      projectKey: 'pairdock',
+      prompt: 'Implement the feature.',
+      modelId: 'gpt-5.6-sol',
+      reasoningEffort: 'low',
+      worktreePath: '/tmp/worktree',
+    },
+  );
+
+  assert.equal(environment.HOME, '/Users/developer');
+  assert.equal(environment.PATH, '/usr/bin');
+  assert.equal(environment.PAIRDOCK_SESSION_ID, '11111111-1111-4111-8111-111111111111');
+  assert.equal(environment.AWS_SECRET_ACCESS_KEY, undefined);
+  assert.equal(environment.DATABASE_URL, undefined);
+  assert.equal(environment.GITHUB_TOKEN, undefined);
+  assert.equal(environment.OPENAI_API_KEY, undefined);
 });
 
 test('BT-019: CodexHarnessAdapter streams stdout and stderr before the process completes', async () => {

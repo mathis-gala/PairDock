@@ -13,6 +13,7 @@ import {
 } from '@pairdock/shared-contracts';
 import { HealthcheckService } from '../../../../packages/local-agent/src/docker/healthcheck.service.js';
 import type { SandboxPort, SandboxRef } from '../../../../packages/local-agent/src/docker/sandbox.port.js';
+import { SensitiveFilesPolicy } from '../../../../packages/local-agent/src/git/sensitive-files.policy.js';
 import { WorktreeService } from '../../../../packages/local-agent/src/git/worktree.service.js';
 import { FileSessionWorkspaceStore } from '../../../../packages/local-agent/src/session/file-session-workspace.store.js';
 import { SessionRegistry } from '../../../../packages/local-agent/src/session/session-registry.js';
@@ -477,6 +478,26 @@ test('V1: WorktreeService refuses to push sensitive generated files', async () =
   await assert.rejects(() => execGit(remotePath, ['rev-parse', '--verify', `refs/heads/${workspace.branchName}`]));
 });
 
+test('SensitiveFilesPolicy blocks common credential files but allows documented environment templates', () => {
+  const policy = new SensitiveFilesPolicy();
+
+  for (const path of [
+    '.npmrc',
+    '.netrc',
+    '.pypirc',
+    '.docker/config.json',
+    '.kube/config',
+    'infra/production.tfvars',
+    'certificates/private.key',
+    '.config/gcloud/application_default_credentials.json',
+  ]) {
+    assert.equal(policy.isSensitive(path), true, `${path} should be sensitive`);
+  }
+
+  assert.equal(policy.isSensitive('.env.example'), false);
+  assert.equal(policy.isSensitive('deploy/pairdock.env.example'), false);
+});
+
 test('V1: SessionRunner.prepare rolls back the sandbox and worktree after preview startup fails', async () => {
   const repositoryPath = await createTempRepository();
   const managedRoot = await createManagedWorktreeRoot();
@@ -626,6 +647,10 @@ class FakeSandboxPort implements SandboxPort {
   readonly startCalls: Array<{ sessionId: string; worktreePath: string }> = [];
   readonly checkCalls: SandboxRef[] = [];
   readonly stopCalls: SandboxRef[] = [];
+
+  async runCommand() {
+    return { exitCode: 0, logs: '' };
+  }
 
   async start(input: { sessionId: string; worktreePath: string }): Promise<SandboxRef> {
     this.startCalls.push({ sessionId: input.sessionId, worktreePath: input.worktreePath });

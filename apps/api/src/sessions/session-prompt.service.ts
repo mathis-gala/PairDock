@@ -12,6 +12,7 @@ import {
   AGENT_PROTOCOL_VERSION,
   type AgentCancelCommandEnvelope,
   type AgentPromptCommandEnvelope,
+  MAX_AGENT_PROMPT_LENGTH,
 } from '@pairdock/shared-contracts';
 import { AgentCommandRouterService } from '../agent-gateway/agent-command-router.service.js';
 import { MESSAGES_REPOSITORY, SESSIONS_REPOSITORY } from '../persistence/persistence.tokens.js';
@@ -45,6 +46,10 @@ export class SessionPromptService {
 
     if (!content) {
       throw new BadRequestException('Prompt content is required.');
+    }
+
+    if (content.length > MAX_AGENT_PROMPT_LENGTH) {
+      throw new BadRequestException(`Prompt content must not exceed ${MAX_AGENT_PROMPT_LENGTH} characters.`);
     }
 
     const message = await this.createPrompt(sessionId, this.requirePromptActor(request), content);

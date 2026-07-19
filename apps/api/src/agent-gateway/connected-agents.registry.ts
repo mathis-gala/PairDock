@@ -14,14 +14,26 @@ export class ConnectedAgentsRegistry {
     const agentId = snapshot.agentId;
     const previousSocketId = this.socketIdByAgentId.get(agentId);
 
-    if (previousSocketId) {
-      this.agentIdBySocketId.delete(previousSocketId);
+    if (previousSocketId && previousSocketId !== socketId) {
+      throw new Error(`Agent ${agentId} is already connected.`);
     }
 
     const previousAgentId = this.agentIdBySocketId.get(socketId);
 
-    if (previousAgentId) {
-      this.socketIdByAgentId.delete(previousAgentId);
+    if (previousAgentId && previousAgentId !== agentId) {
+      throw new Error(`Socket ${socketId} is already registered to agent ${previousAgentId}.`);
+    }
+
+    for (const project of snapshot.projects) {
+      const conflictingAgent = [...this.snapshotByAgentId.values()].find(
+        (registeredSnapshot) =>
+          registeredSnapshot.agentId !== agentId &&
+          registeredSnapshot.projects.some((registeredProject) => registeredProject.key === project.key),
+      );
+
+      if (conflictingAgent) {
+        throw new Error(`Agent project key ${project.key} is already connected by ${conflictingAgent.agentId}.`);
+      }
     }
 
     this.agentIdBySocketId.set(socketId, agentId);
@@ -60,6 +72,11 @@ export class ConnectedAgentsRegistry {
   findSnapshot(agentId: string): ConnectedAgentSnapshot | null {
     const snapshot = this.snapshotByAgentId.get(agentId);
     return snapshot ? cloneSnapshot(snapshot) : null;
+  }
+
+  findSnapshotBySocketId(socketId: string): ConnectedAgentSnapshot | null {
+    const agentId = this.findAgentId(socketId);
+    return agentId ? this.findSnapshot(agentId) : null;
   }
 
   listSnapshots(): ConnectedAgentSnapshot[] {

@@ -10,7 +10,7 @@ x-api-environment: &api-environment
   FRONTEND_URL: ${PAIRDOCK_WEB_URL:?PAIRDOCK_WEB_URL is required}
   AUTH_TOKEN_SECRET: ${AUTH_TOKEN_SECRET:?AUTH_TOKEN_SECRET is required}
   AUTH_STATE_SECRET: ${AUTH_STATE_SECRET:?AUTH_STATE_SECRET is required}
-  AGENT_AUTH_TOKEN: ${AGENT_AUTH_TOKEN:?AGENT_AUTH_TOKEN is required}
+  AGENT_AUTH_CREDENTIALS_JSON: ${AGENT_AUTH_CREDENTIALS_JSON:?AGENT_AUTH_CREDENTIALS_JSON is required}
   GITHUB_APP_ID: ${GITHUB_APP_ID:?GITHUB_APP_ID is required}
   GITHUB_APP_SLUG: ${GITHUB_APP_SLUG:?GITHUB_APP_SLUG is required}
   GITHUB_CLIENT_ID: ${GITHUB_CLIENT_ID:?GITHUB_CLIENT_ID is required}
@@ -24,7 +24,7 @@ x-api-environment: &api-environment
 
 services:
   database:
-    image: postgres:16-alpine
+    image: postgres:16-alpine@sha256:57c72fd2a128e416c7fcc499958864df5301e940bca0a56f58fddf30ffc07777
     restart: unless-stopped
     environment:
       POSTGRES_DB: pairdock

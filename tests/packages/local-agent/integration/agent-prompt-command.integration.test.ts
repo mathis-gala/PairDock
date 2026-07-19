@@ -573,6 +573,10 @@ class MutatingHarnessPort implements AgentHarnessPort {
 }
 
 class ReadySandboxPort {
+  async runCommand() {
+    return { exitCode: 0, logs: '' };
+  }
+
   async start(input: { sessionId: string }) {
     return {
       id: `sandbox-${input.sessionId}`,

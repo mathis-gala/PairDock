@@ -49,6 +49,38 @@ test('BT-010: shared Zod event codecs reject an event without protocolVersion', 
   assert.equal(result.success, false);
 });
 
+test('shared Zod codecs reject oversized prompt and agent output payloads', () => {
+  const sessionId = randomUUID();
+  const envelope = {
+    protocolVersion: AGENT_PROTOCOL_VERSION,
+    messageId: randomUUID(),
+    sessionId,
+    sentAt: new Date().toISOString(),
+  };
+
+  const prompt = agentCommandEnvelopeSchema.safeParse({
+    ...envelope,
+    type: 'agent.prompt',
+    payload: {
+      sessionId,
+      prompt: 'x'.repeat(20 * 1024 + 1),
+      modelId: 'codex-cli/gpt-5.4',
+    },
+  });
+  const output = agentEventEnvelopeSchema.safeParse({
+    ...envelope,
+    type: 'agent.output',
+    payload: {
+      sessionId,
+      stream: 'stdout',
+      text: 'x'.repeat(64 * 1024 + 1),
+    },
+  });
+
+  assert.equal(prompt.success, false);
+  assert.equal(output.success, false);
+});
+
 test('BT-042: shared Zod codecs reject mismatched envelope and payload session ids', () => {
   const result = agentCommandEnvelopeSchema.safeParse({
     protocolVersion: AGENT_PROTOCOL_VERSION,
