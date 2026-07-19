@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { spawn } from 'node:child_process';
-import { mkdtemp, readFile, writeFile } from 'node:fs/promises';
+import { mkdtemp, readFile, stat, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 import test from 'node:test';
@@ -259,6 +259,8 @@ test('V1: local agent login command stores declared models and project mappings'
       'local-agent-1',
       '--backend-url',
       'http://127.0.0.1:3000',
+      '--token',
+      'local-agent-secret-token',
       '--model',
       'gpt-5=GPT-5=codex',
       '--project',
@@ -278,6 +280,7 @@ test('V1: local agent login command stores declared models and project mappings'
 
   assert.deepEqual(config.models, [{ id: 'gpt-5', label: 'GPT-5', provider: 'codex' }]);
   assert.deepEqual(config.projectPaths, { tcg: '/Users/mathis/Documents/TCG Collection' });
+  assert.equal((await stat(configPath)).mode & 0o777, 0o600);
 });
 
 function runCommand(

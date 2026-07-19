@@ -17,6 +17,7 @@ import { DatabaseClient } from '../../../../../apps/api/src/persistence/client.j
 import { authResponseSchema, idResponseSchema, parseJsonResponse } from '../test-json.js';
 
 const prisma = new DatabaseClient();
+const AGENT_AUTH_TOKEN = 'integration-agent-token-with-at-least-32-bytes';
 
 let app: INestApplication;
 let baseUrl: string;
@@ -46,6 +47,12 @@ async function startApplication() {
   }
 
   baseUrl = `http://127.0.0.1:${address.port}`;
+}
+
+function waitForConnectError(socket: Socket): Promise<Error> {
+  return new Promise((resolve) => {
+    socket.once('connect_error', (error: Error) => resolve(error));
+  });
 }
 
 async function authenticateDeveloper(tokenSeed = randomUUID()) {
@@ -113,6 +120,7 @@ async function createSession(projectId: string, accessToken: string) {
 
 function connectSocket(namespace: '/agent' | '/ui', accessToken?: string): Socket {
   return io(`${baseUrl}${namespace}`, {
+    forceNew: true,
     transports: ['websocket'],
     extraHeaders: accessToken ? { Authorization: `Bearer ${accessToken}` } : undefined,
   });
@@ -136,6 +144,7 @@ function waitForEvent<T>(socket: Socket, eventName: string): Promise<T> {
 }
 
 test.before(async () => {
+  process.env.AGENT_AUTH_TOKEN = AGENT_AUTH_TOKEN;
   await prisma.$connect();
   await startApplication();
 });
@@ -143,10 +152,24 @@ test.before(async () => {
 test.after(async () => {
   await app.close();
   await prisma.$disconnect();
+  delete process.env.AGENT_AUTH_TOKEN;
 });
 
 test.beforeEach(async () => {
   await resetDatabase();
+});
+
+test('AgentGateway rejects a local agent without the configured bearer token', async () => {
+  const agentSocket = connectSocket('/agent');
+
+  try {
+    const error = await waitForConnectError(agentSocket);
+
+    assert.match(error.message, /Unauthorized agent/);
+    assert.equal(agentSocket.connected, false);
+  } finally {
+    agentSocket.close();
+  }
 });
 
 test('BT-011: AgentGateway streams valid agent.output events to an authorized PM UI session', async () => {
@@ -164,7 +187,7 @@ test('BT-011: AgentGateway streams valid agent.output events to an authorized PM
   });
 
   const uiSocket = connectSocket('/ui', pmLogin.body.accessToken);
-  const agentSocket = connectSocket('/agent');
+  const agentSocket = connectSocket('/agent', AGENT_AUTH_TOKEN);
 
   try {
     await Promise.all([waitForConnect(uiSocket), waitForConnect(agentSocket)]);

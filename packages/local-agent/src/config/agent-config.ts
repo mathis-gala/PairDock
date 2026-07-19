@@ -1,4 +1,4 @@
-import { mkdir, readFile, writeFile } from 'node:fs/promises';
+import { chmod, mkdir, readFile, writeFile } from 'node:fs/promises';
 import { homedir } from 'node:os';
 import { dirname, resolve } from 'node:path';
 import { z } from 'zod';
@@ -160,8 +160,9 @@ export async function saveAgentConfig(input: SaveAgentConfigInput): Promise<{ co
   const config = normalizeAgentConfig(input);
   const path = resolveAgentConfigPath();
 
-  await mkdir(dirname(path), { recursive: true });
-  await writeFile(path, JSON.stringify(config, null, 2));
+  await mkdir(dirname(path), { recursive: true, mode: 0o700 });
+  await writeFile(path, JSON.stringify(config, null, 2), { mode: 0o600 });
+  await chmod(path, 0o600);
 
   return { config, path };
 }

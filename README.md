@@ -2,6 +2,8 @@
 
 PairDock MVP monorepo described in `docs/architecture/pairdock-mvp/`.
 
+Production release, Raspberry Pi, Caddy, and Cloudflare Tunnel instructions: [`deploy/README.md`](deploy/README.md).
+
 ## Workspace
 
 - `apps/web`: React application for the PM/developer UI.
@@ -55,10 +57,11 @@ GITHUB_REDIRECT_URI=http://127.0.0.1:3000/auth/developer/callback
 GITHUB_APP_PRIVATE_KEY="<pem contents or escaped pem>"
 AUTH_STATE_SECRET=<random-secret-of-at-least-32-bytes>
 AUTH_TOKEN_SECRET=<different-random-secret-of-at-least-32-bytes>
+AGENT_AUTH_TOKEN=<different-random-secret-of-at-least-32-bytes>
 DEV_AUTH_ENABLED=false
 ```
 
-Generate both authentication secrets independently, for example with `openssl rand -base64 48`. Keep them stable between API restarts and never commit them. `DEV_AUTH_ENABLED` must remain `false` outside automated tests or explicit local fixture testing.
+Generate all authentication secrets independently, for example with `openssl rand -base64 48`. Keep them stable between API restarts and never commit them. `AGENT_AUTH_TOKEN` authenticates local agent WebSocket connections in production. `DEV_AUTH_ENABLED` must remain `false` outside automated tests or explicit local fixture testing.
 
 Use `http://localhost:5173` for `FRONTEND_URL` unless you intentionally run the web app on another origin. The configured origin is also the only origin allowed by API CORS.
 

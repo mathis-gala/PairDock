@@ -1,0 +1,15 @@
+.git
+.github
+.playwright-cli
+.env
+**/.env
+**/.env.*
+!**/.env.example
+node_modules
+dist
+coverage
+graphify-out
+prototype
+docs
+*.log
+*.tsbuildinfo

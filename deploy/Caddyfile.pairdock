@@ -1,0 +1,38 @@
+# Append these two sites to the Caddyfile already used by the existing stack.
+# Cloudflare Tunnel terminates public TLS, then reaches Caddy over HTTP.
+
+http://{$PAIRDOCK_WEB_DOMAIN} {
+	encode zstd gzip
+
+	header {
+		Content-Security-Policy "default-src 'self'; base-uri 'self'; connect-src 'self' https://{$PAIRDOCK_API_DOMAIN} wss://{$PAIRDOCK_API_DOMAIN}; font-src 'self' data:; form-action 'self'; frame-ancestors 'none'; frame-src https://*.trycloudflare.com; img-src 'self' https: data: blob:; object-src 'none'; script-src 'self'; style-src 'self' 'unsafe-inline'; upgrade-insecure-requests"
+		Cross-Origin-Opener-Policy "same-origin"
+		Permissions-Policy "camera=(), geolocation=(), microphone=()"
+		Strict-Transport-Security "max-age=31536000; includeSubDomains; preload"
+		X-Content-Type-Options "nosniff"
+		X-Frame-Options "DENY"
+		Referrer-Policy "strict-origin-when-cross-origin"
+	}
+
+	reverse_proxy pairdock-web:8080 {
+		header_up X-Real-IP {http.request.header.CF-Connecting-IP}
+	}
+}
+
+http://{$PAIRDOCK_API_DOMAIN} {
+	encode zstd gzip
+
+	header {
+		Content-Security-Policy "default-src 'none'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'; object-src 'none'"
+		Cross-Origin-Opener-Policy "same-origin"
+		Permissions-Policy "camera=(), geolocation=(), microphone=()"
+		Strict-Transport-Security "max-age=31536000; includeSubDomains; preload"
+		X-Content-Type-Options "nosniff"
+		X-Frame-Options "DENY"
+		Referrer-Policy "strict-origin-when-cross-origin"
+	}
+
+	reverse_proxy pairdock-api:3000 {
+		header_up X-Real-IP {http.request.header.CF-Connecting-IP}
+	}
+}

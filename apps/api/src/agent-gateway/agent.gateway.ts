@@ -3,6 +3,7 @@ import {
   ConnectedSocket,
   MessageBody,
   type OnGatewayDisconnect,
+  type OnGatewayInit,
   SubscribeMessage,
   WebSocketGateway,
   WebSocketServer,
@@ -28,11 +29,15 @@ import type { PersistenceUnitOfWork } from '../persistence/ports/persistence-uni
 import { type SessionAgentEvent, SessionStateMachine } from '../sessions/session-state-machine.js';
 import { UiGateway } from '../ui-gateway/ui.gateway.js';
 import { ValidationService } from '../validation/validation.service.js';
+import { AgentAuthenticationService } from './agent-authentication.service.js';
 import { ConnectedAgentsRegistry } from './connected-agents.registry.js';
 
 @Injectable()
-@WebSocketGateway({ namespace: '/agent', cors: { origin: '*' } })
-export class AgentGateway implements OnGatewayDisconnect {
+@WebSocketGateway({
+  namespace: '/agent',
+  cors: { origin: process.env.FRONTEND_URL ?? 'http://localhost:5173' },
+})
+export class AgentGateway implements OnGatewayDisconnect, OnGatewayInit {
   private readonly logger = new Logger(AgentGateway.name);
   @WebSocketServer()
   private server!: Server;
@@ -51,7 +56,21 @@ export class AgentGateway implements OnGatewayDisconnect {
     private readonly connectedAgentsRegistry: ConnectedAgentsRegistry,
     @Inject(ValidationService)
     private readonly validationService: ValidationService,
+    @Inject(AgentAuthenticationService)
+    private readonly agentAuthenticationService: AgentAuthenticationService,
   ) {}
+
+  afterInit(server: Server): void {
+    server.use((socket, next) => {
+      try {
+        this.agentAuthenticationService.assertAuthorized(socket.handshake.headers.authorization);
+        next();
+      } catch {
+        this.logger.warn(`Rejected unauthorized agent socket ${socket.id}.`);
+        next(new Error('Unauthorized agent.'));
+      }
+    });
+  }
 
   async handleDisconnect(client: Socket): Promise<void> {
     const agentId = this.connectedAgentsRegistry.findAgentId(client.id);
