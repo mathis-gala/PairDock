@@ -75,11 +75,10 @@ SLACK_CLIENT_SECRET=<client-secret>
 SLACK_REDIRECT_URI=http://127.0.0.1:3000/auth/pm/callback
 ```
 
-Create a Slack App from `api.slack.com/apps`, add the redirect URL above under **OAuth & Permissions**, and add only OpenID identity scopes:
+Create a Slack App from `api.slack.com/apps`, add the redirect URL above under **OAuth & Permissions**, and add only these user token scopes:
 
-- `identity.basic`
-- `identity.email`
-- `identity.team`
+- `users:read`
+- `users:read.email`
 
 You do not need a bot token, event subscriptions, slash commands, or incoming webhooks for V1 PM auth.
 
