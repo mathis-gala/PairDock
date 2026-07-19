@@ -1,0 +1,130 @@
+name: pairdock
+
+x-database-environment: &database-environment
+  NODE_ENV: production
+  DATABASE_URL: postgresql://pairdock:${POSTGRES_PASSWORD:?POSTGRES_PASSWORD is required}@database:5432/pairdock
+
+x-api-environment: &api-environment
+  <<: *database-environment
+  PORT: "3000"
+  FRONTEND_URL: ${PAIRDOCK_WEB_URL:?PAIRDOCK_WEB_URL is required}
+  AUTH_TOKEN_SECRET: ${AUTH_TOKEN_SECRET:?AUTH_TOKEN_SECRET is required}
+  AUTH_STATE_SECRET: ${AUTH_STATE_SECRET:?AUTH_STATE_SECRET is required}
+  AGENT_AUTH_CREDENTIALS_JSON: ${AGENT_AUTH_CREDENTIALS_JSON:?AGENT_AUTH_CREDENTIALS_JSON is required}
+  GITHUB_APP_ID: ${GITHUB_APP_ID:?GITHUB_APP_ID is required}
+  GITHUB_APP_SLUG: ${GITHUB_APP_SLUG:?GITHUB_APP_SLUG is required}
+  GITHUB_CLIENT_ID: ${GITHUB_CLIENT_ID:?GITHUB_CLIENT_ID is required}
+  GITHUB_CLIENT_SECRET: ${GITHUB_CLIENT_SECRET:?GITHUB_CLIENT_SECRET is required}
+  GITHUB_REDIRECT_URI: ${GITHUB_REDIRECT_URI:?GITHUB_REDIRECT_URI is required}
+  GITHUB_APP_PRIVATE_KEY: ${GITHUB_APP_PRIVATE_KEY:?GITHUB_APP_PRIVATE_KEY is required}
+  SLACK_CLIENT_ID: ${SLACK_CLIENT_ID:?SLACK_CLIENT_ID is required}
+  SLACK_CLIENT_SECRET: ${SLACK_CLIENT_SECRET:?SLACK_CLIENT_SECRET is required}
+  SLACK_REDIRECT_URI: ${SLACK_REDIRECT_URI:?SLACK_REDIRECT_URI is required}
+  DEV_AUTH_ENABLED: "false"
+
+services:
+  database:
+    image: postgres:16-alpine@sha256:57c72fd2a128e416c7fcc499958864df5301e940bca0a56f58fddf30ffc07777
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: pairdock
+      POSTGRES_USER: pairdock
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD is required}
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U pairdock -d pairdock"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    volumes:
+      - pairdock_database:/var/lib/postgresql/data
+    networks:
+      - internal
+    security_opt:
+      - no-new-privileges:true
+
+  migrate:
+    image: ${PAIRDOCK_IMAGE_REPOSITORY:?PAIRDOCK_IMAGE_REPOSITORY is required}/pairdock-api:${IMAGE_TAG:-latest}
+    restart: "no"
+    command: ["node", "node_modules/prisma/build/index.js", "migrate", "deploy", "--config", "apps/api/prisma.config.ts"]
+    environment: *database-environment
+    depends_on:
+      database:
+        condition: service_healthy
+    networks:
+      - internal
+    read_only: true
+    tmpfs:
+      - /tmp
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+
+  api:
+    image: ${PAIRDOCK_IMAGE_REPOSITORY:?PAIRDOCK_IMAGE_REPOSITORY is required}/pairdock-api:${IMAGE_TAG:-latest}
+    restart: unless-stopped
+    init: true
+    environment: *api-environment
+    depends_on:
+      database:
+        condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
+    healthcheck:
+      test:
+        - CMD
+        - node
+        - -e
+        - fetch('http://127.0.0.1:3000/health').then(r=>{if(!r.ok)process.exit(1)}).catch(()=>process.exit(1))
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 10s
+    networks:
+      internal: {}
+      proxy:
+        aliases:
+          - pairdock-api
+    read_only: true
+    tmpfs:
+      - /tmp
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+
+  web:
+    image: ${PAIRDOCK_IMAGE_REPOSITORY:?PAIRDOCK_IMAGE_REPOSITORY is required}/pairdock-web:${IMAGE_TAG:-latest}
+    restart: unless-stopped
+    init: true
+    environment:
+      PAIRDOCK_API_URL: ${PAIRDOCK_API_URL:?PAIRDOCK_API_URL is required}
+    depends_on:
+      api:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O /dev/null http://127.0.0.1:8080/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 6
+    networks:
+      proxy:
+        aliases:
+          - pairdock-web
+    read_only: true
+    tmpfs:
+      - /tmp
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+
+volumes:
+  pairdock_database:
+
+networks:
+  internal:
+    internal: true
+  proxy:
+    name: pairdock_proxy
+    external: true

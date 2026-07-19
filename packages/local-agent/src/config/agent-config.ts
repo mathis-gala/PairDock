@@ -1,4 +1,4 @@
-import { mkdir, readFile, writeFile } from 'node:fs/promises';
+import { chmod, mkdir, readFile, writeFile } from 'node:fs/promises';
 import { homedir } from 'node:os';
 import { dirname, resolve } from 'node:path';
 import { z } from 'zod';
@@ -160,8 +160,9 @@ export async function saveAgentConfig(input: SaveAgentConfigInput): Promise<{ co
   const config = normalizeAgentConfig(input);
   const path = resolveAgentConfigPath();
 
-  await mkdir(dirname(path), { recursive: true });
-  await writeFile(path, JSON.stringify(config, null, 2));
+  await mkdir(dirname(path), { recursive: true, mode: 0o700 });
+  await writeFile(path, JSON.stringify(config, null, 2), { mode: 0o600 });
+  await chmod(path, 0o600);
 
   return { config, path };
 }
@@ -193,8 +194,12 @@ function normalizeBackendUrl(value: string): string {
   const normalized = normalizeRequiredValue(value, 'backendUrl');
   const url = new URL(normalized);
 
-  if (!url.protocol.startsWith('http')) {
-    throw new Error('backendUrl must use http or https.');
+  const isLoopback = url.hostname === 'localhost' || url.hostname === '127.0.0.1' || url.hostname === '[::1]';
+
+  if ((url.protocol !== 'https:' && !(url.protocol === 'http:' && isLoopback)) || url.username || url.password) {
+    throw new Error(
+      'backendUrl must use HTTPS, except for an HTTP loopback address, and must not contain credentials.',
+    );
   }
 
   url.pathname = '';
@@ -407,6 +412,7 @@ function normalizeSandboxConfig(
     startCommand: normalizeRequiredValue(sandboxConfig.startCommand, `sandbox.startCommand for ${projectKey}`),
     healthcheckUrl: normalizeRequiredValue(sandboxConfig.healthcheckUrl, `sandbox.healthcheckUrl for ${projectKey}`),
   };
+  assertLoopbackUrlTemplate(normalizedSandboxConfig.healthcheckUrl, `sandbox.healthcheckUrl for ${projectKey}`);
 
   const stopCommand = normalizeOptionalConfigString(sandboxConfig.stopCommand, `sandbox.stopCommand for ${projectKey}`);
   if (stopCommand !== undefined) {
@@ -415,6 +421,7 @@ function normalizeSandboxConfig(
 
   const image = normalizeOptionalConfigString(sandboxConfig.image, `sandbox.image for ${projectKey}`);
   if (image !== undefined) {
+    assertSafeContainerImage(image, `sandbox.image for ${projectKey}`);
     normalizedSandboxConfig.image = image;
   }
 
@@ -437,9 +444,11 @@ function normalizeSandboxConfig(
   }
 
   if (sandboxConfig.ports !== undefined) {
-    normalizedSandboxConfig.ports = sandboxConfig.ports.map((port, index) =>
-      normalizeRequiredValue(port, `sandbox.ports[${index}] for ${projectKey}`),
-    );
+    normalizedSandboxConfig.ports = sandboxConfig.ports.map((port, index) => {
+      const normalizedPort = normalizeRequiredValue(port, `sandbox.ports[${index}] for ${projectKey}`);
+      assertLoopbackPortMapping(normalizedPort, `sandbox.ports[${index}] for ${projectKey}`);
+      return normalizedPort;
+    });
   }
 
   return normalizedSandboxConfig;
@@ -463,11 +472,13 @@ function normalizeTunnelConfig(
 
   const publicUrl = normalizeOptionalConfigString(tunnelConfig.publicUrl, `tunnel.publicUrl for ${projectKey}`);
   if (publicUrl !== undefined) {
+    assertHttpUrlTemplate(publicUrl, `tunnel.publicUrl for ${projectKey}`);
     normalizedTunnelConfig.publicUrl = publicUrl;
   }
 
   const image = normalizeOptionalConfigString(tunnelConfig.image, `tunnel.image for ${projectKey}`);
   if (image !== undefined) {
+    assertSafeContainerImage(image, `tunnel.image for ${projectKey}`);
     normalizedTunnelConfig.image = image;
   }
 
@@ -522,4 +533,47 @@ function normalizeOptionalPositiveInteger(value: number | undefined, fieldName: 
   }
 
   return normalizePositiveInteger(value, fieldName);
+}
+
+function assertHttpUrlTemplate(value: string, fieldName: string): void {
+  try {
+    const url = new URL(value.replaceAll('{{hostPort}}', '4000').replaceAll('{{sessionId}}', 'session'));
+    if ((url.protocol !== 'http:' && url.protocol !== 'https:') || url.username || url.password) {
+      throw new Error();
+    }
+  } catch {
+    throw new Error(`${fieldName} must be an HTTP(S) URL without credentials.`);
+  }
+}
+
+function assertLoopbackUrlTemplate(value: string, fieldName: string): void {
+  assertHttpUrlTemplate(value, fieldName);
+  const url = new URL(value.replaceAll('{{hostPort}}', '4000').replaceAll('{{sessionId}}', 'session'));
+
+  if (url.hostname !== '127.0.0.1' && url.hostname !== 'localhost' && url.hostname !== '[::1]') {
+    throw new Error(`${fieldName} must target a loopback address.`);
+  }
+}
+
+function assertLoopbackPortMapping(value: string, fieldName: string): void {
+  const match = /^127\.0\.0\.1:(\d{1,5}|{{hostPort}}):(\d{1,5})$/.exec(value);
+  const validPort = (port: string) => port === '{{hostPort}}' || (Number(port) >= 1 && Number(port) <= 65_535);
+  const hostPort = match?.[1];
+  const containerPort = match?.[2];
+
+  if (!hostPort || !containerPort || !validPort(hostPort) || !validPort(containerPort)) {
+    throw new Error(`${fieldName} must bind valid ports to 127.0.0.1.`);
+  }
+}
+
+function assertSafeContainerImage(value: string, fieldName: string): void {
+  if (
+    value.length > 512 ||
+    value.startsWith('-') ||
+    value.includes('://') ||
+    /[\s\0]/.test(value) ||
+    !/^[a-z0-9][a-z0-9._\-/:@]+$/i.test(value)
+  ) {
+    throw new Error(`${fieldName} must be a safe container image reference.`);
+  }
 }

@@ -68,21 +68,21 @@ test('V1: DockerSandboxAdapter runs preview inside docker with explicit host DB 
   });
 
   assert.equal(spawnCalls[0]?.command, 'docker');
-  assert.deepEqual(spawnCalls[0]?.args, [
-    'run',
-    '--rm',
-    '--name',
-    'pairdock-888888888888488888888888',
-    '--workdir',
-    '/workspace',
-    '--volume',
-    `${worktreePath}:/workspace`,
-    '--publish',
-    '127.0.0.1:4000:4000',
-    '--add-host',
-    'host.docker.internal:host-gateway',
-    '--env',
-    'DATABASE_URL=postgresql://postgres:pairdockdev@host.docker.internal:55432/pairdock',
+  const startArgs = spawnCalls[0]?.args ?? [];
+  assert.ok(startArgs.includes('--read-only'));
+  assert.ok(startArgs.includes('--cap-drop'));
+  assert.ok(startArgs.includes('ALL'));
+  assert.ok(startArgs.includes('--security-opt'));
+  assert.ok(startArgs.includes('no-new-privileges'));
+  assert.ok(startArgs.includes('--user'));
+  assert.ok(startArgs.includes(`${process.getuid?.() ?? 1000}:${process.getgid?.() ?? 1000}`));
+  assert.ok(startArgs.includes('--tmpfs'));
+  assert.ok(startArgs.includes('/tmp:rw,nosuid,nodev'));
+  assert.ok(startArgs.includes('HOME=/tmp'));
+  assert.ok(startArgs.includes('127.0.0.1:4000:4000'));
+  assert.ok(startArgs.includes('host.docker.internal:host-gateway'));
+  assert.ok(startArgs.includes('DATABASE_URL=postgresql://postgres:pairdockdev@host.docker.internal:55432/pairdock'));
+  assert.deepEqual(startArgs.slice(-4), [
     'oven/bun:1',
     'sh',
     '-lc',
@@ -132,6 +132,13 @@ test('V1: DockerSandboxAdapter resolves a dedicated host preview port for each s
   });
 
   assert.ok(spawnCalls[0]?.args.includes('127.0.0.1:45123:4000'));
+  assert.deepEqual(
+    spawnCalls[0]?.args.slice(
+      (spawnCalls[0]?.args.indexOf('--network') ?? -2) + 1,
+      (spawnCalls[0]?.args.indexOf('--network') ?? -2) + 2,
+    ),
+    ['none'],
+  );
   assert.equal(sandboxRef.healthcheckUrl, 'http://127.0.0.1:45123');
   assert.equal(sandboxRef.previewConfig?.tunnel?.publicUrl, 'http://127.0.0.1:45123');
 });
@@ -200,12 +207,87 @@ test('DockerSandboxAdapter stops a restored container without its original child
   ]);
 });
 
+test('DockerSandboxAdapter executes validation commands in an ephemeral networkless container', async () => {
+  const spawnCalls: Array<{ command: string; args: string[]; shell?: boolean }> = [];
+  const adapter = new DockerSandboxAdapter({
+    spawn(command, args, options) {
+      spawnCalls.push({ command, args, shell: options.shell });
+      const process = createRunningProcess();
+      queueMicrotask(() => {
+        process.stdout.emit('data', 'checks stayed in the sandbox');
+        process.exitCode = 0;
+        process.emit('close', 0, null);
+      });
+      return process as never;
+    },
+  });
+
+  const result = await adapter.runCommand(
+    {
+      id: 'sandbox-for-checks',
+      sessionId: 'acacacac-acac-4cac-8cac-acacacacacac',
+      healthcheckUrl: 'http://127.0.0.1:4100',
+      previewConfig: {
+        sandbox: {
+          image: 'oven/bun:1',
+          workdir: '/workspace',
+          startCommand: 'bun run dev',
+          healthcheckUrl: 'http://127.0.0.1:4100',
+        },
+      },
+      metadata: {
+        type: 'docker',
+        containerName: 'pairdock-acacacacacac4cac8cacacac',
+      },
+    },
+    'bun test',
+    '/tmp/pairdock-check-worktree',
+  );
+
+  assert.deepEqual(spawnCalls, [
+    {
+      command: 'docker',
+      args: [
+        'run',
+        '--rm',
+        '--init',
+        '--read-only',
+        '--cap-drop',
+        'ALL',
+        '--security-opt',
+        'no-new-privileges',
+        '--pids-limit',
+        '512',
+        '--user',
+        `${process.getuid?.() ?? 1000}:${process.getgid?.() ?? 1000}`,
+        '--tmpfs',
+        '/tmp:rw,nosuid,nodev',
+        '--network',
+        'none',
+        '--workdir',
+        '/workspace',
+        '--volume',
+        '/tmp/pairdock-check-worktree:/workspace',
+        '--env',
+        'HOME=/tmp',
+        'oven/bun:1',
+        'sh',
+        '-lc',
+        'bun test',
+      ],
+      shell: false,
+    },
+  ]);
+  assert.equal(result.exitCode, 0);
+  assert.match(result.logs, /stayed in the sandbox/);
+});
+
 test('Task 8: CloudflarePreviewTunnelAdapter uses Docker cloudflared for the local URL', async () => {
   const worktreePath = await createTempWorkspace();
-  let capturedCommand = '';
+  const spawnCalls: Array<{ command: string; args: string[]; shell?: boolean }> = [];
   const adapter = new CloudflarePreviewTunnelAdapter({
-    spawn(command, _options) {
-      capturedCommand = command;
+    spawn(command, args, options) {
+      spawnCalls.push({ command, args, shell: options.shell });
       const process = Object.assign(new EventEmitter(), {
         killed: false,
         exitCode: null as number | null,
@@ -233,19 +315,33 @@ test('Task 8: CloudflarePreviewTunnelAdapter uses Docker cloudflared for the loc
     previewConfig: {},
   });
 
-  assert.equal(
-    capturedCommand,
-    'docker run --rm --name pairdock-tunnel-bbbbbbbbbbbb4bbb8bbbbbbb --add-host host.docker.internal:host-gateway cloudflare/cloudflared:latest tunnel --url http://host.docker.internal:3100',
-  );
+  assert.deepEqual(spawnCalls, [
+    {
+      command: 'docker',
+      args: [
+        'run',
+        '--rm',
+        '--name',
+        'pairdock-tunnel-bbbbbbbbbbbb4bbb8bbbbbbb',
+        '--add-host',
+        'host.docker.internal:host-gateway',
+        'cloudflare/cloudflared@sha256:4f6655284ab3d252b7f28fedb19fe6c8fc82ee5b1295c20ac74d475e5398a52d',
+        'tunnel',
+        '--url',
+        'http://host.docker.internal:3100',
+      ],
+      shell: false,
+    },
+  ]);
   assert.equal(tunnelRef.publicUrl, 'https://pairdock-default.trycloudflare.com');
   assert.equal(tunnelRef.metadata?.containerName, 'pairdock-tunnel-bbbbbbbbbbbb4bbb8bbbbbbb');
 });
 
 test('CloudflarePreviewTunnelAdapter stops a restored tunnel container', async () => {
-  const commands: string[] = [];
+  const commands: Array<{ command: string; args: string[]; shell?: boolean }> = [];
   const adapter = new CloudflarePreviewTunnelAdapter({
-    spawn(command) {
-      commands.push(command);
+    spawn(command, args, options) {
+      commands.push({ command, args, shell: options.shell });
       const process = createRunningProcess();
       queueMicrotask(() => {
         process.exitCode = 0;
@@ -265,7 +361,13 @@ test('CloudflarePreviewTunnelAdapter stops a restored tunnel container', async (
     },
   });
 
-  assert.deepEqual(commands, ['docker stop pairdock-tunnel-bcbcbcbcbcbc4cbc8cbcbcbc']);
+  assert.deepEqual(commands, [
+    {
+      command: 'docker',
+      args: ['stop', 'pairdock-tunnel-bcbcbcbcbcbc4cbc8cbcbcbc'],
+      shell: false,
+    },
+  ]);
 });
 
 interface FakeRunningProcess extends EventEmitter {

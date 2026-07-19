@@ -286,6 +286,7 @@ test('BT-033: full MVP flow starts a session, runs a PM prompt, creates a draft 
   const pmEmail = `pm-${randomUUID()}@pairdock.test`;
   const agentProjectKey = `agent-${randomUUID()}`;
   const project = await createDeveloperProject(developerLogin.accessToken, agentProjectKey);
+  app.get(ConnectedAgentsRegistry).unregister(`setup-${agentProjectKey}`);
   await shareProjectWithPm(developerLogin.accessToken, project.id, pmEmail);
   const pmLogin = await authenticatePm(pmEmail);
   const preview = await startPreviewServer();
@@ -428,6 +429,10 @@ class ReadySandboxPort implements SandboxPort {
   readonly stoppedSessionIds: string[] = [];
 
   constructor(private readonly previewUrl: string) {}
+
+  async runCommand() {
+    return { exitCode: 0, logs: '' };
+  }
 
   async start(input: { sessionId: string }): Promise<SandboxRef> {
     return {

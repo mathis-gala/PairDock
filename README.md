@@ -2,6 +2,8 @@
 
 PairDock MVP monorepo described in `docs/architecture/pairdock-mvp/`.
 
+Production release, Raspberry Pi, Caddy, and Cloudflare Tunnel instructions: [`deploy/README.md`](deploy/README.md).
+
 ## Workspace
 
 - `apps/web`: React application for the PM/developer UI.
@@ -55,10 +57,11 @@ GITHUB_REDIRECT_URI=http://127.0.0.1:3000/auth/developer/callback
 GITHUB_APP_PRIVATE_KEY="<pem contents or escaped pem>"
 AUTH_STATE_SECRET=<random-secret-of-at-least-32-bytes>
 AUTH_TOKEN_SECRET=<different-random-secret-of-at-least-32-bytes>
+AGENT_AUTH_CREDENTIALS_JSON={"agent-local-1":{"token":"<different-random-secret-of-at-least-32-bytes>","projectKeys":["tcg-collection"]}}
 DEV_AUTH_ENABLED=false
 ```
 
-Generate both authentication secrets independently, for example with `openssl rand -base64 48`. Keep them stable between API restarts and never commit them. `DEV_AUTH_ENABLED` must remain `false` outside automated tests or explicit local fixture testing.
+Generate all authentication secrets independently, for example with `openssl rand -base64 48`. Keep them stable between API restarts and never commit them. `AGENT_AUTH_CREDENTIALS_JSON` maps each local agent id to its unique token and exact project-key allowlist; one project key cannot be assigned to multiple credentials. Pass only that agent's token to its CLI. `DEV_AUTH_ENABLED` must remain `false` outside automated tests or explicit local fixture testing.
 
 Use `http://localhost:5173` for `FRONTEND_URL` unless you intentionally run the web app on another origin. The configured origin is also the only origin allowed by API CORS.
 
@@ -72,11 +75,10 @@ SLACK_CLIENT_SECRET=<client-secret>
 SLACK_REDIRECT_URI=http://127.0.0.1:3000/auth/pm/callback
 ```
 
-Create a Slack App from `api.slack.com/apps`, add the redirect URL above under **OAuth & Permissions**, and add only OpenID identity scopes:
+Create a Slack App from `api.slack.com/apps`, add the redirect URL above under **OAuth & Permissions**, and add only these user token scopes:
 
-- `identity.basic`
-- `identity.email`
-- `identity.team`
+- `users:read`
+- `users:read.email`
 
 You do not need a bot token, event subscriptions, slash commands, or incoming webhooks for V1 PM auth.
 
@@ -119,7 +121,6 @@ name: my-web-app
 repoFullName: owner/repository
 defaultBranch: main
 sandbox:
-  image: node:22-bookworm-slim
   workdir: /workspace
   network: host-services
   env:
@@ -145,6 +146,8 @@ models:
 ```
 
 PairDock always runs preview commands in a Docker sandbox with only the session worktree mounted at `/workspace`.
+Omit `sandbox.image` to use PairDock's pinned multi-platform default. If a project needs another image, pin it by digest instead of using a mutable tag.
+Install Codex CLI 0.138.0 or newer and authenticate it with `codex login` before starting the local agent. PairDock deliberately does not forward `OPENAI_API_KEY` or unrelated workstation secrets to the Codex process; the CLI must use its protected local login state. Model-generated commands use a restricted permission profile: they can read/write the session worktree, cannot read common credential files (including tracked `.env` and private keys), cannot read the rest of the developer home, and cannot access the network.
 Use `{{hostPort}}` for host-side preview bindings and URLs. PairDock resolves it to a free port per session, so concurrent sessions cannot reuse another session's preview or healthcheck.
 For same-machine development without a public tunnel, set `preview.tunnel.publicUrl` to `http://127.0.0.1:{{hostPort}}`.
 `network: host-services` is the explicit opt-in that lets the container reach local services such as Postgres through `host.docker.internal`.

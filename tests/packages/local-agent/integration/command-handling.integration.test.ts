@@ -386,6 +386,10 @@ test('BT-031: AgentClient pushes the prepared session branch before review reque
 });
 
 class ReadySandboxPort implements SandboxPort {
+  async runCommand() {
+    return { exitCode: 0, logs: '' };
+  }
+
   async start(input: { sessionId: string }): Promise<SandboxRef> {
     return {
       id: `sandbox-${input.sessionId}`,
@@ -405,6 +409,10 @@ class ReadySandboxPort implements SandboxPort {
 }
 
 class TimeoutSandboxPort implements SandboxPort {
+  async runCommand() {
+    return { exitCode: 0, logs: '' };
+  }
+
   async start(input: { sessionId: string }): Promise<SandboxRef> {
     return {
       id: `sandbox-${input.sessionId}`,

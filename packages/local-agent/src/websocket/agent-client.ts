@@ -85,7 +85,11 @@ export class AgentClient {
       });
     this.agentHarnessPort = dependencies.agentHarnessPort ?? new CodexHarnessAdapter(config.agentHarnessConfigs ?? {});
     this.diffService = dependencies.diffService ?? new DiffService();
-    this.checksRunner = dependencies.checksRunner ?? new ChecksRunner(config.checksConfigs ?? {});
+    this.checksRunner =
+      dependencies.checksRunner ??
+      new ChecksRunner(config.checksConfigs ?? {}, ({ command, sessionId }) =>
+        this.sessionRunner.runCommand(sessionId, command),
+      );
     this.readinessRunner =
       dependencies.readinessRunner ??
       new ReadinessRunner({
@@ -418,7 +422,7 @@ export class AgentClient {
         await this.checksRunner.run({
           projectKey: workspace.projectKey,
           previewUrl: workspace.previewUrl,
-          worktreePath: workspace.worktreePath,
+          sessionId: command.sessionId,
         }),
       );
       const checkSummary = `build=${checks.build.status} tests=${checks.tests.status} lint=${checks.lint.status} preview=${checks.preview.status}`;

@@ -270,6 +270,10 @@ test('Task 8: backend command routing persists preview progress, preview URL, an
 });
 
 class ReadySandboxPort implements SandboxPort {
+  async runCommand() {
+    return { exitCode: 0, logs: '' };
+  }
+
   async start(input: { sessionId: string }): Promise<SandboxRef> {
     return {
       id: `sandbox-${input.sessionId}`,

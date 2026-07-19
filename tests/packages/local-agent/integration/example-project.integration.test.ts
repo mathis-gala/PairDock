@@ -159,6 +159,10 @@ test('Task 8 and Task 9: an example project prepares a preview and a dummy promp
 class ReadySandboxPort implements SandboxPort {
   readonly startCalls: Array<{ worktreePath: string }> = [];
 
+  async runCommand() {
+    return { exitCode: 0, logs: '' };
+  }
+
   async start(input: { sessionId: string; worktreePath: string }): Promise<SandboxRef> {
     this.startCalls.push({ worktreePath: input.worktreePath });
     return {

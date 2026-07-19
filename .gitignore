@@ -9,4 +9,6 @@ docs/*
 !docs/architecture/**
 !docs/prototypes/
 !docs/prototypes/**
+!docs/security/
+!docs/security/**
 *.tsbuildinfo

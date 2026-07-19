@@ -17,6 +17,8 @@ import { DatabaseClient } from '../../../../../apps/api/src/persistence/client.j
 import { authResponseSchema, idResponseSchema, parseJsonResponse } from '../test-json.js';
 
 const prisma = new DatabaseClient();
+const AGENT_AUTH_TOKEN = 'integration-agent-token-with-at-least-32-bytes';
+const SECOND_AGENT_AUTH_TOKEN = 'second-integration-agent-token-at-least-32-bytes';
 
 let app: INestApplication;
 let baseUrl: string;
@@ -46,6 +48,12 @@ async function startApplication() {
   }
 
   baseUrl = `http://127.0.0.1:${address.port}`;
+}
+
+function waitForConnectError(socket: Socket): Promise<Error> {
+  return new Promise((resolve) => {
+    socket.once('connect_error', (error: Error) => resolve(error));
+  });
 }
 
 async function authenticateDeveloper(tokenSeed = randomUUID()) {
@@ -113,6 +121,7 @@ async function createSession(projectId: string, accessToken: string) {
 
 function connectSocket(namespace: '/agent' | '/ui', accessToken?: string): Socket {
   return io(`${baseUrl}${namespace}`, {
+    forceNew: true,
     transports: ['websocket'],
     extraHeaders: accessToken ? { Authorization: `Bearer ${accessToken}` } : undefined,
   });
@@ -136,6 +145,10 @@ function waitForEvent<T>(socket: Socket, eventName: string): Promise<T> {
 }
 
 test.before(async () => {
+  process.env.AGENT_AUTH_CREDENTIALS_JSON = JSON.stringify({
+    'agent-local-1': { token: AGENT_AUTH_TOKEN, projectKeys: ['agent-local-1'] },
+    'agent-local-2': { token: SECOND_AGENT_AUTH_TOKEN, projectKeys: ['another-project'] },
+  });
   await prisma.$connect();
   await startApplication();
 });
@@ -143,10 +156,24 @@ test.before(async () => {
 test.after(async () => {
   await app.close();
   await prisma.$disconnect();
+  delete process.env.AGENT_AUTH_CREDENTIALS_JSON;
 });
 
 test.beforeEach(async () => {
   await resetDatabase();
+});
+
+test('AgentGateway rejects a local agent without the configured bearer token', async () => {
+  const agentSocket = connectSocket('/agent');
+
+  try {
+    const error = await waitForConnectError(agentSocket);
+
+    assert.match(error.message, /Unauthorized agent/);
+    assert.equal(agentSocket.connected, false);
+  } finally {
+    agentSocket.close();
+  }
 });
 
 test('BT-011: AgentGateway streams valid agent.output events to an authorized PM UI session', async () => {
@@ -164,7 +191,7 @@ test('BT-011: AgentGateway streams valid agent.output events to an authorized PM
   });
 
   const uiSocket = connectSocket('/ui', pmLogin.body.accessToken);
-  const agentSocket = connectSocket('/agent');
+  const agentSocket = connectSocket('/agent', AGENT_AUTH_TOKEN);
 
   try {
     await Promise.all([waitForConnect(uiSocket), waitForConnect(agentSocket)]);
@@ -175,7 +202,7 @@ test('BT-011: AgentGateway streams valid agent.output events to an authorized PM
     uiSocket.emit(uiSessionSubscribeEventName, { sessionId: session.id });
     await subscribedPromise;
 
-    agentSocket.emit(agentProtocolMessageEventName, {
+    const connectedAcknowledgement = await agentSocket.timeout(2_000).emitWithAck(agentProtocolMessageEventName, {
       protocolVersion: AGENT_PROTOCOL_VERSION,
       messageId: randomUUID(),
       type: 'agent.connected',
@@ -183,12 +210,21 @@ test('BT-011: AgentGateway streams valid agent.output events to an authorized PM
         agentId: 'agent-local-1',
         capabilities: ['session.prepare', 'agent.prompt', 'preview'],
         models: [],
-        projects: [],
+        projects: [
+          {
+            key: 'agent-local-1',
+            name: 'PairDock',
+            repoFullName: 'mathis/pairdock',
+            pathAlias: 'PairDock',
+            defaultBranch: 'main',
+          },
+        ],
       },
       sentAt: new Date().toISOString(),
     } satisfies AgentEventEnvelope);
+    assert.deepEqual(connectedAcknowledgement, { accepted: true });
 
-    agentSocket.emit(agentProtocolMessageEventName, {
+    const outputAcknowledgement = await agentSocket.timeout(2_000).emitWithAck(agentProtocolMessageEventName, {
       protocolVersion: AGENT_PROTOCOL_VERSION,
       messageId: randomUUID(),
       sessionId: session.id,
@@ -200,6 +236,7 @@ test('BT-011: AgentGateway streams valid agent.output events to an authorized PM
       },
       sentAt: new Date().toISOString(),
     } satisfies AgentEventEnvelope);
+    assert.deepEqual(outputAcknowledgement, { accepted: true });
 
     const streamedEvent = await streamedEventPromise;
 
@@ -221,6 +258,85 @@ test('BT-011: AgentGateway streams valid agent.output events to an authorized PM
     assert.equal(persistedEvents[0]?.type, 'agent.output');
   } finally {
     uiSocket.close();
+    agentSocket.close();
+  }
+});
+
+test('AgentGateway rejects an authenticated agent identity mismatch', async () => {
+  const agentSocket = connectSocket('/agent', AGENT_AUTH_TOKEN);
+
+  try {
+    await waitForConnect(agentSocket);
+    const acknowledgement = await agentSocket.timeout(2_000).emitWithAck(agentProtocolMessageEventName, {
+      protocolVersion: AGENT_PROTOCOL_VERSION,
+      messageId: randomUUID(),
+      type: 'agent.connected',
+      payload: {
+        agentId: 'agent-local-2',
+        capabilities: [],
+        models: [],
+        projects: [],
+      },
+      sentAt: new Date().toISOString(),
+    } satisfies AgentEventEnvelope);
+
+    assert.deepEqual(acknowledgement, {
+      accepted: false,
+      error: 'Agent is not authorized for this event.',
+    });
+  } finally {
+    agentSocket.close();
+  }
+});
+
+test('AgentGateway rejects session events from an agent that does not own the project', async () => {
+  const developerLogin = await authenticateDeveloper();
+  const project = await createOwnedProject(developerLogin.body.user.id);
+  const session = await createSession(project.id, developerLogin.body.accessToken);
+  const agentSocket = connectSocket('/agent', SECOND_AGENT_AUTH_TOKEN);
+
+  try {
+    await waitForConnect(agentSocket);
+    await agentSocket.timeout(2_000).emitWithAck(agentProtocolMessageEventName, {
+      protocolVersion: AGENT_PROTOCOL_VERSION,
+      messageId: randomUUID(),
+      type: 'agent.connected',
+      payload: {
+        agentId: 'agent-local-2',
+        capabilities: [],
+        models: [],
+        projects: [
+          {
+            key: 'another-project',
+            name: 'Another project',
+            repoFullName: 'mathis/another-project',
+            pathAlias: 'Another project',
+            defaultBranch: 'main',
+          },
+        ],
+      },
+      sentAt: new Date().toISOString(),
+    } satisfies AgentEventEnvelope);
+
+    const acknowledgement = await agentSocket.timeout(2_000).emitWithAck(agentProtocolMessageEventName, {
+      protocolVersion: AGENT_PROTOCOL_VERSION,
+      messageId: randomUUID(),
+      sessionId: session.id,
+      type: 'agent.output',
+      payload: {
+        sessionId: session.id,
+        stream: 'stdout',
+        text: 'attempted cross-project output',
+      },
+      sentAt: new Date().toISOString(),
+    } satisfies AgentEventEnvelope);
+
+    assert.deepEqual(acknowledgement, {
+      accepted: false,
+      error: 'Agent is not authorized for this event.',
+    });
+    assert.equal(await prisma.agentEvent.count({ where: { sessionId: session.id } }), 0);
+  } finally {
     agentSocket.close();
   }
 });

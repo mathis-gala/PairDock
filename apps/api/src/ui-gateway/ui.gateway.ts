@@ -12,7 +12,11 @@ import { AuthTokenService } from '../auth/auth-token.service.js';
 import { InvitationsService } from '../invitations/invitations.service.js';
 
 @Injectable()
-@WebSocketGateway({ namespace: '/ui', cors: { origin: '*' } })
+@WebSocketGateway({
+  namespace: '/ui',
+  cors: { origin: process.env.FRONTEND_URL ?? 'http://localhost:5173' },
+  maxHttpBufferSize: 64 * 1024,
+})
 export class UiGateway {
   @WebSocketServer()
   private server!: Server;

@@ -2,6 +2,7 @@ import { spawn } from 'node:child_process';
 import { access } from 'node:fs/promises';
 import type { ToolReadinessCheck } from '@pairdock/shared-contracts';
 import type { ProjectChecksConfig } from '../checks/checks-runner.js';
+import { compareVersions } from '../config/codex-model-catalog.js';
 import type { ProjectPreviewConfig } from '../docker/sandbox.port.js';
 import type { ProjectAgentHarnessConfig } from '../harness/agent-harness.port.js';
 
@@ -20,6 +21,8 @@ interface CommandResult {
 }
 
 type CommandRunner = (command: string, args: string[], cwd?: string) => Promise<CommandResult>;
+
+const MINIMUM_RESTRICTED_CODEX_VERSION = '0.138.0';
 
 export interface RunReadinessInput {
   projectKey: string;
@@ -145,14 +148,30 @@ export class ReadinessRunner {
     const executable = command.trim().split(/\s+/)[0];
     const result = await this.runDeveloperCommand('sh', ['-c', `command -v ${shellQuote(executable)}`]);
 
-    return result.ok
-      ? passed('agent-harness', true, 'Agent harness command is available.')
-      : failed(
+    if (!result.ok) {
+      return failed(
+        'agent-harness',
+        true,
+        failureMessage('Agent harness command is unavailable.', result),
+        'Install or authenticate the configured agent harness, then rerun readiness checks.',
+      );
+    }
+
+    if (isCodexExecutable(executable)) {
+      const versionResult = await this.runDeveloperCommand(executable, ['--version']);
+      const version = versionResult.output.match(/\d+\.\d+\.\d+/)?.[0];
+
+      if (!versionResult.ok || !version || compareVersions(version, MINIMUM_RESTRICTED_CODEX_VERSION) < 0) {
+        return failed(
           'agent-harness',
           true,
-          failureMessage('Agent harness command is unavailable.', result),
-          'Install or authenticate the configured agent harness, then rerun readiness checks.',
+          `Codex CLI ${version ?? 'unknown'} is too old; PairDock requires ${MINIMUM_RESTRICTED_CODEX_VERSION} or newer for restricted filesystem permissions.`,
+          'Run "codex update", restart pairdock-agent, then rerun readiness checks.',
         );
+      }
+    }
+
+    return passed('agent-harness', true, 'Agent harness command is available.');
   }
 
   private async checkDocker(projectKey: string): Promise<ToolReadinessCheck> {
@@ -269,4 +288,8 @@ function runCommand(command: string, args: string[], cwd?: string): Promise<Comm
 
 function shellQuote(value: string): string {
   return `'${value.replaceAll("'", "'\\''")}'`;
+}
+
+function isCodexExecutable(executable: string): boolean {
+  return executable.split(/[\\/]/).at(-1) === 'codex';
 }

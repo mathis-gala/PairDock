@@ -267,6 +267,16 @@ export class SessionRunner {
     return this.sessionRegistry.find(sessionId);
   }
 
+  async runCommand(sessionId: string, command: string) {
+    const workspace = this.sessionRegistry.find(sessionId);
+
+    if (!workspace?.sandboxRef) {
+      throw new Error(`Session ${sessionId} has no running Docker sandbox.`);
+    }
+
+    return this.sandboxPort.runCommand(workspace.sandboxRef, command, workspace.worktreePath);
+  }
+
   async restore(): Promise<SessionRecoveryResult> {
     const workspaces = await this.sessionRegistry.restore();
     const recoveredSessionIds: string[] = [];

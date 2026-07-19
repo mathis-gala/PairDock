@@ -289,15 +289,26 @@ export class ProjectsService {
       )
     ).flat();
 
-    const agents = this.connectedAgentsRegistry.listSnapshots().map((agent) => ({
-      agentId: agent.agentId,
-      capabilities: agent.capabilities,
-      models: agent.models,
-      projects: agent.projects.map((project) => ({
-        ...project,
-        readiness: null,
-      })),
-    }));
+    const accessibleRepositories = new Set(repositories.map((repository) => repository.fullName));
+    const agents = this.connectedAgentsRegistry.listSnapshots().flatMap((agent) => {
+      const projects = agent.projects
+        .filter((project) => accessibleRepositories.has(project.repoFullName))
+        .map((project) => ({
+          ...project,
+          readiness: null,
+        }));
+
+      return projects.length > 0
+        ? [
+            {
+              agentId: agent.agentId,
+              capabilities: agent.capabilities,
+              models: agent.models,
+              projects,
+            },
+          ]
+        : [];
+    });
 
     return { repositories, agents };
   }

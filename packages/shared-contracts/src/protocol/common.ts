@@ -3,6 +3,8 @@ import { AGENT_PROTOCOL_VERSION } from './constants.js';
 
 export const uuidSchema = z.uuid();
 export const isoDateTimeSchema = z.iso.datetime();
+export const MAX_AGENT_LOG_LENGTH = 32 * 1024;
+export const MAX_AGENT_PROMPT_LENGTH = 20 * 1024;
 export const sessionStatusSchema = z.enum([
   'CREATED',
   'AGENT_CONNECTING',
@@ -22,8 +24,8 @@ export const sessionStatusSchema = z.enum([
 
 export const checkResultSchema = z.object({
   status: z.enum(['passed', 'failed', 'skipped']),
-  command: z.string().min(1).optional(),
-  logs: z.string().optional(),
+  command: z.string().min(1).max(4_096).optional(),
+  logs: z.string().max(MAX_AGENT_LOG_LENGTH).optional(),
 });
 
 export const toolReadinessCheckSchema = z.object({
@@ -39,8 +41,8 @@ export const toolReadinessCheckSchema = z.object({
   ]),
   status: z.enum(['passed', 'failed', 'warning', 'skipped']),
   required: z.boolean(),
-  message: z.string().min(1).nullable().optional(),
-  remediation: z.string().min(1).nullable().optional(),
+  message: z.string().min(1).max(2_048).nullable().optional(),
+  remediation: z.string().min(1).max(2_048).nullable().optional(),
 });
 
 export type ToolReadinessCheck = z.infer<typeof toolReadinessCheckSchema>;

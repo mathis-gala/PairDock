@@ -1,5 +1,3 @@
-import { spawn } from 'node:child_process';
-
 export interface ProjectChecksConfig {
   build?: string;
   test?: string;
@@ -23,19 +21,27 @@ export interface ChecksResult {
 export interface RunChecksInput {
   projectKey: string;
   previewUrl?: string | null;
-  worktreePath: string;
+  sessionId: string;
 }
+
+export type CheckCommandExecutor = (input: {
+  command: string;
+  sessionId: string;
+}) => Promise<{ exitCode: number; logs: string }>;
 
 const MAX_LOG_CHARS = 4_000;
 
 export class ChecksRunner {
-  constructor(private readonly projectChecks: Record<string, ProjectChecksConfig> = {}) {}
+  constructor(
+    private readonly projectChecks: Record<string, ProjectChecksConfig> = {},
+    private readonly commandExecutor?: CheckCommandExecutor,
+  ) {}
 
   async run(input: RunChecksInput): Promise<ChecksResult> {
     const projectChecks = this.projectChecks[input.projectKey] ?? {};
-    const build = await this.runCommandCheck(projectChecks.build, input.worktreePath, 'build');
-    const tests = await this.runCommandCheck(projectChecks.test, input.worktreePath, 'test');
-    const lint = await this.runCommandCheck(projectChecks.lint, input.worktreePath, 'lint');
+    const build = await this.runCommandCheck(projectChecks.build, input.sessionId, 'build');
+    const tests = await this.runCommandCheck(projectChecks.test, input.sessionId, 'test');
+    const lint = await this.runCommandCheck(projectChecks.lint, input.sessionId, 'lint');
     const preview = await this.runPreviewCheck(input.previewUrl);
     const ok = [build, tests, lint, preview].every((check) => check.status === 'passed');
 
@@ -48,7 +54,7 @@ export class ChecksRunner {
     };
   }
 
-  private async runCommandCheck(command: string | undefined, cwd: string, label: string): Promise<CheckResult> {
+  private async runCommandCheck(command: string | undefined, sessionId: string, label: string): Promise<CheckResult> {
     if (!command) {
       return {
         status: 'skipped',
@@ -56,13 +62,13 @@ export class ChecksRunner {
       };
     }
 
-    const firstAttempt = await this.runCommandAttempt(command, cwd);
+    const firstAttempt = await this.runCommandAttempt(command, sessionId);
 
     if (firstAttempt.status !== 'failed' || !isTransientPackageExtractionFailure(firstAttempt.logs)) {
       return firstAttempt;
     }
 
-    const retry = await this.runCommandAttempt(command, cwd);
+    const retry = await this.runCommandAttempt(command, sessionId);
     const retryNotice = 'Retry 1/1 after a transient package extraction failure.';
     const logs = [firstAttempt.logs, retryNotice, retry.logs].filter(Boolean).join('\n').trim();
 
@@ -72,31 +78,19 @@ export class ChecksRunner {
     };
   }
 
-  private runCommandAttempt(command: string, cwd: string): Promise<CheckResult> {
-    return new Promise<CheckResult>((resolve, reject) => {
-      let logs = '';
-      const child = spawn(command, {
-        cwd,
-        env: process.env,
-        shell: true,
-      });
+  private async runCommandAttempt(command: string, sessionId: string): Promise<CheckResult> {
+    if (!this.commandExecutor) {
+      throw new Error('Validation command executor is not configured. Refusing to run checks on the host.');
+    }
 
-      child.stdout.on('data', (chunk: Buffer | string) => {
-        logs = appendLogs(logs, chunk.toString());
-      });
-      child.stderr.on('data', (chunk: Buffer | string) => {
-        logs = appendLogs(logs, chunk.toString());
-      });
-      child.on('error', reject);
-      child.on('close', (code, signal) => {
-        const resultLogs = logs.trim() || (signal ? `Process terminated with signal ${signal}.` : undefined);
-        resolve({
-          status: code === 0 ? 'passed' : 'failed',
-          command,
-          ...(resultLogs ? { logs: resultLogs } : {}),
-        });
-      });
-    });
+    const result = await this.commandExecutor({ command, sessionId });
+    const logs = result.logs.trim();
+
+    return {
+      status: result.exitCode === 0 ? 'passed' : 'failed',
+      command,
+      ...(logs ? { logs: logs.slice(-MAX_LOG_CHARS) } : {}),
+    };
   }
 
   private async runPreviewCheck(previewUrl: string | null | undefined): Promise<CheckResult> {
@@ -131,14 +125,4 @@ export class ChecksRunner {
 
 function isTransientPackageExtractionFailure(logs: string | undefined): boolean {
   return /fail extracting tarball for/i.test(logs ?? '');
-}
-
-function appendLogs(current: string, next: string): string {
-  const combined = `${current}${next}`;
-
-  if (combined.length <= MAX_LOG_CHARS) {
-    return combined;
-  }
-
-  return combined.slice(-MAX_LOG_CHARS);
 }

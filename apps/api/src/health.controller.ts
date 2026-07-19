@@ -7,7 +7,11 @@ export class HealthController {
     return {
       service: 'pairdock-api',
       status: 'ok',
-      message: 'NestJS skeleton ready',
     };
+  }
+
+  @Get('health')
+  getContainerHealth() {
+    return this.getHealth();
   }
 }

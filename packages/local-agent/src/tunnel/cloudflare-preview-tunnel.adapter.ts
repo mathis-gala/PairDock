@@ -6,6 +6,8 @@ import type { ProjectPreviewConfig } from '../docker/sandbox.port.js';
 import type { PreviewTunnelOpenInput, PreviewTunnelPort, PreviewTunnelRef } from './preview-tunnel.port.js';
 
 const TRY_CLOUDFLARE_URL = /https:\/\/[a-z0-9-]+\.trycloudflare\.com/i;
+const DEFAULT_CLOUDFLARED_IMAGE =
+  'cloudflare/cloudflared@sha256:4f6655284ab3d252b7f28fedb19fe6c8fc82ee5b1295c20ac74d475e5398a52d';
 
 interface ManagedTunnelProcess {
   process: TunnelProcessLike;
@@ -27,7 +29,8 @@ interface TunnelProcessLike {
 interface CloudflarePreviewTunnelDependencies {
   spawn?: (
     command: string,
-    options: { cwd?: string; shell: true; stdio: ['ignore', 'pipe', 'pipe'] | 'ignore' },
+    args: string[],
+    options: { cwd?: string; shell: false; stdio: ['ignore', 'pipe', 'pipe'] | 'ignore' },
   ) => TunnelProcessLike;
   waitForPublicUrl?: (process: TunnelProcessLike, timeoutMs: number) => Promise<string>;
 }
@@ -49,10 +52,10 @@ export class CloudflarePreviewTunnelAdapter implements PreviewTunnelPort {
     }
 
     const containerName = buildTunnelContainerName(input.sessionId);
-    const startCommand = buildCloudflareDockerCommand(input.localUrl, containerName, tunnelConfig?.image);
+    const startArgs = buildCloudflareDockerArgs(input.localUrl, containerName, tunnelConfig?.image);
 
     const { process, publicUrl } = await this.openTunnelProcess({
-      command: startCommand,
+      args: startArgs,
       cwd: input.worktreePath,
       timeoutMs: tunnelConfig?.startupTimeoutMs ?? 45_000,
     });
@@ -79,9 +82,9 @@ export class CloudflarePreviewTunnelAdapter implements PreviewTunnelPort {
     const containerName = resolveRestoredTunnelContainerName(ref);
 
     if (containerName) {
-      const stopProcess = this.spawn(`docker stop ${containerName}`, {
+      const stopProcess = this.spawn('docker', ['stop', containerName], {
         cwd: managedProcess?.cwd,
-        shell: true,
+        shell: false,
         stdio: 'ignore',
       });
       await Promise.race([onceExit(stopProcess), delay(5_000)]);
@@ -98,8 +101,12 @@ export class CloudflarePreviewTunnelAdapter implements PreviewTunnelPort {
     this.processes.delete(ref.id);
   }
 
-  private spawn(command: string, options: Parameters<NonNullable<CloudflarePreviewTunnelDependencies['spawn']>>[1]) {
-    return this.dependencies.spawn?.(command, options) ?? (spawn(command, options) as TunnelProcessLike);
+  private spawn(
+    command: string,
+    args: string[],
+    options: Parameters<NonNullable<CloudflarePreviewTunnelDependencies['spawn']>>[2],
+  ) {
+    return this.dependencies.spawn?.(command, args, options) ?? (spawn(command, args, options) as TunnelProcessLike);
   }
 
   private waitForPublicUrl(process: TunnelProcessLike, timeoutMs: number): Promise<string> {
@@ -107,16 +114,16 @@ export class CloudflarePreviewTunnelAdapter implements PreviewTunnelPort {
   }
 
   private async openTunnelProcess(input: {
-    command: string;
+    args: string[];
     cwd: string;
     timeoutMs: number;
   }): Promise<{ process: TunnelProcessLike; publicUrl: string }> {
     let lastError: unknown;
 
     for (let attempt = 0; attempt < 2; attempt += 1) {
-      const process = this.spawn(input.command, {
+      const process = this.spawn('docker', input.args, {
         cwd: input.cwd,
-        shell: true,
+        shell: false,
         stdio: ['ignore', 'pipe', 'pipe'],
       });
 
@@ -191,12 +198,24 @@ async function terminateProcess(process: TunnelProcessLike): Promise<void> {
   }
 }
 
-function buildCloudflareDockerCommand(
+function buildCloudflareDockerArgs(
   localUrl: string,
   containerName: string,
-  image = 'cloudflare/cloudflared:latest',
-): string {
-  return `docker run --rm --name ${containerName} --add-host host.docker.internal:host-gateway ${image} tunnel --url ${toHostDockerUrl(localUrl)}`;
+  image = DEFAULT_CLOUDFLARED_IMAGE,
+): string[] {
+  assertSafeContainerImage(image);
+  return [
+    'run',
+    '--rm',
+    '--name',
+    containerName,
+    '--add-host',
+    'host.docker.internal:host-gateway',
+    image,
+    'tunnel',
+    '--url',
+    toHostDockerUrl(localUrl),
+  ];
 }
 
 function buildTunnelContainerName(sessionId: string): string {
@@ -221,15 +240,27 @@ function resolveRestoredTunnelContainerName(ref: PreviewTunnelRef): string | nul
 }
 
 function toHostDockerUrl(localUrl: string): string {
-  try {
-    const url = new URL(localUrl);
+  const url = new URL(localUrl);
 
-    if (url.hostname === '127.0.0.1' || url.hostname === 'localhost') {
-      url.hostname = 'host.docker.internal';
-    }
+  if (url.protocol !== 'http:' && url.protocol !== 'https:') {
+    throw new Error('Preview tunnel URL must use HTTP(S).');
+  }
 
-    return url.toString().replace(/\/$/, '');
-  } catch {
-    return localUrl;
+  if (url.hostname === '127.0.0.1' || url.hostname === 'localhost') {
+    url.hostname = 'host.docker.internal';
+  }
+
+  return url.toString().replace(/\/$/, '');
+}
+
+function assertSafeContainerImage(image: string): void {
+  if (
+    image.length > 512 ||
+    image.startsWith('-') ||
+    image.includes('://') ||
+    /[\s\0]/.test(image) ||
+    !/^[a-z0-9][a-z0-9._\-/:@]+$/i.test(image)
+  ) {
+    throw new Error('Cloudflare tunnel image must be a valid container image reference.');
   }
 }

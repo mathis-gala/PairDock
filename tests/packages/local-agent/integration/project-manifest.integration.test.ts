@@ -129,3 +129,102 @@ test('V1: local agent accepts per-session host port templates in preview URLs', 
   assert.equal(config.previewConfigs.pairdock?.sandbox?.healthcheckUrl, 'http://127.0.0.1:{{hostPort}}');
   assert.equal(config.previewConfigs.pairdock?.tunnel?.publicUrl, 'http://127.0.0.1:{{hostPort}}');
 });
+
+test('local agent rejects a project manifest that turns the preview healthcheck into SSRF', async () => {
+  const projectPath = await mkdtemp(join(tmpdir(), 'pairdock-manifest-ssrf-'));
+  await writeFile(
+    join(projectPath, 'pairdock.yml'),
+    [
+      'version: 1',
+      'repoFullName: example/project',
+      'preview:',
+      '  start: "npm start"',
+      '  healthcheck: "http://169.254.169.254/latest/meta-data"',
+      'checks:',
+      '  build: "npm run build"',
+      '  test: "npm test"',
+      '  lint: "npm run lint"',
+      '',
+    ].join('\n'),
+  );
+
+  const config = await enrichConfigWithProjectManifests({
+    backendUrl: 'https://pairdock.test',
+    agentId: 'local-agent-1',
+    capabilities: ['session.prepare'],
+    models: [],
+    projects: [],
+    projectPaths: { pairdock: projectPath },
+    previewConfigs: {},
+  });
+
+  assert.deepEqual(config.projects, []);
+  assert.deepEqual(config.previewConfigs, {});
+});
+
+test('local agent rejects a project manifest that publishes a preview on every host interface', async () => {
+  const projectPath = await mkdtemp(join(tmpdir(), 'pairdock-manifest-public-port-'));
+  await writeFile(
+    join(projectPath, 'pairdock.yml'),
+    [
+      'version: 1',
+      'repoFullName: example/project',
+      'sandbox:',
+      '  ports:',
+      '    - "0.0.0.0:4000:4000"',
+      'preview:',
+      '  start: "npm start"',
+      '  healthcheck: "http://127.0.0.1:4000"',
+      'checks:',
+      '  build: "npm run build"',
+      '  test: "npm test"',
+      '  lint: "npm run lint"',
+      '',
+    ].join('\n'),
+  );
+
+  const config = await enrichConfigWithProjectManifests({
+    backendUrl: 'https://pairdock.test',
+    agentId: 'local-agent-1',
+    capabilities: ['session.prepare'],
+    models: [],
+    projects: [],
+    projectPaths: { pairdock: projectPath },
+    previewConfigs: {},
+  });
+
+  assert.deepEqual(config.projects, []);
+});
+
+test('local agent rejects a container image value that could become a Docker option', async () => {
+  const projectPath = await mkdtemp(join(tmpdir(), 'pairdock-manifest-image-option-'));
+  await writeFile(
+    join(projectPath, 'pairdock.yml'),
+    [
+      'version: 1',
+      'repoFullName: example/project',
+      'sandbox:',
+      '  image: "--privileged"',
+      'preview:',
+      '  start: "npm start"',
+      '  healthcheck: "http://127.0.0.1:4000"',
+      'checks:',
+      '  build: "npm run build"',
+      '  test: "npm test"',
+      '  lint: "npm run lint"',
+      '',
+    ].join('\n'),
+  );
+
+  const config = await enrichConfigWithProjectManifests({
+    backendUrl: 'https://pairdock.test',
+    agentId: 'local-agent-1',
+    capabilities: ['session.prepare'],
+    models: [],
+    projects: [],
+    projectPaths: { pairdock: projectPath },
+    previewConfigs: {},
+  });
+
+  assert.deepEqual(config.projects, []);
+});

@@ -8,6 +8,38 @@ import type {
   RunPromptInput,
 } from './agent-harness.port.js';
 
+const CODEX_SECURITY_ARGS = [
+  '--ignore-user-config',
+  '--config',
+  'approval_policy="never"',
+  '--config',
+  'default_permissions="pairdock-restricted"',
+  '--config',
+  'permissions.pairdock-restricted.filesystem={":minimal"="read",":workspace_roots"={"."="write","**/.env"="deny","**/.env.local"="deny","**/.env.*.local"="deny","**/.npmrc"="deny","**/.netrc"="deny","**/.pypirc"="deny","**/*.pem"="deny","**/*.key"="deny","**/*.p12"="deny","**/*.pfx"="deny"}}',
+  '--config',
+  'permissions.pairdock-restricted.network.enabled=false',
+] as const;
+const SAFE_HARNESS_ENVIRONMENT_KEYS = [
+  'CODEX_HOME',
+  'COLORTERM',
+  'HOME',
+  'LANG',
+  'LC_ALL',
+  'LOGNAME',
+  'NODE_EXTRA_CA_CERTS',
+  'OPENAI_BASE_URL',
+  'PATH',
+  'SHELL',
+  'SSL_CERT_DIR',
+  'SSL_CERT_FILE',
+  'TERM',
+  'TMPDIR',
+  'USER',
+  'XDG_CACHE_HOME',
+  'XDG_CONFIG_HOME',
+  'XDG_DATA_HOME',
+] as const;
+
 export class CodexHarnessAdapter implements AgentHarnessPort {
   private readonly activeRuns = new Map<string, ChildProcess>();
   private readonly codexThreadIds = new Map<string, string>();
@@ -20,20 +52,12 @@ export class CodexHarnessAdapter implements AgentHarnessPort {
     }
 
     const projectConfig = this.projectConfigs[input.projectKey] ?? {};
-    const reasoningEffort = input.reasoningEffort ?? 'medium';
     const command = projectConfig.command?.trim() || 'codex';
     const usesCodexJsonProtocol = !projectConfig.args?.length && isCodexCommand(command);
     const args = buildCommandArgs(projectConfig, input, this.codexThreadIds.get(input.sessionId));
     const childProcess = spawn(command, args, {
       cwd: input.worktreePath,
-      env: {
-        ...process.env,
-        PAIRDOCK_MODEL_ID: input.modelId,
-        PAIRDOCK_REASONING_EFFORT: reasoningEffort,
-        PAIRDOCK_PROJECT_KEY: input.projectKey,
-        PAIRDOCK_PROMPT: input.prompt,
-        PAIRDOCK_SESSION_ID: input.sessionId,
-      },
+      env: buildHarnessEnvironment(process.env, input),
       shell: false,
       stdio: ['ignore', 'pipe', 'pipe'],
     });
@@ -131,6 +155,26 @@ export class CodexHarnessAdapter implements AgentHarnessPort {
   }
 }
 
+export function buildHarnessEnvironment(source: NodeJS.ProcessEnv, input: RunPromptInput): NodeJS.ProcessEnv {
+  const environment: NodeJS.ProcessEnv = {};
+
+  for (const key of SAFE_HARNESS_ENVIRONMENT_KEYS) {
+    const value = source[key];
+    if (value !== undefined) {
+      environment[key] = value;
+    }
+  }
+
+  return {
+    ...environment,
+    PAIRDOCK_MODEL_ID: input.modelId,
+    PAIRDOCK_REASONING_EFFORT: input.reasoningEffort ?? 'medium',
+    PAIRDOCK_PROJECT_KEY: input.projectKey,
+    PAIRDOCK_PROMPT: input.prompt,
+    PAIRDOCK_SESSION_ID: input.sessionId,
+  };
+}
+
 export function buildCommandArgs(
   projectConfig: ProjectAgentHarnessConfig,
   input: RunPromptInput,
@@ -152,6 +196,7 @@ export function buildCommandArgs(
   if (codexThreadId) {
     return [
       'exec',
+      ...CODEX_SECURITY_ARGS,
       'resume',
       '--json',
       '--model',
@@ -165,6 +210,7 @@ export function buildCommandArgs(
 
   return [
     'exec',
+    ...CODEX_SECURITY_ARGS,
     '--json',
     '--model',
     input.modelId,
