@@ -1,5 +1,5 @@
 import { useForm } from '@tanstack/react-form';
-import { useState } from 'react';
+import { type FormEvent, type KeyboardEvent, useState } from 'react';
 import { Button } from '../button.js';
 import { TextArea } from '../text-area.js';
 
@@ -24,18 +24,32 @@ export function PromptComposer({ canCancel, isCancelling, isSubmitting, onCancel
     },
   });
 
+  function handleFormSubmit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    void form.handleSubmit().catch((error: Error) => setErrorMessage(error.message));
+  }
+
+  function handleCancel() {
+    void onCancel().catch((error: Error) => setErrorMessage(error.message));
+  }
+
   return (
     <div className="rounded-[13px] border border-white/10 bg-[#1c1f27] p-3">
-      <form
-        className="space-y-3"
-        onSubmit={(event) => {
-          event.preventDefault();
-          void form.handleSubmit().catch((error: Error) => setErrorMessage(error.message));
-        }}
-      >
+      <form className="space-y-3" onSubmit={handleFormSubmit}>
         <form.Field name="content">
           {(field) => {
             const inputId = 'pm-session-prompt';
+
+            function handleContentChange(event: React.ChangeEvent<HTMLTextAreaElement>) {
+              field.handleChange(event.target.value);
+            }
+
+            function handleContentKeyDown(event: KeyboardEvent<HTMLTextAreaElement>) {
+              if (event.key === 'Enter' && (event.metaKey || event.ctrlKey)) {
+                event.preventDefault();
+                void form.handleSubmit().catch((error: Error) => setErrorMessage(error.message));
+              }
+            }
 
             return (
               <div className="space-y-2 text-sm text-[#cdd2dc]">
@@ -47,8 +61,9 @@ export function PromptComposer({ canCancel, isCancelling, isSubmitting, onCancel
                   id={inputId}
                   name={field.name}
                   onBlur={field.handleBlur}
-                  onChange={(event) => field.handleChange(event.target.value)}
-                  placeholder="Décris le correctif..."
+                  onChange={handleContentChange}
+                  onKeyDown={handleContentKeyDown}
+                  placeholder="Écris un message à l’agent…"
                   value={field.state.value}
                 />
               </div>
@@ -61,12 +76,11 @@ export function PromptComposer({ canCancel, isCancelling, isSubmitting, onCancel
           <Button
             className="min-h-[34px] px-3.5 py-1.5"
             disabled={!canCancel || isCancelling}
-            onClick={() => {
-              void onCancel().catch((error: Error) => setErrorMessage(error.message));
-            }}
+            onClick={handleCancel}
+            type="button"
             variant="secondary"
           >
-            {isCancelling ? 'Cancelling…' : 'Cancel current agent run'}
+            {isCancelling ? 'Arrêt…' : 'Arrêter'}
           </Button>
           <Button className="min-h-[34px] px-4 py-1.5" disabled={isSubmitting} type="submit">
             {isSubmitting ? 'Envoi…' : 'Envoyer'}

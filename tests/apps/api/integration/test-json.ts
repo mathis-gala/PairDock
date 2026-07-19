@@ -21,6 +21,7 @@ export const sessionCreateResponseSchema = z
     projectId: z.string(),
     createdByUserId: z.string(),
     modelId: z.string(),
+    reasoningEffort: z.string(),
   })
   .passthrough();
 
@@ -65,10 +66,28 @@ export const sharedProjectListResponseSchema = z.array(
     ownerDisplayName: z.string(),
     repoFullName: z.string(),
     defaultBranch: z.string(),
-    defaultModelId: z.string(),
     agentAvailability: z.string(),
     canStartSession: z.boolean(),
     unavailableReason: z.string().optional(),
+  }),
+);
+
+export const sharedSessionHistoryResponseSchema = z.array(
+  z.object({
+    id: z.string(),
+    projectId: z.string(),
+    projectName: z.string(),
+    repoFullName: z.string(),
+    status: z.string(),
+    reviewRequest: z
+      .object({
+        url: z.string().nullable(),
+        number: z.number().nullable(),
+        status: z.string(),
+      })
+      .nullable(),
+    createdAt: z.string(),
+    closedAt: z.string().nullable(),
   }),
 );
 
@@ -79,6 +98,7 @@ export const developerProjectResponseSchema = z.object({
   repoFullName: z.string(),
   defaultBranch: z.string(),
   defaultModelId: z.string(),
+  defaultReasoningEffort: z.string(),
   agentProjectKey: z.string(),
   sourceControlAccountLogin: z.string(),
   pmCanStartSessions: z.boolean(),

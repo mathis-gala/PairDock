@@ -12,6 +12,19 @@ const project: DeveloperProjectSummary = {
   repoFullName: 'mathis/developer-project',
   defaultBranch: 'main',
   defaultModelId: 'agent/gpt-5',
+  defaultReasoningEffort: 'medium',
+  models: [
+    {
+      id: 'agent/gpt-5',
+      label: 'GPT-5',
+      provider: 'codex',
+      reasoningEfforts: [
+        { id: 'medium', label: 'Medium' },
+        { id: 'high', label: 'High' },
+      ],
+      defaultReasoningEffort: 'medium',
+    },
+  ],
   agentProjectKey: 'local-developer-project',
   sourceControlAccountLogin: 'mathis',
   pmCanStartSessions: true,
@@ -54,24 +67,27 @@ const blockedProject: DeveloperProjectSummary = {
   },
 };
 
-test('BT-028/BT-029/BT-049: developer project card exposes default model start, sharing, and close controls', () => {
+test('BT-028/BT-029/BT-049: developer project card exposes agent defaults, sharing, and PM session cleanup', () => {
   const html = renderToStaticMarkup(
     createElement(DeveloperProjectCard, {
       closePendingSessionId: null,
       onCloseSession: async () => undefined,
       onRequestReadiness: async () => undefined,
       onShareProject: async () => undefined,
-      onStartSession: async () => undefined,
+      onUpdateExecutionDefaults: async () => undefined,
       project,
       readinessPendingProjectId: null,
       sharePendingProjectId: null,
-      startPendingProjectId: null,
+      updateDefaultsPendingProjectId: null,
     }),
   );
 
   assert.match(html, /Default model/);
   assert.match(html, /agent\/gpt-5/);
-  assert.match(html, /Start developer session/);
+  assert.doesNotMatch(html, /session développeur/i);
+  assert.match(html, /Enregistrer la configuration/);
+  assert.match(html, /Raisonnement/);
+  assert.match(html, /High/);
   assert.match(html, /Share with PM/);
   assert.match(html, /PM access/);
   assert.match(html, /Open draft review request/);
@@ -80,18 +96,18 @@ test('BT-028/BT-029/BT-049: developer project card exposes default model start, 
   assert.doesNotMatch(html, /codex-cli/);
 });
 
-test('BT-044: developer project card disables start and shows readiness remediation for failed required checks', () => {
+test('BT-044: developer project card shows readiness remediation for failed required checks', () => {
   const html = renderToStaticMarkup(
     createElement(DeveloperProjectCard, {
       closePendingSessionId: null,
       onCloseSession: async () => undefined,
       onRequestReadiness: async () => undefined,
       onShareProject: async () => undefined,
-      onStartSession: async () => undefined,
+      onUpdateExecutionDefaults: async () => undefined,
       project: blockedProject,
       readinessPendingProjectId: null,
       sharePendingProjectId: null,
-      startPendingProjectId: null,
+      updateDefaultsPendingProjectId: null,
     }),
   );
 
@@ -99,5 +115,4 @@ test('BT-044: developer project card disables start and shows readiness remediat
   assert.match(html, /Start Docker Desktop and rerun readiness checks\./);
   assert.match(html, /Preview tunnel is optional for this project\./);
   assert.match(html, /Optional/);
-  assert.match(html, /disabled=""/);
 });

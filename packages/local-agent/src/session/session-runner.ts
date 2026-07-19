@@ -124,7 +124,7 @@ export class SessionRunner {
       });
       const tunnelRef = await this.previewTunnelPort.open({
         localUrl: healthcheck.url,
-        previewConfig,
+        previewConfig: sandboxRef.previewConfig ?? previewConfig,
         projectKey: command.payload.projectKey,
         sessionId: command.sessionId,
         worktreePath: preparedWorktree.worktreePath,
@@ -183,12 +183,13 @@ export class SessionRunner {
     mode: SessionCloseCommandEnvelope['payload']['mode'],
   ): Promise<unknown[]> {
     const previewConfig = this.previewConfigs[workspace.projectKey];
+    const resolvedPreviewConfig = workspace.sandboxRef?.previewConfig ?? previewConfig;
     const errors: unknown[] = [];
     let remainingWorkspace = workspace;
 
     if (remainingWorkspace.tunnelRef) {
       try {
-        await this.previewTunnelPort.close(remainingWorkspace.tunnelRef, previewConfig);
+        await this.previewTunnelPort.close(remainingWorkspace.tunnelRef, resolvedPreviewConfig);
         const { previewUrl: _previewUrl, tunnelRef: _tunnelRef, ...withoutTunnel } = remainingWorkspace;
         remainingWorkspace = withoutTunnel;
         this.sessionRegistry.register(remainingWorkspace);
@@ -199,7 +200,7 @@ export class SessionRunner {
 
     if (remainingWorkspace.sandboxRef) {
       try {
-        await this.sandboxPort.stop(remainingWorkspace.sandboxRef, previewConfig);
+        await this.sandboxPort.stop(remainingWorkspace.sandboxRef, resolvedPreviewConfig);
         const { sandboxRef: _sandboxRef, ...withoutSandbox } = remainingWorkspace;
         remainingWorkspace = withoutSandbox;
         this.sessionRegistry.register(remainingWorkspace);

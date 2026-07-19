@@ -1,5 +1,5 @@
 import type { DeveloperProjectSummary } from '@pairdock/shared-contracts';
-import { Button } from '../button.js';
+import { ExecutionSelectionControls } from '../execution-selection.js';
 import { SectionCard } from '../section-card.js';
 import { StatusBadge } from '../status-badge.js';
 import { ProjectShareForm } from './project-share-form.js';
@@ -11,11 +11,11 @@ interface DeveloperProjectCardProps {
   onCloseSession: (sessionId: string) => Promise<void>;
   onRequestReadiness: (projectId: string) => Promise<void>;
   onShareProject: (projectId: string, pmEmail: string) => Promise<void>;
-  onStartSession: (projectId: string, modelId: string) => Promise<void>;
+  onUpdateExecutionDefaults: (projectId: string, modelId: string, reasoningEffort: string) => Promise<void>;
   project: DeveloperProjectSummary;
   readinessPendingProjectId: string | null;
   sharePendingProjectId: string | null;
-  startPendingProjectId: string | null;
+  updateDefaultsPendingProjectId: string | null;
 }
 
 export function DeveloperProjectCard({
@@ -23,15 +23,14 @@ export function DeveloperProjectCard({
   onCloseSession,
   onRequestReadiness,
   onShareProject,
-  onStartSession,
+  onUpdateExecutionDefaults,
   project,
   readinessPendingProjectId,
   sharePendingProjectId,
-  startPendingProjectId,
+  updateDefaultsPendingProjectId,
 }: DeveloperProjectCardProps) {
-  const startPending = startPendingProjectId === project.id;
+  const updateDefaultsPending = updateDefaultsPendingProjectId === project.id;
   const readinessPending = readinessPendingProjectId === project.id;
-  const startBlockedByReadiness = project.agentAvailability !== 'online' || project.readiness?.ok !== true;
   const sharePending = sharePendingProjectId === project.id;
 
   return (
@@ -57,20 +56,25 @@ export function DeveloperProjectCard({
             />
             <ProjectFact label="Agent key" value={project.agentProjectKey} />
             <ProjectFact label="Default model" value={project.defaultModelId} />
+            <ProjectFact label="Default reasoning" value={project.defaultReasoningEffort} />
             <ProjectFact label="PM-start policy" value={project.pmCanStartSessions ? 'Enabled' : 'Disabled'} />
           </dl>
           <div className="rounded-xl border border-slate-800 bg-slate-950/70 p-3">
-            <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">Developer session</p>
-            <p className="mt-1 break-all text-sm text-slate-300">
-              Uses the saved agent model: {project.defaultModelId}
+            <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">Agent du projet</p>
+            <p className="mb-3 mt-1 text-sm text-slate-300">
+              Ce modèle et ce raisonnement seront utilisés pour toutes les nouvelles demandes PM et développeur.
             </p>
-            <Button
-              className="mt-3"
-              disabled={startPending || startBlockedByReadiness}
-              onClick={async () => onStartSession(project.id, project.defaultModelId)}
-            >
-              {startPending ? 'Starting session…' : 'Start developer session'}
-            </Button>
+            <ExecutionSelectionControls
+              defaultModelId={project.defaultModelId}
+              defaultReasoningEffort={project.defaultReasoningEffort}
+              disabled={project.agentAvailability !== 'online'}
+              models={project.models}
+              onStart={async ({ modelId, reasoningEffort }) =>
+                onUpdateExecutionDefaults(project.id, modelId, reasoningEffort)
+              }
+              pending={updateDefaultsPending}
+              startLabel="Enregistrer la configuration"
+            />
           </div>
           <ToolReadinessPanel
             agentAvailability={project.agentAvailability}
@@ -87,7 +91,7 @@ export function DeveloperProjectCard({
           </div>
         </div>
         <div className="space-y-3">
-          <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">Sessions and cleanup</p>
+          <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">Sessions et nettoyage</p>
           {project.sessions.length > 0 ? (
             project.sessions.map((session) => (
               <SessionControlCard
@@ -99,7 +103,7 @@ export function DeveloperProjectCard({
             ))
           ) : (
             <div className="rounded-xl border border-slate-800 bg-slate-950/70 p-3 text-sm text-slate-500">
-              No sessions yet. Start a developer session with the configured agent model.
+              Aucune demande PM active pour ce projet.
             </div>
           )}
         </div>

@@ -10,6 +10,8 @@ export interface AgentModelConfig {
   id: string;
   label: string;
   provider: string;
+  reasoningEfforts?: Array<{ id: string; label: string; description?: string }>;
+  defaultReasoningEffort?: string;
 }
 
 export interface AgentProjectDescriptor {
@@ -87,6 +89,16 @@ const agentModelConfigSchema = z.object({
   id: z.string().min(1),
   label: z.string().min(1),
   provider: z.string().min(1),
+  reasoningEfforts: z
+    .array(
+      z.object({
+        id: z.string().min(1),
+        label: z.string().min(1),
+        description: z.string().min(1).optional(),
+      }),
+    )
+    .optional(),
+  defaultReasoningEffort: z.string().min(1).optional(),
 });
 
 const agentProjectDescriptorSchema = z.object({
@@ -212,6 +224,25 @@ function normalizeModels(models: AgentModelConfig[]): AgentModelConfig[] {
       id,
       label: normalizeRequiredValue(model.label, `model.label for ${id}`),
       provider: normalizeRequiredValue(model.provider, `model.provider for ${id}`),
+      ...(model.reasoningEfforts
+        ? {
+            reasoningEfforts: model.reasoningEfforts.map((effort) => ({
+              id: normalizeRequiredValue(effort.id, `reasoning effort id for ${id}`),
+              label: normalizeRequiredValue(effort.label, `reasoning effort label for ${id}`),
+              ...(effort.description
+                ? { description: normalizeRequiredValue(effort.description, `reasoning effort description for ${id}`) }
+                : {}),
+            })),
+          }
+        : {}),
+      ...(model.defaultReasoningEffort
+        ? {
+            defaultReasoningEffort: normalizeRequiredValue(
+              model.defaultReasoningEffort,
+              `default reasoning effort for ${id}`,
+            ),
+          }
+        : {}),
     });
   }
 

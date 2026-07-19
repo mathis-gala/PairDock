@@ -2,7 +2,7 @@
 import { writeFile } from 'node:fs/promises';
 import { setTimeout as delay } from 'node:timers/promises';
 
-const [, , prompt = '', modelId = ''] = process.argv;
+const [, , prompt = '', modelId = '', reasoningEffort = ''] = process.argv;
 
 if (prompt.startsWith('record-cwd:')) {
   const markerName = prompt.slice('record-cwd:'.length);
@@ -27,5 +27,6 @@ if (prompt === 'wait-for-cancel') {
 } else {
   process.stdout.write(`prompt:${prompt}\n`);
   process.stderr.write(`model:${modelId}\n`);
+  process.stderr.write(`reasoning:${reasoningEffort}\n`);
   process.exit(0);
 }

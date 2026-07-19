@@ -212,6 +212,7 @@ test('BT-025: ValidationModule persists checks.result and exposes the latest fai
       previewStatus: 'passed',
     });
     assert.match(sessionPayload.lastError ?? '', /lint/i);
+    assert.match(sessionPayload.lastError ?? '', /Lint failed on src\/app\.ts/i);
   } finally {
     agentSocket.close();
   }

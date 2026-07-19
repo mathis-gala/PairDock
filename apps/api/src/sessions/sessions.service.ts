@@ -11,6 +11,7 @@ import {
 import type { PairDockIdentity, Project, Session, SessionStatus } from '@pairdock/domain';
 import { AGENT_PROTOCOL_VERSION, type SessionPrepareCommandEnvelope } from '@pairdock/shared-contracts';
 import { AgentCommandRouterService } from '../agent-gateway/agent-command-router.service.js';
+import { AgentExecutionCapabilitiesService } from '../agent-gateway/agent-execution-capabilities.service.js';
 import { ConnectedAgentsRegistry } from '../agent-gateway/connected-agents.registry.js';
 import { DiffService } from '../diff/diff.service.js';
 import {
@@ -40,13 +41,11 @@ import { InvalidSessionTransitionError, type SessionAgentEvent, SessionStateMach
 
 export interface CreateSessionInput {
   projectId: string;
-  modelId: string;
   startSource?: SessionStartSource;
 }
 
 export interface CreateSessionRequest {
   projectId?: string;
-  modelId?: string;
   startSource?: SessionStartSource;
 }
 
@@ -77,6 +76,8 @@ export class SessionsService {
     private readonly connectedAgentsRegistry: ConnectedAgentsRegistry,
     @Inject(AgentCommandRouterService)
     private readonly agentCommandRouter: AgentCommandRouterService,
+    @Inject(AgentExecutionCapabilitiesService)
+    private readonly agentExecutionCapabilities: AgentExecutionCapabilitiesService,
     @Inject(DiffService)
     private readonly diffService: DiffService,
     @Inject(ValidationService)
@@ -126,6 +127,10 @@ export class SessionsService {
 
   async createSession(input: CreateSessionInput, user: PairDockIdentity): Promise<Session> {
     const project = await this.sessionStartPolicy.assertCanStart(input.projectId, user, input.startSource);
+    const executionSelection = this.agentExecutionCapabilities.resolveSessionSelection(project.agentProjectKey, {
+      modelId: project.defaultModelId,
+      reasoningEffort: project.defaultReasoningEffort,
+    });
     const sessionMembers =
       user.kind === 'pm'
         ? [
@@ -144,7 +149,8 @@ export class SessionsService {
         projectId: project.id,
         createdByUserId: user.id,
         status: 'CREATED',
-        modelId: input.modelId,
+        modelId: executionSelection.modelId,
+        reasoningEffort: executionSelection.reasoningEffort,
         branchName: `pairdock/session-${randomUUID().slice(0, 8)}`,
       });
 
@@ -223,19 +229,13 @@ export class SessionsService {
 
   private parseCreateSessionInput(input: CreateSessionRequest | undefined): CreateSessionInput {
     const projectId = input?.projectId?.trim();
-    const modelId = input?.modelId?.trim();
 
     if (!projectId) {
       throw new BadRequestException('Project id is required.');
     }
 
-    if (!modelId) {
-      throw new BadRequestException('Model id is required.');
-    }
-
     return {
       projectId,
-      modelId,
       startSource: input?.startSource,
     };
   }
@@ -344,6 +344,7 @@ function buildSessionPrepareCommand(
       branchName: session.branchName ?? `pairdock/session-${session.id.slice(0, 8)}`,
       baseBranch,
       modelId: session.modelId,
+      reasoningEffort: session.reasoningEffort,
     },
   };
 }

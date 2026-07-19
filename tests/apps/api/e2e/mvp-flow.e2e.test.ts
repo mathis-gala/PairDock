@@ -73,7 +73,9 @@ async function authenticateDeveloper(tokenSeed = randomUUID()) {
   const response = await fetch(`${baseUrl}/auth/developer/callback`, {
     method: 'POST',
     headers: { 'content-type': 'application/json' },
-    body: JSON.stringify({ accessToken: `github:${tokenSeed}:dev-${tokenSeed}@pairdock.test:Dev ${tokenSeed}` }),
+    body: JSON.stringify({
+      accessToken: `github:${tokenSeed}:dev-${tokenSeed}@pairdock.test:Dev ${tokenSeed}:installation:test-mvp-e2e-installation`,
+    }),
   });
 
   assert.equal(response.status, 200);
@@ -119,12 +121,9 @@ async function createDeveloperProject(accessToken: string, agentProjectKey: stri
       repoFullName: 'pairdock/mvp-e2e-fixture',
       defaultBranch: 'release',
       defaultModelId: 'codex-cli/gpt-5.4',
+      defaultReasoningEffort: 'medium',
       agentProjectKey,
       pmCanStartSessions: true,
-      sourceControl: {
-        providerConnectionId: 'test-mvp-e2e-installation',
-        accountLogin: 'pairdock',
-      },
     }),
   });
 

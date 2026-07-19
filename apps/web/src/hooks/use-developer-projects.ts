@@ -1,10 +1,13 @@
-import type { CreateDeveloperProjectInput, DeveloperProjectSummary } from '@pairdock/shared-contracts';
+import type {
+  CreateDeveloperProjectInput,
+  DeveloperProjectSummary,
+  UpdateProjectExecutionDefaultsInput,
+} from '@pairdock/shared-contracts';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { createApiClient } from '../api/client.js';
 
-interface StartDeveloperSessionInput {
+interface UpdateExecutionDefaultsInput extends UpdateProjectExecutionDefaultsInput {
   projectId: string;
-  modelId: string;
 }
 
 interface ShareDeveloperProjectInput {
@@ -51,15 +54,13 @@ export function useDeveloperProjects(accessToken: string) {
     },
   });
 
-  const startSessionMutation = useMutation({
-    mutationFn: ({ projectId, modelId }: StartDeveloperSessionInput) =>
-      api.sessions.create({
-        projectId,
-        modelId,
-        startSource: 'developer',
-      }),
-    onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey });
+  const updateExecutionDefaultsMutation = useMutation({
+    mutationFn: ({ projectId, ...input }: UpdateExecutionDefaultsInput) =>
+      api.projects.updateExecutionDefaults(projectId, input),
+    onSuccess: (updatedProject) => {
+      queryClient.setQueryData<DeveloperProjectSummary[]>(queryKey, (currentProjects) =>
+        currentProjects?.map((project) => (project.id === updatedProject.id ? updatedProject : project)),
+      );
     },
   });
 
@@ -77,6 +78,6 @@ export function useDeveloperProjects(accessToken: string) {
     requestReadinessMutation,
     shareProjectMutation,
     setupQuery,
-    startSessionMutation,
+    updateExecutionDefaultsMutation,
   };
 }

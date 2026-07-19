@@ -25,6 +25,7 @@ interface ProjectFormState {
   defaultBranch: string;
   agentProjectKey: string;
   defaultModelId: string;
+  defaultReasoningEffort: string;
   pmCanStartSessions: boolean;
 }
 
@@ -52,6 +53,7 @@ export function DeveloperProjectForm({
     defaultBranch: '',
     agentProjectKey: '',
     defaultModelId: '',
+    defaultReasoningEffort: '',
     pmCanStartSessions: true,
   });
   const repositories = setup?.repositories ?? [];
@@ -69,6 +71,21 @@ export function DeveloperProjectForm({
   const matchingAgentProjects = allAgentProjects.filter((project) => project.repoFullName === state.repoFullName);
   const selectedAgentProject = matchingAgentProjects.find((project) => project.key === state.agentProjectKey) ?? null;
   const modelOptions = selectedAgentProject ? resolveModelOptions(selectedAgentProject) : [];
+  const selectedModel = modelOptions.find((model) => model.id === state.defaultModelId) ?? null;
+  const reasoningOptions = selectedModel?.reasoningEfforts?.length
+    ? selectedModel.reasoningEfforts
+    : [{ id: 'medium', label: 'Medium' }];
+  const branchPlaceholder = selectedRepository ? 'Sélectionner une branche' : 'Choisis d’abord un dépôt';
+  const agentProjectPlaceholder = !selectedRepository
+    ? 'Choisis d’abord un dépôt'
+    : matchingAgentProjects.length === 0
+      ? 'Aucun projet agent disponible pour ce dépôt'
+      : 'Sélectionner un projet agent';
+  const modelPlaceholder = !selectedAgentProject
+    ? 'Choisis d’abord un projet agent'
+    : modelOptions.length === 0
+      ? 'Aucun modèle disponible pour ce projet'
+      : 'Sélectionner un modèle';
   const createDisabled =
     isSetupLoading ||
     isSubmitting ||
@@ -76,7 +93,8 @@ export function DeveloperProjectForm({
     !selectedRepository ||
     !state.defaultBranch ||
     !selectedAgentProject ||
-    !state.defaultModelId;
+    !state.defaultModelId ||
+    !state.defaultReasoningEffort;
 
   function handleNameChange(event: ChangeEvent<HTMLInputElement>) {
     setState((current) => ({ ...current, name: event.target.value }));
@@ -95,6 +113,7 @@ export function DeveloperProjectForm({
       defaultBranch: repository?.defaultBranch ?? repository?.branches[0] ?? '',
       agentProjectKey: '',
       defaultModelId: '',
+      defaultReasoningEffort: '',
     }));
   }
 
@@ -110,11 +129,23 @@ export function DeveloperProjectForm({
       ...current,
       agentProjectKey,
       defaultModelId: firstModel?.id ?? '',
+      defaultReasoningEffort:
+        firstModel?.defaultReasoningEffort ?? firstModel?.reasoningEfforts?.[0]?.id ?? (firstModel ? 'medium' : ''),
     }));
   }
 
   function handleModelChange(event: ChangeEvent<HTMLSelectElement>) {
-    setState((current) => ({ ...current, defaultModelId: event.target.value }));
+    const defaultModelId = event.target.value;
+    const model = modelOptions.find((candidate) => candidate.id === defaultModelId);
+    setState((current) => ({
+      ...current,
+      defaultModelId,
+      defaultReasoningEffort: model?.defaultReasoningEffort ?? model?.reasoningEfforts?.[0]?.id ?? 'medium',
+    }));
+  }
+
+  function handleReasoningChange(event: ChangeEvent<HTMLSelectElement>) {
+    setState((current) => ({ ...current, defaultReasoningEffort: event.target.value }));
   }
 
   function handlePmCanStartSessionsChange(event: ChangeEvent<HTMLInputElement>) {
@@ -134,6 +165,7 @@ export function DeveloperProjectForm({
       repoFullName: state.repoFullName,
       defaultBranch: state.defaultBranch,
       defaultModelId: state.defaultModelId,
+      defaultReasoningEffort: state.defaultReasoningEffort,
       agentProjectKey: state.agentProjectKey,
       pmCanStartSessions: state.pmCanStartSessions,
     });
@@ -144,6 +176,7 @@ export function DeveloperProjectForm({
       defaultBranch: '',
       agentProjectKey: '',
       defaultModelId: '',
+      defaultReasoningEffort: '',
       pmCanStartSessions: true,
     });
   }
@@ -178,14 +211,10 @@ export function DeveloperProjectForm({
         </label>
         <label className="space-y-2 text-sm text-slate-300" htmlFor="developer-project-branch">
           <span className="block">Branche de base</span>
-          <SelectInput
-            disabled={!selectedRepository}
-            id="developer-project-branch"
-            onChange={handleBranchChange}
-            required
-            value={state.defaultBranch}
-          >
-            <option value="">Sélectionner une branche</option>
+          <SelectInput id="developer-project-branch" onChange={handleBranchChange} required value={state.defaultBranch}>
+            <option disabled value="">
+              {branchPlaceholder}
+            </option>
             {selectedRepository?.branches.map((branch) => (
               <option key={branch} value={branch}>
                 {branch}
@@ -196,13 +225,14 @@ export function DeveloperProjectForm({
         <label className="space-y-2 text-sm text-slate-300" htmlFor="developer-project-agent-project">
           <span className="block">Projet agent local</span>
           <SelectInput
-            disabled={!selectedRepository || matchingAgentProjects.length === 0}
             id="developer-project-agent-project"
             onChange={handleAgentProjectChange}
             required
             value={state.agentProjectKey}
           >
-            <option value="">Sélectionner un projet agent</option>
+            <option disabled value="">
+              {agentProjectPlaceholder}
+            </option>
             {matchingAgentProjects.map((project) => (
               <option key={`${project.agentId}:${project.key}`} value={project.key}>
                 {project.name} ({project.agentId})
@@ -212,17 +242,31 @@ export function DeveloperProjectForm({
         </label>
         <label className="space-y-2 text-sm text-slate-300" htmlFor="developer-project-model">
           <span className="block">Modèle agent</span>
-          <SelectInput
-            disabled={!selectedAgentProject || modelOptions.length === 0}
-            id="developer-project-model"
-            onChange={handleModelChange}
-            required
-            value={state.defaultModelId}
-          >
-            <option value="">Sélectionner un modèle</option>
+          <SelectInput id="developer-project-model" onChange={handleModelChange} required value={state.defaultModelId}>
+            <option disabled value="">
+              {modelPlaceholder}
+            </option>
             {modelOptions.map((model) => (
               <option key={model.id} value={model.id}>
                 {model.label} ({model.provider})
+              </option>
+            ))}
+          </SelectInput>
+        </label>
+        <label className="space-y-2 text-sm text-slate-300" htmlFor="developer-project-reasoning">
+          <span className="block">Niveau de raisonnement</span>
+          <SelectInput
+            id="developer-project-reasoning"
+            onChange={handleReasoningChange}
+            required
+            value={state.defaultReasoningEffort}
+          >
+            <option disabled value="">
+              Choisis d’abord un modèle
+            </option>
+            {reasoningOptions.map((effort) => (
+              <option key={effort.id} value={effort.id}>
+                {effort.label}
               </option>
             ))}
           </SelectInput>

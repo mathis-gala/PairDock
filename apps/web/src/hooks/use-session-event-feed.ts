@@ -117,6 +117,7 @@ export function useSessionEventFeed(accessToken: string, sessionId: string): Ses
         },
         () => {
           void queryClient.invalidateQueries({ queryKey: ['session', sessionId] });
+          void queryClient.invalidateQueries({ queryKey: ['session-messages', sessionId] });
           void queryClient.invalidateQueries({ queryKey: ['session-events', sessionId] });
         },
       ),

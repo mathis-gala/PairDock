@@ -12,6 +12,7 @@ function buildSession(status: Session['status']): Session {
     createdByUserId: '80ce6c4f-9219-4dd4-a345-f71f6438b7e6',
     status,
     modelId: 'codex-cli/gpt-5.4',
+    reasoningEffort: 'medium',
     branchName: null,
     worktreeRef: null,
     previewUrl: null,

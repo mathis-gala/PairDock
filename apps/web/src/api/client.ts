@@ -7,7 +7,10 @@ import {
   developerProjectSummarySchema,
   type ShareDeveloperProjectInput,
   type SharedProjectSummary,
+  type SharedSessionHistoryItem,
   sharedProjectSummaryListSchema,
+  sharedSessionHistoryListSchema,
+  type UpdateProjectExecutionDefaultsInput,
 } from '@pairdock/shared-contracts';
 import { z } from 'zod';
 import { getBackendUrl } from '../lib/backend-url.js';
@@ -23,7 +26,6 @@ import {
 
 interface CreateSessionInput {
   projectId: string;
-  modelId: string;
   startSource: 'developer' | 'pm';
 }
 
@@ -33,8 +35,13 @@ export interface ApiClient {
     getSetup(): Promise<DeveloperProjectSetup>;
     listDeveloper(): Promise<DeveloperProjectSummary[]>;
     listShared(): Promise<SharedProjectSummary[]>;
+    listSharedSessionHistory(): Promise<SharedSessionHistoryItem[]>;
     requestReadinessCheck(projectId: string): Promise<void>;
     share(projectId: string, input: ShareDeveloperProjectInput): Promise<DeveloperProjectSummary>;
+    updateExecutionDefaults(
+      projectId: string,
+      input: UpdateProjectExecutionDefaultsInput,
+    ): Promise<DeveloperProjectSummary>;
   };
   readonly sessions: {
     create(input: CreateSessionInput): Promise<SessionView>;
@@ -80,6 +87,13 @@ export function createApiClient(accessToken: string): ApiClient {
         });
         return sharedProjectSummaryListSchema.parse(value);
       },
+      async listSharedSessionHistory(): Promise<SharedSessionHistoryItem[]> {
+        const value = await requestJson('/projects/shared/sessions', {
+          method: 'GET',
+          headers: authHeaders(accessToken),
+        });
+        return sharedSessionHistoryListSchema.parse(value);
+      },
       async requestReadinessCheck(projectId: string): Promise<void> {
         await requestJson(`/tool-readiness/projects/${projectId}/check`, {
           method: 'POST',
@@ -89,6 +103,17 @@ export function createApiClient(accessToken: string): ApiClient {
       async share(projectId: string, input: ShareDeveloperProjectInput): Promise<DeveloperProjectSummary> {
         const value = await requestJson(`/projects/${projectId}/members`, {
           method: 'POST',
+          headers: jsonHeaders(accessToken),
+          body: JSON.stringify(input),
+        });
+        return developerProjectSummarySchema.parse(value);
+      },
+      async updateExecutionDefaults(
+        projectId: string,
+        input: UpdateProjectExecutionDefaultsInput,
+      ): Promise<DeveloperProjectSummary> {
+        const value = await requestJson(`/projects/${projectId}/execution-defaults`, {
+          method: 'PATCH',
           headers: jsonHeaders(accessToken),
           body: JSON.stringify(input),
         });

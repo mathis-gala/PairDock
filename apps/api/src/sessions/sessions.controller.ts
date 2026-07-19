@@ -23,7 +23,6 @@ interface CreatePromptBody {
 
 interface CreateSessionBody {
   projectId?: string;
-  modelId?: string;
   startSource?: SessionStartSource;
 }
 

@@ -25,6 +25,14 @@ export function openPmSession(sessionId: string): void {
   setHash(`/pm/sessions/${sessionId}`);
 }
 
+export function openPmSessionHistory(): void {
+  setHash('/pm/sessions');
+}
+
+export function openPmReviewRequests(): void {
+  setHash('/pm/review-requests');
+}
+
 function subscribe(listener: () => void): () => void {
   if (typeof window === 'undefined') {
     return () => undefined;
@@ -58,6 +66,14 @@ function parseHash(hashValue: string): AppRoute {
 
   if (normalizedHash === '/pm') {
     return { kind: 'pm-dashboard' };
+  }
+
+  if (normalizedHash === '/pm/sessions') {
+    return { kind: 'pm-session-history' };
+  }
+
+  if (normalizedHash === '/pm/review-requests') {
+    return { kind: 'pm-review-requests' };
   }
 
   const sessionRouteMatch = normalizedHash.match(/^\/pm\/sessions\/([0-9a-f-]{36})$/i);

@@ -23,6 +23,7 @@ export class ProjectsRepositoryAdapter implements ProjectsRepository {
         repoFullName: input.repoFullName,
         defaultBranch: input.defaultBranch,
         defaultModelId: input.defaultModelId,
+        defaultReasoningEffort: input.defaultReasoningEffort,
         pmCanStartSessions: input.pmCanStartSessions,
         agentProjectKey: input.agentProjectKey,
       },
@@ -95,5 +96,21 @@ export class ProjectsRepositoryAdapter implements ProjectsRepository {
       project: mapProject(record),
       ownerDisplayName: record.ownerUser.displayName ?? record.ownerUser.email,
     }));
+  }
+
+  async updateExecutionDefaults(input: {
+    id: string;
+    defaultModelId: string;
+    defaultReasoningEffort: string;
+  }): Promise<Project> {
+    const record = await this.prisma.project.update({
+      where: { id: input.id },
+      data: {
+        defaultModelId: input.defaultModelId,
+        defaultReasoningEffort: input.defaultReasoningEffort,
+      },
+    });
+
+    return mapProject(record);
   }
 }

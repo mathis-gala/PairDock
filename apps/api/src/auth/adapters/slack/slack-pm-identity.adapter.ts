@@ -2,6 +2,7 @@ import { Injectable, UnauthorizedException } from '@nestjs/common';
 import type { NormalizedIdentity, PmIdentityPort } from '@pairdock/domain';
 
 interface SlackPmIdentityConfig {
+  allowFixtures?: boolean;
   apiBaseUrl: string;
   clientId?: string;
   clientSecret?: string;
@@ -48,6 +49,10 @@ export class SlackPmIdentityAdapter implements PmIdentityPort {
 
   async getPmIdentity(accessToken: string): Promise<NormalizedIdentity> {
     if (accessToken.startsWith('slack:')) {
+      if (!this.config.allowFixtures) {
+        throw new UnauthorizedException('Development authentication fixtures are disabled.');
+      }
+
       return parseFixtureIdentity(accessToken);
     }
 
@@ -156,6 +161,7 @@ function parseFixtureIdentity(accessToken: string): NormalizedIdentity {
 
 function readSlackConfig(): SlackPmIdentityConfig {
   return {
+    allowFixtures: process.env.DEV_AUTH_ENABLED === 'true',
     apiBaseUrl: process.env.SLACK_API_BASE_URL ?? 'https://slack.com/api',
     clientId: process.env.SLACK_CLIENT_ID,
     clientSecret: process.env.SLACK_CLIENT_SECRET,

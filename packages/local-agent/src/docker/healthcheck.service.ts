@@ -24,9 +24,11 @@ export class HealthcheckService {
     const timeoutMs = input.timeoutMs ?? DEFAULT_TIMEOUT_MS;
     const intervalMs = input.intervalMs ?? DEFAULT_INTERVAL_MS;
     const deadline = Date.now() + timeoutMs;
+    let lastMessage: string | undefined;
 
     while (Date.now() <= deadline) {
       const result = await input.sandboxPort.check(input.sandboxRef);
+      lastMessage = result.message;
 
       if (result.ready) {
         return result;
@@ -40,7 +42,7 @@ export class HealthcheckService {
     }
 
     throw new HealthcheckTimeoutError(
-      `Preview healthcheck did not become ready for session ${input.sandboxRef.sessionId} within ${timeoutMs}ms.`,
+      `Preview healthcheck did not become ready for session ${input.sandboxRef.sessionId} within ${timeoutMs}ms.${lastMessage ? ` Last result: ${lastMessage}` : ''}`,
     );
   }
 }

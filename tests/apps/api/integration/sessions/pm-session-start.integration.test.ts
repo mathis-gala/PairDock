@@ -82,7 +82,8 @@ async function createProjectFixture(pmUserId?: string) {
       description: 'Project shared to a PM',
       repoFullName: 'mathis/pairdock-pm-start',
       defaultBranch: 'main',
-      defaultModelId: 'codex-cli/gpt-5.4',
+      defaultModelId: 'gpt-5.6-sol',
+      defaultReasoningEffort: 'high',
       agentProjectKey: `project-${randomUUID()}`,
     },
   });
@@ -128,7 +129,25 @@ async function announceAgent(socket: Socket, agentId: string) {
     payload: {
       agentId,
       capabilities: ['session.prepare', 'agent.prompt', 'agent.cancel', 'preview', 'readiness.check'],
-      models: [],
+      models: [
+        {
+          id: 'codex-cli/gpt-5.4',
+          label: 'Legacy test model',
+          provider: 'codex',
+          reasoningEfforts: [{ id: 'medium', label: 'Medium' }],
+          defaultReasoningEffort: 'medium',
+        },
+        {
+          id: 'gpt-5.6-sol',
+          label: 'GPT-5.6-Sol',
+          provider: 'codex',
+          reasoningEfforts: [
+            { id: 'low', label: 'Low' },
+            { id: 'high', label: 'High' },
+          ],
+          defaultReasoningEffort: 'low',
+        },
+      ],
       projects: [],
     },
     sentAt: new Date().toISOString(),
@@ -193,7 +212,8 @@ test('BT-046: PM can start a shared project only when the project is ready and t
       },
       body: JSON.stringify({
         projectId: fixture.project.id,
-        modelId: fixture.project.defaultModelId,
+        modelId: 'codex-cli/gpt-5.4',
+        reasoningEffort: 'medium',
         startSource: 'pm',
       }),
     });
@@ -202,6 +222,8 @@ test('BT-046: PM can start a shared project only when the project is ready and t
     const sessionPayload = await parseJsonResponse(response, sessionCreateResponseSchema);
     assert.equal(sessionPayload.createdByUserId, pmLogin.body.user.id);
     assert.equal(sessionPayload.projectId, fixture.project.id);
+    assert.equal(sessionPayload.modelId, 'gpt-5.6-sol');
+    assert.equal(sessionPayload.reasoningEffort, 'high');
 
     const sessionMembers = await prisma.sessionMember.findMany({
       where: { sessionId: sessionPayload.id },
@@ -215,6 +237,39 @@ test('BT-046: PM can start a shared project only when the project is ready and t
         { role: 'pm', userId: pmLogin.body.user.id },
       ],
     );
+  } finally {
+    agentSocket.close();
+  }
+});
+
+test('PM cannot override the model or reasoning configured by the developer', async () => {
+  const pmLogin = await authenticatePm();
+  const fixture = await createProjectFixture(pmLogin.body.user.id);
+  const agentSocket = connectAgentSocket();
+
+  try {
+    await announceAgent(agentSocket, fixture.project.agentProjectKey);
+    await publishReadiness(agentSocket, fixture.project.agentProjectKey);
+    await waitForReadiness(fixture.project.id);
+
+    const response = await fetch(`${baseUrl}/sessions`, {
+      method: 'POST',
+      headers: {
+        authorization: `Bearer ${pmLogin.body.accessToken}`,
+        'content-type': 'application/json',
+      },
+      body: JSON.stringify({
+        projectId: fixture.project.id,
+        modelId: 'gpt-5.6-sol',
+        reasoningEffort: 'ultra',
+        startSource: 'pm',
+      }),
+    });
+
+    assert.equal(response.status, 201);
+    const sessionPayload = await parseJsonResponse(response, sessionCreateResponseSchema);
+    assert.equal(sessionPayload.modelId, fixture.project.defaultModelId);
+    assert.equal(sessionPayload.reasoningEffort, fixture.project.defaultReasoningEffort);
   } finally {
     agentSocket.close();
   }

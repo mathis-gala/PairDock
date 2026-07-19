@@ -13,6 +13,7 @@ function buildSession(status: Session['status']): Session {
     createdByUserId: '0a598fe2-0cfb-4470-a7a1-248f20467aa6',
     status,
     modelId: 'codex-cli/gpt-5.4',
+    reasoningEffort: 'medium',
     branchName: null,
     worktreeRef: null,
     previewUrl: null,
@@ -62,4 +63,17 @@ test('BT-007: SessionStateMachine rejects an invalid transition from CREATED to 
       }),
     InvalidSessionTransitionError,
   );
+});
+
+test('a PM can ask for another iteration after validation or a recoverable agent failure', () => {
+  const stateMachine = new SessionStateMachine();
+
+  for (const status of ['AWAITING_PM_VALIDATION', 'FAILED'] as const) {
+    const session = stateMachine.applyAgentEvent(buildSession(status), {
+      type: 'session.progress',
+      payload: { status: 'AGENT_RUNNING' },
+    });
+    assert.equal(session.status, 'AGENT_RUNNING');
+    assert.equal(session.lastError, null);
+  }
 });

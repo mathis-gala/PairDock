@@ -45,6 +45,7 @@ function buildFixture(overrides: { validation?: Partial<ValidationRun>; session?
     repoFullName: 'mathis/pairdock-test',
     defaultBranch: 'main',
     defaultModelId: 'codex-cli/gpt-5.4',
+    defaultReasoningEffort: 'medium',
     pmCanStartSessions: true,
     agentProjectKey: 'agent-local-1',
     createdAt: new Date('2026-07-04T10:00:00.000Z'),
@@ -55,6 +56,7 @@ function buildFixture(overrides: { validation?: Partial<ValidationRun>; session?
     createdByUserId: developer.id,
     status: 'AWAITING_PM_VALIDATION',
     modelId: 'codex-cli/gpt-5.4',
+    reasoningEffort: 'medium',
     branchName: 'pairdock/session-30000000',
     worktreeRef: null,
     previewUrl: 'https://preview.pairdock.test',
@@ -221,6 +223,7 @@ class InMemoryRepositories {
       listByAgentProjectKey: async () => [project],
       listOwnedByUserId: async () => [],
       listSharedByUserId: async () => [],
+      updateExecutionDefaults: async () => project,
     };
     this.validationRuns = {
       create: async () => validation,

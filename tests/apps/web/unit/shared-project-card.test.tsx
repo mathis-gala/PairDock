@@ -12,7 +12,6 @@ const readyProject: SharedProjectSummary = {
   ownerDisplayName: 'Owner',
   repoFullName: 'mathis/pairdock-ready',
   defaultBranch: 'main',
-  defaultModelId: 'codex-cli/gpt-5.4',
   agentAvailability: 'online',
   canStartSession: true,
   unavailableReason: null,
@@ -25,7 +24,6 @@ const blockedProject: SharedProjectSummary = {
   ownerDisplayName: 'Owner',
   repoFullName: 'mathis/pairdock-offline',
   defaultBranch: 'main',
-  defaultModelId: 'codex-cli/gpt-5.4',
   agentAvailability: 'offline',
   canStartSession: false,
   unavailableReason: 'Owning agent is offline.',
@@ -39,7 +37,8 @@ test('BT-048: shared-project cards expose enabled and disabled PM session starts
     createElement(SharedProjectCard, { onStart: () => undefined, project: blockedProject, startPending: false }),
   );
 
-  assert.match(readyHtml, /Start PM session/);
+  assert.match(readyHtml, /Nouvelle demande/);
+  assert.doesNotMatch(readyHtml, /Raisonnement|Modèle|gpt-5|High/);
   assert.doesNotMatch(readyHtml, /disabled=""/);
   assert.match(blockedHtml, /Owning agent is offline\./);
   assert.match(blockedHtml, /disabled=""/);

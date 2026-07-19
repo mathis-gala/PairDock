@@ -15,6 +15,7 @@ export class SessionsRepositoryAdapter implements SessionsRepository {
         createdByUserId: input.createdByUserId,
         status: input.status,
         modelId: input.modelId,
+        reasoningEffort: input.reasoningEffort,
         branchName: input.branchName ?? null,
         worktreeRef: input.worktreeRef ?? null,
         previewUrl: input.previewUrl ?? null,

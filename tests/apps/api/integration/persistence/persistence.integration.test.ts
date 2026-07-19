@@ -71,6 +71,7 @@ async function seedSessionFixture() {
     name: 'PairDock',
     repoFullName: 'mathis/pairdock',
     defaultBranch: 'main',
+    defaultReasoningEffort: 'medium',
     agentProjectKey: `project-${randomUUID()}`,
   });
 
@@ -79,6 +80,7 @@ async function seedSessionFixture() {
     createdByUserId: developer.id,
     status: 'CREATED',
     modelId: 'codex-cli/gpt-5.4',
+    reasoningEffort: 'medium',
   });
 
   await sessionMembers.add({

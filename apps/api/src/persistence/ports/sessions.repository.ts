@@ -5,6 +5,7 @@ export interface CreateSessionInput {
   createdByUserId: string;
   status: Session['status'];
   modelId: string;
+  reasoningEffort: string;
   branchName?: string | null;
   worktreeRef?: string | null;
   previewUrl?: string | null;

@@ -292,6 +292,7 @@ test('BT-004: SessionAccessGuard allows an invited PM to read a session and send
       projectId: fixture.session.projectId,
       createdByUserId: fixture.session.createdByUserId,
       modelId: 'codex-cli/gpt-5.4',
+      reasoningEffort: 'medium',
       branchName: null,
       worktreeRef: null,
       previewUrl: null,

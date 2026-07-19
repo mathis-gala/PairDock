@@ -8,6 +8,7 @@ export interface CreateProjectInput {
   repoFullName: string;
   defaultBranch: string;
   defaultModelId?: string;
+  defaultReasoningEffort: string;
   pmCanStartSessions?: boolean;
   agentProjectKey: string;
 }
@@ -30,4 +31,9 @@ export interface ProjectsRepository {
   listByAgentProjectKey(agentProjectKey: string): Promise<Project[]>;
   listOwnedByUserId(userId: string): Promise<DeveloperProjectRecord[]>;
   listSharedByUserId(userId: string): Promise<SharedProjectRecord[]>;
+  updateExecutionDefaults(input: {
+    id: string;
+    defaultModelId: string;
+    defaultReasoningEffort: string;
+  }): Promise<Project>;
 }

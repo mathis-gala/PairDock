@@ -2,6 +2,7 @@
 
 import { parseArgs } from 'node:util';
 import { loadAgentConfig, saveAgentConfig, summarizeAgentConfig } from './config/agent-config.js';
+import { enrichConfigWithCodexModels } from './config/codex-model-catalog.js';
 import { enrichConfigWithProjectManifests } from './config/project-manifest.js';
 import { AgentClient } from './websocket/agent-client.js';
 
@@ -62,7 +63,7 @@ async function runLogin() {
 }
 
 async function runStart() {
-  const config = await enrichConfigWithProjectManifests(await loadAgentConfig());
+  const config = await enrichConfigWithProjectManifests(await enrichConfigWithCodexModels(await loadAgentConfig()));
   const client = new AgentClient(config);
 
   await client.start();
@@ -72,7 +73,7 @@ async function runStart() {
 }
 
 async function runStatus() {
-  const config = await enrichConfigWithProjectManifests(await loadAgentConfig());
+  const config = await enrichConfigWithProjectManifests(await enrichConfigWithCodexModels(await loadAgentConfig()));
   const summary = summarizeAgentConfig(config);
 
   console.log(`Backend URL: ${summary.backendUrl}`);

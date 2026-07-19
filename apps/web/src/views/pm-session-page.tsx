@@ -1,16 +1,14 @@
 import { useState } from 'react';
 import { Button } from '../components/button.js';
-import { DiffPanel } from '../components/pm-session/diff-panel.js';
+import { ConversationThread } from '../components/pm-session/conversation-thread.js';
 import { PreviewFrame } from '../components/pm-session/preview-frame.js';
 import { PreviewToolbar } from '../components/pm-session/preview-toolbar.js';
 import { PromptComposer } from '../components/pm-session/prompt-composer.js';
-import { PromptHistoryPanel } from '../components/pm-session/prompt-history-panel.js';
-import { SessionEventPanel } from '../components/pm-session/session-event-panel.js';
-import { ValidationPanel } from '../components/pm-session/validation-panel.js';
 import { SectionCard } from '../components/section-card.js';
 import { useSessionData } from '../hooks/use-session-data.js';
 import { useSessionEventFeed } from '../hooks/use-session-event-feed.js';
 import type { PreviewPresetId } from '../lib/preview-presets.js';
+import { buildSessionConversation } from '../lib/session-conversation.js';
 
 interface PmSessionPageProps {
   accessToken: string;
@@ -20,8 +18,7 @@ interface PmSessionPageProps {
 
 export function PmSessionPage({ accessToken, onBack, sessionId }: PmSessionPageProps) {
   const [presetId, setPresetId] = useState<PreviewPresetId>('desktop');
-  const [zoomPercent, setZoomPercent] = useState(100);
-  const eventFeed = useSessionEventFeed(accessToken, sessionId);
+  useSessionEventFeed(accessToken, sessionId);
   const {
     sessionQuery,
     messagesQuery,
@@ -34,10 +31,7 @@ export function PmSessionPage({ accessToken, onBack, sessionId }: PmSessionPageP
   if (sessionQuery.isLoading || messagesQuery.isLoading || eventsQuery.isLoading) {
     return (
       <div className="p-8">
-        <SectionCard
-          title="Chargement de la session"
-          description="Récupération de l'historique, des événements, du diff, de la validation et de l'aperçu."
-        />
+        <SectionCard title="Chargement de la session" description="Récupération de la conversation et de l’aperçu." />
       </div>
     );
   }
@@ -74,9 +68,24 @@ export function PmSessionPage({ accessToken, onBack, sessionId }: PmSessionPageP
     userId: participant.userId,
   }));
   const isOnline = session.project.agentAvailability === 'online';
+  const hasFailed = session.status === 'FAILED';
   const canCreateReviewRequest = session.status === 'AWAITING_PM_VALIDATION' && !session.reviewRequest?.url;
   const reviewRequestError =
     createReviewRequestMutation.error instanceof Error ? createReviewRequestMutation.error.message : null;
+  const conversation = buildSessionConversation(messagesQuery.data ?? [], eventsQuery.data ?? []);
+
+  async function handleCancelPrompt() {
+    await cancelPromptMutation.mutateAsync();
+  }
+
+  async function handleSendPrompt(content: string) {
+    await sendPromptMutation.mutateAsync(content);
+  }
+
+  async function handleCreateReviewRequest() {
+    createReviewRequestMutation.reset();
+    await createReviewRequestMutation.mutateAsync();
+  }
 
   return (
     <div className="flex h-screen flex-col overflow-hidden bg-[#0f1115]">
@@ -103,9 +112,6 @@ export function PmSessionPage({ accessToken, onBack, sessionId }: PmSessionPageP
           <span className="truncate font-medium text-[#eef0f4]">{session.project.name}</span>
           <span className="text-[#4b515e]">/</span>
           <span className="truncate text-[#5fdf9b]">{branchLabel}</span>
-          <span className="rounded-md border border-white/10 bg-[#23272f] px-2 py-0.5 text-[#cdd2dc]">
-            {session.modelId}
-          </span>
         </div>
         <div className="ml-auto flex items-center gap-4">
           <div className="hidden items-center gap-2 text-[12.5px] text-[#8b92a1] sm:flex">
@@ -136,28 +142,21 @@ export function PmSessionPage({ accessToken, onBack, sessionId }: PmSessionPageP
       <div className="flex min-h-0 flex-1">
         <section className="flex w-full flex-none flex-col border-r border-white/10 bg-[#15171c] lg:w-[42%] lg:max-w-[560px]">
           <div className="border-b border-white/10 px-5 py-4">
-            <h1 className="font-['Space_Grotesk'] text-sm font-semibold">Décris le correctif</h1>
+            <h1 className="font-['Space_Grotesk'] text-sm font-semibold">Discussion</h1>
             <p className="mt-1 text-xs leading-5 text-[#7d8493]">
-              L'agent travaille dans un worktree isolé. L'aperçu se met à jour en direct.
+              Une demande = une session isolée. Tu peux échanger avec l’agent jusqu’à validation.
             </p>
           </div>
-          <div className="min-h-0 flex-1 overflow-auto p-5">
-            <div className="space-y-4">
-              <PromptHistoryPanel messages={messagesQuery.data ?? []} />
-              <SessionEventPanel events={eventsQuery.data ?? []} feed={eventFeed} />
-            </div>
+          <div className="min-h-0 flex-1 overflow-auto">
+            <ConversationThread items={conversation} />
           </div>
           <div className="border-t border-white/10 p-4">
             <PromptComposer
               canCancel={canCancel}
               isCancelling={cancelPromptMutation.isPending}
               isSubmitting={sendPromptMutation.isPending}
-              onCancel={async () => {
-                await cancelPromptMutation.mutateAsync();
-              }}
-              onSubmit={async (content) => {
-                await sendPromptMutation.mutateAsync(content);
-              }}
+              onCancel={handleCancelPrompt}
+              onSubmit={handleSendPrompt}
             />
           </div>
         </section>
@@ -179,29 +178,28 @@ export function PmSessionPage({ accessToken, onBack, sessionId }: PmSessionPageP
               responsive
             </span>
           </div>
-          <div className="min-h-0 flex-1 overflow-auto p-6">
-            <PreviewFrame presetId={presetId} previewUrl={session.previewUrl} zoomPercent={zoomPercent} />
+          <div className="min-h-0 flex-1 overflow-hidden">
+            <PreviewFrame presetId={presetId} previewUrl={session.previewUrl} />
           </div>
-          <PreviewToolbar
-            onPresetChange={setPresetId}
-            onZoomChange={setZoomPercent}
-            presetId={presetId}
-            previewUrl={session.previewUrl}
-            zoomPercent={zoomPercent}
-          />
-          <div className="grid max-h-[32vh] flex-none grid-cols-2 gap-3 overflow-auto border-t border-white/10 bg-[#15171c] p-3">
-            <DiffPanel latestDiff={session.latestDiff} />
-            <ValidationPanel validation={session.latestValidation} />
-          </div>
-          <div className="flex h-[62px] flex-none items-center justify-between border-t border-white/10 bg-[#16181e] px-5">
-            <div className="min-w-0 font-mono text-[12.5px]">
-              <div className="flex items-center gap-2 text-[#5fdf9b]">
-                <span className="size-[7px] rounded-full bg-[#5fdf9b]" />
-                {session.status} · validation {session.latestValidation?.status ?? 'pending'}
+          <PreviewToolbar onPresetChange={setPresetId} presetId={presetId} previewUrl={session.previewUrl} />
+          <div className="flex min-h-[62px] flex-none items-center justify-between gap-4 border-t border-white/10 bg-[#16181e] px-5 py-3">
+            <div aria-live="polite" className="min-w-0 font-mono text-[12.5px]" role={hasFailed ? 'alert' : 'status'}>
+              <div
+                className={
+                  hasFailed ? 'flex items-center gap-2 text-rose-300' : 'flex items-center gap-2 text-[#5fdf9b]'
+                }
+              >
+                <span
+                  className={hasFailed ? 'size-[7px] rounded-full bg-rose-300' : 'size-[7px] rounded-full bg-[#5fdf9b]'}
+                />
+                {formatSessionStatus(session.status)}
               </div>
-              {reviewRequestError || session.lastError ? (
-                <div className="mt-1 truncate text-rose-300">{reviewRequestError ?? session.lastError}</div>
+              {hasFailed && session.lastError ? (
+                <p className="mt-1 max-w-[70ch] whitespace-normal font-sans text-xs leading-5 text-rose-100/80">
+                  {session.lastError} Tu peux envoyer un nouveau message pour réessayer.
+                </p>
               ) : null}
+              {reviewRequestError ? <div className="mt-1 truncate text-rose-300">{reviewRequestError}</div> : null}
             </div>
             {session.reviewRequest?.url ? (
               <a
@@ -215,10 +213,7 @@ export function PmSessionPage({ accessToken, onBack, sessionId }: PmSessionPageP
             ) : (
               <Button
                 disabled={!canCreateReviewRequest || createReviewRequestMutation.isPending}
-                onClick={async () => {
-                  createReviewRequestMutation.reset();
-                  await createReviewRequestMutation.mutateAsync();
-                }}
+                onClick={handleCreateReviewRequest}
               >
                 {createReviewRequestMutation.isPending ? 'Ouverture…' : 'Soumettre la PR'}
               </Button>
@@ -228,4 +223,25 @@ export function PmSessionPage({ accessToken, onBack, sessionId }: PmSessionPageP
       </div>
     </div>
   );
+}
+
+function formatSessionStatus(status: string): string {
+  const labels: Record<string, string> = {
+    CREATED: 'Préparation de la session',
+    AGENT_CONNECTING: 'Connexion à l’agent',
+    WORKTREE_CREATING: 'Création de l’espace de travail',
+    DOCKER_STARTING: 'Démarrage de la preview',
+    PREVIEW_STARTING: 'Démarrage de la preview',
+    READY: 'Prêt pour ta demande',
+    AGENT_RUNNING: 'L’agent travaille',
+    CHECKS_RUNNING: 'Vérification du travail',
+    AWAITING_PM_VALIDATION: 'Prêt à être validé',
+    REVIEW_REQUEST_CREATING: 'Création de la pull request',
+    REVIEW_REQUEST_CREATED: 'Pull request créée',
+    CLOSING: 'Fermeture de la session',
+    FAILED: 'La demande a rencontré une erreur',
+    CLOSED: 'Session terminée',
+  };
+
+  return labels[status] ?? status;
 }

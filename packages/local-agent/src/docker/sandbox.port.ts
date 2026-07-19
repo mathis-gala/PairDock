@@ -33,6 +33,7 @@ export interface SandboxRef {
   id: string;
   sessionId: string;
   healthcheckUrl: string;
+  previewConfig?: ProjectPreviewConfig;
   metadata?: Record<string, string>;
 }
 

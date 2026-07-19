@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Inject, Param, Post, Req } from '@nestjs/common';
+import { Body, Controller, Get, Inject, Param, Patch, Post, Req } from '@nestjs/common';
 import type { AuthenticatedRequest } from '../auth/authenticated-request.js';
 import { RequireAuth } from '../auth/require-auth.decorator.js';
 import { ProjectsService } from './projects.service.js';
@@ -11,6 +11,12 @@ export class ProjectsController {
   @RequireAuth()
   listSharedProjects(@Req() request: AuthenticatedRequest) {
     return this.projectsService.listSharedProjectsResponse(request.user);
+  }
+
+  @Get('shared/sessions')
+  @RequireAuth()
+  listSharedSessionHistory(@Req() request: AuthenticatedRequest) {
+    return this.projectsService.listSharedSessionHistoryResponse(request.user);
   }
 
   @Get('developer')
@@ -39,5 +45,15 @@ export class ProjectsController {
     @Req() request: AuthenticatedRequest,
   ) {
     return this.projectsService.shareDeveloperProjectResponse(projectId, body, request.user);
+  }
+
+  @Patch(':projectId/execution-defaults')
+  @RequireAuth()
+  updateExecutionDefaults(
+    @Param('projectId') projectId: string,
+    @Body() body: unknown,
+    @Req() request: AuthenticatedRequest,
+  ) {
+    return this.projectsService.updateExecutionDefaultsResponse(projectId, body, request.user);
   }
 }

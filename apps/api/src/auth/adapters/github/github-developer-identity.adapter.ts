@@ -2,6 +2,7 @@ import { Injectable, UnauthorizedException } from '@nestjs/common';
 import type { DeveloperIdentityPort, NormalizedIdentity } from '@pairdock/domain';
 
 interface GithubDeveloperIdentityConfig {
+  allowFixtures?: boolean;
   apiBaseUrl: string;
   oauthBaseUrl: string;
   clientId?: string;
@@ -28,6 +29,15 @@ interface GithubOAuthResponse {
   error_description?: unknown;
 }
 
+interface GithubInstallationsResponse {
+  installations?: unknown;
+}
+
+interface GithubInstallationMetadata {
+  accountLogin: string;
+  installationId: string;
+}
+
 type Fetcher = (input: string, init?: RequestInit) => Promise<Response>;
 
 @Injectable()
@@ -39,13 +49,17 @@ export class GithubDeveloperIdentityAdapter implements DeveloperIdentityPort {
 
   async getDeveloperIdentity(accessToken: string): Promise<NormalizedIdentity> {
     if (accessToken.startsWith('github:')) {
+      if (!this.config.allowFixtures) {
+        throw new UnauthorizedException('Development authentication fixtures are disabled.');
+      }
+
       return parseFixtureIdentity(accessToken);
     }
 
     if (accessToken.startsWith('code:')) {
       const callback = parseCodeCallback(accessToken);
       const token = await this.exchangeCode(callback.code);
-      return this.fetchGithubIdentity(token, callback.installationId);
+      return this.fetchGithubIdentity(token, callback.installationId, true);
     }
 
     return this.fetchGithubIdentity(accessToken);
@@ -83,7 +97,11 @@ export class GithubDeveloperIdentityAdapter implements DeveloperIdentityPort {
     return payload.access_token;
   }
 
-  private async fetchGithubIdentity(accessToken: string, installationId?: string): Promise<NormalizedIdentity> {
+  private async fetchGithubIdentity(
+    accessToken: string,
+    installationId?: string,
+    discoverInstallation = false,
+  ): Promise<NormalizedIdentity> {
     const userResponse = await this.fetcher(`${this.config.apiBaseUrl}/user`, {
       method: 'GET',
       headers: githubHeaders(accessToken),
@@ -106,6 +124,15 @@ export class GithubDeveloperIdentityAdapter implements DeveloperIdentityPort {
 
     const login = typeof user.login === 'string' ? user.login : String(user.id);
     const name = typeof user.name === 'string' && user.name ? user.name : login;
+    const installations =
+      installationId || discoverInstallation ? await this.listAccessibleInstallations(accessToken) : [];
+    const installation = installationId
+      ? installations.find((candidate) => candidate.installationId === installationId)
+      : installations[0];
+
+    if (installationId && !installation) {
+      throw new UnauthorizedException('GitHub installation is not accessible to this user.');
+    }
 
     return {
       provider: 'github',
@@ -116,9 +143,43 @@ export class GithubDeveloperIdentityAdapter implements DeveloperIdentityPort {
       kind: 'developer',
       metadata: {
         login,
-        ...(installationId ? { installationId } : {}),
+        ...(discoverInstallation ? { installations } : {}),
+        ...(installation
+          ? {
+              installationAccountLogin: installation.accountLogin,
+              installationId: installation.installationId,
+            }
+          : {}),
       },
     };
+  }
+
+  private async listAccessibleInstallations(accessToken: string): Promise<GithubInstallationMetadata[]> {
+    const response = await this.fetcher(`${this.config.apiBaseUrl}/user/installations?per_page=100`, {
+      method: 'GET',
+      headers: githubHeaders(accessToken),
+    });
+    const payload = (await response.json()) as GithubInstallationsResponse;
+
+    if (!response.ok || !Array.isArray(payload.installations)) {
+      throw new UnauthorizedException('GitHub installation verification failed.');
+    }
+
+    return payload.installations.flatMap((installation) => {
+      const account = isRecord(installation) && isRecord(installation.account) ? installation.account : null;
+
+      if (
+        !isRecord(installation) ||
+        (typeof installation.id !== 'number' && typeof installation.id !== 'string') ||
+        !account ||
+        typeof account.login !== 'string' ||
+        !account.login
+      ) {
+        return [];
+      }
+
+      return [{ accountLogin: account.login, installationId: String(installation.id) }];
+    });
   }
 
   private async fetchPrimaryEmail(accessToken: string): Promise<string | null> {
@@ -160,12 +221,15 @@ function parseFixtureIdentity(accessToken: string): NormalizedIdentity {
     email,
     displayName: displayName.trim(),
     kind: 'developer',
-    metadata: installationId ? { installationId } : {},
+    metadata: installationId
+      ? { installationAccountLogin: providerUserId, installationId, login: providerUserId }
+      : { login: providerUserId },
   };
 }
 
 function readGithubConfig(): GithubDeveloperIdentityConfig {
   return {
+    allowFixtures: process.env.DEV_AUTH_ENABLED === 'true',
     apiBaseUrl: process.env.GITHUB_API_BASE_URL ?? 'https://api.github.com',
     oauthBaseUrl: process.env.GITHUB_OAUTH_BASE_URL ?? 'https://github.com',
     clientId: process.env.GITHUB_CLIENT_ID,
@@ -197,4 +261,8 @@ function parseCodeCallback(accessToken: string): { code: string; installationId?
     code,
     ...(installationId ? { installationId } : {}),
   };
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return value !== null && typeof value === 'object' && !Array.isArray(value);
 }

@@ -229,6 +229,7 @@ test('Task 9: AgentClient turns agent.prompt into AGENT_RUNNING, streamed output
       projectKey: 'pairdock',
       prompt: 'Ship the fix.',
       modelId: 'codex-cli/gpt-5.4',
+      reasoningEffort: 'medium',
       worktreePath: join(managedRoot, sessionId),
     });
 

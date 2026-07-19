@@ -32,6 +32,15 @@ test('useAppRoute snapshot returns a stable object while the hash is unchanged',
   });
 });
 
+test('PM history and pull request hashes resolve to implemented routes', () => {
+  withWindow({ location: { hash: '#/pm/sessions' } }, () => {
+    assert.deepEqual(getAppRouteSnapshot(), { kind: 'pm-session-history' });
+  });
+  withWindow({ location: { hash: '#/pm/review-requests' } }, () => {
+    assert.deepEqual(getAppRouteSnapshot(), { kind: 'pm-review-requests' });
+  });
+});
+
 test('useAuthSession snapshot returns a stable object while local storage is unchanged', () => {
   const serializedSession = JSON.stringify({
     accessToken: 'local-token',

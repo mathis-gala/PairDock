@@ -22,6 +22,7 @@ interface GithubBranchResponse {
 }
 
 interface GithubSourceControlConfig {
+  allowFixtures?: boolean;
   apiBaseUrl: string;
   token?: string;
   appId?: string;
@@ -42,7 +43,16 @@ export class GithubSourceControlAdapter implements SourceControlPort {
   ) {}
 
   async assertProjectAccess(input: Parameters<SourceControlPort['assertProjectAccess']>[0]): Promise<void> {
-    if (!this.config.token || isTestConnection(input.repoFullName)) {
+    if (!this.config.token) {
+      if (this.config.allowFixtures) {
+        return;
+      }
+
+      throw new Error('GitHub credentials are required to verify repository access.');
+    }
+
+    if (isTestConnection(input.repoFullName)) {
+      this.assertFixturesEnabled();
       return;
     }
 
@@ -61,6 +71,7 @@ export class GithubSourceControlAdapter implements SourceControlPort {
     input: Parameters<SourceControlPort['listInstallationRepositories']>[0],
   ): Promise<Awaited<ReturnType<SourceControlPort['listInstallationRepositories']>>> {
     if (isTestConnection(input.providerConnectionId)) {
+      this.assertFixturesEnabled();
       return [
         {
           fullName: 'mathis-gala/PairDock',
@@ -127,6 +138,7 @@ export class GithubSourceControlAdapter implements SourceControlPort {
     input: Parameters<SourceControlPort['listRepositoryBranches']>[0],
   ): Promise<Awaited<ReturnType<SourceControlPort['listRepositoryBranches']>>> {
     if (isTestConnection(input.providerConnectionId)) {
+      this.assertFixturesEnabled();
       return ['main', 'release', 'develop', 'dev'];
     }
 
@@ -154,6 +166,7 @@ export class GithubSourceControlAdapter implements SourceControlPort {
     input: Parameters<SourceControlPort['createDraftReviewRequest']>[0],
   ): Promise<Awaited<ReturnType<SourceControlPort['createDraftReviewRequest']>>> {
     if (isTestConnection(input.providerConnectionId)) {
+      this.assertFixturesEnabled();
       return {
         reviewRequestNumber: deterministicReviewRequestNumber(input.sessionId),
         reviewRequestUrl: `https://github.test/${input.repoFullName}/pull/${deterministicReviewRequestNumber(input.sessionId)}`,
@@ -226,10 +239,17 @@ export class GithubSourceControlAdapter implements SourceControlPort {
 
     return payload.token;
   }
+
+  private assertFixturesEnabled(): void {
+    if (!this.config.allowFixtures) {
+      throw new Error('Development source-control fixtures are disabled.');
+    }
+  }
 }
 
 function readGithubConfig(): GithubSourceControlConfig {
   return {
+    allowFixtures: process.env.DEV_AUTH_ENABLED === 'true',
     apiBaseUrl: process.env.GITHUB_API_BASE_URL ?? 'https://api.github.com',
     token: process.env.GITHUB_TOKEN,
     appId: process.env.GITHUB_APP_ID,

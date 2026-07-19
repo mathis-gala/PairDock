@@ -18,6 +18,7 @@ export const sessionSchema = z.object({
   createdByUserId: z.string().uuid(),
   status: z.string(),
   modelId: z.string(),
+  reasoningEffort: z.string(),
   branchName: z.string().nullable(),
   worktreeRef: z.string().nullable(),
   previewUrl: z.string().nullable(),

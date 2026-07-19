@@ -143,7 +143,18 @@ async function announceAgent(socket: Socket, agentId: string) {
     payload: {
       agentId,
       capabilities: ['session.prepare', 'agent.prompt', 'agent.cancel', 'preview', 'readiness.check'],
-      models: [],
+      models: [
+        {
+          id: 'gpt-5.6-sol',
+          label: 'GPT-5.6 Sol',
+          provider: 'codex',
+          reasoningEfforts: [
+            { id: 'low', label: 'Low' },
+            { id: 'high', label: 'High' },
+          ],
+          defaultReasoningEffort: 'low',
+        },
+      ],
       projects: [],
     },
     sentAt: new Date().toISOString(),

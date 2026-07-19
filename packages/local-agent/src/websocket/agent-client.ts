@@ -10,6 +10,7 @@ import {
   type ReadinessCheckCommandEnvelope,
   type SessionCloseCommandEnvelope,
   type SessionPrepareCommandEnvelope,
+  summarizeChecksFailure,
 } from '@pairdock/shared-contracts';
 import { io, type Socket } from 'socket.io-client';
 import { type CheckResult, ChecksRunner, type ProjectChecksConfig } from '../checks/checks-runner.js';
@@ -318,6 +319,10 @@ export class AgentClient {
     try {
       let exitCode: number | null = null;
 
+      this.logger.info(
+        `[session:${command.sessionId}] Starting agent prompt with model=${command.payload.modelId} reasoning=${command.payload.reasoningEffort ?? 'medium'}.`,
+      );
+
       await this.emitEvent(
         buildSessionProgressEvent({
           sessionId: command.sessionId,
@@ -330,6 +335,7 @@ export class AgentClient {
         projectKey: workspace.projectKey,
         prompt: command.payload.prompt,
         modelId: command.payload.modelId,
+        reasoningEffort: command.payload.reasoningEffort ?? 'medium',
         worktreePath: workspace.worktreePath,
       })) {
         if (event.type === 'output') {
@@ -356,8 +362,17 @@ export class AgentClient {
           exitCode,
         }),
       );
+      this.logger.info(`[session:${command.sessionId}] Agent prompt exited with code ${exitCode}.`);
+
+      if (exitCode !== 0) {
+        this.logger.error(`[session:${command.sessionId}] Agent execution failed; validation checks were skipped.`);
+        return;
+      }
 
       const diff = await this.diffService.collect(workspace.worktreePath);
+      this.logger.info(
+        `[session:${command.sessionId}] Collected ${diff.changedFiles.length} changed file${diff.changedFiles.length === 1 ? '' : 's'}.`,
+      );
 
       if (diff.changedFiles.length > 0) {
         await this.emitEvent(
@@ -369,18 +384,21 @@ export class AgentClient {
         );
       }
 
-      await this.emitEvent(
-        buildChecksResultEvent({
-          sessionId: command.sessionId,
-          result: this.redactChecksResult(
-            await this.checksRunner.run({
-              projectKey: workspace.projectKey,
-              previewUrl: workspace.previewUrl,
-              worktreePath: workspace.worktreePath,
-            }),
-          ),
+      const checks = this.redactChecksResult(
+        await this.checksRunner.run({
+          projectKey: workspace.projectKey,
+          previewUrl: workspace.previewUrl,
+          worktreePath: workspace.worktreePath,
         }),
       );
+      const checkSummary = `build=${checks.build.status} tests=${checks.tests.status} lint=${checks.lint.status} preview=${checks.preview.status}`;
+      this.logger.info(`[session:${command.sessionId}] Validation completed: ${checkSummary}.`);
+      const failure = summarizeChecksFailure({ sessionId: command.sessionId, ...checks });
+      if (failure) {
+        this.logger.error(`[session:${command.sessionId}] ${failure.message}`);
+      }
+
+      await this.emitEvent(buildChecksResultEvent({ sessionId: command.sessionId, result: checks }));
     } catch (error) {
       await this.emitError('agent.prompt.failed', command.sessionId, error, false);
     }
@@ -435,6 +453,7 @@ export class AgentClient {
     retryable: boolean,
   ): Promise<void> {
     const message = this.logRedactor.redact(error instanceof Error ? error.message : String(error));
+    this.logger.error(`[session:${sessionId ?? 'none'}] ${code}: ${message}`);
     await this.emitEvent(
       buildErrorEvent({
         code,

@@ -104,7 +104,7 @@ async function createSession(projectId: string, accessToken: string) {
       authorization: `Bearer ${accessToken}`,
       'content-type': 'application/json',
     },
-    body: JSON.stringify({ projectId, modelId: 'codex-cli/gpt-5.4' }),
+    body: JSON.stringify({ projectId, modelId: 'codex-cli/gpt-5.4', reasoningEffort: 'high' }),
   });
 
   assert.equal(response.status, 201);
@@ -164,7 +164,7 @@ test.beforeEach(async () => {
   await resetDatabase();
 });
 
-test('Task 9: POST /sessions/:sessionId/prompts routes agent.prompt to the owning agent and stores the PM message', async () => {
+test('Task 9: PM follow-up prompt after validation routes to the same session and is stored', async () => {
   const developerLogin = await authenticateDeveloper();
   const pmLogin = await authenticatePm();
   const project = await createOwnedProject(developerLogin.body.user.id);
@@ -179,7 +179,7 @@ test('Task 9: POST /sessions/:sessionId/prompts routes agent.prompt to the ownin
   });
   await prisma.session.update({
     where: { id: session.id },
-    data: { status: 'READY' },
+    data: { status: 'AWAITING_PM_VALIDATION' },
   });
 
   const agentSocket = connectAgentSocket();
@@ -223,6 +223,7 @@ test('Task 9: POST /sessions/:sessionId/prompts routes agent.prompt to the ownin
     assert.equal(command.payload.sessionId, session.id);
     assert.equal(command.payload.prompt, 'Please fix the failing tests.');
     assert.equal(command.payload.modelId, 'codex-cli/gpt-5.4');
+    assert.equal(command.payload.reasoningEffort, 'medium');
 
     const persistedMessages = await prisma.message.findMany({
       where: { sessionId: session.id },

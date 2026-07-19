@@ -2,9 +2,13 @@ import type { SharedProjectSummary } from '@pairdock/shared-contracts';
 import { useMutation, useQuery } from '@tanstack/react-query';
 import { createApiClient } from '../api/client.js';
 
+interface StartPmSessionInput {
+  project: SharedProjectSummary;
+}
+
 interface UseSharedProjectsResult {
   sharedProjectsQuery: ReturnType<typeof useQuery<SharedProjectSummary[], Error>>;
-  startSessionMutation: ReturnType<typeof useMutation<SessionStarted, Error, SharedProjectSummary>>;
+  startSessionMutation: ReturnType<typeof useMutation<SessionStarted, Error, StartPmSessionInput>>;
 }
 
 interface SessionStarted {
@@ -23,11 +27,10 @@ export function useSharedProjects(
   });
 
   const startSessionMutation = useMutation({
-    mutationFn: (project: SharedProjectSummary) =>
+    mutationFn: ({ project }: StartPmSessionInput) =>
       api.sessions
         .create({
           projectId: project.id,
-          modelId: project.defaultModelId,
           startSource: 'pm',
         })
         .then((session) => ({ sessionId: session.id })),

@@ -58,11 +58,15 @@ export class SessionPromptService {
   async createPrompt(sessionId: string, actor: SessionPromptActor, content: string) {
     const session = await this.requireSession(sessionId);
 
-    if (session.status !== 'READY') {
-      throw new ConflictException(`Session ${sessionId} must be READY before prompting the local agent.`);
+    const promptableStatuses = new Set(['READY', 'AWAITING_PM_VALIDATION', 'FAILED']);
+
+    if (!promptableStatuses.has(session.status)) {
+      throw new ConflictException(
+        `Session ${sessionId} must be ready, awaiting PM validation, or recoverable before prompting the local agent.`,
+      );
     }
 
-    const command = buildAgentPromptCommand(sessionId, content, session.modelId);
+    const command = buildAgentPromptCommand(sessionId, content, session.modelId, session.reasoningEffort);
     await this.agentCommandRouter.routeToOwningAgent(sessionId, command);
 
     return this.messagesRepository.create({
@@ -114,7 +118,12 @@ export class SessionPromptService {
   }
 }
 
-function buildAgentPromptCommand(sessionId: string, prompt: string, modelId: string): AgentPromptCommandEnvelope {
+function buildAgentPromptCommand(
+  sessionId: string,
+  prompt: string,
+  modelId: string,
+  reasoningEffort: string,
+): AgentPromptCommandEnvelope {
   return {
     protocolVersion: AGENT_PROTOCOL_VERSION,
     messageId: randomUUID(),
@@ -125,6 +134,7 @@ function buildAgentPromptCommand(sessionId: string, prompt: string, modelId: str
       sessionId,
       prompt,
       modelId,
+      reasoningEffort,
     },
   };
 }
