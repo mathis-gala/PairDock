@@ -1,5 +1,6 @@
 import { type ChildProcess, spawn } from 'node:child_process';
-import { basename } from 'node:path';
+import { mkdirSync, rmSync } from 'node:fs';
+import { basename, join } from 'node:path';
 import { setTimeout as delay } from 'node:timers/promises';
 import type {
   AgentHarnessEvent,
@@ -8,17 +9,6 @@ import type {
   RunPromptInput,
 } from './agent-harness.port.js';
 
-const CODEX_SECURITY_ARGS = [
-  '--ignore-user-config',
-  '--config',
-  'approval_policy="never"',
-  '--config',
-  'default_permissions="pairdock-restricted"',
-  '--config',
-  'permissions.pairdock-restricted.filesystem={":minimal"="read",":workspace_roots"={"."="write","**/.env"="deny","**/.env.local"="deny","**/.env.*.local"="deny","**/.npmrc"="deny","**/.netrc"="deny","**/.pypirc"="deny","**/*.pem"="deny","**/*.key"="deny","**/*.p12"="deny","**/*.pfx"="deny"}}',
-  '--config',
-  'permissions.pairdock-restricted.network.enabled=false',
-] as const;
 const SAFE_HARNESS_ENVIRONMENT_KEYS = [
   'CODEX_HOME',
   'COLORTERM',
@@ -55,9 +45,17 @@ export class CodexHarnessAdapter implements AgentHarnessPort {
     const command = projectConfig.command?.trim() || 'codex';
     const usesCodexJsonProtocol = !projectConfig.args?.length && isCodexCommand(command);
     const args = buildCommandArgs(projectConfig, input, this.codexThreadIds.get(input.sessionId));
+    const environment = buildHarnessEnvironment(process.env, input);
+    const harnessTempDirectory = environment.TMPDIR;
+
+    if (!harnessTempDirectory) {
+      throw new Error('PairDock could not configure an isolated temporary directory for the agent harness.');
+    }
+
+    mkdirSync(harnessTempDirectory, { recursive: true, mode: 0o700 });
     const childProcess = spawn(command, args, {
       cwd: input.worktreePath,
-      env: buildHarnessEnvironment(process.env, input),
+      env: environment,
       shell: false,
       stdio: ['ignore', 'pipe', 'pipe'],
     });
@@ -74,6 +72,7 @@ export class CodexHarnessAdapter implements AgentHarnessPort {
 
       settled = true;
       this.activeRuns.delete(input.sessionId);
+      rmSync(harnessTempDirectory, { recursive: true, force: true });
       queue.push({ type: 'done', exitCode });
       queue.close();
     };
@@ -85,6 +84,7 @@ export class CodexHarnessAdapter implements AgentHarnessPort {
 
       settled = true;
       this.activeRuns.delete(input.sessionId);
+      rmSync(harnessTempDirectory, { recursive: true, force: true });
       queue.fail(error);
     };
 
@@ -165,13 +165,21 @@ export function buildHarnessEnvironment(source: NodeJS.ProcessEnv, input: RunPro
     }
   }
 
+  const harnessTempDirectory = resolveHarnessTempDirectory(input.sessionId);
+
   return {
     ...environment,
+    GIT_CONFIG_GLOBAL: '/dev/null',
+    GIT_CONFIG_NOSYSTEM: '1',
     PAIRDOCK_MODEL_ID: input.modelId,
     PAIRDOCK_REASONING_EFFORT: input.reasoningEffort ?? 'medium',
     PAIRDOCK_PROJECT_KEY: input.projectKey,
     PAIRDOCK_PROMPT: input.prompt,
     PAIRDOCK_SESSION_ID: input.sessionId,
+    TMPDIR: harnessTempDirectory,
+    XDG_CACHE_HOME: join(harnessTempDirectory, 'cache'),
+    XDG_CONFIG_HOME: join(harnessTempDirectory, 'config'),
+    XDG_DATA_HOME: join(harnessTempDirectory, 'data'),
   };
 }
 
@@ -181,6 +189,7 @@ export function buildCommandArgs(
   codexThreadId?: string,
 ): string[] {
   const reasoningEffort = input.reasoningEffort ?? 'medium';
+  const codexSecurityArgs = buildCodexSecurityArgs(input.sessionId);
 
   if (projectConfig.args?.length) {
     return projectConfig.args.map((arg) =>
@@ -196,7 +205,7 @@ export function buildCommandArgs(
   if (codexThreadId) {
     return [
       'exec',
-      ...CODEX_SECURITY_ARGS,
+      ...codexSecurityArgs,
       'resume',
       '--json',
       '--model',
@@ -210,7 +219,7 @@ export function buildCommandArgs(
 
   return [
     'exec',
-    ...CODEX_SECURITY_ARGS,
+    ...codexSecurityArgs,
     '--json',
     '--model',
     input.modelId,
@@ -218,6 +227,31 @@ export function buildCommandArgs(
     `model_reasoning_effort="${reasoningEffort}"`,
     input.prompt,
   ];
+}
+
+function buildCodexSecurityArgs(sessionId: string): string[] {
+  const harnessTempDirectory = resolveHarnessTempDirectory(sessionId);
+  const cacheDirectory = join(harnessTempDirectory, 'cache');
+  const configDirectory = join(harnessTempDirectory, 'config');
+  const dataDirectory = join(harnessTempDirectory, 'data');
+
+  return [
+    '--ignore-user-config',
+    '--config',
+    'approval_policy="never"',
+    '--config',
+    'default_permissions="pairdock-restricted"',
+    '--config',
+    `permissions.pairdock-restricted.filesystem={":minimal"="read",${JSON.stringify(harnessTempDirectory)}="write","/System/Library/OpenSSL"="read","~/.agents/skills"="read","~/.codex/skills"="read",":workspace_roots"={"."="write","**/.env"="deny","**/.env.local"="deny","**/.env.*.local"="deny","**/.npmrc"="deny","**/.netrc"="deny","**/.pypirc"="deny","**/*.pem"="deny","**/*.key"="deny","**/*.p12"="deny","**/*.pfx"="deny"}}`,
+    '--config',
+    'permissions.pairdock-restricted.network.enabled=false',
+    '--config',
+    `shell_environment_policy.set={GIT_CONFIG_GLOBAL="/dev/null",GIT_CONFIG_NOSYSTEM="1",TMPDIR="${harnessTempDirectory}",XDG_CACHE_HOME="${cacheDirectory}",XDG_CONFIG_HOME="${configDirectory}",XDG_DATA_HOME="${dataDirectory}"}`,
+  ];
+}
+
+function resolveHarnessTempDirectory(sessionId: string): string {
+  return join('/tmp', 'pairdock', sessionId);
 }
 
 export type ParsedCodexJsonLine =

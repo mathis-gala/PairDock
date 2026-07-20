@@ -175,6 +175,41 @@ test('V1: DockerSandboxAdapter never accepts a stale healthcheck after its conta
   assert.match(result.message ?? '', /exited with code 125/i);
 });
 
+test('DockerSandboxAdapter reports startup logs while a preview is still unavailable', async () => {
+  const worktreePath = await createTempWorkspace();
+  const process = createRunningProcess();
+  const adapter = new DockerSandboxAdapter({
+    fetch: async () => {
+      throw new Error('fetch failed');
+    },
+    spawn() {
+      return process as never;
+    },
+  });
+  const sandboxRef = await adapter.start({
+    sessionId: 'acacacac-acac-4cac-8cac-acacacacacac',
+    projectKey: 'pairdock',
+    repositoryPath: worktreePath,
+    worktreePath,
+    branchName: 'pairdock/session-acac',
+    modelId: 'agent/gpt-5',
+    previewConfig: {
+      sandbox: {
+        ports: ['127.0.0.1:4000:4000'],
+        startCommand: 'bun dev --port 4000',
+        healthcheckUrl: 'http://127.0.0.1:4000',
+      },
+    },
+  });
+
+  process.stdout.emit('data', 'Installing dependencies...');
+  const result = await adapter.check(sandboxRef);
+
+  assert.equal(result.ready, false);
+  assert.match(result.message ?? '', /fetch failed/i);
+  assert.match(result.message ?? '', /Installing dependencies/);
+});
+
 test('DockerSandboxAdapter stops a restored container without its original child process', async () => {
   const spawnCalls: Array<{ command: string; args: string[] }> = [];
   const adapter = new DockerSandboxAdapter({
@@ -305,6 +340,7 @@ test('Task 8: CloudflarePreviewTunnelAdapter uses Docker cloudflared for the loc
       return process;
     },
     waitForPublicUrl: async () => 'https://pairdock-default.trycloudflare.com',
+    waitUntilPublicUrlReady: async () => undefined,
   });
 
   const tunnelRef = await adapter.open({
@@ -329,12 +365,55 @@ test('Task 8: CloudflarePreviewTunnelAdapter uses Docker cloudflared for the loc
         'tunnel',
         '--url',
         'http://host.docker.internal:3100',
+        '--http-host-header',
+        'localhost',
       ],
       shell: false,
     },
   ]);
   assert.equal(tunnelRef.publicUrl, 'https://pairdock-default.trycloudflare.com');
   assert.equal(tunnelRef.metadata?.containerName, 'pairdock-tunnel-bbbbbbbbbbbb4bbb8bbbbbbb');
+});
+
+test('CloudflarePreviewTunnelAdapter does not publish a tunnel URL before it is reachable', async () => {
+  const worktreePath = await createTempWorkspace();
+  let releaseReadiness!: () => void;
+  const readiness = new Promise<void>((resolve) => {
+    releaseReadiness = resolve;
+  });
+  let readinessStarted = false;
+  let openCompleted = false;
+  const adapter = new CloudflarePreviewTunnelAdapter({
+    spawn() {
+      return createRunningProcess() as never;
+    },
+    waitForPublicUrl: async () => 'https://pairdock-ready.trycloudflare.com',
+    waitUntilPublicUrlReady: async () => {
+      readinessStarted = true;
+      await readiness;
+    },
+  });
+
+  const openPromise = adapter
+    .open({
+      sessionId: 'abababab-abab-4bab-8bab-abababababab',
+      projectKey: 'pairdock',
+      localUrl: 'http://127.0.0.1:3100',
+      worktreePath,
+      previewConfig: {},
+    })
+    .then((result) => {
+      openCompleted = true;
+      return result;
+    });
+
+  await new Promise<void>((resolve) => setImmediate(resolve));
+  assert.equal(readinessStarted, true);
+  assert.equal(openCompleted, false);
+
+  releaseReadiness();
+  const tunnelRef = await openPromise;
+  assert.equal(tunnelRef.publicUrl, 'https://pairdock-ready.trycloudflare.com');
 });
 
 test('CloudflarePreviewTunnelAdapter stops a restored tunnel container', async () => {

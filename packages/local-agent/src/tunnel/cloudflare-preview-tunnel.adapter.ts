@@ -1,5 +1,6 @@
 import { spawn } from 'node:child_process';
 import { randomUUID } from 'node:crypto';
+import { Resolver } from 'node:dns/promises';
 import type { Readable } from 'node:stream';
 import { setTimeout as delay } from 'node:timers/promises';
 import type { ProjectPreviewConfig } from '../docker/sandbox.port.js';
@@ -33,6 +34,7 @@ interface CloudflarePreviewTunnelDependencies {
     options: { cwd?: string; shell: false; stdio: ['ignore', 'pipe', 'pipe'] | 'ignore' },
   ) => TunnelProcessLike;
   waitForPublicUrl?: (process: TunnelProcessLike, timeoutMs: number) => Promise<string>;
+  waitUntilPublicUrlReady?: (publicUrl: string, timeoutMs: number) => Promise<void>;
 }
 
 export class CloudflarePreviewTunnelAdapter implements PreviewTunnelPort {
@@ -113,6 +115,12 @@ export class CloudflarePreviewTunnelAdapter implements PreviewTunnelPort {
     return this.dependencies.waitForPublicUrl?.(process, timeoutMs) ?? waitForPublicUrl(process, timeoutMs);
   }
 
+  private waitUntilPublicUrlReady(publicUrl: string, timeoutMs: number): Promise<void> {
+    return (
+      this.dependencies.waitUntilPublicUrlReady?.(publicUrl, timeoutMs) ?? waitUntilPublicUrlReady(publicUrl, timeoutMs)
+    );
+  }
+
   private async openTunnelProcess(input: {
     args: string[];
     cwd: string;
@@ -121,6 +129,7 @@ export class CloudflarePreviewTunnelAdapter implements PreviewTunnelPort {
     let lastError: unknown;
 
     for (let attempt = 0; attempt < 2; attempt += 1) {
+      const startedAt = Date.now();
       const process = this.spawn('docker', input.args, {
         cwd: input.cwd,
         shell: false,
@@ -128,9 +137,13 @@ export class CloudflarePreviewTunnelAdapter implements PreviewTunnelPort {
       });
 
       try {
+        const publicUrl = await this.waitForPublicUrl(process, input.timeoutMs);
+        const remainingTimeoutMs = Math.max(1, input.timeoutMs - (Date.now() - startedAt));
+        await this.waitUntilPublicUrlReady(publicUrl, remainingTimeoutMs);
+
         return {
           process,
-          publicUrl: await this.waitForPublicUrl(process, input.timeoutMs),
+          publicUrl,
         };
       } catch (error) {
         lastError = error;
@@ -140,6 +153,43 @@ export class CloudflarePreviewTunnelAdapter implements PreviewTunnelPort {
 
     throw lastError instanceof Error ? lastError : new Error(String(lastError));
   }
+}
+
+async function waitUntilPublicUrlReady(publicUrl: string, timeoutMs: number): Promise<void> {
+  const url = new URL(publicUrl);
+  const resolver = new Resolver();
+  resolver.setServers(['1.1.1.1', '1.0.0.1']);
+  const deadline = Date.now() + timeoutMs;
+  let lastError: unknown;
+
+  while (Date.now() < deadline) {
+    try {
+      await resolver.resolve4(url.hostname);
+      const remainingTimeoutMs = Math.max(1, deadline - Date.now());
+      const response = await fetch(publicUrl, {
+        redirect: 'manual',
+        signal: AbortSignal.timeout(Math.min(5_000, remainingTimeoutMs)),
+      });
+
+      if (response.status >= 200 && response.status < 400) {
+        await response.body?.cancel();
+        return;
+      }
+
+      await response.body?.cancel();
+      lastError = new Error(`Cloudflare preview returned HTTP ${response.status}.`);
+    } catch (error) {
+      lastError = error;
+    }
+
+    const remainingTimeoutMs = deadline - Date.now();
+    if (remainingTimeoutMs > 0) {
+      await delay(Math.min(500, remainingTimeoutMs));
+    }
+  }
+
+  const reason = lastError instanceof Error ? lastError.message : String(lastError ?? 'unknown error');
+  throw new Error(`Cloudflare preview URL was not reachable after ${timeoutMs}ms: ${reason}`);
 }
 
 async function waitForPublicUrl(process: TunnelProcessLike, timeoutMs: number): Promise<string> {
@@ -215,6 +265,8 @@ function buildCloudflareDockerArgs(
     'tunnel',
     '--url',
     toHostDockerUrl(localUrl),
+    '--http-host-header',
+    'localhost',
   ];
 }
 

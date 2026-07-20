@@ -39,6 +39,13 @@ const pairdockManifestSchema = z.object({
   preview: z.object({
     start: z.string().min(1),
     healthcheck: healthcheckUrlTemplateSchema,
+    healthcheckTimeoutMs: z
+      .number()
+      .int()
+      .positive()
+      .max(10 * 60 * 1_000)
+      .optional(),
+    healthcheckIntervalMs: z.number().int().positive().max(60_000).optional(),
     tunnel: z
       .union([
         z.literal('cloudflare'),
@@ -181,6 +188,10 @@ async function loadProjectManifest(projectKey: string, projectPath: string): Pro
         ? {
             tunnel: normalizeTunnelManifest(manifest.preview.tunnel),
           }
+        : {}),
+      ...(manifest.preview.healthcheckTimeoutMs ? { healthcheckTimeoutMs: manifest.preview.healthcheckTimeoutMs } : {}),
+      ...(manifest.preview.healthcheckIntervalMs
+        ? { healthcheckIntervalMs: manifest.preview.healthcheckIntervalMs }
         : {}),
     },
     checksConfig,

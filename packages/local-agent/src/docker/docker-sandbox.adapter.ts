@@ -29,6 +29,7 @@ type SandboxSpawn = (command: string, args: string[], options: SandboxSpawnOptio
 interface DockerSandboxAdapterDependencies {
   spawn?: SandboxSpawn;
   allocateHostPort?: () => Promise<number>;
+  fetch?: typeof fetch;
 }
 
 const MAX_STARTUP_LOG_CHARS = 4_000;
@@ -111,10 +112,15 @@ export class DockerSandboxAdapter implements SandboxPort {
       await Promise.race([onceExit(stopProcess), delay(5_000)]);
     }
 
-    if (managedProcess?.process && !managedProcess.process.killed && managedProcess.process.exitCode === null) {
+    if (
+      managedProcess?.process &&
+      managedProcess.process.exitCode === null &&
+      managedProcess.process.signalCode === null
+    ) {
+      const gracefulExit = onceExit(managedProcess.process);
       managedProcess.process.kill('SIGTERM');
-      await Promise.race([onceExit(managedProcess.process), delay(2_000)]);
-      if (!managedProcess.process.killed && managedProcess.process.exitCode === null) {
+      await Promise.race([gracefulExit, delay(2_000)]);
+      if (managedProcess.process.exitCode === null && managedProcess.process.signalCode === null) {
         managedProcess.process.kill('SIGKILL');
       }
     }
@@ -133,7 +139,7 @@ export class DockerSandboxAdapter implements SandboxPort {
     }
 
     try {
-      const response = await fetch(ref.healthcheckUrl, { signal: AbortSignal.timeout(2_000) });
+      const response = await this.fetch(ref.healthcheckUrl, { signal: AbortSignal.timeout(2_000) });
       const exitedAfterRequest = this.getExitedProcessMessage(ref);
 
       if (exitedAfterRequest) {
@@ -147,13 +153,13 @@ export class DockerSandboxAdapter implements SandboxPort {
       return {
         ready: response.ok,
         url: ref.healthcheckUrl,
-        message: `HTTP ${response.status}`,
+        message: `HTTP ${response.status}${response.ok ? '' : this.getStartupLogSuffix(ref)}`,
       };
     } catch (error) {
       return {
         ready: false,
         url: ref.healthcheckUrl,
-        message: error instanceof Error ? error.message : String(error),
+        message: `${error instanceof Error ? error.message : String(error)}${this.getStartupLogSuffix(ref)}`,
       };
     }
   }
@@ -199,6 +205,15 @@ export class DockerSandboxAdapter implements SandboxPort {
     return this.dependencies.spawn?.(command, args, options) ?? spawn(command, args, options);
   }
 
+  private fetch(input: string | URL | Request, init?: RequestInit): Promise<Response> {
+    return this.dependencies.fetch?.(input, init) ?? fetch(input, init);
+  }
+
+  private getStartupLogSuffix(ref: SandboxRef): string {
+    const logs = this.processes.get(ref.id)?.logs.trim();
+    return logs ? ` Startup logs: ${logs}` : '';
+  }
+
   private getExitedProcessMessage(ref: SandboxRef): string | null {
     const managedProcess = this.processes.get(ref.id);
 
@@ -206,8 +221,7 @@ export class DockerSandboxAdapter implements SandboxPort {
       return null;
     }
 
-    const logSuffix = managedProcess.logs ? ` Startup logs: ${managedProcess.logs}` : '';
-    return `Docker preview exited with code ${managedProcess.process.exitCode}.${logSuffix}`;
+    return `Docker preview exited with code ${managedProcess.process.exitCode}.${this.getStartupLogSuffix(ref)}`;
   }
 }
 
@@ -358,8 +372,7 @@ function buildDockerCheckArgs(ref: SandboxRef, worktreePath: string, command: st
   const workdir = sandboxConfig.workdir ?? '/workspace';
   const image = sandboxConfig.image ?? DEFAULT_SANDBOX_IMAGE;
   assertSafeContainerImage(image);
-
-  return [
+  const args = [
     'run',
     '--rm',
     '--init',
@@ -372,11 +385,10 @@ function buildDockerCheckArgs(ref: SandboxRef, worktreePath: string, command: st
     `${worktreePath}:${workdir}`,
     '--env',
     'HOME=/tmp',
-    image,
-    'sh',
-    '-lc',
-    command,
   ];
+
+  args.push(image, 'sh', '-lc', command);
+  return args;
 }
 
 function buildContainerHardeningArgs(): string[] {

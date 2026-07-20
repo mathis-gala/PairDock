@@ -130,6 +130,7 @@ sandbox:
 preview:
   start: "pnpm install --frozen-lockfile && pnpm dev --host 0.0.0.0 --port 4000"
   healthcheck: "http://127.0.0.1:{{hostPort}}"
+  healthcheckTimeoutMs: 60000
   tunnel: cloudflare
 checks:
   build: "pnpm build"
@@ -149,6 +150,7 @@ PairDock always runs preview commands in a Docker sandbox with only the session 
 Omit `sandbox.image` to use PairDock's pinned multi-platform default. If a project needs another image, pin it by digest instead of using a mutable tag.
 Install Codex CLI 0.138.0 or newer and authenticate it with `codex login` before starting the local agent. PairDock deliberately does not forward `OPENAI_API_KEY` or unrelated workstation secrets to the Codex process; the CLI must use its protected local login state. Model-generated commands use a restricted permission profile: they can read/write the session worktree, cannot read common credential files (including tracked `.env` and private keys), cannot read the rest of the developer home, and cannot access the network.
 Use `{{hostPort}}` for host-side preview bindings and URLs. PairDock resolves it to a free port per session, so concurrent sessions cannot reuse another session's preview or healthcheck.
+Set `preview.healthcheckTimeoutMs` when dependency installation, code generation, or migrations can make preview startup exceed the 30-second default. The accepted maximum is 10 minutes.
 For same-machine development without a public tunnel, set `preview.tunnel.publicUrl` to `http://127.0.0.1:{{hostPort}}`.
 `network: host-services` is the explicit opt-in that lets the container reach local services such as Postgres through `host.docker.internal`.
 Only variables listed in `sandbox.env` are passed to the container; PairDock does not mount `.env` or the developer home directory.

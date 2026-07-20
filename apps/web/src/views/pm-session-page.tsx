@@ -72,6 +72,9 @@ export function PmSessionPage({ accessToken, onBack, sessionId }: PmSessionPageP
   }));
   const isOnline = session.project.agentAvailability === 'online';
   const hasFailed = session.status === 'FAILED';
+  const failureRecoveryMessage = session.previewUrl
+    ? 'Tu peux envoyer un nouveau message pour réessayer.'
+    : 'La session n’a pas pu être préparée. Ferme-la puis crée une nouvelle session après correction.';
   const canCreateReviewRequest = session.status === 'AWAITING_PM_VALIDATION' && !session.reviewRequest?.url;
   const reviewRequestError =
     createReviewRequestMutation.error instanceof Error ? createReviewRequestMutation.error.message : null;
@@ -212,7 +215,7 @@ export function PmSessionPage({ accessToken, onBack, sessionId }: PmSessionPageP
               </div>
               {hasFailed && session.lastError ? (
                 <p className="mt-1 max-w-[70ch] whitespace-normal font-sans text-xs leading-5 text-rose-100/80">
-                  {session.lastError} Tu peux envoyer un nouveau message pour réessayer.
+                  {session.lastError} {failureRecoveryMessage}
                 </p>
               ) : null}
               {reviewRequestError ? <div className="mt-1 truncate text-rose-300">{reviewRequestError}</div> : null}

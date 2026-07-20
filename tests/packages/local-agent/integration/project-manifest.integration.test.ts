@@ -27,6 +27,8 @@ test('V1: local agent loads pairdock.yml and publishes safe project metadata', a
       'preview:',
       '  start: "pnpm dev --host 0.0.0.0 --port 4000"',
       '  healthcheck: "http://127.0.0.1:4000"',
+      '  healthcheckTimeoutMs: 60000',
+      '  healthcheckIntervalMs: 750',
       '  tunnel: cloudflare',
       'checks:',
       '  build: "pnpm build"',
@@ -65,6 +67,8 @@ test('V1: local agent loads pairdock.yml and publishes safe project metadata', a
   assert.deepEqual(config.previewConfigs.pairdock?.sandbox?.ports, ['127.0.0.1:4000:4000']);
   assert.equal(config.previewConfigs.pairdock?.sandbox?.startCommand, 'pnpm dev --host 0.0.0.0 --port 4000');
   assert.equal(config.previewConfigs.pairdock?.sandbox?.healthcheckUrl, 'http://127.0.0.1:4000');
+  assert.equal(config.previewConfigs.pairdock?.healthcheckTimeoutMs, 60_000);
+  assert.equal(config.previewConfigs.pairdock?.healthcheckIntervalMs, 750);
   assert.deepEqual(config.previewConfigs.pairdock?.tunnel, {
     provider: 'cloudflare',
   });
