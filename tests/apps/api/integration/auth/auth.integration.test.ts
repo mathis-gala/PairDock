@@ -168,6 +168,20 @@ test.beforeEach(async () => {
   await resetDatabase();
 });
 
+test('local development bypass authenticates only the PM identity', async () => {
+  const providersResponse = await fetch(`${baseUrl}/auth/providers`);
+  const pmResponse = await fetch(`${baseUrl}/auth/development/pm/login`, { method: 'POST' });
+  const developerBypassResponse = await fetch(`${baseUrl}/auth/development/developer/login`, { method: 'POST' });
+  const pmLogin = await parseJsonResponse(pmResponse, authResponseSchema);
+
+  assert.equal(providersResponse.status, 200);
+  assert.deepEqual(await providersResponse.json(), { developmentPmAuthEnabled: true });
+  assert.equal(pmResponse.status, 200);
+  assert.equal(pmLogin.user.kind, 'pm');
+  assert.equal(pmLogin.user.email, 'pm@pairdock.test');
+  assert.equal(developerBypassResponse.status, 404);
+});
+
 test('BT-035: AuthModule normalizes GitHub and Slack callbacks into PairDock users and external identities', async () => {
   const developerSeed = randomUUID();
   const pmSeed = randomUUID();

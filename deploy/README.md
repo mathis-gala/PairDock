@@ -39,7 +39,7 @@ Put the agent tokens in `AGENT_AUTH_CREDENTIALS_JSON`, keyed by the exact agent 
 AGENT_AUTH_CREDENTIALS_JSON='{"agent-local-1":{"token":"<first-generated-token>","projectKeys":["project-a"]},"agent-local-2":{"token":"<second-generated-token>","projectKeys":["project-b","project-c"]}}'
 ```
 
-Every project key published by a workstation must be present in that agent's `projectKeys`, and a key may appear under only one credential. Keep credentials stable across normal updates. Give each workstation only its own token; never share the full JSON map with agent operators. In particular, changing `POSTGRES_PASSWORD` does not update the password already stored by PostgreSQL. `DEV_AUTH_ENABLED` is hard-disabled by Compose.
+Every project key published by a workstation must be present in that agent's `projectKeys`, and a key may appear under only one credential. Keep credentials stable across normal updates. Give each workstation only its own token; never share the full JSON map with agent operators. In particular, changing `POSTGRES_PASSWORD` does not update the password already stored by PostgreSQL. `DEV_PM_AUTH_ENABLED` is hard-disabled by Compose.
 
 ## Security before exposing PairDock
 

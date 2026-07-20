@@ -1,4 +1,4 @@
-import { BadRequestException, Inject, Injectable } from '@nestjs/common';
+import { BadRequestException, Inject, Injectable, NotFoundException } from '@nestjs/common';
 import type {
   DeveloperIdentityPort,
   NormalizedIdentity,
@@ -11,6 +11,7 @@ import type { ExternalIdentitiesRepository } from '../persistence/ports/external
 import { UsersService } from '../users/users.service.js';
 import { DEVELOPER_IDENTITY_PORT, PM_IDENTITY_PORT } from './auth.tokens.js';
 import { AuthTokenService } from './auth-token.service.js';
+import { isDevelopmentPmAuthEnabled } from './development-pm-auth.js';
 import { GithubAuthStateService } from './github-auth-state.service.js';
 
 export interface AuthResult {
@@ -20,6 +21,10 @@ export interface AuthResult {
 }
 
 export type AuthProvider = 'github' | 'slack';
+
+export interface AuthProviders {
+  developmentPmAuthEnabled: boolean;
+}
 
 interface OAuthStartUrlConfig {
   frontendUrl: string;
@@ -57,6 +62,26 @@ export class AuthService {
   async authenticatePm(accessToken: string): Promise<AuthResult> {
     const identity = await this.pmIdentityPort.getPmIdentity(accessToken);
     return this.authenticate(identity);
+  }
+
+  getAuthProviders(): AuthProviders {
+    return { developmentPmAuthEnabled: isDevelopmentPmAuthEnabled() };
+  }
+
+  async authenticateDevelopmentPm(): Promise<AuthResult> {
+    if (!isDevelopmentPmAuthEnabled()) {
+      throw new NotFoundException();
+    }
+
+    return this.authenticate({
+      provider: 'slack',
+      providerUserId: 'pairdock-local-pm',
+      providerTeamId: 'pairdock-local',
+      email: 'pm@pairdock.test',
+      displayName: 'PairDock PM',
+      kind: 'pm',
+      metadata: { localDevelopment: true },
+    });
   }
 
   getDeveloperStartUrl(): string {

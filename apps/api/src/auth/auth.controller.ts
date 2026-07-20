@@ -12,7 +12,7 @@ import {
   Redirect,
   Res,
 } from '@nestjs/common';
-import { type AuthResult, AuthService } from './auth.service.js';
+import { type AuthProviders, type AuthResult, AuthService } from './auth.service.js';
 
 interface AuthCallbackBody {
   accessToken: string;
@@ -29,6 +29,17 @@ const SLACK_AUTHORIZATION_STATE_COOKIE = 'pairdock_slack_authorization_state';
 @Controller('auth')
 export class AuthController {
   constructor(@Inject(AuthService) private readonly authService: AuthService) {}
+
+  @Get('providers')
+  getAuthProviders(): AuthProviders {
+    return this.authService.getAuthProviders();
+  }
+
+  @Post('development/pm/login')
+  @HttpCode(HttpStatus.OK)
+  authenticateDevelopmentPm(): Promise<AuthResult> {
+    return this.authService.authenticateDevelopmentPm();
+  }
 
   @Get('developer/start')
   @Redirect()

@@ -1,5 +1,6 @@
 import { Injectable, UnauthorizedException } from '@nestjs/common';
 import type { DeveloperIdentityPort, NormalizedIdentity } from '@pairdock/domain';
+import { areIdentityFixturesEnabled } from '../../development-pm-auth.js';
 
 interface GithubDeveloperIdentityConfig {
   allowFixtures?: boolean;
@@ -229,7 +230,7 @@ function parseFixtureIdentity(accessToken: string): NormalizedIdentity {
 
 function readGithubConfig(): GithubDeveloperIdentityConfig {
   return {
-    allowFixtures: process.env.DEV_AUTH_ENABLED === 'true',
+    allowFixtures: areIdentityFixturesEnabled(),
     apiBaseUrl: process.env.GITHUB_API_BASE_URL ?? 'https://api.github.com',
     oauthBaseUrl: process.env.GITHUB_OAUTH_BASE_URL ?? 'https://github.com',
     clientId: process.env.GITHUB_CLIENT_ID,

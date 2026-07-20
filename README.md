@@ -58,10 +58,12 @@ GITHUB_APP_PRIVATE_KEY="<pem contents or escaped pem>"
 AUTH_STATE_SECRET=<random-secret-of-at-least-32-bytes>
 AUTH_TOKEN_SECRET=<different-random-secret-of-at-least-32-bytes>
 AGENT_AUTH_CREDENTIALS_JSON={"agent-local-1":{"token":"<different-random-secret-of-at-least-32-bytes>","projectKeys":["tcg-collection"]}}
-DEV_AUTH_ENABLED=false
+DEV_PM_AUTH_ENABLED=false
 ```
 
-Generate all authentication secrets independently, for example with `openssl rand -base64 48`. Keep them stable between API restarts and never commit them. `AGENT_AUTH_CREDENTIALS_JSON` maps each local agent id to its unique token and exact project-key allowlist; one project key cannot be assigned to multiple credentials. Pass only that agent's token to its CLI. `DEV_AUTH_ENABLED` must remain `false` outside automated tests or explicit local fixture testing.
+Generate all authentication secrets independently, for example with `openssl rand -base64 48`. Keep them stable between API restarts and never commit them. `AGENT_AUTH_CREDENTIALS_JSON` maps each local agent id to its unique token and exact project-key allowlist; one project key cannot be assigned to multiple credentials. Pass only that agent's token to its CLI.
+
+For local UI development only, set `DEV_PM_AUTH_ENABLED=true` to let the PM enter without Slack as `pm@pairdock.test`. The developer must still authenticate through the GitHub App. PairDock ignores this flag when `NODE_ENV=production`, where Slack remains mandatory.
 
 Use `http://localhost:5173` for `FRONTEND_URL` unless you intentionally run the web app on another origin. The configured origin is also the only origin allowed by API CORS.
 

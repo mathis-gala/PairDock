@@ -1,5 +1,6 @@
 import { Injectable, UnauthorizedException } from '@nestjs/common';
 import type { NormalizedIdentity, PmIdentityPort } from '@pairdock/domain';
+import { areIdentityFixturesEnabled } from '../../development-pm-auth.js';
 
 interface SlackPmIdentityConfig {
   allowFixtures?: boolean;
@@ -161,7 +162,7 @@ function parseFixtureIdentity(accessToken: string): NormalizedIdentity {
 
 function readSlackConfig(): SlackPmIdentityConfig {
   return {
-    allowFixtures: process.env.DEV_AUTH_ENABLED === 'true',
+    allowFixtures: areIdentityFixturesEnabled(),
     apiBaseUrl: process.env.SLACK_API_BASE_URL ?? 'https://slack.com/api',
     clientId: process.env.SLACK_CLIENT_ID,
     clientSecret: process.env.SLACK_CLIENT_SECRET,
