@@ -97,9 +97,11 @@ test('default Codex harness starts and resumes one Codex thread per PairDock ses
     '--config',
     'default_permissions="pairdock-restricted"',
     '--config',
-    'permissions.pairdock-restricted.filesystem={":minimal"="read",":workspace_roots"={"."="write","**/.env"="deny","**/.env.local"="deny","**/.env.*.local"="deny","**/.npmrc"="deny","**/.netrc"="deny","**/.pypirc"="deny","**/*.pem"="deny","**/*.key"="deny","**/*.p12"="deny","**/*.pfx"="deny"}}',
+    'permissions.pairdock-restricted.filesystem={":minimal"="read","/tmp/pairdock/11111111-1111-4111-8111-111111111111"="write","/System/Library/OpenSSL"="read","~/.agents/skills"="read","~/.codex/skills"="read",":workspace_roots"={"."="write","**/.env"="deny","**/.env.local"="deny","**/.env.*.local"="deny","**/.npmrc"="deny","**/.netrc"="deny","**/.pypirc"="deny","**/*.pem"="deny","**/*.key"="deny","**/*.p12"="deny","**/*.pfx"="deny"}}',
     '--config',
     'permissions.pairdock-restricted.network.enabled=false',
+    '--config',
+    'shell_environment_policy.set={GIT_CONFIG_GLOBAL="/dev/null",GIT_CONFIG_NOSYSTEM="1",TMPDIR="/tmp/pairdock/11111111-1111-4111-8111-111111111111",XDG_CACHE_HOME="/tmp/pairdock/11111111-1111-4111-8111-111111111111/cache",XDG_CONFIG_HOME="/tmp/pairdock/11111111-1111-4111-8111-111111111111/config",XDG_DATA_HOME="/tmp/pairdock/11111111-1111-4111-8111-111111111111/data"}',
     '--json',
     '--model',
     'gpt-5.6-luna',
@@ -115,9 +117,11 @@ test('default Codex harness starts and resumes one Codex thread per PairDock ses
     '--config',
     'default_permissions="pairdock-restricted"',
     '--config',
-    'permissions.pairdock-restricted.filesystem={":minimal"="read",":workspace_roots"={"."="write","**/.env"="deny","**/.env.local"="deny","**/.env.*.local"="deny","**/.npmrc"="deny","**/.netrc"="deny","**/.pypirc"="deny","**/*.pem"="deny","**/*.key"="deny","**/*.p12"="deny","**/*.pfx"="deny"}}',
+    'permissions.pairdock-restricted.filesystem={":minimal"="read","/tmp/pairdock/11111111-1111-4111-8111-111111111111"="write","/System/Library/OpenSSL"="read","~/.agents/skills"="read","~/.codex/skills"="read",":workspace_roots"={"."="write","**/.env"="deny","**/.env.local"="deny","**/.env.*.local"="deny","**/.npmrc"="deny","**/.netrc"="deny","**/.pypirc"="deny","**/*.pem"="deny","**/*.key"="deny","**/*.p12"="deny","**/*.pfx"="deny"}}',
     '--config',
     'permissions.pairdock-restricted.network.enabled=false',
+    '--config',
+    'shell_environment_policy.set={GIT_CONFIG_GLOBAL="/dev/null",GIT_CONFIG_NOSYSTEM="1",TMPDIR="/tmp/pairdock/11111111-1111-4111-8111-111111111111",XDG_CACHE_HOME="/tmp/pairdock/11111111-1111-4111-8111-111111111111/cache",XDG_CONFIG_HOME="/tmp/pairdock/11111111-1111-4111-8111-111111111111/config",XDG_DATA_HOME="/tmp/pairdock/11111111-1111-4111-8111-111111111111/data"}',
     'resume',
     '--json',
     '--model',
@@ -159,6 +163,12 @@ test('Codex harness does not expose unrelated developer secrets to the agent pro
 
   assert.equal(environment.HOME, '/Users/developer');
   assert.equal(environment.PATH, '/usr/bin');
+  assert.equal(environment.TMPDIR, '/tmp/pairdock/11111111-1111-4111-8111-111111111111');
+  assert.equal(environment.XDG_CACHE_HOME, `${environment.TMPDIR}/cache`);
+  assert.equal(environment.XDG_CONFIG_HOME, `${environment.TMPDIR}/config`);
+  assert.equal(environment.XDG_DATA_HOME, `${environment.TMPDIR}/data`);
+  assert.equal(environment.GIT_CONFIG_GLOBAL, '/dev/null');
+  assert.equal(environment.GIT_CONFIG_NOSYSTEM, '1');
   assert.equal(environment.PAIRDOCK_SESSION_ID, '11111111-1111-4111-8111-111111111111');
   assert.equal(environment.AWS_SECRET_ACCESS_KEY, undefined);
   assert.equal(environment.DATABASE_URL, undefined);
