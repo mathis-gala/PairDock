@@ -205,7 +205,7 @@ project key, display name, GitHub repository full name, path alias, optional def
 
 ### PairDock self-preview with the temporary TCG agent
 
-Until the production agent is available, the existing TCG agent identity and its authorized `tcg-collection` project key can temporarily publish the PairDock repository. Use a separate temporary config file so the existing agent configuration is not overwritten; keep the existing agent id and token, but point that key to the PairDock checkout:
+Until the production agent is available, the existing TCG agent identity and its authorized project key can temporarily publish the PairDock repository. Use a separate temporary config file so the existing agent configuration is not overwritten; keep the existing agent id, token, and project key, but point that key to the PairDock checkout:
 
 ```bash
 docker build --file deploy/Dockerfile.sandbox --tag pairdock/self-preview-sandbox:node22-bun1.3.14 .
@@ -219,7 +219,7 @@ node --import tsx packages/local-agent/src/main.ts login \
   --capability readiness.check \
   --capability agent.prompt \
   --capability git.pushBranch \
-  --project tcg-collection=/absolute/path/to/PairDock
+  --project tcg=/absolute/path/to/PairDock
 
 PAIRDOCK_AGENT_CONFIG_PATH=/absolute/path/to/agent-pairdock-local.json \
 node --import tsx packages/local-agent/src/main.ts start
@@ -227,7 +227,7 @@ node --import tsx packages/local-agent/src/main.ts start
 
 The tracked `pairdock.yml` publishes PairDock metadata under that temporary key, starts only the web preview in Docker, and proxies browser API/WebSocket traffic to the already configured API at `127.0.0.1:3000`. The API therefore keeps using its local database and local GitHub secrets; no secret is copied into the sandbox. Set `DEV_PM_AUTH_ENABLED=true` on that local API so the PM can enter without Slack, while the developer still authenticates through GitHub.
 
-This temporary mapping replaces the TCG repository path for `tcg-collection`; it does not modify or delete either repository. In the developer UI, select the PairDock GitHub repository and the published PairDock agent project. The backend checks the repository advertised by the manifest, not the historical name of the project key.
+This temporary mapping replaces the repository path associated with the TCG project key; it does not modify or delete either repository. In the developer UI, select the PairDock GitHub repository and the published PairDock agent project. The backend checks the repository advertised by the manifest, not the historical name of the project key.
 
 When both agents can run at the same time, give each process its own config file instead of overwriting the default one:
 
