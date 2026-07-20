@@ -205,11 +205,12 @@ project key, display name, GitHub repository full name, path alias, optional def
 
 ### PairDock self-preview with the temporary TCG agent
 
-Until the production agent is available, the existing TCG agent identity and its authorized `tcg-collection` project key can temporarily publish the PairDock repository. Keep the existing agent id and token, but point that key to the PairDock checkout:
+Until the production agent is available, the existing TCG agent identity and its authorized `tcg-collection` project key can temporarily publish the PairDock repository. Use a separate temporary config file so the existing agent configuration is not overwritten; keep the existing agent id and token, but point that key to the PairDock checkout:
 
 ```bash
 docker build --file deploy/Dockerfile.sandbox --tag pairdock/self-preview-sandbox:node22-bun1.3.14 .
 
+PAIRDOCK_AGENT_CONFIG_PATH=/absolute/path/to/agent-pairdock-local.json \
 node --import tsx packages/local-agent/src/main.ts login \
   --backend-url http://127.0.0.1:3000 \
   --agent-id <existing-tcg-agent-id> \
@@ -220,6 +221,7 @@ node --import tsx packages/local-agent/src/main.ts login \
   --capability git.pushBranch \
   --project tcg-collection=/absolute/path/to/PairDock
 
+PAIRDOCK_AGENT_CONFIG_PATH=/absolute/path/to/agent-pairdock-local.json \
 node --import tsx packages/local-agent/src/main.ts start
 ```
 
