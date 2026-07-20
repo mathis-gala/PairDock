@@ -30,6 +30,7 @@ import { type SessionAgentEvent, SessionStateMachine } from '../sessions/session
 import { UiGateway } from '../ui-gateway/ui.gateway.js';
 import { ValidationService } from '../validation/validation.service.js';
 import { AgentAuthenticationService } from './agent-authentication.service.js';
+import { AgentProjectBindingService } from './agent-project-binding.service.js';
 import { type ConnectedAgentSnapshot, ConnectedAgentsRegistry } from './connected-agents.registry.js';
 
 @Injectable()
@@ -59,6 +60,8 @@ export class AgentGateway implements OnGatewayDisconnect, OnGatewayInit {
     private readonly validationService: ValidationService,
     @Inject(AgentAuthenticationService)
     private readonly agentAuthenticationService: AgentAuthenticationService,
+    @Inject(AgentProjectBindingService)
+    private readonly agentProjectBinding: AgentProjectBindingService,
   ) {}
 
   afterInit(server: Server): void {
@@ -189,7 +192,7 @@ export class AgentGateway implements OnGatewayDisconnect, OnGatewayInit {
           return;
         }
 
-        for (const project of projects) {
+        for (const project of projects.filter((candidate) => this.agentProjectBinding.isConnected(candidate))) {
           await repositories.projectReadiness.upsert({
             projectId: project.id,
             ok: event.payload.ok,
@@ -360,26 +363,26 @@ export class AgentGateway implements OnGatewayDisconnect, OnGatewayInit {
       return;
     }
 
-    const projectKey = await this.persistenceUnitOfWork.execute(async (repositories) => {
+    const project = await this.persistenceUnitOfWork.execute(async (repositories) => {
       const session = await repositories.sessions.findById(sessionId);
 
       if (!session) {
         return null;
       }
 
-      const project = await repositories.projects.findById(session.projectId);
-      return project?.agentProjectKey ?? null;
+      return repositories.projects.findById(session.projectId);
     });
 
-    if (!projectKey) {
+    if (!project) {
       throw new Error(`Session ${sessionId} does not belong to an existing project.`);
     }
 
-    if (!authenticatedAgent.projectKeys.includes(projectKey)) {
-      throw new Error(`Agent credential is not authorized for project ${projectKey}.`);
+    if (!authenticatedAgent.projectKeys.includes(project.agentProjectKey)) {
+      throw new Error(`Agent credential is not authorized for project ${project.agentProjectKey}.`);
     }
 
-    this.assertProjectKeyAuthorized(snapshot, projectKey);
+    this.assertProjectKeyAuthorized(snapshot, project.agentProjectKey);
+    this.agentProjectBinding.assertConnected(project);
   }
 
   private assertProjectKeyAuthorized(snapshot: ConnectedAgentSnapshot, projectKey: string): void {

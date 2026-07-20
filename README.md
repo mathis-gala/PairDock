@@ -225,9 +225,9 @@ PAIRDOCK_AGENT_CONFIG_PATH=/absolute/path/to/agent-pairdock-local.json \
 node --import tsx packages/local-agent/src/main.ts start
 ```
 
-The tracked `pairdock.yml` publishes PairDock metadata under that temporary key, starts only the web preview in Docker, and proxies browser API/WebSocket traffic to the already configured API at `127.0.0.1:3000`. The API therefore keeps using its local database and local GitHub secrets; no secret is copied into the sandbox. Set `DEV_PM_AUTH_ENABLED=true` on that local API so the PM can enter without Slack, while the developer still authenticates through GitHub.
+The tracked `pairdock.yml` publishes PairDock metadata under that temporary key, starts only the web preview in Docker, and proxies browser API/WebSocket traffic to the already configured API at `127.0.0.1:3000`. The API therefore keeps using its local database and local GitHub secrets; no secret is copied into the sandbox. Set `DEV_PM_AUTH_ENABLED=true` on that local API so the PM can enter without Slack, while the developer still authenticates through GitHub. Complete developer OAuth in the top-level PairDock window, not inside the sandboxed PM preview iframe; external identity providers intentionally cannot navigate the parent window.
 
-This temporary mapping replaces the repository path associated with the TCG project key; it does not modify or delete either repository. In the developer UI, select the PairDock GitHub repository and the published PairDock agent project. The backend checks the repository advertised by the manifest, not the historical name of the project key.
+This temporary mapping replaces the repository path associated with the TCG project key; it does not modify or delete either repository. In the developer UI, create a PairDock project by selecting the PairDock GitHub repository and the published PairDock agent project. Before this branch is merged, select `feat/pairdock-self-preview` as its base branch; create the normal `main`-based project after the merge. A previously persisted project for another repository is deliberately marked unavailable when the same agent project key is repointed: PairDock rejects commands instead of risking changes or a pull request in the wrong repository.
 
 When both agents can run at the same time, give each process its own config file instead of overwriting the default one:
 

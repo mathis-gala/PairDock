@@ -136,7 +136,10 @@ async function waitForAgentCommand(socket: Socket): Promise<AgentCommandEnvelope
   });
 }
 
-async function announceAgent(socket: Socket, agentId: string) {
+async function announceAgent(
+  socket: Socket,
+  project: { agentProjectKey: string; defaultBranch: string; name: string; repoFullName: string },
+) {
   await new Promise<void>((resolve, reject) => {
     socket.once('connect', () => resolve());
     socket.once('connect_error', reject);
@@ -147,8 +150,18 @@ async function announceAgent(socket: Socket, agentId: string) {
     messageId: randomUUID(),
     type: 'agent.connected',
     payload: {
-      agentId,
+      agentId: `agent-${project.agentProjectKey}`,
       capabilities: ['readiness.check'],
+      models: [],
+      projects: [
+        {
+          key: project.agentProjectKey,
+          name: project.name,
+          repoFullName: project.repoFullName,
+          pathAlias: project.name,
+          defaultBranch: project.defaultBranch,
+        },
+      ],
     },
     sentAt: new Date().toISOString(),
   });
@@ -225,7 +238,7 @@ test('BT-044: developer can request local readiness checks through the ToolReadi
 
   try {
     app.get(ConnectedAgentsRegistry).unregister(`setup-${project.agentProjectKey}`);
-    await announceAgent(agentSocket, project.agentProjectKey);
+    await announceAgent(agentSocket, project);
     const commandPromise = waitForAgentCommand(agentSocket);
 
     const response = await fetch(`${baseUrl}/tool-readiness/projects/${project.id}/check`, {

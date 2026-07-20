@@ -196,7 +196,15 @@ test('Task 9: PM follow-up prompt after validation routes to the same session an
         agentId: 'agent-local-1',
         capabilities: ['session.prepare', 'agent.prompt', 'agent.cancel', 'preview'],
         models: [],
-        projects: [],
+        projects: [
+          {
+            key: project.agentProjectKey,
+            name: project.name,
+            repoFullName: project.repoFullName,
+            pathAlias: project.name,
+            defaultBranch: project.defaultBranch,
+          },
+        ],
       },
       sentAt: new Date().toISOString(),
     } satisfies AgentEventEnvelope);
@@ -270,7 +278,15 @@ test('Task 9: POST /sessions/:sessionId/prompts/cancel routes agent.cancel to th
         agentId: 'agent-local-1',
         capabilities: ['session.prepare', 'agent.prompt', 'agent.cancel', 'preview'],
         models: [],
-        projects: [],
+        projects: [
+          {
+            key: project.agentProjectKey,
+            name: project.name,
+            repoFullName: project.repoFullName,
+            pathAlias: project.name,
+            defaultBranch: project.defaultBranch,
+          },
+        ],
       },
       sentAt: new Date().toISOString(),
     } satisfies AgentEventEnvelope);

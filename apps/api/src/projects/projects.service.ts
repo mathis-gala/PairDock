@@ -18,6 +18,7 @@ import {
   updateProjectExecutionDefaultsInputSchema,
 } from '@pairdock/shared-contracts';
 import { AgentExecutionCapabilitiesService } from '../agent-gateway/agent-execution-capabilities.service.js';
+import { AgentProjectBindingService } from '../agent-gateway/agent-project-binding.service.js';
 import { ConnectedAgentsRegistry } from '../agent-gateway/connected-agents.registry.js';
 import {
   EXTERNAL_IDENTITIES_REPOSITORY,
@@ -63,6 +64,8 @@ export class ProjectsService {
     private readonly connectedAgentsRegistry: ConnectedAgentsRegistry,
     @Inject(AgentExecutionCapabilitiesService)
     private readonly agentExecutionCapabilities: AgentExecutionCapabilitiesService,
+    @Inject(AgentProjectBindingService)
+    private readonly agentProjectBinding: AgentProjectBindingService,
     @Inject(SOURCE_CONTROL_PORT)
     private readonly sourceControl: SourceControlPort,
   ) {}
@@ -128,9 +131,7 @@ export class ProjectsService {
     );
 
     return sharedProjects.map(({ project, ownerDisplayName }) => {
-      const agentAvailability = this.connectedAgentsRegistry.findSocketId(project.agentProjectKey)
-        ? 'online'
-        : 'offline';
+      const agentAvailability = this.agentProjectBinding.isConnected(project) ? 'online' : 'offline';
       const readinessSnapshot = readinessByProjectId.get(project.id);
       const readinessOk = readinessSnapshot?.ok ?? false;
       const canStartSession = project.pmCanStartSessions && agentAvailability === 'online' && readinessOk;
@@ -344,6 +345,7 @@ export class ProjectsService {
     user: PairDockIdentity,
   ): Promise<DeveloperProjectSummary> {
     const projectRecord = await this.findOwnedProjectRecord(projectId, user.id);
+    this.agentProjectBinding.assertConnected(projectRecord.project);
     const selection = this.agentExecutionCapabilities.resolveSessionSelection(projectRecord.project.agentProjectKey, {
       modelId: input.modelId,
       reasoningEffort: input.reasoningEffort,
@@ -545,6 +547,8 @@ export class ProjectsService {
     reviewRequestUrlsBySessionId: Map<string, string | null> = new Map(),
     readinessSnapshot: ProjectReadinessSnapshot | null = null,
   ): DeveloperProjectSummary {
+    const agentConnected = this.agentProjectBinding.isConnected(record.project);
+
     return {
       id: record.project.id,
       name: record.project.name,
@@ -553,15 +557,15 @@ export class ProjectsService {
       defaultBranch: record.project.defaultBranch,
       defaultModelId: record.project.defaultModelId,
       defaultReasoningEffort: record.project.defaultReasoningEffort,
-      models: this.agentExecutionCapabilities.listModelsForProject(record.project.agentProjectKey),
+      models: agentConnected
+        ? this.agentExecutionCapabilities.listModelsForProject(record.project.agentProjectKey)
+        : [],
       agentProjectKey: record.project.agentProjectKey,
       sourceControlAccountLogin: record.sourceControlAccountLogin,
       pmCanStartSessions: record.project.pmCanStartSessions,
       pmMemberCount: record.pmMemberCount,
       pmMembers: record.pmMembers,
-      agentAvailability: this.connectedAgentsRegistry.findSocketId(record.project.agentProjectKey)
-        ? 'online'
-        : 'offline',
+      agentAvailability: agentConnected ? 'online' : 'offline',
       readiness: readinessSnapshot
         ? {
             ok: readinessSnapshot.ok,

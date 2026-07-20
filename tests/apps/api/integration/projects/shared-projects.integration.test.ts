@@ -3,6 +3,7 @@ import { randomUUID } from 'node:crypto';
 import test from 'node:test';
 import type { INestApplication } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
+import type { Project } from '@pairdock/domain';
 import {
   AGENT_PROTOCOL_VERSION,
   type AgentEventEnvelope,
@@ -135,13 +136,13 @@ async function sendAgentEvent(socket: Socket, event: AgentEventEnvelope) {
   socket.emit(agentProtocolMessageEventName, event);
 }
 
-async function announceAgent(socket: Socket, agentId: string) {
+async function announceAgent(socket: Socket, project: Project) {
   await sendAgentEvent(socket, {
     protocolVersion: AGENT_PROTOCOL_VERSION,
     messageId: randomUUID(),
     type: 'agent.connected',
     payload: {
-      agentId,
+      agentId: `agent-${project.agentProjectKey}`,
       capabilities: ['session.prepare', 'agent.prompt', 'agent.cancel', 'preview', 'readiness.check'],
       models: [
         {
@@ -155,7 +156,15 @@ async function announceAgent(socket: Socket, agentId: string) {
           defaultReasoningEffort: 'low',
         },
       ],
-      projects: [],
+      projects: [
+        {
+          key: project.agentProjectKey,
+          name: project.name,
+          repoFullName: project.repoFullName,
+          pathAlias: project.name,
+          defaultBranch: project.defaultBranch,
+        },
+      ],
     },
     sentAt: new Date().toISOString(),
   });
@@ -207,7 +216,7 @@ test('BT-048: PM shared-project dashboard lists only shared projects and exposes
   const agentSocket = connectAgentSocket();
 
   try {
-    await announceAgent(agentSocket, fixture.onlineProject.agentProjectKey);
+    await announceAgent(agentSocket, fixture.onlineProject);
     await publishReadiness(agentSocket, fixture.onlineProject.agentProjectKey);
     await waitForReadiness(fixture.onlineProject.id);
 
@@ -232,6 +241,36 @@ test('BT-048: PM shared-project dashboard lists only shared projects and exposes
     assert.equal(payload[1]?.agentAvailability, 'offline');
     assert.equal(payload[1]?.canStartSession, false);
     assert.equal(payload[1]?.unavailableReason, 'Owning agent is offline.');
+  } finally {
+    agentSocket.close();
+  }
+});
+
+test('repository drift keeps a shared project unavailable even when the project key is online and ready', async () => {
+  const pmLogin = await authenticatePm();
+  const fixture = await createSharedProjectsFixture(pmLogin.body.user.id);
+  const agentSocket = connectAgentSocket();
+
+  try {
+    await announceAgent(agentSocket, {
+      ...fixture.onlineProject,
+      repoFullName: 'mathis/a-different-repository',
+    });
+    await publishReadiness(agentSocket, fixture.onlineProject.agentProjectKey);
+
+    const response = await fetch(`${baseUrl}/projects/shared`, {
+      headers: { authorization: `Bearer ${pmLogin.body.accessToken}` },
+    });
+    const payload = await parseJsonResponse(response, sharedProjectListResponseSchema);
+
+    assert.equal(response.status, 200);
+    assert.equal(payload[0]?.agentAvailability, 'offline');
+    assert.equal(payload[0]?.canStartSession, false);
+    assert.equal(payload[0]?.unavailableReason, 'Owning agent is offline.');
+    assert.equal(
+      await prisma.projectReadinessSnapshot.findUnique({ where: { projectId: fixture.onlineProject.id } }),
+      null,
+    );
   } finally {
     agentSocket.close();
   }

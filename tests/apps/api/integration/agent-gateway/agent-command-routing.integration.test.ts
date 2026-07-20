@@ -125,7 +125,7 @@ test('Task 8: backend command routing persists preview progress, preview URL, an
       name: 'PairDock',
       repoFullName: 'mathis/pairdock',
       defaultBranch: 'main',
-      agentProjectKey: 'agent-local-1',
+      agentProjectKey: 'pairdock',
     },
   });
 
@@ -146,6 +146,15 @@ test('Task 8: backend command routing persists preview progress, preview URL, an
       authToken: 'secret-token',
       backendUrl: baseUrl,
       capabilities: ['session.prepare', 'session.close'],
+      projects: [
+        {
+          key: 'pairdock',
+          name: 'PairDock',
+          repoFullName: 'mathis/pairdock',
+          pathAlias: 'pairdock',
+          defaultBranch: 'main',
+        },
+      ],
       projectPaths: {
         pairdock: repositoryPath,
       },

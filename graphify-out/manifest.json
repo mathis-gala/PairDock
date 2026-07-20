@@ -10,18 +10,18 @@
     "semantic_hash": ""
   },
   "apps/api/src/agent-gateway/agent-command-router.service.ts": {
-    "mtime": 1784578641.239169,
-    "ast_hash": "73cb06ca99f31452f9df2ac5898766ae",
-    "semantic_hash": "73cb06ca99f31452f9df2ac5898766ae"
+    "mtime": 1784581909.654071,
+    "ast_hash": "b6e9dbdde84bf1f9a6e777777e69ad52",
+    "semantic_hash": ""
   },
   "apps/api/src/agent-gateway/agent-gateway.module.ts": {
-    "mtime": 1784475161.6670241,
-    "ast_hash": "d452afe631a55ec0ed05a21417633478",
+    "mtime": 1784581720.6473305,
+    "ast_hash": "a9eaee0d78cbd33132905e858df00352",
     "semantic_hash": ""
   },
   "apps/api/src/agent-gateway/agent.gateway.ts": {
-    "mtime": 1784578641.239338,
-    "ast_hash": "c375f28c8be3b89753f3e8bd0e75077c",
+    "mtime": 1784581924.6802156,
+    "ast_hash": "ed8abf5e9e3ad2a5852a173f7ae6afc4",
     "semantic_hash": ""
   },
   "apps/api/src/agent-gateway/connected-agents.registry.ts": {
@@ -295,8 +295,8 @@
     "semantic_hash": "e520b2069df67b728904f9e2d35a1794"
   },
   "apps/api/src/projects/projects.service.ts": {
-    "mtime": 1784481150.7371488,
-    "ast_hash": "32b09949b6c34c24dda5a7a43bc54549",
+    "mtime": 1784581909.6568136,
+    "ast_hash": "8bdfb58e5bee51f50e807a5cf3a313a7",
     "semantic_hash": ""
   },
   "apps/api/src/review-requests/create-draft-review-request.use-case.ts": {
@@ -320,9 +320,9 @@
     "semantic_hash": ""
   },
   "apps/api/src/sessions/session-start-policy.ts": {
-    "mtime": 1783206153.2201355,
-    "ast_hash": "4d8468c47b4025dd5caf1dc63e9f3f12",
-    "semantic_hash": "4d8468c47b4025dd5caf1dc63e9f3f12"
+    "mtime": 1784582461.5952706,
+    "ast_hash": "c5354cc58751630a6e48eb90ad6bffa3",
+    "semantic_hash": ""
   },
   "apps/api/src/sessions/session-state-machine.ts": {
     "mtime": 1784473133.807739,
@@ -340,8 +340,8 @@
     "semantic_hash": "1be6880644764878e01501305c94145f"
   },
   "apps/api/src/sessions/sessions.service.ts": {
-    "mtime": 1784473133.8087852,
-    "ast_hash": "b8aa7f2b5f52ec86fd9c5eb291cdc1b1",
+    "mtime": 1784581909.6562302,
+    "ast_hash": "155a5315d7e55a8c16848381d498dab3",
     "semantic_hash": ""
   },
   "apps/api/src/source-control/adapters/github/github-source-control.adapter.ts": {
@@ -375,9 +375,9 @@
     "semantic_hash": "0b87dbe796ad338ac5fb1fbdccd4c834"
   },
   "apps/api/src/tool-readiness/tool-readiness.service.ts": {
-    "mtime": 1783206153.2207038,
-    "ast_hash": "8cf5e06ec090d484c5a1943ebc789c6f",
-    "semantic_hash": "8cf5e06ec090d484c5a1943ebc789c6f"
+    "mtime": 1784581909.657045,
+    "ast_hash": "1ca4895e1429e4f359f64fb98472c6b8",
+    "semantic_hash": ""
   },
   "apps/api/src/ui-gateway/ui-gateway.module.ts": {
     "mtime": 1782656657.6882997,
@@ -865,8 +865,8 @@
     "semantic_hash": "c010e4152e3381c57b210c8cad488845"
   },
   "tests/apps/api/integration/agent-gateway/agent-command-routing.integration.test.ts": {
-    "mtime": 1784479976.2899277,
-    "ast_hash": "cc970ca92e1aa18a3b7dc4d5c72aa5ab",
+    "mtime": 1784582043.1774786,
+    "ast_hash": "ecba2e266f29a00734494df9146831b1",
     "semantic_hash": ""
   },
   "tests/apps/api/integration/agent-gateway/agent-gateway.integration.test.ts": {
@@ -880,8 +880,8 @@
     "semantic_hash": ""
   },
   "tests/apps/api/integration/auth/auth.integration.test.ts": {
-    "mtime": 1784578999.8072927,
-    "ast_hash": "f7dc7320b1d56dcf2809ed6d4e60d7c3",
+    "mtime": 1784582215.891326,
+    "ast_hash": "5a60d428e79cb0ae80b78e7ea5d75ba7",
     "semantic_hash": ""
   },
   "tests/apps/api/integration/persistence/persistence.integration.test.ts": {
@@ -895,8 +895,8 @@
     "semantic_hash": ""
   },
   "tests/apps/api/integration/projects/shared-projects.integration.test.ts": {
-    "mtime": 1784473134.0400624,
-    "ast_hash": "c9f2ac3582ec2b65da98ec456160522e",
+    "mtime": 1784582461.5960252,
+    "ast_hash": "faf8690dc5748035a1b71cfb05d076f9",
     "semantic_hash": ""
   },
   "tests/apps/api/integration/review-requests/create-draft-review-request.integration.test.ts": {
@@ -905,8 +905,8 @@
     "semantic_hash": ""
   },
   "tests/apps/api/integration/sessions/pm-session-start.integration.test.ts": {
-    "mtime": 1784473134.0497959,
-    "ast_hash": "0748fae64d92bd1579ff797124a7c8e7",
+    "mtime": 1784582024.4881532,
+    "ast_hash": "1bc54c88820325d476bc44bd32507f70",
     "semantic_hash": ""
   },
   "tests/apps/api/integration/sessions/session-details.integration.test.ts": {
@@ -925,8 +925,8 @@
     "semantic_hash": "8b9460a10f7051c5497caaa3f20ed69b"
   },
   "tests/apps/api/integration/sessions/session-prompts.integration.test.ts": {
-    "mtime": 1784473134.051495,
-    "ast_hash": "6c77225ab044ec711f6cd9aceffd1c69",
+    "mtime": 1784582069.184903,
+    "ast_hash": "f9ff8bd1a51d6211b01574f0937a8328",
     "semantic_hash": ""
   },
   "tests/apps/api/integration/test-json.ts": {
@@ -935,8 +935,8 @@
     "semantic_hash": ""
   },
   "tests/apps/api/integration/tool-readiness/tool-readiness.integration.test.ts": {
-    "mtime": 1784481182.3328104,
-    "ast_hash": "a6d34ce053f2c1a6b34cbd0ae9243e40",
+    "mtime": 1784582034.8422465,
+    "ast_hash": "bb3d3f8dfd3dd552f16bb1eb390f75ec",
     "semantic_hash": ""
   },
   "tests/apps/api/integration/ui-gateway/ui-gateway.browser-auth.integration.test.ts": {
@@ -1125,8 +1125,8 @@
     "semantic_hash": ""
   },
   "README.md": {
-    "mtime": 1784579665.0007362,
-    "ast_hash": "a3496c60a8d3ae440740a66cf9ea99e7",
+    "mtime": 1784582245.4791794,
+    "ast_hash": "9c930f6f2b589b809cfe5d62a7ae39a9",
     "semantic_hash": ""
   },
   "apps/web/index.html": {
@@ -1420,8 +1420,8 @@
     "semantic_hash": ""
   },
   "tests/apps/api/unit/projects/developer-project-setup.test.ts": {
-    "mtime": 1784481273.1298997,
-    "ast_hash": "899d1f291f04cc5c841ce0c9ff7a6405",
+    "mtime": 1784581941.7006462,
+    "ast_hash": "b31bfe60fe29ec43add1df559f78df61",
     "semantic_hash": ""
   },
   ".playwright-cli/page-2026-07-18T18-20-08-278Z.yml": {
@@ -1702,6 +1702,21 @@
   "pairdock.yml": {
     "mtime": 1784579509.7642827,
     "ast_hash": "695a6548cd789aa69ca40f009f01be9f",
+    "semantic_hash": ""
+  },
+  "apps/api/src/agent-gateway/agent-project-binding.service.ts": {
+    "mtime": 1784581720.6465695,
+    "ast_hash": "a0d79b19f7d9e082c52f92932777053d",
+    "semantic_hash": ""
+  },
+  "tests/apps/api/unit/agent-gateway/agent-command-router.service.test.ts": {
+    "mtime": 1784582461.596544,
+    "ast_hash": "7779799789b6d69bd9c938071f1a3da5",
+    "semantic_hash": ""
+  },
+  "tests/apps/api/unit/agent-gateway/agent-project-binding.service.test.ts": {
+    "mtime": 1784581690.274282,
+    "ast_hash": "05ae73b48c57f504b9f4470dd55502bd",
     "semantic_hash": ""
   }
 }

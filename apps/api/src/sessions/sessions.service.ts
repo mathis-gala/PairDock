@@ -12,7 +12,7 @@ import type { PairDockIdentity, Project, Session, SessionStatus } from '@pairdoc
 import { AGENT_PROTOCOL_VERSION, type SessionPrepareCommandEnvelope } from '@pairdock/shared-contracts';
 import { AgentCommandRouterService } from '../agent-gateway/agent-command-router.service.js';
 import { AgentExecutionCapabilitiesService } from '../agent-gateway/agent-execution-capabilities.service.js';
-import { ConnectedAgentsRegistry } from '../agent-gateway/connected-agents.registry.js';
+import { AgentProjectBindingService } from '../agent-gateway/agent-project-binding.service.js';
 import { DiffService } from '../diff/diff.service.js';
 import {
   AGENT_EVENTS_REPOSITORY,
@@ -72,8 +72,8 @@ export class SessionsService {
     private readonly usersRepository: UsersRepository,
     @Inject(PERSISTENCE_UNIT_OF_WORK)
     private readonly persistenceUnitOfWork: PersistenceUnitOfWork,
-    @Inject(ConnectedAgentsRegistry)
-    private readonly connectedAgentsRegistry: ConnectedAgentsRegistry,
+    @Inject(AgentProjectBindingService)
+    private readonly agentProjectBinding: AgentProjectBindingService,
     @Inject(AgentCommandRouterService)
     private readonly agentCommandRouter: AgentCommandRouterService,
     @Inject(AgentExecutionCapabilitiesService)
@@ -266,7 +266,7 @@ export class SessionsService {
       userIds.map(async (userId) => ({ userId, user: await this.usersRepository.findById(userId) })),
     );
     const usersById = new Map(users.map(({ userId, user }) => [userId, user]));
-    const agentAvailability = this.connectedAgentsRegistry.findSocketId(project.agentProjectKey) ? 'online' : 'offline';
+    const agentAvailability = this.agentProjectBinding.isConnected(project) ? 'online' : 'offline';
 
     return {
       ...session,
@@ -316,7 +316,7 @@ export class SessionsService {
   }
 
   private async prepareSessionIfAgentOnline(session: Session, project: Project): Promise<void> {
-    if (!this.connectedAgentsRegistry.findSocketId(project.agentProjectKey)) {
+    if (!this.agentProjectBinding.isConnected(project)) {
       return;
     }
 
