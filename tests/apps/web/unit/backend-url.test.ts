@@ -18,3 +18,23 @@ test('production web runtime reads the API URL injected by the container environ
     Reflect.deleteProperty(globalThis, 'window');
   }
 });
+
+test('preview runtime can route API and sockets through its own public origin', () => {
+  Object.defineProperty(globalThis, 'window', {
+    configurable: true,
+    value: {
+      __PAIRDOCK_CONFIG__: {
+        apiBaseUrl: 'same-origin',
+      },
+      location: {
+        origin: 'https://pairdock-preview.example.test',
+      },
+    },
+  });
+
+  try {
+    assert.equal(getBackendUrl(), 'https://pairdock-preview.example.test');
+  } finally {
+    Reflect.deleteProperty(globalThis, 'window');
+  }
+});

@@ -203,6 +203,42 @@ node --import tsx packages/local-agent/src/main.ts start
 The agent reads local paths and commands from the developer machine, then publishes only safe metadata to PairDock:
 project key, display name, GitHub repository full name, path alias, optional default branch, and supported model/reasoning IDs. Local paths never leave the machine. Restart `pairdock-agent start` after changing its configuration or a project manifest so the backend receives the new catalog.
 
+### PairDock self-preview with the temporary TCG agent
+
+Until the production agent is available, the existing TCG agent identity and its authorized `tcg-collection` project key can temporarily publish the PairDock repository. Keep the existing agent id and token, but point that key to the PairDock checkout:
+
+```bash
+docker build --file deploy/Dockerfile.sandbox --tag pairdock/self-preview-sandbox:node22-bun1.3.14 .
+
+node --import tsx packages/local-agent/src/main.ts login \
+  --backend-url http://127.0.0.1:3000 \
+  --agent-id <existing-tcg-agent-id> \
+  --token <existing-tcg-agent-token> \
+  --capability session.prepare \
+  --capability readiness.check \
+  --capability agent.prompt \
+  --capability git.pushBranch \
+  --project tcg-collection=/absolute/path/to/PairDock
+
+node --import tsx packages/local-agent/src/main.ts start
+```
+
+The tracked `pairdock.yml` publishes PairDock metadata under that temporary key, starts only the web preview in Docker, and proxies browser API/WebSocket traffic to the already configured API at `127.0.0.1:3000`. The API therefore keeps using its local database and local GitHub secrets; no secret is copied into the sandbox. Set `DEV_PM_AUTH_ENABLED=true` on that local API so the PM can enter without Slack, while the developer still authenticates through GitHub.
+
+This temporary mapping replaces the TCG repository path for `tcg-collection`; it does not modify or delete either repository. In the developer UI, select the PairDock GitHub repository and the published PairDock agent project. The backend checks the repository advertised by the manifest, not the historical name of the project key.
+
+When both agents can run at the same time, give each process its own config file instead of overwriting the default one:
+
+```bash
+PAIRDOCK_AGENT_CONFIG_PATH=/absolute/path/to/agent-tcg.json pairdock-agent login <tcg-options>
+PAIRDOCK_AGENT_CONFIG_PATH=/absolute/path/to/agent-pairdock.json pairdock-agent login <pairdock-options>
+
+PAIRDOCK_AGENT_CONFIG_PATH=/absolute/path/to/agent-tcg.json pairdock-agent start
+PAIRDOCK_AGENT_CONFIG_PATH=/absolute/path/to/agent-pairdock.json pairdock-agent start
+```
+
+Use distinct agent ids, tokens, and project keys for the final two-agent setup, and authorize each key in the matching backend `AGENT_AUTH_CREDENTIALS_JSON` entry.
+
 Explicit `--model <id>=<label>=<provider>` options remain supported for non-Codex providers or as a fallback when the local Codex cache is unavailable. The developer selects the project's model and reasoning effort from the owning agent's published capabilities. Every new PM session inherits those server-side defaults; PM clients cannot override them. PairDock passes the persisted selection to Codex CLI as `--model` and `model_reasoning_effort`, and resumes the same Codex thread for follow-up prompts in that PairDock session.
 
 Agent console logs prefix execution failures with the PairDock session ID. Agent outputs and validation results are also persisted as session events. PM users receive a concise failed-check summary and recovery instruction in the conversation; full redacted check logs remain available in persisted events for diagnosis.

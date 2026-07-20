@@ -580,8 +580,8 @@
     "semantic_hash": ""
   },
   "apps/web/src/lib/backend-url.ts": {
-    "mtime": 1784578641.2433858,
-    "ast_hash": "4b52e017c8b178edb03f66dcb3b5a416",
+    "mtime": 1784579583.654239,
+    "ast_hash": "f8e9d919646fd5bebcf3dac19fb9cfa9",
     "semantic_hash": ""
   },
   "apps/web/src/lib/browser-seed.ts": {
@@ -665,9 +665,9 @@
     "semantic_hash": "176ef99b0b4d4ebd10ce192ae867c63d"
   },
   "apps/web/vite.config.ts": {
-    "mtime": 1784578641.245532,
-    "ast_hash": "35e0ad93adcce9358d280f5f99b08138",
-    "semantic_hash": "35e0ad93adcce9358d280f5f99b08138"
+    "mtime": 1784579540.9381747,
+    "ast_hash": "c1aa42782e33e5894d16d7e3a402a046",
+    "semantic_hash": ""
   },
   "biome.json": {
     "mtime": 1783788462.5783057,
@@ -1125,8 +1125,8 @@
     "semantic_hash": ""
   },
   "README.md": {
-    "mtime": 1784578987.2430542,
-    "ast_hash": "9083d2d310d1fafa26607f8c18c12d0f",
+    "mtime": 1784579665.0007362,
+    "ast_hash": "a3496c60a8d3ae440740a66cf9ea99e7",
     "semantic_hash": ""
   },
   "apps/web/index.html": {
@@ -1625,8 +1625,8 @@
     "semantic_hash": ""
   },
   "tests/apps/web/unit/backend-url.test.ts": {
-    "mtime": 1784578641.2668927,
-    "ast_hash": "dcfecd9cf6a4ac124dda201df5aab1b9",
+    "mtime": 1784579571.8750424,
+    "ast_hash": "0b5832bd0e20ee7a81a6fdb3aea5a50b",
     "semantic_hash": ""
   },
   ".github/dependabot.yml": {
@@ -1692,6 +1692,16 @@
   ".playwright-cli/page-2026-07-20T18-55-20-298Z.yml": {
     "mtime": 1784573720.2990744,
     "ast_hash": "e219ca6299520da5d58f86e0ff85d80f",
+    "semantic_hash": ""
+  },
+  "tests/repository/self-preview.test.ts": {
+    "mtime": 1784579600.715386,
+    "ast_hash": "5b7a3678cf683012a22bf19ebaf3543a",
+    "semantic_hash": ""
+  },
+  "pairdock.yml": {
+    "mtime": 1784579509.7642827,
+    "ast_hash": "695a6548cd789aa69ca40f009f01be9f",
     "semantic_hash": ""
   }
 }
