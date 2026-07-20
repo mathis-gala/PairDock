@@ -1,4 +1,4 @@
-import { BadRequestException, Inject, Injectable } from '@nestjs/common';
+import { BadRequestException, Inject, Injectable, NotFoundException } from '@nestjs/common';
 import type {
   DeveloperIdentityPort,
   NormalizedIdentity,
@@ -11,6 +11,7 @@ import type { ExternalIdentitiesRepository } from '../persistence/ports/external
 import { UsersService } from '../users/users.service.js';
 import { DEVELOPER_IDENTITY_PORT, PM_IDENTITY_PORT } from './auth.tokens.js';
 import { AuthTokenService } from './auth-token.service.js';
+import { isDevelopmentAuthEnabled } from './development-auth.js';
 import { GithubAuthStateService } from './github-auth-state.service.js';
 
 export interface AuthResult {
@@ -20,6 +21,7 @@ export interface AuthResult {
 }
 
 export type AuthProvider = 'github' | 'slack';
+export type DevelopmentAuthRole = PairDockUser['kind'];
 
 interface OAuthStartUrlConfig {
   frontendUrl: string;
@@ -57,6 +59,22 @@ export class AuthService {
   async authenticatePm(accessToken: string): Promise<AuthResult> {
     const identity = await this.pmIdentityPort.getPmIdentity(accessToken);
     return this.authenticate(identity);
+  }
+
+  getAuthProviders(): { developmentAuthEnabled: boolean } {
+    return { developmentAuthEnabled: isDevelopmentAuthEnabled() };
+  }
+
+  async authenticateDevelopment(role: DevelopmentAuthRole): Promise<AuthResult> {
+    if (!isDevelopmentAuthEnabled()) {
+      throw new NotFoundException('Development authentication is disabled.');
+    }
+
+    return role === 'developer'
+      ? this.authenticateDeveloper(
+          'github:pairdock-developer:developer@pairdock.test:PairDock Developer:installation:test-pairdock',
+        )
+      : this.authenticatePm('slack:pairdock-pm:pairdock-local:pm@pairdock.test:PairDock PM');
   }
 
   getDeveloperStartUrl(): string {

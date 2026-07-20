@@ -21,7 +21,7 @@ export function Button({ children, className, type = 'button', variant = 'primar
     <button
       {...props}
       className={classNames(
-        'inline-flex min-h-10 items-center justify-center gap-2 rounded-[10px] border px-4 py-2 text-[13.5px] font-semibold transition disabled:cursor-not-allowed',
+        'inline-flex min-h-10 cursor-pointer items-center justify-center gap-2 rounded-[10px] border px-4 py-2 text-[13.5px] font-semibold transition disabled:cursor-not-allowed',
         variantClasses[variant],
         className,
       )}

@@ -168,6 +168,32 @@ test.beforeEach(async () => {
   await resetDatabase();
 });
 
+test('development auth advertises availability and signs in both PairDock roles without OAuth', async () => {
+  const providersResponse = await fetch(`${baseUrl}/auth/providers`);
+  const developerResponse = await fetch(`${baseUrl}/auth/development/login`, {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({ role: 'developer' }),
+  });
+  const pmResponse = await fetch(`${baseUrl}/auth/development/login`, {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({ role: 'pm' }),
+  });
+  const providers = (await providersResponse.json()) as { developmentAuthEnabled?: unknown };
+  const developer = await parseJsonResponse(developerResponse, authResponseSchema);
+  const pm = await parseJsonResponse(pmResponse, authResponseSchema);
+
+  assert.equal(providersResponse.status, 200);
+  assert.equal(providers.developmentAuthEnabled, true);
+  assert.equal(developerResponse.status, 200);
+  assert.equal(pmResponse.status, 200);
+  assert.equal(developer.user.kind, 'developer');
+  assert.equal(pm.user.kind, 'pm');
+  assert.equal(developer.user.email, 'developer@pairdock.test');
+  assert.equal(pm.user.email, 'pm@pairdock.test');
+});
+
 test('BT-035: AuthModule normalizes GitHub and Slack callbacks into PairDock users and external identities', async () => {
   const developerSeed = randomUUID();
   const pmSeed = randomUUID();

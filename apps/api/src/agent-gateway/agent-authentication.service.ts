@@ -1,10 +1,12 @@
 import { timingSafeEqual } from 'node:crypto';
 import { Inject, Injectable, Optional, UnauthorizedException } from '@nestjs/common';
+import { isDevelopmentAuthEnabled } from '../auth/development-auth.js';
 
 const MINIMUM_AGENT_TOKEN_LENGTH = 32;
 
 export interface AgentAuthenticationOptions {
   nodeEnv?: string;
+  developmentAuthEnabled?: boolean;
   credentials?: Record<string, AgentCredentialInput>;
   credentialsJson?: string;
 }
@@ -31,11 +33,14 @@ export class AgentAuthenticationService {
     options: AgentAuthenticationOptions = {},
   ) {
     const nodeEnv = options.nodeEnv ?? process.env.NODE_ENV;
+    const developmentAuthEnabled =
+      nodeEnv !== 'production' &&
+      (options.developmentAuthEnabled ?? isDevelopmentAuthEnabled({ ...process.env, NODE_ENV: nodeEnv }));
     const configuredCredentials =
       options.credentials ?? parseCredentials(options.credentialsJson ?? process.env.AGENT_AUTH_CREDENTIALS_JSON);
 
     if (!configuredCredentials || Object.keys(configuredCredentials).length === 0) {
-      if (nodeEnv !== 'test') {
+      if (nodeEnv !== 'test' && !developmentAuthEnabled) {
         throw new Error('AGENT_AUTH_CREDENTIALS_JSON is required outside automated tests.');
       }
 

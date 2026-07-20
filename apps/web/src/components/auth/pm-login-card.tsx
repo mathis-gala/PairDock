@@ -1,10 +1,26 @@
+import { useMutation } from '@tanstack/react-query';
 import { authApi } from '../../api/client.js';
+import type { AuthSession } from '../../schemas/auth.js';
 import { SlackIcon } from '../brand-icons.js';
 import { Button } from '../button.js';
 
-export function PmLoginCard() {
+interface PmLoginCardProps {
+  developmentAuthEnabled: boolean;
+  onAuthenticated: (session: AuthSession) => void;
+}
+
+export function PmLoginCard({ developmentAuthEnabled, onAuthenticated }: PmLoginCardProps) {
+  const developmentLoginMutation = useMutation({
+    mutationFn: () => authApi.authenticateDevelopment('pm'),
+    onSuccess: onAuthenticated,
+  });
+
   function handleSlackAppAuth() {
     window.location.assign(authApi.pmStartUrl());
+  }
+
+  function handleDevelopmentAuth() {
+    developmentLoginMutation.mutate();
   }
 
   return (
@@ -22,20 +38,40 @@ export function PmLoginCard() {
       <p className="font-mono text-xs font-semibold uppercase tracking-[0.14em] text-[#6f7686]">PM</p>
       <h2 className="mt-1 font-['Space_Grotesk'] text-[18px] font-semibold text-[#eef0f4]">Espace produit</h2>
       <p className="mt-2 text-sm leading-6 text-[#8b92a1]">
-        Connecte ton workspace Slack pour rejoindre les projets partagés avec ton adresse d'équipe.
+        {developmentAuthEnabled
+          ? 'Utilise l’identité PM locale pour tester les invitations, les sessions et les previews.'
+          : "Connecte ton workspace Slack pour rejoindre les projets partagés avec ton adresse d'équipe."}
       </p>
       <div className="mt-auto pt-6">
-        <Button
-          className="w-full bg-[#d3a4ea] text-[#2a1635] hover:bg-[#ddb4f0]"
-          onClick={handleSlackAppAuth}
-          type="button"
-        >
-          <SlackIcon />
-          Continuer avec Slack App
-        </Button>
+        {developmentAuthEnabled ? (
+          <Button
+            className="w-full bg-[#d3a4ea] text-[#2a1635] hover:bg-[#ddb4f0]"
+            disabled={developmentLoginMutation.isPending}
+            onClick={handleDevelopmentAuth}
+            type="button"
+          >
+            {developmentLoginMutation.isPending ? 'Connexion…' : 'Entrer comme PM'}
+          </Button>
+        ) : (
+          <Button
+            className="w-full bg-[#d3a4ea] text-[#2a1635] hover:bg-[#ddb4f0]"
+            onClick={handleSlackAppAuth}
+            type="button"
+          >
+            <SlackIcon />
+            Continuer avec Slack App
+          </Button>
+        )}
+        {developmentLoginMutation.isError ? (
+          <p className="mt-3 text-xs leading-5 text-rose-300" role="alert">
+            La connexion PM locale a échoué. Vérifie que DEV_AUTH_ENABLED=true côté API.
+          </p>
+        ) : null}
         <p className="mt-4 flex items-center gap-2 font-mono text-[11.5px] text-[#6f7686]">
           <span className="size-1.5 rounded-full bg-[#d3a4ea]" />
-          auth PM seulement · aucune notification bot
+          {developmentAuthEnabled
+            ? 'identité fixture · données locales'
+            : 'auth PM seulement · aucune notification bot'}
         </p>
       </div>
     </section>

@@ -43,6 +43,28 @@ test('production API refuses to start without agent credentials', () => {
   );
 });
 
+test('development auth can start without exposing a fixture agent credential', () => {
+  const authentication = new AgentAuthenticationService({
+    nodeEnv: 'development',
+    developmentAuthEnabled: true,
+    credentials: undefined,
+  });
+
+  assert.equal(authentication.authenticate(undefined), null);
+});
+
+test('production ignores the development auth override for agent credentials', () => {
+  assert.throws(
+    () =>
+      new AgentAuthenticationService({
+        nodeEnv: 'production',
+        developmentAuthEnabled: true,
+        credentials: undefined,
+      }),
+    /AGENT_AUTH_CREDENTIALS_JSON is required/,
+  );
+});
+
 test('agent authentication rejects duplicate, short, and malformed credentials', () => {
   assert.throws(
     () =>

@@ -12,10 +12,14 @@ import {
   Redirect,
   Res,
 } from '@nestjs/common';
-import { type AuthResult, AuthService } from './auth.service.js';
+import { type AuthResult, AuthService, type DevelopmentAuthRole } from './auth.service.js';
 
 interface AuthCallbackBody {
   accessToken: string;
+}
+
+interface DevelopmentAuthBody {
+  role?: unknown;
 }
 
 interface HeaderResponse {
@@ -29,6 +33,21 @@ const SLACK_AUTHORIZATION_STATE_COOKIE = 'pairdock_slack_authorization_state';
 @Controller('auth')
 export class AuthController {
   constructor(@Inject(AuthService) private readonly authService: AuthService) {}
+
+  @Get('providers')
+  getAuthProviders(): { developmentAuthEnabled: boolean } {
+    return this.authService.getAuthProviders();
+  }
+
+  @Post('development/login')
+  @HttpCode(HttpStatus.OK)
+  authenticateDevelopment(@Body() body: DevelopmentAuthBody): Promise<AuthResult> {
+    if (!isDevelopmentAuthRole(body.role)) {
+      throw new BadRequestException('Development authentication role must be developer or pm.');
+    }
+
+    return this.authService.authenticateDevelopment(body.role);
+  }
 
   @Get('developer/start')
   @Redirect()
@@ -176,4 +195,8 @@ function clearStateCookie(name: string, path = '/auth/developer'): string {
 
 function secureCookieSuffix(): string {
   return process.env.NODE_ENV === 'production' ? '; Secure' : '';
+}
+
+function isDevelopmentAuthRole(value: unknown): value is DevelopmentAuthRole {
+  return value === 'developer' || value === 'pm';
 }

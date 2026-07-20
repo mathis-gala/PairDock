@@ -1,10 +1,26 @@
+import { useMutation } from '@tanstack/react-query';
 import { authApi } from '../../api/client.js';
+import type { AuthSession } from '../../schemas/auth.js';
 import { GitHubIcon } from '../brand-icons.js';
 import { Button } from '../button.js';
 
-export function DeveloperLoginCard() {
+interface DeveloperLoginCardProps {
+  developmentAuthEnabled: boolean;
+  onAuthenticated: (session: AuthSession) => void;
+}
+
+export function DeveloperLoginCard({ developmentAuthEnabled, onAuthenticated }: DeveloperLoginCardProps) {
+  const developmentLoginMutation = useMutation({
+    mutationFn: () => authApi.authenticateDevelopment('developer'),
+    onSuccess: onAuthenticated,
+  });
+
   function handleGithubAppAuth() {
     window.location.assign(authApi.developerStartUrl());
+  }
+
+  function handleDevelopmentAuth() {
+    developmentLoginMutation.mutate();
   }
 
   return (
@@ -25,17 +41,36 @@ export function DeveloperLoginCard() {
       <p className="font-mono text-xs font-semibold uppercase tracking-[0.14em] text-[#6f7686]">Developer</p>
       <h2 className="mt-1 font-['Space_Grotesk'] text-[18px] font-semibold text-[#eef0f4]">Espace développeur</h2>
       <p className="mt-2 text-sm leading-6 text-[#8b92a1]">
-        Installe l'app GitHub, choisis les dépôts autorisés et PairDock configure l'accès source-control
-        automatiquement.
+        {developmentAuthEnabled
+          ? 'Utilise l’identité developer locale pour configurer et partager les projets de cette preview.'
+          : "Installe l'app GitHub, choisis les dépôts autorisés et PairDock configure l'accès source-control automatiquement."}
       </p>
       <div className="mt-auto pt-6">
-        <Button className="w-full" onClick={handleGithubAppAuth} type="button">
-          <GitHubIcon />
-          Continuer avec GitHub App
-        </Button>
+        {developmentAuthEnabled ? (
+          <Button
+            className="w-full"
+            disabled={developmentLoginMutation.isPending}
+            onClick={handleDevelopmentAuth}
+            type="button"
+          >
+            {developmentLoginMutation.isPending ? 'Connexion…' : 'Entrer comme developer'}
+          </Button>
+        ) : (
+          <Button className="w-full" onClick={handleGithubAppAuth} type="button">
+            <GitHubIcon />
+            Continuer avec GitHub App
+          </Button>
+        )}
+        {developmentLoginMutation.isError ? (
+          <p className="mt-3 text-xs leading-5 text-rose-300" role="alert">
+            La connexion developer locale a échoué. Vérifie que DEV_AUTH_ENABLED=true côté API.
+          </p>
+        ) : null}
         <p className="mt-4 flex items-center gap-2 font-mono text-[11.5px] text-[#6f7686]">
           <span className="size-1.5 rounded-full bg-[#5fdf9b]" />
-          installation dépôt · PR draft via GitHub App
+          {developmentAuthEnabled
+            ? 'identité fixture · données locales'
+            : 'installation dépôt · PR draft via GitHub App'}
         </p>
       </div>
     </section>

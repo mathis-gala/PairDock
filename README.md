@@ -201,6 +201,18 @@ node --import tsx packages/local-agent/src/main.ts start
 The agent reads local paths and commands from the developer machine, then publishes only safe metadata to PairDock:
 project key, display name, GitHub repository full name, path alias, optional default branch, and supported model/reasoning IDs. Local paths never leave the machine. Restart `pairdock-agent start` after changing its configuration or a project manifest so the backend receives the new catalog.
 
+### PairDock self-preview
+
+PairDock can publish its own repository through the same local agent. Build its local sandbox image once before starting the agent:
+
+```bash
+docker build --file deploy/Dockerfile.sandbox --tag pairdock/self-preview-sandbox:node22-bun1.3.14 .
+```
+
+The tracked `pairdock.yml` starts the API and web app against the documented local PostgreSQL database. Vite proxies API routes and WebSockets through the single Cloudflare preview URL. `DEV_AUTH_ENABLED=true` replaces OAuth with explicit local developer and PM identities in that preview only. Production refuses fixture authentication even if the flag is set accidentally.
+
+The local identities are `developer@pairdock.test` and `pm@pairdock.test`. Invite the PM address from the local developer view to exercise the complete shared-project flow.
+
 Explicit `--model <id>=<label>=<provider>` options remain supported for non-Codex providers or as a fallback when the local Codex cache is unavailable. The developer selects the project's model and reasoning effort from the owning agent's published capabilities. Every new PM session inherits those server-side defaults; PM clients cannot override them. PairDock passes the persisted selection to Codex CLI as `--model` and `model_reasoning_effort`, and resumes the same Codex thread for follow-up prompts in that PairDock session.
 
 Agent console logs prefix execution failures with the PairDock session ID. Agent outputs and validation results are also persisted as session events. PM users receive a concise failed-check summary and recovery instruction in the conversation; full redacted check logs remain available in persisted events for diagnosis.

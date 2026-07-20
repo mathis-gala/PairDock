@@ -1,3 +1,5 @@
+import { useQuery } from '@tanstack/react-query';
+import { authApi } from '../api/client.js';
 import { DeveloperLoginCard } from '../components/auth/developer-login-card.js';
 import { PmLoginCard } from '../components/auth/pm-login-card.js';
 import type { AuthSession } from '../schemas/auth.js';
@@ -7,7 +9,13 @@ interface LoginPageProps {
 }
 
 export function LoginPage({ onAuthenticated }: LoginPageProps) {
-  void onAuthenticated;
+  const authProvidersQuery = useQuery({
+    queryKey: ['auth', 'providers'],
+    queryFn: authApi.providers,
+    retry: false,
+    staleTime: Number.POSITIVE_INFINITY,
+  });
+  const developmentAuthEnabled = authProvidersQuery.data?.developmentAuthEnabled === true;
 
   return (
     <div className="flex min-h-dvh flex-col items-center justify-center px-4 py-8 sm:px-6 sm:py-10">
@@ -27,10 +35,14 @@ export function LoginPage({ onAuthenticated }: LoginPageProps) {
         direct.
       </p>
       <div className="grid w-full max-w-[760px] gap-[18px] md:grid-cols-2">
-        <DeveloperLoginCard />
-        <PmLoginCard />
+        <DeveloperLoginCard developmentAuthEnabled={developmentAuthEnabled} onAuthenticated={onAuthenticated} />
+        <PmLoginCard developmentAuthEnabled={developmentAuthEnabled} onAuthenticated={onAuthenticated} />
       </div>
-      <p className="mt-8 font-mono text-xs text-[#565d6b]">SSO · worktrees isolés · une PR par correctif</p>
+      <p className="mt-8 font-mono text-xs text-[#565d6b]">
+        {developmentAuthEnabled
+          ? 'Mode local · worktrees isolés · aucune redirection OAuth'
+          : 'SSO · worktrees isolés · une PR par correctif'}
+      </p>
     </div>
   );
 }

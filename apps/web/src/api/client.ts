@@ -191,17 +191,40 @@ export function createApiClient(accessToken: string): ApiClient {
 }
 
 export const authApi: {
+  providers(): Promise<{ developmentAuthEnabled: boolean }>;
   developerStartUrl(): string;
   pmStartUrl(): string;
+  authenticateDevelopment(role: AuthSession['user']['kind']): Promise<AuthSession>;
   authenticateDeveloper(rawAccessToken: string): Promise<AuthSession>;
   authenticatePm(rawAccessToken: string): Promise<AuthSession>;
 } = {
+  async providers(): Promise<{ developmentAuthEnabled: boolean }> {
+    const response = await fetch(`${getBackendUrl()}/auth/providers`);
+    const body = await response.json().catch(() => null);
+
+    if (!response.ok) {
+      throw new Error('Impossible de vérifier le mode de connexion local.');
+    }
+
+    return z.object({ developmentAuthEnabled: z.boolean() }).parse(body);
+  },
+
   developerStartUrl(): string {
     return `${getBackendUrl()}/auth/developer/start`;
   },
 
   pmStartUrl(): string {
     return `${getBackendUrl()}/auth/pm/start`;
+  },
+
+  async authenticateDevelopment(role: AuthSession['user']['kind']): Promise<AuthSession> {
+    const response = await fetch(`${getBackendUrl()}/auth/development/login`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ role }),
+    });
+
+    return toAuthSession(response, role === 'developer' ? 'github' : 'slack');
   },
 
   async authenticateDeveloper(rawAccessToken: string): Promise<AuthSession> {
