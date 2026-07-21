@@ -3,6 +3,7 @@ import { randomUUID } from 'node:crypto';
 import test from 'node:test';
 import type { INestApplication } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
+import type { Project } from '@pairdock/domain';
 import {
   AGENT_PROTOCOL_VERSION,
   type AgentEventEnvelope,
@@ -121,13 +122,13 @@ async function sendAgentEvent(socket: Socket, event: AgentEventEnvelope) {
   socket.emit(agentProtocolMessageEventName, event);
 }
 
-async function announceAgent(socket: Socket, agentId: string) {
+async function announceAgent(socket: Socket, project: Project) {
   await sendAgentEvent(socket, {
     protocolVersion: AGENT_PROTOCOL_VERSION,
     messageId: randomUUID(),
     type: 'agent.connected',
     payload: {
-      agentId,
+      agentId: `agent-${project.agentProjectKey}`,
       capabilities: ['session.prepare', 'agent.prompt', 'agent.cancel', 'preview', 'readiness.check'],
       models: [
         {
@@ -148,7 +149,15 @@ async function announceAgent(socket: Socket, agentId: string) {
           defaultReasoningEffort: 'low',
         },
       ],
-      projects: [],
+      projects: [
+        {
+          key: project.agentProjectKey,
+          name: project.name,
+          repoFullName: project.repoFullName,
+          pathAlias: project.name,
+          defaultBranch: project.defaultBranch,
+        },
+      ],
     },
     sentAt: new Date().toISOString(),
   });
@@ -200,7 +209,7 @@ test('BT-046: PM can start a shared project only when the project is ready and t
   const agentSocket = connectAgentSocket();
 
   try {
-    await announceAgent(agentSocket, fixture.project.agentProjectKey);
+    await announceAgent(agentSocket, fixture.project);
     await publishReadiness(agentSocket, fixture.project.agentProjectKey);
     await waitForReadiness(fixture.project.id);
 
@@ -248,7 +257,7 @@ test('PM cannot override the model or reasoning configured by the developer', as
   const agentSocket = connectAgentSocket();
 
   try {
-    await announceAgent(agentSocket, fixture.project.agentProjectKey);
+    await announceAgent(agentSocket, fixture.project);
     await publishReadiness(agentSocket, fixture.project.agentProjectKey);
     await waitForReadiness(fixture.project.id);
 
@@ -282,7 +291,7 @@ test('BT-046: owning developer can close a PM-created session', async () => {
   const authTokenService = app.get(AuthTokenService);
 
   try {
-    await announceAgent(agentSocket, fixture.project.agentProjectKey);
+    await announceAgent(agentSocket, fixture.project);
     await publishReadiness(agentSocket, fixture.project.agentProjectKey);
     await waitForReadiness(fixture.project.id);
 
@@ -371,4 +380,42 @@ test('BT-047: PM session start is rejected when the owning agent is offline', as
   });
 
   assert.equal(response.status, 503);
+});
+
+test('PM session start is rejected when the project key was remapped to another repository', async () => {
+  const pmLogin = await authenticatePm();
+  const fixture = await createProjectFixture(pmLogin.body.user.id);
+  const agentSocket = connectAgentSocket();
+
+  try {
+    await announceAgent(agentSocket, {
+      ...fixture.project,
+      repoFullName: 'mathis/a-different-repository',
+    });
+    await prisma.projectReadinessSnapshot.create({
+      data: {
+        projectId: fixture.project.id,
+        ok: true,
+        checks: [],
+      },
+    });
+
+    const response = await fetch(`${baseUrl}/sessions`, {
+      method: 'POST',
+      headers: {
+        authorization: `Bearer ${pmLogin.body.accessToken}`,
+        'content-type': 'application/json',
+      },
+      body: JSON.stringify({
+        projectId: fixture.project.id,
+        startSource: 'pm',
+      }),
+    });
+
+    assert.equal(response.status, 409);
+    assert.match(await response.text(), /different repository/i);
+    assert.equal(await prisma.session.count({ where: { projectId: fixture.project.id } }), 0);
+  } finally {
+    agentSocket.close();
+  }
 });

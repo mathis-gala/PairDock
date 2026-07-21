@@ -10,6 +10,7 @@ import {
 import type { PairDockIdentity, ProjectReadinessSnapshot } from '@pairdock/domain';
 import { AGENT_PROTOCOL_VERSION, type ReadinessCheckCommandEnvelope } from '@pairdock/shared-contracts';
 import { AgentGateway } from '../agent-gateway/agent.gateway.js';
+import { AgentProjectBindingService } from '../agent-gateway/agent-project-binding.service.js';
 import { PROJECT_READINESS_REPOSITORY, PROJECTS_REPOSITORY } from '../persistence/persistence.tokens.js';
 import type { ProjectReadinessRepository } from '../persistence/ports/project-readiness.repository.js';
 import type { ProjectsRepository } from '../persistence/ports/projects.repository.js';
@@ -23,6 +24,8 @@ export class ToolReadinessService {
     private readonly projectReadinessRepository: ProjectReadinessRepository,
     @Inject(AgentGateway)
     private readonly agentGateway: AgentGateway,
+    @Inject(AgentProjectBindingService)
+    private readonly agentProjectBinding: AgentProjectBindingService,
   ) {}
 
   async getProjectReadinessResponse(projectId: string, user: PairDockIdentity | undefined) {
@@ -33,6 +36,7 @@ export class ToolReadinessService {
 
   async requestProjectReadinessCheckResponse(projectId: string, user: PairDockIdentity | undefined) {
     const project = await this.findOwnedProject(projectId, this.requireDeveloper(user));
+    this.agentProjectBinding.assertConnected(project);
     const command: ReadinessCheckCommandEnvelope = {
       protocolVersion: AGENT_PROTOCOL_VERSION,
       messageId: randomUUID(),

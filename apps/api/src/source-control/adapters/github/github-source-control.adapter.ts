@@ -1,6 +1,7 @@
 import { createSign } from 'node:crypto';
 import { Injectable } from '@nestjs/common';
 import type { SourceControlPort } from '@pairdock/domain';
+import { areIdentityFixturesEnabled } from '../../../auth/development-pm-auth.js';
 
 interface GithubPullResponse {
   html_url?: unknown;
@@ -249,7 +250,7 @@ export class GithubSourceControlAdapter implements SourceControlPort {
 
 function readGithubConfig(): GithubSourceControlConfig {
   return {
-    allowFixtures: process.env.DEV_AUTH_ENABLED === 'true',
+    allowFixtures: areIdentityFixturesEnabled(),
     apiBaseUrl: process.env.GITHUB_API_BASE_URL ?? 'https://api.github.com',
     token: process.env.GITHUB_TOKEN,
     appId: process.env.GITHUB_APP_ID,

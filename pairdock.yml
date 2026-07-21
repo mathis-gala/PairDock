@@ -1,0 +1,23 @@
+version: 1
+name: PairDock
+defaultBranch: main
+sandbox:
+  image: pairdock/self-preview-sandbox:node22-bun1.3.14
+  workdir: /workspace
+  network: host-services
+  env:
+    PAIRDOCK_DEV_API_PROXY_TARGET: 'http://host.docker.internal:3000'
+    VITE_API_BASE_URL: 'same-origin'
+  ports:
+    - '127.0.0.1:{{hostPort}}:4000'
+preview:
+  start: >-
+    bun install --frozen-lockfile &&
+    bun --cwd apps/web dev --host 0.0.0.0 --port 4000
+  healthcheck: 'http://127.0.0.1:{{hostPort}}'
+  healthcheckTimeoutMs: 120000
+  tunnel: cloudflare
+checks:
+  build: 'bun run build'
+  test: 'bun run test:architecture && bun run --filter @pairdock/web test && bun run --filter @pairdock/local-agent test && bun run --filter @pairdock/api test:unit'
+  lint: 'bun run lint'

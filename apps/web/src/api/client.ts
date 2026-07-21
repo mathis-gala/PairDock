@@ -193,6 +193,8 @@ export function createApiClient(accessToken: string): ApiClient {
 export const authApi: {
   developerStartUrl(): string;
   pmStartUrl(): string;
+  providers(): Promise<AuthProviders>;
+  authenticateDevelopmentPm(): Promise<AuthSession>;
   authenticateDeveloper(rawAccessToken: string): Promise<AuthSession>;
   authenticatePm(rawAccessToken: string): Promise<AuthSession>;
 } = {
@@ -202,6 +204,16 @@ export const authApi: {
 
   pmStartUrl(): string {
     return `${getBackendUrl()}/auth/pm/start`;
+  },
+
+  async providers(): Promise<AuthProviders> {
+    const response = await fetch(`${getBackendUrl()}/auth/providers`);
+    return authProvidersSchema.parse(await response.json());
+  },
+
+  async authenticateDevelopmentPm(): Promise<AuthSession> {
+    const response = await fetch(`${getBackendUrl()}/auth/development/pm/login`, { method: 'POST' });
+    return toAuthSession(response, 'slack');
   },
 
   async authenticateDeveloper(rawAccessToken: string): Promise<AuthSession> {
@@ -224,6 +236,12 @@ export const authApi: {
     return toAuthSession(response, 'slack');
   },
 };
+
+export interface AuthProviders {
+  developmentPmAuthEnabled: boolean;
+}
+
+const authProvidersSchema = z.object({ developmentPmAuthEnabled: z.boolean() });
 
 interface RequestOptions {
   method: string;

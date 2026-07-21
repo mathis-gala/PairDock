@@ -63,6 +63,7 @@ test('developer setup lists repositories from every GitHub App installation acce
       listModelsForProject: () => [],
       resolveSessionSelection: (_key: string, selection: unknown) => selection,
     } as never,
+    {} as never,
     sourceControl as never,
   );
 
@@ -160,6 +161,7 @@ test('project creation derives the organization installation from the selected r
       listModelsForProject: () => [],
       resolveSessionSelection: (_key: string, selection: unknown) => selection,
     } as never,
+    { isConnected: () => true } as never,
     sourceControl as never,
   );
 

@@ -6,6 +6,7 @@ import { AgentGateway } from './agent.gateway.js';
 import { AgentAuthenticationService } from './agent-authentication.service.js';
 import { AgentCommandRouterService } from './agent-command-router.service.js';
 import { AgentExecutionCapabilitiesService } from './agent-execution-capabilities.service.js';
+import { AgentProjectBindingService } from './agent-project-binding.service.js';
 import { ConnectedAgentsRegistry } from './connected-agents.registry.js';
 
 @Module({
@@ -16,7 +17,14 @@ import { ConnectedAgentsRegistry } from './connected-agents.registry.js';
     AgentGateway,
     AgentCommandRouterService,
     AgentExecutionCapabilitiesService,
+    AgentProjectBindingService,
   ],
-  exports: [AgentGateway, AgentCommandRouterService, AgentExecutionCapabilitiesService, ConnectedAgentsRegistry],
+  exports: [
+    AgentGateway,
+    AgentCommandRouterService,
+    AgentExecutionCapabilitiesService,
+    AgentProjectBindingService,
+    ConnectedAgentsRegistry,
+  ],
 })
 export class AgentGatewayModule {}

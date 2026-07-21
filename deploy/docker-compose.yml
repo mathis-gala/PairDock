@@ -20,7 +20,7 @@ x-api-environment: &api-environment
   SLACK_CLIENT_ID: ${SLACK_CLIENT_ID:?SLACK_CLIENT_ID is required}
   SLACK_CLIENT_SECRET: ${SLACK_CLIENT_SECRET:?SLACK_CLIENT_SECRET is required}
   SLACK_REDIRECT_URI: ${SLACK_REDIRECT_URI:?SLACK_REDIRECT_URI is required}
-  DEV_AUTH_ENABLED: "false"
+  DEV_PM_AUTH_ENABLED: "false"
 
 services:
   database:

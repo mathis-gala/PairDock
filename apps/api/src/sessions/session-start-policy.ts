@@ -1,13 +1,6 @@
-import {
-  ConflictException,
-  ForbiddenException,
-  Inject,
-  Injectable,
-  NotFoundException,
-  ServiceUnavailableException,
-} from '@nestjs/common';
+import { ConflictException, ForbiddenException, Inject, Injectable, NotFoundException } from '@nestjs/common';
 import type { PairDockIdentity, Project } from '@pairdock/domain';
-import { ConnectedAgentsRegistry } from '../agent-gateway/connected-agents.registry.js';
+import { AgentProjectBindingService } from '../agent-gateway/agent-project-binding.service.js';
 import {
   PROJECT_MEMBERS_REPOSITORY,
   PROJECT_READINESS_REPOSITORY,
@@ -28,8 +21,8 @@ export class SessionStartPolicy {
     private readonly projectMembersRepository: ProjectMembersRepository,
     @Inject(PROJECT_READINESS_REPOSITORY)
     private readonly projectReadinessRepository: ProjectReadinessRepository,
-    @Inject(ConnectedAgentsRegistry)
-    private readonly connectedAgentsRegistry: ConnectedAgentsRegistry,
+    @Inject(AgentProjectBindingService)
+    private readonly agentProjectBinding: AgentProjectBindingService,
   ) {}
 
   async assertCanStart(
@@ -54,6 +47,8 @@ export class SessionStartPolicy {
         throw new ForbiddenException('Only the owning developer can create sessions for this project.');
       }
 
+      this.agentProjectBinding.assertCompatibleIfConnected(project);
+
       const readinessSnapshot = await this.projectReadinessRepository.findByProjectId(project.id);
 
       if (readinessSnapshot && !readinessSnapshot.ok) {
@@ -77,9 +72,7 @@ export class SessionStartPolicy {
       throw new ConflictException('PM-started sessions are disabled for this project.');
     }
 
-    if (!this.connectedAgentsRegistry.findSocketId(project.agentProjectKey)) {
-      throw new ServiceUnavailableException(`Owning agent ${project.agentProjectKey} is offline.`);
-    }
+    this.agentProjectBinding.assertConnected(project);
 
     const readinessSnapshot = await this.projectReadinessRepository.findByProjectId(project.id);
 

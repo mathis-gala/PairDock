@@ -138,17 +138,33 @@ function waitForConnect(socket: Socket): Promise<void> {
   });
 }
 
-async function announceAgent(socket: Socket, agentId: string) {
+async function announceAgent(
+  socket: Socket,
+  project: {
+    agentProjectKey: string;
+    name: string;
+    repoFullName: string;
+    defaultBranch: string;
+  },
+) {
   await waitForConnect(socket);
   socket.emit(agentProtocolMessageEventName, {
     protocolVersion: AGENT_PROTOCOL_VERSION,
     messageId: randomUUID(),
     type: 'agent.connected',
     payload: {
-      agentId,
+      agentId: project.agentProjectKey,
       capabilities: ['session.prepare', 'agent.prompt', 'agent.cancel', 'preview'],
       models: [],
-      projects: [],
+      projects: [
+        {
+          key: project.agentProjectKey,
+          name: project.name,
+          repoFullName: project.repoFullName,
+          pathAlias: project.name,
+          defaultBranch: project.defaultBranch,
+        },
+      ],
     },
     sentAt: new Date().toISOString(),
   } satisfies AgentEventEnvelope);
@@ -166,6 +182,20 @@ test.after(async () => {
 
 test.beforeEach(async () => {
   await resetDatabase();
+});
+
+test('local development bypass authenticates only the PM identity', async () => {
+  const providersResponse = await fetch(`${baseUrl}/auth/providers`);
+  const pmResponse = await fetch(`${baseUrl}/auth/development/pm/login`, { method: 'POST' });
+  const developerBypassResponse = await fetch(`${baseUrl}/auth/development/developer/login`, { method: 'POST' });
+  const pmLogin = await parseJsonResponse(pmResponse, authResponseSchema);
+
+  assert.equal(providersResponse.status, 200);
+  assert.deepEqual(await providersResponse.json(), { developmentPmAuthEnabled: true });
+  assert.equal(pmResponse.status, 200);
+  assert.equal(pmLogin.user.kind, 'pm');
+  assert.equal(pmLogin.user.email, 'pm@pairdock.test');
+  assert.equal(developerBypassResponse.status, 404);
 });
 
 test('BT-035: AuthModule normalizes GitHub and Slack callbacks into PairDock users and external identities', async () => {
@@ -270,7 +300,7 @@ test('BT-004: SessionAccessGuard allows an invited PM to read a session and send
   const agentSocket = connectAgentSocket();
 
   try {
-    await announceAgent(agentSocket, fixture.agentProjectKey);
+    await announceAgent(agentSocket, fixture.project);
 
     const sessionResponse = await fetch(`${baseUrl}/sessions/${fixture.session.id}`, {
       headers: { authorization: `Bearer ${pmLogin.body.accessToken}` },
