@@ -10,6 +10,7 @@
     "db:migrate": "prisma migrate deploy",
     "db:migrate:dev": "prisma migrate dev",
     "db:migrate:test": "PAIRDOCK_DATABASE_TARGET=test prisma migrate deploy",
+    "db:seed:pm-demo": "tsx scripts/seed-pm-demo.ts",
     "db:reset": "prisma migrate reset --force",
     "db:status": "prisma migrate status",
     "test": "bun run test:unit && bun run test:integration && bun run test:e2e",

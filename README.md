@@ -24,6 +24,7 @@ bun run build
 bun run db:status
 bun run db:migrate:dev -- --name init
 bun run db:migrate:test
+bun run db:seed:pm-demo
 bun run dev:web
 bun run dev:api
 bun run dev:agent
@@ -64,6 +65,14 @@ DEV_PM_AUTH_ENABLED=false
 Generate all authentication secrets independently, for example with `openssl rand -base64 48`. Keep them stable between API restarts and never commit them. `AGENT_AUTH_CREDENTIALS_JSON` maps each local agent id to its unique token and exact project-key allowlist; one project key cannot be assigned to multiple credentials. Pass only that agent's token to its CLI.
 
 For local UI development only, set `DEV_PM_AUTH_ENABLED=true` to let the PM enter without Slack as `pm@pairdock.test`. The developer must still authenticate through the GitHub App. PairDock ignores this flag when `NODE_ENV=production`, where Slack remains mandatory.
+
+To populate the local application database with PM demo history, first create at least one developer project, then run:
+
+```bash
+bun run db:seed:pm-demo
+```
+
+The command shares every existing local project with `pm@pairdock.test` and idempotently adds six UI-only demo sessions per project: ready, running, awaiting validation, failed, draft pull request created, and closed. It also adds conversations, diffs, successful and failed checks, and draft pull-request records. It never deletes records, never changes project readiness, refuses `NODE_ENV=production`, and refuses non-loopback database hosts. Seeded sessions are historical UI fixtures and are not prepared on the local agent; create a new session from the PM dashboard for an end-to-end agent test.
 
 Use `http://localhost:5173` for `FRONTEND_URL` unless you intentionally run the web app on another origin. The configured origin is also the only origin allowed by API CORS.
 

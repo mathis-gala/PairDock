@@ -22,6 +22,7 @@
     "db:migrate": "bun run --filter @pairdock/api db:migrate",
     "db:migrate:dev": "bun run --filter @pairdock/api db:migrate:dev",
     "db:migrate:test": "bun run --filter @pairdock/api db:migrate:test",
+    "db:seed:pm-demo": "bun run --filter @pairdock/api db:seed:pm-demo",
     "db:reset": "bun run --filter @pairdock/api db:reset",
     "db:status": "bun run --filter @pairdock/api db:status",
     "dev:web": "bun run --filter @pairdock/web dev",
