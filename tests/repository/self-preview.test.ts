@@ -4,7 +4,7 @@ import test from 'node:test';
 import { parse } from 'yaml';
 import viteConfig from '../../apps/web/vite.config.js';
 
-test('PairDock self-preview runs the web app against the already configured local API without copying secrets', async () => {
+test('PairDock self-preview runs its API and web app inside one sandbox without reserving a host API port', async () => {
   const manifest = parse(await readFile(new URL('../../pairdock.yml', import.meta.url), 'utf8')) as {
     name?: unknown;
     repoFullName?: unknown;
@@ -19,11 +19,22 @@ test('PairDock self-preview runs the web app against the already configured loca
   assert.equal(manifest.sandbox?.image, 'pairdock/self-preview-sandbox:node22-bun1.3.14');
   assert.equal(manifest.sandbox?.network, 'host-services');
   assert.deepEqual(manifest.sandbox?.env, {
-    PAIRDOCK_DEV_API_PROXY_TARGET: 'http://host.docker.internal:3000',
+    DATABASE_URL: 'postgresql://postgres:pairdockdev@host.docker.internal:55432/pairdock',
+    DEV_PM_AUTH_ENABLED: 'true',
+    PAIRDOCK_DEV_API_PROXY_TARGET: 'http://127.0.0.1:3000',
     VITE_API_BASE_URL: 'same-origin',
   });
+  assert.equal('AGENT_AUTH_CREDENTIALS_JSON' in (manifest.sandbox?.env ?? {}), false);
+  assert.equal('AUTH_STATE_SECRET' in (manifest.sandbox?.env ?? {}), false);
+  assert.equal('AUTH_TOKEN_SECRET' in (manifest.sandbox?.env ?? {}), false);
+  assert.match(String(manifest.preview?.start), /AGENT_AUTH_CREDENTIALS_JSON/);
+  assert.match(String(manifest.preview?.start), /AUTH_STATE_SECRET/);
+  assert.match(String(manifest.preview?.start), /AUTH_TOKEN_SECRET/);
+  assert.match(String(manifest.preview?.start), /randomBytes/);
+  assert.match(String(manifest.preview?.start), /prisma:generate/);
+  assert.match(String(manifest.preview?.start), /apps\/api/);
   assert.match(String(manifest.preview?.start), /apps\/web/);
-  assert.doesNotMatch(String(manifest.preview?.start), /apps\/api|db:migrate|prisma/);
+  assert.doesNotMatch(String(manifest.preview?.start), /db:migrate|host\.docker\.internal:3000/);
 });
 
 test('the self-preview sandbox image supplies the pinned Bun runtime required by PairDock', async () => {
@@ -34,7 +45,7 @@ test('the self-preview sandbox image supplies the pinned Bun runtime required by
   assert.match(dockerfile, /openssl/);
 });
 
-test('the self-preview web server proxies browser API and WebSocket traffic to the configured local API', () => {
+test('the self-preview web server proxies browser API and WebSocket traffic to the API inside its container', () => {
   const proxy = (viteConfig as { server?: { proxy?: Record<string, { target?: string; ws?: boolean }> } }).server
     ?.proxy;
 

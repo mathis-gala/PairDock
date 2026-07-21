@@ -6,14 +6,23 @@ sandbox:
   workdir: /workspace
   network: host-services
   env:
-    PAIRDOCK_DEV_API_PROXY_TARGET: 'http://host.docker.internal:3000'
+    DATABASE_URL: 'postgresql://postgres:pairdockdev@host.docker.internal:55432/pairdock'
+    DEV_PM_AUTH_ENABLED: 'true'
+    PAIRDOCK_DEV_API_PROXY_TARGET: 'http://127.0.0.1:3000'
     VITE_API_BASE_URL: 'same-origin'
   ports:
     - '127.0.0.1:{{hostPort}}:4000'
 preview:
   start: >-
     bun install --frozen-lockfile &&
-    bun --cwd apps/web dev --host 0.0.0.0 --port 4000
+    bun run prisma:generate &&
+    export AUTH_STATE_SECRET="$(node -e
+    "const { randomBytes } = require('node:crypto'); process.stdout.write(randomBytes(32).toString('hex'))")" &&
+    export AUTH_TOKEN_SECRET="$(node -e
+    "const { randomBytes } = require('node:crypto'); process.stdout.write(randomBytes(32).toString('hex'))")" &&
+    export AGENT_AUTH_CREDENTIALS_JSON="$(node -e
+    "const { randomBytes } = require('node:crypto'); process.stdout.write(JSON.stringify({ 'preview-disabled': { token: randomBytes(32).toString('hex'), projectKeys: ['preview-disabled'] } }))")" &&
+    { bun --cwd apps/api dev & bun --cwd apps/web dev --host 0.0.0.0 --port 4000 & wait; }
   healthcheck: 'http://127.0.0.1:{{hostPort}}'
   healthcheckTimeoutMs: 120000
   tunnel: cloudflare
