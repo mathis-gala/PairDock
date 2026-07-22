@@ -120,11 +120,6 @@ export class AgentClient {
       throw new Error('AgentClient is already running.');
     }
 
-    const recovery = await this.sessionRunner.restore();
-    if (recovery.recoveredSessionIds.length > 0) {
-      this.logger.info(`Recovered ${recovery.recoveredSessionIds.length} prepared PairDock session(s).`);
-    }
-
     const socket = io(`${this.config.backendUrl}/agent`, {
       autoConnect: false,
       extraHeaders: this.config.authToken
@@ -137,8 +132,14 @@ export class AgentClient {
     });
 
     this.socket = socket;
+    let recoveryPromise: ReturnType<SessionRunner['restore']> | null = null;
     let recoveryPublished = false;
     const handleConnected = async () => {
+      recoveryPromise ??= this.sessionRunner.restore();
+      const recovery = await recoveryPromise;
+      if (recovery.recoveredSessionIds.length > 0) {
+        this.logger.info(`Recovered ${recovery.recoveredSessionIds.length} prepared PairDock session(s).`);
+      }
       const event = buildAgentConnectedEvent({
         agentId: this.config.agentId,
         capabilities: this.config.capabilities,
@@ -253,7 +254,7 @@ export class AgentClient {
         throw new Error(`Recovered session ${sessionId} has no preview URL.`);
       }
 
-      await this.emitEvent(
+      await this.emitRequiredEvent(
         buildSessionRecoveredEvent({
           sessionId,
           previewUrl: workspace.previewUrl,
@@ -622,31 +623,38 @@ export class AgentClient {
   ): Promise<void> {
     const message = this.logRedactor.redact(error instanceof Error ? error.message : String(error));
     this.logger.error(`[session:${sessionId ?? 'none'}] ${code}: ${message}`);
-    await this.emitEvent(
-      buildErrorEvent({
-        code,
-        message,
-        retryable,
-        sessionId,
-      }),
-    );
+    const event = buildErrorEvent({
+      code,
+      message,
+      retryable,
+      sessionId,
+    });
+
+    await this.emitEvent(event);
   }
 
   private async emitEvent(event: AgentEventEnvelope): Promise<void> {
-    if (!this.socket) {
+    try {
+      await this.emitRequiredEvent(event);
+    } catch (error) {
+      this.logger.warn(error instanceof Error ? error.message : String(error));
+    }
+  }
+
+  private async emitRequiredEvent(event: AgentEventEnvelope, socket = this.socket): Promise<void> {
+    if (!socket) {
       throw new Error('AgentClient socket is not connected.');
     }
 
     await new Promise<void>((resolve, reject) => {
       const timeout = setTimeout(() => {
-        this.logger.warn(`PairDock backend did not acknowledge ${event.type} within 5000ms.`);
-        resolve();
+        reject(new Error(`PairDock backend did not acknowledge ${event.type} within 5000ms.`));
       }, 5_000);
 
-      this.socket?.emit(agentProtocolMessageEventName, event, (response?: { accepted?: boolean; error?: string }) => {
+      socket.emit(agentProtocolMessageEventName, event, (response?: { accepted?: boolean; error?: string }) => {
         clearTimeout(timeout);
 
-        if (response?.accepted === false) {
+        if (response?.accepted !== true) {
           const message = response.error ?? 'unknown error';
           this.logger.warn(`PairDock backend rejected ${event.type}: ${message}`);
           reject(new BackendEventRejectedError(event.type, message));
@@ -659,22 +667,7 @@ export class AgentClient {
   }
 
   private async registerAgent(socket: Socket, event: AgentConnectedEventEnvelope): Promise<void> {
-    await new Promise<void>((resolve, reject) => {
-      const timeout = setTimeout(() => {
-        reject(new Error('PairDock backend did not acknowledge agent registration within 5000ms.'));
-      }, 5_000);
-
-      socket.emit(agentProtocolMessageEventName, event, (response?: { accepted?: boolean; error?: string }) => {
-        clearTimeout(timeout);
-
-        if (response?.accepted !== true) {
-          reject(new Error(response?.error ?? 'PairDock backend rejected agent registration.'));
-          return;
-        }
-
-        resolve();
-      });
-    });
+    await this.emitRequiredEvent(event, socket);
   }
 }
 

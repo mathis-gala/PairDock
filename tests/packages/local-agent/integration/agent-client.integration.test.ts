@@ -90,6 +90,32 @@ test('BT-012: AgentClient announces configured capabilities when it connects', a
   }
 });
 
+test('AgentClient does not restore previews before websocket authentication succeeds', async () => {
+  const { io, httpServer, backendUrl } = await createAgentServer();
+  io.of('/agent').use((_socket, next) => next(new Error('Unauthorized agent.')));
+  const sessionRunner = new RecordingRestoreSessionRunner();
+  const client = new AgentClient(
+    {
+      agentId: 'agent-local-1',
+      authToken: 'expired-token',
+      backendUrl,
+      capabilities: ['session.prepare'],
+      projectPaths: {},
+    },
+    { error() {}, info() {}, warn() {} },
+    { sessionRunner },
+  );
+
+  try {
+    await assert.rejects(() => client.start(), /Unauthorized agent/);
+    assert.equal(sessionRunner.restoreCalls, 0);
+  } finally {
+    await client.stop();
+    await new Promise<void>((resolve) => io.close(() => resolve()));
+    await new Promise<void>((resolve) => httpServer.close(() => resolve()));
+  }
+});
+
 test('AgentClient waits for backend registration before publishing recovery failures', async () => {
   const { io, httpServer, backendUrl } = await createAgentServer();
   const receivedEventTypes: string[] = [];
@@ -198,6 +224,50 @@ test('AgentClient publishes the rebuilt preview URL after backend registration',
     await new Promise<void>((resolve) => httpServer.close(() => resolve()));
   }
 });
+
+test('AgentClient fails startup when the backend rejects a recovered preview URL', async () => {
+  const { io, httpServer, backendUrl } = await createAgentServer();
+  io.of('/agent').on('connection', (socket) => {
+    socket.on(
+      agentProtocolMessageEventName,
+      (payload: { type: string }, acknowledge?: (response: { accepted: boolean; error?: string }) => void) => {
+        if (payload.type === 'session.recovered') {
+          acknowledge?.({ accepted: false, error: 'Recovered preview rejected.' });
+          return;
+        }
+
+        acknowledge?.({ accepted: true });
+      },
+    );
+  });
+  const client = new AgentClient(
+    {
+      agentId: 'agent-local-1',
+      backendUrl,
+      capabilities: ['session.prepare'],
+      projectPaths: {},
+    },
+    { error() {}, info() {}, warn() {} },
+    { sessionRunner: new SessionRunnerWithRecoveredWorkspace() },
+  );
+
+  try {
+    await assert.rejects(() => client.start(), /Recovered preview rejected/);
+  } finally {
+    await client.stop();
+    await new Promise<void>((resolve) => io.close(() => resolve()));
+    await new Promise<void>((resolve) => httpServer.close(() => resolve()));
+  }
+});
+
+class RecordingRestoreSessionRunner extends SessionRunner {
+  restoreCalls = 0;
+
+  override async restore() {
+    this.restoreCalls += 1;
+    return { recoveredSessionIds: [], failures: [] };
+  }
+}
 
 class SessionRunnerWithRecoveryFailure extends SessionRunner {
   override async restore() {

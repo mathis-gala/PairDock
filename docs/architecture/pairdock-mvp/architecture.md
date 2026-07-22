@@ -496,7 +496,7 @@ Session creation entry points:
 
 ```ts
 interface AgentProtocolEnvelope<TPayload> {
-  protocolVersion: "2026-07-11";
+  protocolVersion: "2026-07-22";
   messageId: string;
   sessionId?: string;
   type: string;
