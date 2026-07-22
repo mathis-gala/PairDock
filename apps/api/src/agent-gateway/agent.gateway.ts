@@ -433,6 +433,13 @@ function toSessionAgentEvent(event: AgentEventEnvelope): SessionAgentEvent | nul
           previewUrl: event.payload.previewUrl,
         },
       };
+    case 'session.recovered':
+      return {
+        type: event.type,
+        payload: {
+          previewUrl: event.payload.previewUrl,
+        },
+      };
     case 'agent.done':
       return {
         type: event.type,

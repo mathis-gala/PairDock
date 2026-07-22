@@ -6,6 +6,7 @@ import { InMemorySessionWorkspaceStore, type SessionWorkspaceStore } from './ses
 export interface SessionWorkspace extends PreparedWorktree {
   sessionId: string;
   projectKey: string;
+  modelId?: string;
   sandboxRef?: SandboxRef;
   tunnelRef?: PreviewTunnelRef;
   previewUrl?: string;

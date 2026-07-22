@@ -14,6 +14,7 @@ const workspaceSchema = z
     repositoryPath: z.string().min(1),
     worktreePath: z.string().min(1),
     branchName: z.string().min(1),
+    modelId: z.string().min(1).optional(),
     sandboxRef: z
       .object({
         id: z.string().min(1),
@@ -117,6 +118,7 @@ function toPersistedWorkspace(workspace: SessionWorkspace): SessionWorkspace {
     repositoryPath: workspace.repositoryPath,
     worktreePath: workspace.worktreePath,
     branchName: workspace.branchName,
+    ...(workspace.modelId ? { modelId: workspace.modelId } : {}),
     ...(workspace.sandboxRef
       ? {
           sandboxRef: {

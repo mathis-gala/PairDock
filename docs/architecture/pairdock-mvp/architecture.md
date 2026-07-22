@@ -527,6 +527,7 @@ type AgentEvent =
   | { type: "readiness.result"; payload: { projectKey: string; sessionId?: string; ok: boolean; checks: ToolReadinessCheck[] } }
   | { type: "session.progress"; payload: { sessionId: string; status: string; message?: string } }
   | { type: "session.ready"; payload: { sessionId: string; previewUrl: string } }
+  | { type: "session.recovered"; payload: { sessionId: string; previewUrl: string } }
   | { type: "agent.output"; payload: { sessionId: string; stream: "stdout" | "stderr"; text: string } }
   | { type: "agent.done"; payload: { sessionId: string; exitCode: number } }
   | { type: "git.diff"; payload: { sessionId: string; diff: string; changedFiles: string[] } }

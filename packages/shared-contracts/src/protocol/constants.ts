@@ -1,4 +1,4 @@
-export const AGENT_PROTOCOL_VERSION = '2026-07-11';
+export const AGENT_PROTOCOL_VERSION = '2026-07-22';
 export const agentProtocolMessageEventName = 'protocol.message';
 export const uiSessionSubscribeEventName = 'session.subscribe';
 export const uiSessionSubscribedEventName = 'session.subscribed';

@@ -84,6 +84,14 @@ export const sessionReadyEventEnvelopeSchema = sessionEnvelope(
   }),
 ).refine(({ sessionId, payload }) => payload.sessionId === sessionId, sessionIdConsistencyRule);
 
+export const sessionRecoveredEventEnvelopeSchema = sessionEnvelope(
+  'session.recovered',
+  z.object({
+    sessionId: uuidSchema,
+    previewUrl: z.url(),
+  }),
+).refine(({ sessionId, payload }) => payload.sessionId === sessionId, sessionIdConsistencyRule);
+
 export const agentOutputEventEnvelopeSchema = sessionEnvelope(
   'agent.output',
   z.object({
@@ -166,6 +174,7 @@ export const agentEventEnvelopeSchema = z.discriminatedUnion('type', [
   readinessResultEventEnvelopeSchema,
   sessionProgressEventEnvelopeSchema,
   sessionReadyEventEnvelopeSchema,
+  sessionRecoveredEventEnvelopeSchema,
   agentOutputEventEnvelopeSchema,
   agentDoneEventEnvelopeSchema,
   gitDiffEventEnvelopeSchema,
@@ -179,6 +188,7 @@ export type AgentConnectedEventEnvelope = z.infer<typeof agentConnectedEventEnve
 export type ReadinessResultEventEnvelope = z.infer<typeof readinessResultEventEnvelopeSchema>;
 export type SessionProgressEventEnvelope = z.infer<typeof sessionProgressEventEnvelopeSchema>;
 export type SessionReadyEventEnvelope = z.infer<typeof sessionReadyEventEnvelopeSchema>;
+export type SessionRecoveredEventEnvelope = z.infer<typeof sessionRecoveredEventEnvelopeSchema>;
 export type AgentOutputEventEnvelope = z.infer<typeof agentOutputEventEnvelopeSchema>;
 export type AgentDoneEventEnvelope = z.infer<typeof agentDoneEventEnvelopeSchema>;
 export type GitDiffEventEnvelope = z.infer<typeof gitDiffEventEnvelopeSchema>;

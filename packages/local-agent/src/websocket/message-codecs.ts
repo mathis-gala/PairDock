@@ -16,6 +16,7 @@ import {
   type SessionClosedEventEnvelope,
   type SessionProgressEventEnvelope,
   type SessionReadyEventEnvelope,
+  type SessionRecoveredEventEnvelope,
 } from '@pairdock/shared-contracts';
 
 export function buildAgentConnectedEvent(input: {
@@ -69,6 +70,20 @@ export function buildSessionReadyEvent(input: { sessionId: string; previewUrl: s
   return buildEnvelope({
     sessionId: input.sessionId,
     type: 'session.ready',
+    payload: {
+      sessionId: input.sessionId,
+      previewUrl: input.previewUrl,
+    },
+  });
+}
+
+export function buildSessionRecoveredEvent(input: {
+  sessionId: string;
+  previewUrl: string;
+}): SessionRecoveredEventEnvelope {
+  return buildEnvelope({
+    sessionId: input.sessionId,
+    type: 'session.recovered',
     payload: {
       sessionId: input.sessionId,
       previewUrl: input.previewUrl,
@@ -192,6 +207,7 @@ function buildEnvelope(envelope: Omit<AgentConnectedEventEnvelope, EnvelopeMetad
 function buildEnvelope(envelope: Omit<ReadinessResultEventEnvelope, EnvelopeMetadata>): ReadinessResultEventEnvelope;
 function buildEnvelope(envelope: Omit<SessionProgressEventEnvelope, EnvelopeMetadata>): SessionProgressEventEnvelope;
 function buildEnvelope(envelope: Omit<SessionReadyEventEnvelope, EnvelopeMetadata>): SessionReadyEventEnvelope;
+function buildEnvelope(envelope: Omit<SessionRecoveredEventEnvelope, EnvelopeMetadata>): SessionRecoveredEventEnvelope;
 function buildEnvelope(envelope: Omit<AgentOutputEventEnvelope, EnvelopeMetadata>): AgentOutputEventEnvelope;
 function buildEnvelope(envelope: Omit<AgentDoneEventEnvelope, EnvelopeMetadata>): AgentDoneEventEnvelope;
 function buildEnvelope(envelope: Omit<GitDiffEventEnvelope, EnvelopeMetadata>): GitDiffEventEnvelope;
