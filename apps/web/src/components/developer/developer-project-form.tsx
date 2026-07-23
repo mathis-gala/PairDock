@@ -188,11 +188,11 @@ export function DeveloperProjectForm({
       description="Sélectionne un dépôt GitHub installé, une branche, un projet agent local et un modèle publié par cet agent."
     >
       <form className="grid gap-4 lg:grid-cols-[1fr_1fr]" onSubmit={handleSubmit}>
-        <label className="space-y-2 text-sm text-slate-300" htmlFor="developer-project-name">
+        <label className="space-y-2 text-sm text-slate-700" htmlFor="developer-project-name">
           <span className="block">Nom du projet</span>
           <TextInput id="developer-project-name" onChange={handleNameChange} required value={state.name} />
         </label>
-        <label className="space-y-2 text-sm text-slate-300" htmlFor="developer-project-repository">
+        <label className="space-y-2 text-sm text-slate-700" htmlFor="developer-project-repository">
           <span className="block">Dépôt GitHub</span>
           <SelectInput
             disabled={isSetupLoading || repositories.length === 0}
@@ -209,7 +209,7 @@ export function DeveloperProjectForm({
             ))}
           </SelectInput>
         </label>
-        <label className="space-y-2 text-sm text-slate-300" htmlFor="developer-project-branch">
+        <label className="space-y-2 text-sm text-slate-700" htmlFor="developer-project-branch">
           <span className="block">Branche de base</span>
           <SelectInput id="developer-project-branch" onChange={handleBranchChange} required value={state.defaultBranch}>
             <option disabled value="">
@@ -222,7 +222,7 @@ export function DeveloperProjectForm({
             ))}
           </SelectInput>
         </label>
-        <label className="space-y-2 text-sm text-slate-300" htmlFor="developer-project-agent-project">
+        <label className="space-y-2 text-sm text-slate-700" htmlFor="developer-project-agent-project">
           <span className="block">Projet agent local</span>
           <SelectInput
             id="developer-project-agent-project"
@@ -240,7 +240,7 @@ export function DeveloperProjectForm({
             ))}
           </SelectInput>
         </label>
-        <label className="space-y-2 text-sm text-slate-300" htmlFor="developer-project-model">
+        <label className="space-y-2 text-sm text-slate-700" htmlFor="developer-project-model">
           <span className="block">Modèle agent</span>
           <SelectInput id="developer-project-model" onChange={handleModelChange} required value={state.defaultModelId}>
             <option disabled value="">
@@ -253,7 +253,7 @@ export function DeveloperProjectForm({
             ))}
           </SelectInput>
         </label>
-        <label className="space-y-2 text-sm text-slate-300" htmlFor="developer-project-reasoning">
+        <label className="space-y-2 text-sm text-slate-700" htmlFor="developer-project-reasoning">
           <span className="block">Niveau de raisonnement</span>
           <SelectInput
             id="developer-project-reasoning"
@@ -271,11 +271,11 @@ export function DeveloperProjectForm({
             ))}
           </SelectInput>
         </label>
-        <label className="flex min-h-10 items-center gap-2 self-end rounded-[9px] border border-white/10 bg-[#1f232b] px-3 py-2 text-sm text-slate-300">
+        <label className="flex min-h-10 items-center gap-2 self-end rounded-[9px] border border-black/10 bg-[#ffffff] px-3 py-2 text-sm text-slate-700">
           <input checked={state.pmCanStartSessions} onChange={handlePmCanStartSessionsChange} type="checkbox" />
           Sessions PM autorisées
         </label>
-        <label className="space-y-2 text-sm text-slate-300 lg:col-span-2" htmlFor="developer-project-description">
+        <label className="space-y-2 text-sm text-slate-700 lg:col-span-2" htmlFor="developer-project-description">
           <span className="block">Description</span>
           <TextArea id="developer-project-description" onChange={handleDescriptionChange} value={state.description} />
         </label>
@@ -290,7 +290,7 @@ export function DeveloperProjectForm({
           <Button disabled={createDisabled} type="submit">
             {isSubmitting ? 'Création...' : 'Créer le projet'}
           </Button>
-          <p className="font-mono text-[11.5px] text-[#6f7686]">
+          <p className="font-mono text-[11.5px] text-[#697386]">
             Seed local: {normalizedSeed || 'developer'} · GitHub App et agent local requis.
           </p>
         </div>
@@ -337,7 +337,7 @@ function ProjectSetupState({
 
 function SetupHint({ message }: { message: string }) {
   return (
-    <div className="rounded-[9px] border border-white/10 bg-[#171b22] px-3 py-2 text-[12px] text-[#9aa2b3] lg:col-span-2">
+    <div className="rounded-[9px] border border-black/10 bg-[#f3f5f7] px-3 py-2 text-[12px] text-[#596475] lg:col-span-2">
       {message}
     </div>
   );

@@ -26,17 +26,17 @@ export function SharedProjectCard({ onStart, project, startPending }: SharedProj
         </StatusBadge>
       }
     >
-      <dl className="grid gap-3 text-sm text-slate-300 sm:grid-cols-2">
+      <dl className="grid gap-3 text-sm text-slate-700 sm:grid-cols-2">
         <div>
-          <dt className="text-slate-500">Owner</dt>
+          <dt className="text-slate-600">Owner</dt>
           <dd>{project.ownerDisplayName}</dd>
         </div>
         <div>
-          <dt className="text-slate-500">Repository</dt>
+          <dt className="text-slate-600">Repository</dt>
           <dd>{project.repoFullName}</dd>
         </div>
         <div>
-          <dt className="text-slate-500">Default branch</dt>
+          <dt className="text-slate-600">Default branch</dt>
           <dd>{project.defaultBranch}</dd>
         </div>
       </dl>

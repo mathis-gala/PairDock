@@ -14,17 +14,17 @@ export function SessionControlCard({ closePending, onClose, session }: SessionCo
   const canClose = session.status !== 'CLOSED';
 
   return (
-    <div className="rounded-xl border border-slate-800 bg-slate-950/70 p-3 text-sm text-slate-300">
+    <div className="rounded-xl border border-slate-200 bg-white p-3 text-sm text-slate-700">
       <div className="flex flex-wrap items-start justify-between gap-2">
         <div>
-          <p className="font-medium text-white">Session {session.id.slice(0, 8)}</p>
-          <p className="text-xs text-slate-500">Model {session.modelId}</p>
+          <p className="font-medium text-[#20242b]">Session {session.id.slice(0, 8)}</p>
+          <p className="text-xs text-slate-600">Model {session.modelId}</p>
         </div>
         <StatusBadge tone={session.status === 'CLOSED' ? 'neutral' : 'positive'}>{session.status}</StatusBadge>
       </div>
-      <p className="mt-2 text-xs text-slate-500">Started {new Date(session.createdAt).toLocaleString()}</p>
+      <p className="mt-2 text-xs text-slate-600">Started {new Date(session.createdAt).toLocaleString()}</p>
       {session.closedAt ? (
-        <p className="text-xs text-slate-500">Cleanup closed {new Date(session.closedAt).toLocaleString()}</p>
+        <p className="text-xs text-slate-600">Cleanup closed {new Date(session.closedAt).toLocaleString()}</p>
       ) : null}
       {session.reviewRequestUrl ? (
         <a

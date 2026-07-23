@@ -44,9 +44,9 @@ export function DeveloperProjectCard({
       title={project.name}
       description={project.description ?? 'No project description set.'}
     >
-      <div className="grid gap-4 text-sm text-slate-300 lg:grid-cols-[1fr_0.85fr]">
+      <div className="grid gap-4 text-sm text-slate-700 lg:grid-cols-[1fr_0.85fr]">
         <div className="space-y-4">
-          <dl className="grid gap-3 rounded-xl border border-slate-800 bg-slate-950/70 p-3 sm:grid-cols-2">
+          <dl className="grid gap-3 rounded-xl border border-slate-200 bg-white p-3 sm:grid-cols-2">
             <ProjectFact label="Repository" value={project.repoFullName} />
             <ProjectFact label="Branch" value={project.defaultBranch} />
             <ProjectFact label="Connection" value={project.sourceControlAccountLogin} />
@@ -59,9 +59,9 @@ export function DeveloperProjectCard({
             <ProjectFact label="Default reasoning" value={project.defaultReasoningEffort} />
             <ProjectFact label="PM-start policy" value={project.pmCanStartSessions ? 'Enabled' : 'Disabled'} />
           </dl>
-          <div className="rounded-xl border border-slate-800 bg-slate-950/70 p-3">
-            <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">Agent du projet</p>
-            <p className="mb-3 mt-1 text-sm text-slate-300">
+          <div className="rounded-xl border border-slate-200 bg-white p-3">
+            <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-600">Agent du projet</p>
+            <p className="mb-3 mt-1 text-sm text-slate-700">
               Ce modèle et ce raisonnement seront utilisés pour toutes les nouvelles demandes PM et développeur.
             </p>
             <ExecutionSelectionControls
@@ -82,42 +82,42 @@ export function DeveloperProjectCard({
             onRequestReadiness={async () => onRequestReadiness(project.id)}
             readiness={project.readiness}
           />
-          <div className="rounded-xl border border-slate-800 bg-slate-950/70 p-3">
+          <div className="rounded-xl border border-slate-200 bg-white p-3">
             <div className="mb-3 flex items-center justify-between gap-3">
-              <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">PM invités</p>
-              <span className="font-mono text-xs text-slate-500">{project.pmMembers.length}</span>
+              <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-600">PM invités</p>
+              <span className="font-mono text-xs text-slate-600">{project.pmMembers.length}</span>
             </div>
             <ProjectShareForm
               isSubmitting={sharePending}
               onShare={async (pmEmail) => onShareProject(project.id, pmEmail)}
             />
             {project.pmMembers.length > 0 ? (
-              <ul className="mt-3 divide-y divide-white/5 border-t border-white/10" aria-label="PM invités">
+              <ul className="mt-3 divide-y divide-white/5 border-t border-black/10" aria-label="PM invités">
                 {project.pmMembers.map((member) => (
                   <li className="flex min-w-0 items-center gap-3 py-3" key={member.email}>
-                    <span className="flex size-9 flex-none items-center justify-center rounded-[9px] bg-[#2f7a52] text-sm font-semibold text-[#eafff3]">
+                    <span className="flex size-9 flex-none items-center justify-center rounded-[9px] bg-[#d8f0df] text-sm font-semibold text-[#14532d]">
                       {(member.displayName ?? member.email).slice(0, 1).toUpperCase()}
                     </span>
                     <span className="min-w-0">
-                      <span className="block truncate font-medium text-slate-200">
+                      <span className="block truncate font-medium text-slate-800">
                         {member.displayName ?? member.email}
                       </span>
                       {member.displayName ? (
-                        <span className="block truncate text-xs text-slate-500">{member.email}</span>
+                        <span className="block truncate text-xs text-slate-600">{member.email}</span>
                       ) : null}
                     </span>
                   </li>
                 ))}
               </ul>
             ) : (
-              <p className="mt-3 border-t border-white/10 pt-3 text-xs leading-5 text-slate-500">
+              <p className="mt-3 border-t border-black/10 pt-3 text-xs leading-5 text-slate-600">
                 Aucun PM invité pour ce projet.
               </p>
             )}
           </div>
         </div>
         <div className="space-y-3">
-          <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">Sessions et nettoyage</p>
+          <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-600">Sessions et nettoyage</p>
           {project.sessions.length > 0 ? (
             project.sessions.map((session) => (
               <SessionControlCard
@@ -128,7 +128,7 @@ export function DeveloperProjectCard({
               />
             ))
           ) : (
-            <div className="rounded-xl border border-slate-800 bg-slate-950/70 p-3 text-sm text-slate-500">
+            <div className="rounded-xl border border-slate-200 bg-white p-3 text-sm text-slate-600">
               Aucune demande PM active pour ce projet.
             </div>
           )}
@@ -146,8 +146,8 @@ interface ProjectFactProps {
 function ProjectFact({ label, value }: ProjectFactProps) {
   return (
     <div>
-      <dt className="text-xs uppercase tracking-[0.14em] text-slate-500">{label}</dt>
-      <dd className="break-all text-slate-200">{value}</dd>
+      <dt className="text-xs uppercase tracking-[0.14em] text-slate-600">{label}</dt>
+      <dd className="break-all text-slate-800">{value}</dd>
     </div>
   );
 }

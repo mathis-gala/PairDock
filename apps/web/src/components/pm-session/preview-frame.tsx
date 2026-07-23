@@ -72,7 +72,7 @@ export function PreviewFrame({ presetId, previewUrl }: PreviewFrameProps) {
         >
           <svg
             aria-hidden="true"
-            className="size-7 animate-spin text-[#5fdf9b] motion-reduce:animate-none"
+            className="size-7 animate-spin text-[#16834f] motion-reduce:animate-none"
             fill="none"
             viewBox="0 0 24 24"
           >
@@ -85,8 +85,8 @@ export function PreviewFrame({ presetId, previewUrl }: PreviewFrameProps) {
               strokeWidth="2.5"
             />
           </svg>
-          <p className="mt-4 text-sm font-medium text-[#cdd2dc]">L'agent local prépare la preview</p>
-          <p className="mt-1 max-w-[32ch] text-xs leading-5 text-[#6f7686]">
+          <p className="mt-4 text-sm font-medium text-[#46505f]">L'agent local prépare la preview</p>
+          <p className="mt-1 max-w-[32ch] text-xs leading-5 text-[#697386]">
             L'URL apparaîtra ici dès que l'application sera prête.
           </p>
         </div>

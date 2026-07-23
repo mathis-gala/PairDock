@@ -24,8 +24,8 @@ export function PreviewToolbar({ onPresetChange, presetId, previewUrl }: Preview
   }
 
   return (
-    <div className="flex flex-none flex-wrap items-center justify-center gap-2 border-t border-white/10 bg-[#15171c] px-3 py-2">
-      <div className="flex flex-wrap items-center justify-center gap-2 text-[12px] text-[#cdd2dc]">
+    <div className="flex flex-none flex-wrap items-center justify-center gap-2 border-t border-black/10 bg-[#ffffff] px-3 py-2">
+      <div className="flex flex-wrap items-center justify-center gap-2 text-[12px] text-[#46505f]">
         <fieldset className="flex flex-wrap items-center justify-center gap-1">
           <legend className="sr-only">Format de preview</legend>
           {previewPresets.map((preset) => {
@@ -36,8 +36,8 @@ export function PreviewToolbar({ onPresetChange, presetId, previewUrl }: Preview
                 aria-pressed={isSelected}
                 className={
                   isSelected
-                    ? 'flex min-h-11 items-center gap-2 rounded-[9px] border border-[#5fdf9b]/50 bg-[#5fdf9b]/10 px-3 text-[#eafff3] transition hover:bg-[#5fdf9b]/15 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#5fdf9b]/40'
-                    : 'flex min-h-11 items-center gap-2 rounded-[9px] border border-transparent px-3 text-[#8b92a1] transition hover:border-white/10 hover:bg-white/5 hover:text-[#eef0f4] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#5fdf9b]/40'
+                    ? 'flex min-h-11 items-center gap-2 rounded-[9px] border border-[#16834f]/50 bg-[#16834f]/10 px-3 text-[#14532d] transition hover:bg-[#16834f]/15 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#16834f]/40'
+                    : 'flex min-h-11 items-center gap-2 rounded-[9px] border border-transparent px-3 text-[#5e6878] transition hover:border-black/10 hover:bg-black/5 hover:text-[#20242b] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#16834f]/40'
                 }
                 data-preset-id={preset.id}
                 key={preset.id}
@@ -51,7 +51,7 @@ export function PreviewToolbar({ onPresetChange, presetId, previewUrl }: Preview
             );
           })}
         </fieldset>
-        <span className="hidden rounded-[8px] border border-white/10 bg-[#0f1115] px-3 py-1.5 text-[#8b92a1] sm:inline-flex">
+        <span className="hidden rounded-[8px] border border-black/10 bg-[#f1f3f5] px-3 py-1.5 text-[#5e6878] sm:inline-flex">
           Ajustement auto
         </span>
         {previewUrl ? (

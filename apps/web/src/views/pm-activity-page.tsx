@@ -46,7 +46,7 @@ export function PmActivityPage({ accessToken, mode, onOpenSession, onSignOut }: 
       <div className="px-6 py-8 lg:px-9">
         <div className="mb-6 max-w-3xl">
           <h1 className="font-['Space_Grotesk'] text-2xl font-semibold tracking-[-0.01em]">{title}</h1>
-          <p className="mt-1 text-[13.5px] text-[#8b92a1]">
+          <p className="mt-1 text-[13.5px] text-[#5e6878]">
             {isReviewRequestView
               ? 'Retrouve les draft pull requests créées après validation PM.'
               : 'Reprends une session passée ou vérifie son état courant.'}
@@ -74,7 +74,7 @@ export function PmActivityPage({ accessToken, mode, onOpenSession, onSignOut }: 
           />
         ) : null}
         {sessions.length > 0 ? (
-          <div className="max-w-[980px] overflow-hidden rounded-xl border border-white/10 bg-[#171a20]">
+          <div className="max-w-[980px] overflow-hidden rounded-xl border border-black/10 bg-[#ffffff]">
             {sessions.map((session) => (
               <SessionHistoryRow key={session.id} onOpenSession={onOpenSession} session={session} />
             ))}
@@ -97,13 +97,13 @@ function SessionHistoryRow({
   }
 
   return (
-    <article className="grid gap-4 border-b border-white/10 p-4 last:border-b-0 lg:grid-cols-[1fr_auto] lg:items-center">
+    <article className="grid gap-4 border-b border-black/10 p-4 last:border-b-0 lg:grid-cols-[1fr_auto] lg:items-center">
       <div className="min-w-0">
         <div className="flex flex-wrap items-center gap-2">
-          <h2 className="truncate text-sm font-semibold text-[#eef0f4]">{session.projectName}</h2>
+          <h2 className="truncate text-sm font-semibold text-[#20242b]">{session.projectName}</h2>
           <StatusBadge tone={session.status === 'FAILED' ? 'danger' : 'neutral'}>{session.status}</StatusBadge>
         </div>
-        <p className="mt-1 truncate font-mono text-xs text-[#7d8493]">{session.repoFullName}</p>
+        <p className="mt-1 truncate font-mono text-xs text-[#657080]">{session.repoFullName}</p>
       </div>
       <div className="flex flex-wrap gap-2 lg:justify-end">
         <Button onClick={handleOpenSession} variant="secondary">
@@ -111,7 +111,7 @@ function SessionHistoryRow({
         </Button>
         {session.reviewRequest?.url ? (
           <a
-            className="inline-flex min-h-11 items-center justify-center rounded-[10px] bg-[#d3a4ea] px-4 text-[13px] font-semibold text-[#25132f] transition hover:bg-[#ddb6ef] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#d3a4ea]/40"
+            className="inline-flex min-h-11 items-center justify-center rounded-[10px] bg-[#8b5fb0] px-4 text-[13px] font-semibold text-[#fffaff] transition hover:bg-[#9d75c0] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#8b5fb0]/40"
             href={session.reviewRequest.url}
             rel="noreferrer"
             target="_blank"

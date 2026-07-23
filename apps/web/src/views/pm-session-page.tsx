@@ -109,16 +109,16 @@ export function PmSessionPage({ accessToken, onBack, sessionId }: PmSessionPageP
   }
 
   return (
-    <div className="flex h-screen flex-col overflow-hidden bg-[#0f1115]">
-      <header className="flex h-14 flex-none items-center gap-4 border-b border-white/10 bg-[#16181e] px-4">
+    <div className="flex h-screen flex-col overflow-hidden bg-[#f1f3f5]">
+      <header className="flex h-14 flex-none items-center gap-4 border-b border-black/10 bg-[#ffffff] px-4">
         <button
-          className="flex size-8 items-center justify-center rounded-[8px] border border-white/10 bg-[#0f1115] text-[#8b92a1] transition hover:text-[#eef0f4]"
+          className="flex size-8 items-center justify-center rounded-[8px] border border-black/10 bg-[#f1f3f5] text-[#5e6878] transition hover:text-[#20242b]"
           onClick={onBack}
           type="button"
         >
           ←
         </button>
-        <span className="flex size-5 items-center justify-center rounded-[5px] bg-[#5fdf9b] text-[#0c2014]">
+        <span className="flex size-5 items-center justify-center rounded-[5px] bg-[#16834f] text-[#f7faf8]">
           <svg aria-hidden="true" className="size-3.5" fill="none" viewBox="0 0 24 24">
             <path
               d="M9.2 8 6.4 12l2.8 4M14.8 8l2.8 4-2.8 4"
@@ -129,21 +129,21 @@ export function PmSessionPage({ accessToken, onBack, sessionId }: PmSessionPageP
             />
           </svg>
         </span>
-        <div className="flex min-w-0 items-center gap-2 font-mono text-[12.5px] text-[#a3aab8]">
-          <span className="truncate font-medium text-[#eef0f4]">{session.project.name}</span>
-          <span className="text-[#4b515e]">/</span>
-          <span className="truncate text-[#5fdf9b]">{branchLabel}</span>
+        <div className="flex min-w-0 items-center gap-2 font-mono text-[12.5px] text-[#5e6878]">
+          <span className="truncate font-medium text-[#20242b]">{session.project.name}</span>
+          <span className="text-[#8a94a3]">/</span>
+          <span className="truncate text-[#16834f]">{branchLabel}</span>
         </div>
         <div className="ml-auto flex items-center gap-4">
-          <div className="hidden items-center gap-2 text-[12.5px] text-[#8b92a1] sm:flex">
+          <div className="hidden items-center gap-2 text-[12.5px] text-[#5e6878] sm:flex">
             <span className="flex">
               {participantAvatars.map((participant, index) => (
                 <span
-                  className="flex size-6 items-center justify-center rounded-[7px] border-2 border-[#16181e] text-[11px] font-semibold"
+                  className="flex size-6 items-center justify-center rounded-[7px] border-2 border-[#ffffff] text-[11px] font-semibold"
                   key={participant.userId}
                   style={{
-                    backgroundColor: index === 0 ? '#5a3d7a' : '#2f7a52',
-                    color: index === 0 ? '#f0e3fa' : '#eafff3',
+                    backgroundColor: index === 0 ? '#eadcf2' : '#d8f0df',
+                    color: index === 0 ? '#5b2d72' : '#14532d',
                     marginLeft: index === 0 ? 0 : -7,
                   }}
                 >
@@ -153,25 +153,25 @@ export function PmSessionPage({ accessToken, onBack, sessionId }: PmSessionPageP
             </span>
             agent de {session.project.ownerDisplayName}
           </div>
-          <span className="flex items-center gap-1.5 font-mono text-xs text-[#5fdf9b]">
-            <span className="size-[7px] rounded-full bg-[#5fdf9b] [animation:pd-pulse_2s_infinite]" />
+          <span className="flex items-center gap-1.5 font-mono text-xs text-[#16834f]">
+            <span className="size-[7px] rounded-full bg-[#16834f] [animation:pd-pulse_2s_infinite]" />
             {isOnline ? 'en ligne' : 'hors ligne'}
           </span>
         </div>
       </header>
 
       <div className="flex min-h-0 flex-1">
-        <section className="flex w-full flex-none flex-col border-r border-white/10 bg-[#15171c] lg:w-[42%] lg:max-w-[560px]">
-          <div className="border-b border-white/10 px-5 py-4">
+        <section className="flex w-full flex-none flex-col border-r border-black/10 bg-[#ffffff] lg:w-[42%] lg:max-w-[560px]">
+          <div className="border-b border-black/10 px-5 py-4">
             <h1 className="font-['Space_Grotesk'] text-sm font-semibold">Discussion</h1>
-            <p className="mt-1 text-xs leading-5 text-[#7d8493]">
+            <p className="mt-1 text-xs leading-5 text-[#657080]">
               Une demande = une session isolée. Tu peux échanger avec l’agent jusqu’à validation.
             </p>
           </div>
           <div className="min-h-0 flex-1 overflow-auto">
             <ConversationThread items={conversation} />
           </div>
-          <div className="border-t border-white/10 p-4">
+          <div className="border-t border-black/10 p-4">
             <PromptComposer
               blockedReason={promptBlockedReason}
               canCancel={canCancel}
@@ -184,20 +184,20 @@ export function PmSessionPage({ accessToken, onBack, sessionId }: PmSessionPageP
           </div>
         </section>
 
-        <section className="hidden min-w-0 flex-1 flex-col bg-[#0f1115] lg:flex">
-          <div className="flex h-[46px] flex-none items-center gap-3 border-b border-white/10 bg-[#1a1d24] px-3.5">
+        <section className="hidden min-w-0 flex-1 flex-col bg-[#f1f3f5] lg:flex">
+          <div className="flex h-[46px] flex-none items-center gap-3 border-b border-black/10 bg-[#eef1f4] px-3.5">
             <div className="flex gap-1.5">
               <span className="size-[11px] rounded-full bg-[#ec6a5e]" />
               <span className="size-[11px] rounded-full bg-[#f4bf4f]" />
               <span className="size-[11px] rounded-full bg-[#61c554]" />
             </div>
-            <div className="flex h-7 max-w-[520px] flex-1 items-center gap-2 rounded-[8px] border border-white/10 bg-[#0f1115] px-3 font-mono text-[11.5px] text-[#8b92a1]">
-              <span className="text-[#5fdf9b]">⌁</span>
+            <div className="flex h-7 max-w-[520px] flex-1 items-center gap-2 rounded-[8px] border border-black/10 bg-[#f1f3f5] px-3 font-mono text-[11.5px] text-[#5e6878]">
+              <span className="text-[#16834f]">⌁</span>
               {session.previewUrl ?? 'preview non publiée'}
-              <span className="ml-auto text-[#565d6b]">worktree</span>
+              <span className="ml-auto text-[#7a8494]">worktree</span>
             </div>
-            <span className="flex items-center gap-1.5 font-mono text-[11px] text-[#7d8493]">
-              <span className="size-1.5 rounded-full bg-[#5fdf9b]" />
+            <span className="flex items-center gap-1.5 font-mono text-[11px] text-[#657080]">
+              <span className="size-1.5 rounded-full bg-[#16834f]" />
               responsive
             </span>
           </div>
@@ -205,28 +205,30 @@ export function PmSessionPage({ accessToken, onBack, sessionId }: PmSessionPageP
             <PreviewFrame presetId={presetId} previewUrl={session.previewUrl} />
           </div>
           <PreviewToolbar onPresetChange={setPresetId} presetId={presetId} previewUrl={session.previewUrl} />
-          <div className="flex min-h-[62px] flex-none items-center justify-between gap-4 border-t border-white/10 bg-[#16181e] px-5 py-3">
+          <div className="flex min-h-[62px] flex-none items-center justify-between gap-4 border-t border-black/10 bg-[#ffffff] px-5 py-3">
             <div aria-live="polite" className="min-w-0 font-mono text-[12.5px]" role={hasFailed ? 'alert' : 'status'}>
               <div
                 className={
-                  hasFailed ? 'flex items-center gap-2 text-rose-300' : 'flex items-center gap-2 text-[#5fdf9b]'
+                  hasFailed ? 'flex items-center gap-2 text-[#b4233b]' : 'flex items-center gap-2 text-[#16834f]'
                 }
               >
                 <span
-                  className={hasFailed ? 'size-[7px] rounded-full bg-rose-300' : 'size-[7px] rounded-full bg-[#5fdf9b]'}
+                  className={
+                    hasFailed ? 'size-[7px] rounded-full bg-[#b4233b]' : 'size-[7px] rounded-full bg-[#16834f]'
+                  }
                 />
                 {formatSessionStatus(session.status)}
               </div>
               {hasFailed && session.lastError ? (
-                <p className="mt-1 max-w-[70ch] whitespace-normal font-sans text-xs leading-5 text-rose-100/80">
+                <p className="mt-1 max-w-[70ch] whitespace-normal font-sans text-xs leading-5 text-[#7f1d1d]/80">
                   {session.lastError} {failureRecoveryMessage}
                 </p>
               ) : null}
-              {reviewRequestError ? <div className="mt-1 truncate text-rose-300">{reviewRequestError}</div> : null}
+              {reviewRequestError ? <div className="mt-1 truncate text-[#b4233b]">{reviewRequestError}</div> : null}
             </div>
             {session.reviewRequest?.url ? (
               <a
-                className="inline-flex h-10 items-center justify-center rounded-[10px] bg-[#5fdf9b] px-5 text-[13.5px] font-semibold text-[#0c2014]"
+                className="inline-flex h-10 items-center justify-center rounded-[10px] bg-[#16834f] px-5 text-[13.5px] font-semibold text-[#f7faf8]"
                 href={session.reviewRequest.url}
                 rel="noreferrer"
                 target="_blank"

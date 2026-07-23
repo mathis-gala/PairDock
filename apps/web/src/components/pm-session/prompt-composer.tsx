@@ -48,7 +48,7 @@ export function PromptComposer({
   }
 
   return (
-    <div className="rounded-[13px] border border-white/10 bg-[#1c1f27] p-3">
+    <div className="rounded-[13px] border border-black/10 bg-[#ffffff] p-3">
       <form className="space-y-3" onSubmit={handleFormSubmit}>
         <form.Field name="content">
           {(field) => {
@@ -67,7 +67,7 @@ export function PromptComposer({
             }
 
             return (
-              <div className="space-y-2 text-sm text-[#cdd2dc]">
+              <div className="space-y-2 text-sm text-[#46505f]">
                 <label className="sr-only" htmlFor={inputId}>
                   Prompt
                 </label>
@@ -87,17 +87,17 @@ export function PromptComposer({
           }}
         </form.Field>
         {blockedReason ? (
-          <p aria-live="polite" className="text-xs leading-5 text-[#8b92a1]" id="pm-session-prompt-status">
+          <p aria-live="polite" className="text-xs leading-5 text-[#5e6878]" id="pm-session-prompt-status">
             {blockedReason}
           </p>
         ) : null}
         {errorMessage ? (
-          <p className="text-sm text-rose-300" role="alert">
+          <p className="text-sm text-[#b4233b]" role="alert">
             {errorMessage}
           </p>
         ) : null}
         <div className="flex flex-wrap items-center justify-between gap-3">
-          <span className="font-mono text-[11px] text-[#565d6b]">⌘↵ pour envoyer</span>
+          <span className="font-mono text-[11px] text-[#7a8494]">⌘↵ pour envoyer</span>
           <Button
             className="min-h-[34px] px-3.5 py-1.5"
             disabled={!canCancel || isCancelling}
