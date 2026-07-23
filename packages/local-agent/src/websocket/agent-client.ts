@@ -135,11 +135,6 @@ export class AgentClient {
     let recoveryPromise: ReturnType<SessionRunner['restore']> | null = null;
     let recoveryPublished = false;
     const handleConnected = async () => {
-      recoveryPromise ??= this.sessionRunner.restore();
-      const recovery = await recoveryPromise;
-      if (recovery.recoveredSessionIds.length > 0) {
-        this.logger.info(`Recovered ${recovery.recoveredSessionIds.length} prepared PairDock session(s).`);
-      }
       const event = buildAgentConnectedEvent({
         agentId: this.config.agentId,
         capabilities: this.config.capabilities,
@@ -148,6 +143,11 @@ export class AgentClient {
       });
 
       await this.registerAgent(socket, event);
+      recoveryPromise ??= this.sessionRunner.restore();
+      const recovery = await recoveryPromise;
+      if (recovery.recoveredSessionIds.length > 0) {
+        this.logger.info(`Recovered ${recovery.recoveredSessionIds.length} prepared PairDock session(s).`);
+      }
       if (!recoveryPublished) {
         await this.publishRecoveredSessions(recovery.recoveredSessionIds);
         await this.publishRecoveryFailures(recovery.failures);

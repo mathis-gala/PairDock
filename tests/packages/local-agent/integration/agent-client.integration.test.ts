@@ -161,6 +161,7 @@ test('AgentClient waits for backend registration before publishing recovery fail
     await new Promise<void>((resolve) => setTimeout(resolve, 25));
 
     assert.deepEqual(receivedEventTypes, ['agent.connected']);
+    assert.equal(sessionRunner.restoreCalls, 0);
     assert.equal(startResolved, false);
 
     acceptRegistration();
@@ -270,7 +271,10 @@ class RecordingRestoreSessionRunner extends SessionRunner {
 }
 
 class SessionRunnerWithRecoveryFailure extends SessionRunner {
+  restoreCalls = 0;
+
   override async restore() {
+    this.restoreCalls += 1;
     return {
       recoveredSessionIds: [],
       failures: [{ sessionId: '13131313-1313-4313-8313-131313131313', message: 'preview unavailable' }],
