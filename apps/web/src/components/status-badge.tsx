@@ -7,10 +7,10 @@ interface StatusBadgeProps {
 }
 
 const toneClasses: Record<StatusBadgeProps['tone'], string> = {
-  neutral: 'border-white/10 bg-white/5 text-[#cdd2dc]',
-  positive: 'border-[#5fdf9b]/40 bg-[#5fdf9b]/10 text-[#5fdf9b]',
-  warning: 'border-[#edc873]/40 bg-[#edc873]/10 text-[#edc873]',
-  danger: 'border-rose-400/40 bg-rose-500/10 text-rose-300',
+  neutral: 'border-black/10 bg-black/5 text-[#46505f]',
+  positive: 'border-[#16834f]/40 bg-[#16834f]/10 text-[#16834f]',
+  warning: 'border-[#956d00]/40 bg-[#956d00]/10 text-[#956d00]',
+  danger: 'border-rose-400/40 bg-rose-500/10 text-[#b4233b]',
 };
 
 export function StatusBadge({ children, tone }: StatusBadgeProps) {

@@ -36,7 +36,7 @@ export function PmDashboardPage({ accessToken, onOpenSession, onSignOut }: PmDas
           <h1 className="font-['Space_Grotesk'] text-2xl font-semibold tracking-[-0.01em]">
             Projets partagés avec toi
           </h1>
-          <p className="mt-1 text-[13.5px] text-[#8b92a1]">
+          <p className="mt-1 text-[13.5px] text-[#5e6878]">
             Démarre une session pour décrire un correctif. Tu empruntes l'agent du développeur, aucune installation
             requise.
           </p>

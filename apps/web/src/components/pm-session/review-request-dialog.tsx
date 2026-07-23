@@ -86,7 +86,7 @@ export function ReviewRequestDialog({ error, isSubmitting, onClose, onSubmit }: 
     <div className="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto px-4 py-8">
       <button
         aria-label="Fermer la modale"
-        className="absolute inset-0 size-full cursor-pointer bg-slate-950/75"
+        className="absolute inset-0 size-full cursor-pointer bg-black/35"
         disabled={isSubmitting}
         onClick={handleClose}
         type="button"
@@ -95,22 +95,22 @@ export function ReviewRequestDialog({ error, isSubmitting, onClose, onSubmit }: 
         aria-describedby={displayedError ? errorId : undefined}
         aria-labelledby={`${titleId}-heading`}
         aria-modal="true"
-        className="relative w-full max-w-lg rounded-[16px] border border-white/10 bg-[#191c23] p-5 shadow-[0_24px_80px_rgba(0,0,0,0.55)] sm:p-6"
+        className="relative w-full max-w-lg rounded-[16px] border border-black/10 bg-[#ffffff] p-5 shadow-[0_24px_80px_rgba(0,0,0,0.55)] sm:p-6"
         onKeyDown={handleDialogKeyDown}
         role="dialog"
       >
         <div className="flex items-start justify-between gap-4">
           <div>
-            <h2 className="font-['Space_Grotesk'] text-lg font-semibold text-[#eef0f4]" id={`${titleId}-heading`}>
+            <h2 className="font-['Space_Grotesk'] text-lg font-semibold text-[#20242b]" id={`${titleId}-heading`}>
               Soumettre une draft PR
             </h2>
-            <p className="mt-1 text-sm leading-6 text-[#8b92a1]">
+            <p className="mt-1 text-sm leading-6 text-[#5e6878]">
               Ces informations seront visibles par le développeur sur GitHub.
             </p>
           </div>
           <button
             aria-label="Fermer"
-            className="flex size-11 flex-none cursor-pointer items-center justify-center rounded-[10px] text-[#8b92a1] transition hover:bg-white/5 hover:text-[#eef0f4] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#5fdf9b]/40 disabled:cursor-not-allowed disabled:opacity-50"
+            className="flex size-11 flex-none cursor-pointer items-center justify-center rounded-[10px] text-[#5e6878] transition hover:bg-black/5 hover:text-[#20242b] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#16834f]/40 disabled:cursor-not-allowed disabled:opacity-50"
             disabled={isSubmitting}
             onClick={handleClose}
             type="button"
@@ -123,7 +123,7 @@ export function ReviewRequestDialog({ error, isSubmitting, onClose, onSubmit }: 
 
         <form className="mt-6 space-y-5" onSubmit={handleSubmit}>
           <fieldset>
-            <legend className="mb-2 text-xs font-semibold uppercase tracking-[0.14em] text-[#6f7686]">
+            <legend className="mb-2 text-xs font-semibold uppercase tracking-[0.14em] text-[#697386]">
               Type de changement
             </legend>
             <div className="grid grid-cols-3 gap-2">
@@ -136,7 +136,7 @@ export function ReviewRequestDialog({ error, isSubmitting, onClose, onSubmit }: 
                   type="radio"
                   value="feat"
                 />
-                <span className="flex min-h-11 items-center justify-center gap-2 rounded-[10px] border border-white/10 bg-[#15171c] px-3 text-sm text-[#8b92a1] transition peer-checked:border-[#5fdf9b]/50 peer-checked:bg-[#5fdf9b]/10 peer-checked:text-[#eafff3] peer-focus-visible:ring-2 peer-focus-visible:ring-[#5fdf9b]/40">
+                <span className="flex min-h-11 items-center justify-center gap-2 rounded-[10px] border border-black/10 bg-[#ffffff] px-3 text-sm text-[#5e6878] transition peer-checked:border-[#16834f]/50 peer-checked:bg-[#16834f]/10 peer-checked:text-[#14532d] peer-focus-visible:ring-2 peer-focus-visible:ring-[#16834f]/40">
                   Feature
                 </span>
               </label>
@@ -149,7 +149,7 @@ export function ReviewRequestDialog({ error, isSubmitting, onClose, onSubmit }: 
                   type="radio"
                   value="fix"
                 />
-                <span className="flex min-h-11 items-center justify-center gap-2 rounded-[10px] border border-white/10 bg-[#15171c] px-3 text-sm text-[#8b92a1] transition peer-checked:border-[#5fdf9b]/50 peer-checked:bg-[#5fdf9b]/10 peer-checked:text-[#eafff3] peer-focus-visible:ring-2 peer-focus-visible:ring-[#5fdf9b]/40">
+                <span className="flex min-h-11 items-center justify-center gap-2 rounded-[10px] border border-black/10 bg-[#ffffff] px-3 text-sm text-[#5e6878] transition peer-checked:border-[#16834f]/50 peer-checked:bg-[#16834f]/10 peer-checked:text-[#14532d] peer-focus-visible:ring-2 peer-focus-visible:ring-[#16834f]/40">
                   Fix
                 </span>
               </label>
@@ -162,7 +162,7 @@ export function ReviewRequestDialog({ error, isSubmitting, onClose, onSubmit }: 
                   type="radio"
                   value="style"
                 />
-                <span className="flex min-h-11 items-center justify-center gap-2 rounded-[10px] border border-white/10 bg-[#15171c] px-3 text-sm text-[#8b92a1] transition peer-checked:border-[#5fdf9b]/50 peer-checked:bg-[#5fdf9b]/10 peer-checked:text-[#eafff3] peer-focus-visible:ring-2 peer-focus-visible:ring-[#5fdf9b]/40">
+                <span className="flex min-h-11 items-center justify-center gap-2 rounded-[10px] border border-black/10 bg-[#ffffff] px-3 text-sm text-[#5e6878] transition peer-checked:border-[#16834f]/50 peer-checked:bg-[#16834f]/10 peer-checked:text-[#14532d] peer-focus-visible:ring-2 peer-focus-visible:ring-[#16834f]/40">
                   Style
                 </span>
               </label>
@@ -170,9 +170,9 @@ export function ReviewRequestDialog({ error, isSubmitting, onClose, onSubmit }: 
           </fieldset>
 
           <label className="block" htmlFor={titleId}>
-            <span className="mb-2 block text-sm font-medium text-[#cdd2dc]">Titre de la PR</span>
+            <span className="mb-2 block text-sm font-medium text-[#46505f]">Titre de la PR</span>
             <input
-              className="min-h-11 w-full rounded-[10px] border border-white/10 bg-[#15171c] px-3 text-sm text-[#eef0f4] outline-none transition placeholder:text-[#565d6b] focus:border-[#5fdf9b]/60 focus:ring-2 focus:ring-[#5fdf9b]/20"
+              className="min-h-11 w-full rounded-[10px] border border-black/10 bg-[#ffffff] px-3 text-sm text-[#20242b] outline-none transition placeholder:text-[#7a8494] focus:border-[#16834f]/60 focus:ring-2 focus:ring-[#16834f]/20"
               disabled={isSubmitting}
               id={titleId}
               maxLength={120}
@@ -182,15 +182,15 @@ export function ReviewRequestDialog({ error, isSubmitting, onClose, onSubmit }: 
               required
               value={title}
             />
-            <span className="mt-1.5 block text-xs leading-5 text-[#6f7686]">
+            <span className="mt-1.5 block text-xs leading-5 text-[#697386]">
               Le commit utilisera le préfixe <code>{type}:</code> et un titre normalisé en minuscules.
             </span>
           </label>
 
           <label className="block" htmlFor={descriptionId}>
-            <span className="mb-2 block text-sm font-medium text-[#cdd2dc]">Description de la PR</span>
+            <span className="mb-2 block text-sm font-medium text-[#46505f]">Description de la PR</span>
             <textarea
-              className="min-h-32 w-full resize-y rounded-[10px] border border-white/10 bg-[#15171c] px-3 py-2.5 text-sm leading-6 text-[#eef0f4] outline-none transition placeholder:text-[#565d6b] focus:border-[#5fdf9b]/60 focus:ring-2 focus:ring-[#5fdf9b]/20"
+              className="min-h-32 w-full resize-y rounded-[10px] border border-black/10 bg-[#ffffff] px-3 py-2.5 text-sm leading-6 text-[#20242b] outline-none transition placeholder:text-[#7a8494] focus:border-[#16834f]/60 focus:ring-2 focus:ring-[#16834f]/20"
               disabled={isSubmitting}
               id={descriptionId}
               maxLength={10_000}
@@ -203,7 +203,7 @@ export function ReviewRequestDialog({ error, isSubmitting, onClose, onSubmit }: 
 
           {displayedError ? (
             <p
-              className="rounded-[10px] border border-rose-400/30 bg-rose-400/10 px-3 py-2 text-sm text-rose-200"
+              className="rounded-[10px] border border-rose-400/30 bg-rose-400/10 px-3 py-2 text-sm text-[#b4233b]"
               id={errorId}
               role="alert"
             >
@@ -211,7 +211,7 @@ export function ReviewRequestDialog({ error, isSubmitting, onClose, onSubmit }: 
             </p>
           ) : null}
 
-          <div className="flex flex-col-reverse gap-2 border-t border-white/10 pt-4 sm:flex-row sm:justify-end">
+          <div className="flex flex-col-reverse gap-2 border-t border-black/10 pt-4 sm:flex-row sm:justify-end">
             <Button disabled={isSubmitting} onClick={handleClose} variant="ghost">
               Annuler
             </Button>

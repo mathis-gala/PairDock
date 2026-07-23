@@ -12,7 +12,7 @@ export function AppShell() {
 
   if (!authSession) {
     return (
-      <main className="min-h-screen text-[#eef0f4]">
+      <main className="min-h-screen text-[#20242b]">
         <LoginPage
           onAuthenticated={(session) => {
             setAuthSession(session);
@@ -28,7 +28,7 @@ export function AppShell() {
   }
 
   return (
-    <main className="min-h-screen text-[#eef0f4]">
+    <main className="min-h-screen text-[#20242b]">
       {authSession.user.kind === 'pm' ? (
         route.kind === 'pm-session' ? (
           <PmSessionPage accessToken={authSession.accessToken} onBack={openPmDashboard} sessionId={route.sessionId} />

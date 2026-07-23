@@ -19,7 +19,7 @@ export function ConnectionActivityRail({ projects }: ConnectionActivityRailProps
   return (
     <aside className="space-y-4">
       <SectionCard eyebrow="Connections" title="Provider and local-agent state">
-        <div className="space-y-3 text-sm text-slate-300">
+        <div className="space-y-3 text-sm text-slate-700">
           <RailMetric label="GitHub connections" value={`${projects.length}`} />
           <RailMetric label="Online agents" value={`${onlineCount}/${projects.length}`} />
           <RailMetric label="Shared PM grants" value={`${pmMemberCount}`} />
@@ -34,18 +34,18 @@ export function ConnectionActivityRail({ projects }: ConnectionActivityRailProps
       </SectionCard>
       <SectionCard eyebrow="Activity" title="Recent session activity">
         {sessions.length > 0 ? (
-          <ol className="space-y-3 text-sm text-slate-300">
+          <ol className="space-y-3 text-sm text-slate-700">
             {sessions.slice(0, 6).map((session) => (
-              <li className="rounded-xl border border-slate-800 bg-slate-950/70 p-3" key={session.id}>
-                <p className="font-medium text-white">{session.projectName}</p>
-                <p className="text-xs text-slate-500">
+              <li className="rounded-xl border border-slate-200 bg-white p-3" key={session.id}>
+                <p className="font-medium text-[#20242b]">{session.projectName}</p>
+                <p className="text-xs text-slate-600">
                   {session.status} · {session.modelId}
                 </p>
               </li>
             ))}
           </ol>
         ) : (
-          <p className="text-sm text-slate-500">No developer sessions started yet.</p>
+          <p className="text-sm text-slate-600">No developer sessions started yet.</p>
         )}
       </SectionCard>
     </aside>
@@ -59,9 +59,9 @@ interface RailMetricProps {
 
 function RailMetric({ label, value }: RailMetricProps) {
   return (
-    <div className="flex items-center justify-between rounded-xl border border-slate-800 bg-slate-950/70 px-3 py-2">
-      <span className="text-slate-500">{label}</span>
-      <span className="font-medium text-white">{value}</span>
+    <div className="flex items-center justify-between rounded-xl border border-slate-200 bg-white px-3 py-2">
+      <span className="text-slate-600">{label}</span>
+      <span className="font-medium text-[#20242b]">{value}</span>
     </div>
   );
 }

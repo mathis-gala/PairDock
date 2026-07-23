@@ -79,7 +79,7 @@ export function ExecutionSelectionControls({
 
   return (
     <div className="grid gap-3 sm:grid-cols-2">
-      <label className="space-y-1.5 text-xs text-slate-400" htmlFor={modelControlId}>
+      <label className="space-y-1.5 text-xs text-slate-600" htmlFor={modelControlId}>
         <span className="block">Modèle</span>
         <SelectInput
           disabled={disabled || pending}
@@ -94,7 +94,7 @@ export function ExecutionSelectionControls({
           ))}
         </SelectInput>
       </label>
-      <label className="space-y-1.5 text-xs text-slate-400" htmlFor={reasoningControlId}>
+      <label className="space-y-1.5 text-xs text-slate-600" htmlFor={reasoningControlId}>
         <span className="block">Raisonnement</span>
         <SelectInput
           disabled={disabled || pending}

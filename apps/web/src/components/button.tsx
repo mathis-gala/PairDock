@@ -9,11 +9,12 @@ interface ButtonProps extends PropsWithChildren<ButtonHTMLAttributes<HTMLButtonE
 
 const variantClasses: Record<ButtonVariant, string> = {
   primary:
-    'border-transparent bg-[#5fdf9b] text-[#0c2014] hover:bg-[#74e6ab] disabled:bg-[#23272f] disabled:text-[#6f7686]',
+    'border-transparent bg-[#16834f] text-[#f7faf8] hover:bg-[#299b66] disabled:bg-[#e4e8ed] disabled:text-[#697386]',
   secondary:
-    'border-white/10 bg-[#23272f] text-[#eef0f4] hover:border-white/20 hover:bg-[#2a2f38] disabled:bg-[#1a1d24] disabled:text-[#565d6b]',
-  ghost: 'border-transparent bg-transparent text-[#cdd2dc] hover:bg-white/5 disabled:text-[#565d6b]',
-  danger: 'border-transparent bg-rose-500 text-white hover:bg-rose-400 disabled:bg-[#23272f] disabled:text-[#6f7686]',
+    'border-black/10 bg-[#e4e8ed] text-[#20242b] hover:border-black/20 hover:bg-[#dce2e8] disabled:bg-[#eef1f4] disabled:text-[#7a8494]',
+  ghost: 'border-transparent bg-transparent text-[#46505f] hover:bg-black/5 disabled:text-[#7a8494]',
+  danger:
+    'border-transparent bg-[#b4233b] text-[#fff8f8] hover:bg-[#9f1d32] disabled:bg-[#e4e8ed] disabled:text-[#697386]',
 };
 
 export function Button({ children, className, type = 'button', variant = 'primary', ...props }: ButtonProps) {

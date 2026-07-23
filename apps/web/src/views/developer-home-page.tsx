@@ -42,7 +42,7 @@ export function DeveloperHomePage({ onSignOut, session }: DeveloperHomePageProps
           <div className="mb-5 flex flex-wrap items-end justify-between gap-4">
             <div>
               <h1 className="font-['Space_Grotesk'] text-2xl font-semibold tracking-[-0.01em]">Projets</h1>
-              <p className="mt-1 text-[13.5px] text-[#8b92a1]">
+              <p className="mt-1 text-[13.5px] text-[#5e6878]">
                 Chaque projet pointe vers un dépôt, un agent local et un modèle par défaut.
               </p>
             </div>
