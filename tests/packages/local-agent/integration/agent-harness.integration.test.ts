@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { chmod, mkdtemp, readFile, realpath, writeFile } from 'node:fs/promises';
+import { chmod, mkdtemp, readFile, realpath, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { basename, join, resolve } from 'node:path';
 import test from 'node:test';
@@ -190,7 +190,7 @@ test('default Codex harness tells the agent to edit preview sources instead of r
 
 test('default Codex harness streams confirmed messages as progress and marks the last message as final', async () => {
   const worktreePath = await createTempWorkspace();
-  const executableDirectory = await mkdtemp(join(tmpdir(), 'pairdock-fake-codex-'));
+  const executableDirectory = await mkdtemp(join(process.cwd(), '.pairdock-fake-codex-'));
   const executablePath = join(executableDirectory, 'codex');
   const originalPath = process.env.PATH;
 
@@ -248,7 +248,12 @@ test('default Codex harness streams confirmed messages as progress and marks the
       { type: 'done', exitCode: 0 },
     ]);
   } finally {
-    process.env.PATH = originalPath;
+    if (originalPath === undefined) {
+      delete process.env.PATH;
+    } else {
+      process.env.PATH = originalPath;
+    }
+    await rm(executableDirectory, { recursive: true, force: true });
   }
 });
 
