@@ -97,6 +97,7 @@ export const agentOutputEventEnvelopeSchema = sessionEnvelope(
   z.object({
     sessionId: uuidSchema,
     stream: z.enum(['stdout', 'stderr']),
+    kind: z.enum(['progress', 'final']).optional(),
     text: z.string().max(MAX_AGENT_OUTPUT_LENGTH),
   }),
 ).refine(({ sessionId, payload }) => payload.sessionId === sessionId, sessionIdConsistencyRule);
@@ -241,6 +242,7 @@ function extractUsefulLogLine(logs: string | undefined): string | null {
     .map((line) => line.trim())
     .filter(Boolean);
   const usefulLine =
+    lines.find((line) => /^not ok\b|assertionerror|expected values? to|expected .* (?:but|received)/i.test(line)) ??
     lines.find((line) => /cannot find|not found|error:|exception|failed on|timed out/i.test(line)) ??
     lines.find((line) => /fail|error/i.test(line));
 

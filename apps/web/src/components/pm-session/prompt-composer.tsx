@@ -1,23 +1,37 @@
 import { useForm } from '@tanstack/react-form';
-import { type FormEvent, type KeyboardEvent, useState } from 'react';
+import { type ChangeEvent, type FormEvent, type KeyboardEvent, useState } from 'react';
 import { Button } from '../button.js';
 import { TextArea } from '../text-area.js';
 
 interface PromptComposerProps {
+  blockedReason: string | null;
   canCancel: boolean;
+  canSubmit: boolean;
   isCancelling: boolean;
   isSubmitting: boolean;
   onCancel: () => Promise<void>;
   onSubmit: (content: string) => Promise<void>;
 }
 
-export function PromptComposer({ canCancel, isCancelling, isSubmitting, onCancel, onSubmit }: PromptComposerProps) {
+export function PromptComposer({
+  blockedReason,
+  canCancel,
+  canSubmit,
+  isCancelling,
+  isSubmitting,
+  onCancel,
+  onSubmit,
+}: PromptComposerProps) {
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const form = useForm({
     defaultValues: {
       content: '',
     },
     onSubmit: async ({ value }) => {
+      if (!canSubmit) {
+        return;
+      }
+
       setErrorMessage(null);
       await onSubmit(value.content);
       form.reset();
@@ -40,7 +54,8 @@ export function PromptComposer({ canCancel, isCancelling, isSubmitting, onCancel
           {(field) => {
             const inputId = 'pm-session-prompt';
 
-            function handleContentChange(event: React.ChangeEvent<HTMLTextAreaElement>) {
+            function handleContentChange(event: ChangeEvent<HTMLTextAreaElement>) {
+              setErrorMessage(null);
               field.handleChange(event.target.value);
             }
 
@@ -58,6 +73,7 @@ export function PromptComposer({ canCancel, isCancelling, isSubmitting, onCancel
                 </label>
                 <TextArea
                   className="min-h-[72px] resize-none border-transparent bg-transparent px-0 py-0 focus:border-transparent"
+                  aria-describedby={blockedReason ? 'pm-session-prompt-status' : undefined}
                   id={inputId}
                   name={field.name}
                   onBlur={field.handleBlur}
@@ -70,7 +86,16 @@ export function PromptComposer({ canCancel, isCancelling, isSubmitting, onCancel
             );
           }}
         </form.Field>
-        {errorMessage ? <p className="text-sm text-rose-300">{errorMessage}</p> : null}
+        {blockedReason ? (
+          <p aria-live="polite" className="text-xs leading-5 text-[#8b92a1]" id="pm-session-prompt-status">
+            {blockedReason}
+          </p>
+        ) : null}
+        {errorMessage ? (
+          <p className="text-sm text-rose-300" role="alert">
+            {errorMessage}
+          </p>
+        ) : null}
         <div className="flex flex-wrap items-center justify-between gap-3">
           <span className="font-mono text-[11px] text-[#565d6b]">⌘↵ pour envoyer</span>
           <Button
@@ -82,7 +107,7 @@ export function PromptComposer({ canCancel, isCancelling, isSubmitting, onCancel
           >
             {isCancelling ? 'Arrêt…' : 'Arrêter'}
           </Button>
-          <Button className="min-h-[34px] px-4 py-1.5" disabled={isSubmitting} type="submit">
+          <Button className="min-h-[34px] px-4 py-1.5" disabled={!canSubmit || isSubmitting} type="submit">
             {isSubmitting ? 'Envoi…' : 'Envoyer'}
           </Button>
         </div>

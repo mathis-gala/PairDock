@@ -134,10 +134,14 @@ function waitForAgentEvent(socket: Socket, eventType: AgentEventEnvelope['type']
   });
 }
 
-function waitForAgentEvents(socket: Socket, count: number) {
+function waitForSessionAgentEvents(socket: Socket, sessionId: string, count: number) {
   return new Promise<AgentEventEnvelope[]>((resolve) => {
     const events: AgentEventEnvelope[] = [];
     const listener = (event: AgentEventEnvelope) => {
+      if (event.sessionId !== sessionId) {
+        return;
+      }
+
       events.push(event);
       if (events.length === count) {
         socket.off(agentProtocolMessageEventName, listener);
@@ -196,7 +200,7 @@ test('BT-016: AgentClient emits preview progress and session.ready after session
   try {
     await client.start();
     const socket = await socketPromise;
-    const eventsPromise = waitForAgentEvents(socket, 5);
+    const eventsPromise = waitForSessionAgentEvents(socket, sessionId, 5);
     socket.emit(agentProtocolMessageEventName, buildPrepareCommand(sessionId, branchName));
     const [connectingEvent, worktreeEvent, dockerEvent, previewEvent, readyEvent] = await eventsPromise;
 

@@ -28,15 +28,29 @@ export function ConversationThread({ items }: ConversationThreadProps) {
         <li className={classNames('flex', item.role === 'user' ? 'justify-end' : 'justify-start')} key={item.id}>
           <div
             className={classNames(
-              'max-w-[86%] whitespace-pre-wrap rounded-2xl px-3.5 py-2.5 text-[13.5px] leading-5 shadow-sm',
+              'max-w-[86%] whitespace-pre-wrap rounded-2xl text-[13.5px] leading-5',
               item.role === 'user'
-                ? 'rounded-br-md bg-[#5fdf9b] text-[#0c2014]'
-                : item.tone === 'error'
-                  ? 'rounded-bl-md border border-rose-400/25 bg-rose-400/10 text-rose-100'
-                  : 'rounded-bl-md border border-white/10 bg-[#242832] text-[#e5e8ee]',
+                ? 'rounded-br-md bg-[#5fdf9b] px-3.5 py-2.5 text-[#0c2014] shadow-sm'
+                : item.kind === 'progress'
+                  ? 'rounded-bl-md border border-white/8 bg-[#1b1e25] px-3 py-2 text-[#a3aab8]'
+                  : item.tone === 'error'
+                    ? 'rounded-bl-md border border-rose-400/25 bg-rose-400/10 px-3.5 py-2.5 text-rose-100 shadow-sm'
+                    : 'rounded-bl-md border border-white/10 bg-[#242832] px-3.5 py-2.5 text-[#e5e8ee] shadow-sm',
             )}
           >
-            {item.text}
+            {item.kind === 'progress' ? (
+              <div className="grid grid-cols-[auto_1fr] gap-2">
+                <span aria-hidden="true" className="mt-[7px] size-1.5 rounded-full bg-[#5fdf9b]" />
+                <div>
+                  <div className="mb-0.5 font-mono text-[10px] uppercase tracking-[0.08em] text-[#6f7686]">
+                    Progression
+                  </div>
+                  {item.text}
+                </div>
+              </div>
+            ) : (
+              item.text
+            )}
           </div>
         </li>
       ))}

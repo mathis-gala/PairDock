@@ -61,9 +61,34 @@ export class CodexHarnessAdapter implements AgentHarnessPort {
     });
     const queue = new AgentHarnessEventQueue();
     let stdoutBuffer = '';
+    let pendingCodexMessage: string | null = null;
     let settled = false;
 
     this.activeRuns.set(input.sessionId, childProcess);
+
+    const handleCodexJsonLine = (line: string) => {
+      const event = parseCodexJsonLine(line);
+
+      if (event.type === 'thread') {
+        this.codexThreadIds.set(input.sessionId, event.threadId);
+        return;
+      }
+
+      if (event.type === 'message') {
+        queue.push({
+          type: 'output',
+          stream: 'stdout',
+          kind: 'progress',
+          text: event.text,
+        });
+        pendingCodexMessage = event.text;
+        return;
+      }
+
+      if (event.type === 'error') {
+        queue.push({ type: 'output', stream: 'stderr', text: `ERROR: ${event.message}` });
+      }
+    };
 
     const finish = (exitCode: number) => {
       if (settled) {
@@ -71,6 +96,15 @@ export class CodexHarnessAdapter implements AgentHarnessPort {
       }
 
       settled = true;
+      if (usesCodexJsonProtocol && pendingCodexMessage) {
+        queue.push({
+          type: 'output',
+          stream: 'stdout',
+          kind: exitCode === 0 ? 'final' : 'progress',
+          text: pendingCodexMessage,
+        });
+        pendingCodexMessage = null;
+      }
       this.activeRuns.delete(input.sessionId);
       rmSync(harnessTempDirectory, { recursive: true, force: true });
       queue.push({ type: 'done', exitCode });
@@ -98,7 +132,7 @@ export class CodexHarnessAdapter implements AgentHarnessPort {
       const lines = stdoutBuffer.split('\n');
       stdoutBuffer = lines.pop() ?? '';
       for (const line of lines) {
-        this.handleCodexJsonLine(input.sessionId, line, queue);
+        handleCodexJsonLine(line);
       }
     });
     childProcess.stderr?.on('data', (chunk: Buffer | string) => {
@@ -110,7 +144,7 @@ export class CodexHarnessAdapter implements AgentHarnessPort {
     });
     childProcess.once('close', (code: number | null, signal: NodeJS.Signals | null) => {
       if (usesCodexJsonProtocol && stdoutBuffer.trim()) {
-        this.handleCodexJsonLine(input.sessionId, stdoutBuffer, queue);
+        handleCodexJsonLine(stdoutBuffer);
       }
       finish(normalizeExitCode(code, signal));
     });
@@ -133,24 +167,6 @@ export class CodexHarnessAdapter implements AgentHarnessPort {
 
     if (activeRun.exitCode === null) {
       activeRun.kill('SIGKILL');
-    }
-  }
-
-  private handleCodexJsonLine(sessionId: string, line: string, queue: AgentHarnessEventQueue): void {
-    const event = parseCodexJsonLine(line);
-
-    if (event.type === 'thread') {
-      this.codexThreadIds.set(sessionId, event.threadId);
-      return;
-    }
-
-    if (event.type === 'message') {
-      queue.push({ type: 'output', stream: 'stdout', text: event.text });
-      return;
-    }
-
-    if (event.type === 'error') {
-      queue.push({ type: 'output', stream: 'stderr', text: `ERROR: ${event.message}` });
     }
   }
 }
@@ -235,6 +251,8 @@ function buildCodexPrompt(userPrompt: string): string {
   return [
     'PairDock runtime: the project preview and configured validation commands run inside Docker.',
     'Do not install dependencies or run build, test, or lint commands on the host worktree. Host and container operating systems may differ.',
+    'Read the project manifest before editing. Use its preview start command to identify the source files that power the live preview. Treat prototypes, design references, generated files, and documentation as non-runtime references unless the user explicitly asks to change them.',
+    'Your progress updates are visible to a product manager in real time. Keep them concise and user-facing. Explain what you are locating, changing, and verifying without exposing secrets or unrelated environment details.',
     'Inspect and edit the worktree normally. PairDock runs the configured build, test, and lint checks inside Docker after this turn and automatically returns failures for repair.',
     `User request:\n${userPrompt}`,
   ].join('\n\n');

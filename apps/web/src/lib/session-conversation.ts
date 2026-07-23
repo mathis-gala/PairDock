@@ -4,6 +4,7 @@ import type { SessionEventRecordView, SessionMessageView } from '../schemas/sess
 export interface SessionConversationItem {
   id: string;
   role: 'assistant' | 'user';
+  kind: 'message' | 'progress';
   text: string;
   tone: 'default' | 'error';
   createdAt: string;
@@ -16,17 +17,18 @@ export function buildSessionConversation(
   const messageItems = messages.map((message) => ({
     id: `message:${message.id}`,
     role: message.role === 'agent' || message.role === 'assistant' ? ('assistant' as const) : ('user' as const),
+    kind: 'message' as const,
     text: message.content.trim(),
     tone: 'default' as const,
     createdAt: message.createdAt,
   }));
   const eventItems = events.flatMap(toConversationEvent);
 
-  return mergeAdjacentAgentOutput(
-    [...messageItems, ...eventItems]
-      .filter((item) => item.text.length > 0)
-      .sort((left, right) => left.createdAt.localeCompare(right.createdAt)),
-  );
+  const sortedItems = [...messageItems, ...eventItems]
+    .filter((item) => item.text.length > 0)
+    .sort((left, right) => left.createdAt.localeCompare(right.createdAt));
+
+  return mergeAdjacentAgentOutput(promoteFinalAgentMessages(sortedItems));
 }
 
 function toConversationEvent(event: SessionEventRecordView): SessionConversationItem[] {
@@ -42,11 +44,29 @@ function toConversationEvent(event: SessionEventRecordView): SessionConversation
     if (stream === 'stderr') {
       const errorText = humanizeAgentError(text);
       return errorText
-        ? [{ id: `event:${event.id}`, role: 'assistant', text: errorText, tone: 'error', createdAt: event.createdAt }]
+        ? [
+            {
+              id: `event:${event.id}`,
+              role: 'assistant',
+              kind: 'message',
+              text: errorText,
+              tone: 'error',
+              createdAt: event.createdAt,
+            },
+          ]
         : [];
     }
 
-    return [{ id: `event:${event.id}`, role: 'assistant', text, tone: 'default', createdAt: event.createdAt }];
+    return [
+      {
+        id: `event:${event.id}`,
+        role: 'assistant',
+        kind: payload?.kind === 'progress' ? 'progress' : 'message',
+        text,
+        tone: 'default',
+        createdAt: event.createdAt,
+      },
+    ];
   }
 
   if (event.type === 'error') {
@@ -56,6 +76,7 @@ function toConversationEvent(event: SessionEventRecordView): SessionConversation
       {
         id: `event:${event.id}`,
         role: 'assistant',
+        kind: 'message',
         text: humanizeAgentError(message) ?? `L’agent n’a pas pu terminer cette demande. ${message}`,
         tone: 'error',
         createdAt: event.createdAt,
@@ -79,6 +100,7 @@ function toConversationEvent(event: SessionEventRecordView): SessionConversation
       {
         id: `event:${event.id}`,
         role: 'assistant',
+        kind: 'message',
         text: `Les modifications ont été appliquées, mais la validation « ${failure.failedChecks.join(', ')} » a échoué.${failure.cause ? ` Cause : ${failure.cause}.` : ''} Tu peux renvoyer un message après correction; cette session reste ouverte.`,
         tone: 'error',
         createdAt: event.createdAt,
@@ -95,6 +117,7 @@ function toConversationEvent(event: SessionEventRecordView): SessionConversation
         {
           id: `event:${event.id}`,
           role: 'assistant',
+          kind: 'message',
           text: `L’agent s’est arrêté avec le code ${exitCode}. Tu peux renvoyer un message pour réessayer dans cette session.`,
           tone: 'error',
           createdAt: event.createdAt,
@@ -147,7 +170,13 @@ function mergeAdjacentAgentOutput(items: SessionConversationItem[]): SessionConv
   for (const item of items) {
     const previous = merged.at(-1);
 
-    if (previous?.role === 'assistant' && item.role === 'assistant' && previous.tone === item.tone) {
+    if (
+      item.kind === 'message' &&
+      previous?.kind === 'message' &&
+      previous.role === 'assistant' &&
+      item.role === 'assistant' &&
+      previous.tone === item.tone
+    ) {
       previous.text = `${previous.text}\n${item.text}`;
       continue;
     }
@@ -156,6 +185,30 @@ function mergeAdjacentAgentOutput(items: SessionConversationItem[]): SessionConv
   }
 
   return merged;
+}
+
+function promoteFinalAgentMessages(items: SessionConversationItem[]): SessionConversationItem[] {
+  const promoted: SessionConversationItem[] = [];
+
+  for (const item of items) {
+    const previous = promoted.at(-1);
+
+    if (
+      item.kind === 'message' &&
+      item.role === 'assistant' &&
+      item.tone === 'default' &&
+      previous?.kind === 'progress' &&
+      previous.role === 'assistant' &&
+      previous.text === item.text
+    ) {
+      promoted[promoted.length - 1] = item;
+      continue;
+    }
+
+    promoted.push(item);
+  }
+
+  return promoted;
 }
 
 function asRecord(value: unknown): Record<string, unknown> | null {

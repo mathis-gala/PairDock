@@ -1,3 +1,5 @@
+import { compactValidationLogs } from './validation-log.js';
+
 export interface ProjectChecksConfig {
   build?: string;
   test?: string;
@@ -28,8 +30,6 @@ export type CheckCommandExecutor = (input: {
   command: string;
   sessionId: string;
 }) => Promise<{ exitCode: number; logs: string }>;
-
-const MAX_LOG_CHARS = 4_000;
 
 export class ChecksRunner {
   constructor(
@@ -74,7 +74,7 @@ export class ChecksRunner {
 
     return {
       ...retry,
-      ...(logs ? { logs: logs.slice(-MAX_LOG_CHARS) } : {}),
+      ...(logs ? { logs: compactValidationLogs(logs) } : {}),
     };
   }
 
@@ -89,7 +89,7 @@ export class ChecksRunner {
     return {
       status: result.exitCode === 0 ? 'passed' : 'failed',
       command,
-      ...(logs ? { logs: logs.slice(-MAX_LOG_CHARS) } : {}),
+      ...(logs ? { logs: compactValidationLogs(logs) } : {}),
     };
   }
 

@@ -525,6 +525,7 @@ export class AgentClient {
             buildAgentOutputEvent({
               sessionId: input.sessionId,
               stream: event.stream,
+              ...(event.kind ? { kind: event.kind } : {}),
               text: this.logRedactor.redact(event.text),
             }),
           );

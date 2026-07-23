@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { mkdtemp, readFile, realpath } from 'node:fs/promises';
+import { chmod, mkdtemp, readFile, realpath, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { basename, join, resolve } from 'node:path';
 import test from 'node:test';
@@ -91,6 +91,8 @@ test('default Codex harness starts and resumes one Codex thread per PairDock ses
   const expectedPrompt = [
     'PairDock runtime: the project preview and configured validation commands run inside Docker.',
     'Do not install dependencies or run build, test, or lint commands on the host worktree. Host and container operating systems may differ.',
+    'Read the project manifest before editing. Use its preview start command to identify the source files that power the live preview. Treat prototypes, design references, generated files, and documentation as non-runtime references unless the user explicitly asks to change them.',
+    'Your progress updates are visible to a product manager in real time. Keep them concise and user-facing. Explain what you are locating, changing, and verifying without exposing secrets or unrelated environment details.',
     'Inspect and edit the worktree normally. PairDock runs the configured build, test, and lint checks inside Docker after this turn and automatically returns failures for repair.',
     'User request:\nContinue le correctif.',
   ].join('\n\n');
@@ -164,6 +166,90 @@ test('default Codex harness delegates dependency installation and validation to 
   assert.match(prompt, /Do not install dependencies/i);
   assert.match(prompt, /PairDock runs the configured build, test, and lint checks inside Docker/i);
   assert.match(prompt, /Implement the requested change\./);
+});
+
+test('default Codex harness tells the agent to edit preview sources instead of reference prototypes', () => {
+  const args = buildCommandArgs(
+    {},
+    {
+      sessionId: '13131313-1313-4313-8313-131313131313',
+      projectKey: 'pairdock',
+      prompt: 'Change the background.',
+      modelId: 'gpt-5.6-sol',
+      reasoningEffort: 'high',
+      worktreePath: '/tmp/worktree',
+    },
+  );
+  const prompt = args.at(-1) ?? '';
+
+  assert.match(prompt, /read the project manifest/i);
+  assert.match(prompt, /preview start command/i);
+  assert.match(prompt, /prototype.*reference.*unless the user explicitly asks/i);
+  assert.match(prompt, /progress updates are visible to a product manager/i);
+});
+
+test('default Codex harness streams confirmed messages as progress and marks the last message as final', async () => {
+  const worktreePath = await createTempWorkspace();
+  const executableDirectory = await mkdtemp(join(tmpdir(), 'pairdock-fake-codex-'));
+  const executablePath = join(executableDirectory, 'codex');
+  const originalPath = process.env.PATH;
+
+  await writeFile(
+    executablePath,
+    [
+      '#!/usr/bin/env node',
+      'console.log(JSON.stringify({ type: "thread.started", thread_id: "thread-1" }));',
+      'console.log(JSON.stringify({ type: "item.completed", item: { type: "agent_message", text: "Inspection du projet." } }));',
+      'console.log(JSON.stringify({ type: "item.completed", item: { type: "agent_message", text: "Modification du composant." } }));',
+      'console.log(JSON.stringify({ type: "item.completed", item: { type: "agent_message", text: "Modification terminée." } }));',
+    ].join('\n'),
+    'utf8',
+  );
+  await chmod(executablePath, 0o755);
+  process.env.PATH = `${executableDirectory}:${originalPath ?? ''}`;
+
+  try {
+    const events = await collectEvents(
+      new CodexHarnessAdapter().runPrompt({
+        sessionId: '14141414-1414-4414-8414-141414141414',
+        projectKey: 'pairdock',
+        prompt: 'Change le fond.',
+        modelId: 'gpt-5.6-sol',
+        reasoningEffort: 'low',
+        worktreePath,
+      }),
+    );
+
+    assert.deepEqual(events, [
+      {
+        type: 'output',
+        stream: 'stdout',
+        kind: 'progress',
+        text: 'Inspection du projet.',
+      },
+      {
+        type: 'output',
+        stream: 'stdout',
+        kind: 'progress',
+        text: 'Modification du composant.',
+      },
+      {
+        type: 'output',
+        stream: 'stdout',
+        kind: 'progress',
+        text: 'Modification terminée.',
+      },
+      {
+        type: 'output',
+        stream: 'stdout',
+        kind: 'final',
+        text: 'Modification terminée.',
+      },
+      { type: 'done', exitCode: 0 },
+    ]);
+  } finally {
+    process.env.PATH = originalPath;
+  }
 });
 
 test('Codex harness does not expose unrelated developer secrets to the agent process', () => {
