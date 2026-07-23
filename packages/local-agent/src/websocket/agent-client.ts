@@ -634,11 +634,30 @@ export class AgentClient {
   }
 
   private async emitEvent(event: AgentEventEnvelope): Promise<void> {
-    try {
-      await this.emitRequiredEvent(event);
-    } catch (error) {
-      this.logger.warn(error instanceof Error ? error.message : String(error));
+    const socket = this.socket;
+    if (!socket) {
+      throw new Error('AgentClient socket is not connected.');
     }
+
+    await new Promise<void>((resolve, reject) => {
+      const timeout = setTimeout(() => {
+        this.logger.warn(`PairDock backend did not acknowledge ${event.type} within 5000ms.`);
+        resolve();
+      }, 5_000);
+
+      socket.emit(agentProtocolMessageEventName, event, (response?: { accepted?: boolean; error?: string }) => {
+        clearTimeout(timeout);
+
+        if (response?.accepted === false) {
+          const message = response.error ?? 'unknown error';
+          this.logger.warn(`PairDock backend rejected ${event.type}: ${message}`);
+          reject(new BackendEventRejectedError(event.type, message));
+          return;
+        }
+
+        resolve();
+      });
+    });
   }
 
   private async emitRequiredEvent(event: AgentEventEnvelope, socket = this.socket): Promise<void> {
@@ -655,7 +674,7 @@ export class AgentClient {
         clearTimeout(timeout);
 
         if (response?.accepted !== true) {
-          const message = response.error ?? 'unknown error';
+          const message = response?.error ?? 'unknown error';
           this.logger.warn(`PairDock backend rejected ${event.type}: ${message}`);
           reject(new BackendEventRejectedError(event.type, message));
           return;

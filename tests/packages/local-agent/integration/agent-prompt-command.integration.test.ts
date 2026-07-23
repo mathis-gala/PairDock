@@ -126,7 +126,6 @@ async function createPreparedValidationFeedbackClient(
 
   await client.start();
   const socket = await socketPromise;
-  await waitForAgentEvent(socket, 'agent.connected');
   const prepareEventsPromise = waitForAgentEvents(socket, 5);
   socket.emit(
     agentProtocolMessageEventName,
