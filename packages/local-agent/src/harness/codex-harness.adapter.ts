@@ -223,8 +223,8 @@ export function buildCommandArgs(
   if (codexThreadId) {
     return [
       'exec',
-      ...codexSecurityArgs,
       'resume',
+      ...codexSecurityArgs,
       '--json',
       '--model',
       input.modelId,

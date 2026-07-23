@@ -119,6 +119,7 @@ test('default Codex harness starts and resumes one Codex thread per PairDock ses
   ]);
   assert.deepEqual(buildCommandArgs({}, input, 'codex-thread-id'), [
     'exec',
+    'resume',
     '--ignore-user-config',
     '--config',
     'approval_policy="never"',
@@ -130,7 +131,6 @@ test('default Codex harness starts and resumes one Codex thread per PairDock ses
     'permissions.pairdock-restricted.network.enabled=false',
     '--config',
     'shell_environment_policy.set={GIT_CONFIG_GLOBAL="/dev/null",GIT_CONFIG_NOSYSTEM="1",TMPDIR="/tmp/pairdock/11111111-1111-4111-8111-111111111111",XDG_CACHE_HOME="/tmp/pairdock/11111111-1111-4111-8111-111111111111/cache",XDG_CONFIG_HOME="/tmp/pairdock/11111111-1111-4111-8111-111111111111/config",XDG_DATA_HOME="/tmp/pairdock/11111111-1111-4111-8111-111111111111/data"}',
-    'resume',
     '--json',
     '--model',
     'gpt-5.6-luna',
