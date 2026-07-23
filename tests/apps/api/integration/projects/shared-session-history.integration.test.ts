@@ -63,6 +63,7 @@ test.beforeEach(resetDatabase);
 
 test('PM browses sessions and draft review requests only for projects shared with them', async () => {
   const pm = await authenticatePm();
+  const otherPm = await authenticatePm();
   const developer = await prisma.user.create({
     data: { email: `owner-${randomUUID()}@pairdock.test`, displayName: 'Owner', kind: 'developer' },
   });
@@ -98,11 +99,14 @@ test('PM browses sessions and draft review requests only for projects shared wit
   await prisma.projectMember.create({
     data: { projectId: sharedProject.id, userId: pm.user.id, role: 'pm' },
   });
+  await prisma.projectMember.create({
+    data: { projectId: sharedProject.id, userId: otherPm.user.id, role: 'pm' },
+  });
   const [sharedSession, privateSession] = await Promise.all([
     prisma.session.create({
       data: {
         projectId: sharedProject.id,
-        createdByUserId: developer.id,
+        createdByUserId: pm.user.id,
         status: 'REVIEW_REQUEST_CREATED',
         modelId: 'gpt-5.6-sol',
         reasoningEffort: 'high',
@@ -118,6 +122,15 @@ test('PM browses sessions and draft review requests only for projects shared wit
       },
     }),
   ]);
+  const otherPmSession = await prisma.session.create({
+    data: {
+      projectId: sharedProject.id,
+      createdByUserId: otherPm.user.id,
+      status: 'READY',
+      modelId: 'gpt-5.6-terra',
+      reasoningEffort: 'low',
+    },
+  });
   await prisma.pullRequest.create({
     data: {
       sessionId: sharedSession.id,
@@ -150,6 +163,7 @@ test('PM browses sessions and draft review requests only for projects shared wit
     },
   ]);
   assert.ok(!history.some((session) => session.id === privateSession.id));
+  assert.ok(!history.some((session) => session.id === otherPmSession.id));
 
   const authTokenService = app.get(AuthTokenService);
   const developerToken = authTokenService.issue({

@@ -1,7 +1,9 @@
 import type { SharedSessionHistoryItem } from '@pairdock/shared-contracts';
+import { useState } from 'react';
 import { Button } from '../components/button.js';
 import { ProductShell } from '../components/product-shell.js';
 import { SectionCard } from '../components/section-card.js';
+import { SelectInput } from '../components/select-input.js';
 import { StatusBadge } from '../components/status-badge.js';
 import { useAuthSession } from '../hooks/use-auth-session.js';
 import { useSharedSessionHistory } from '../hooks/use-shared-session-history.js';
@@ -16,14 +18,27 @@ interface PmActivityPageProps {
 export function PmActivityPage({ accessToken, mode, onOpenSession, onSignOut }: PmActivityPageProps) {
   const authSession = useAuthSession();
   const historyQuery = useSharedSessionHistory(accessToken);
+  const [projectFilter, setProjectFilter] = useState('all');
+  const [statusFilter, setStatusFilter] = useState<'opened' | 'closed'>('opened');
 
   if (!authSession) {
     return null;
   }
 
   const allSessions = historyQuery.data ?? [];
-  const sessions =
+  const sessionsForView =
     mode === 'review-requests' ? allSessions.filter((session) => session.reviewRequest !== null) : allSessions;
+  const projectOptions = Array.from(
+    new Map(sessionsForView.map((session) => [session.projectId, session.projectName])).entries(),
+  );
+  const sessions =
+    mode === 'sessions'
+      ? sessionsForView.filter(
+          (session) =>
+            (projectFilter === 'all' || session.projectId === projectFilter) &&
+            (statusFilter === 'opened' ? session.status !== 'CLOSED' : session.status === 'CLOSED'),
+        )
+      : sessionsForView;
   const isReviewRequestView = mode === 'review-requests';
   const title = isReviewRequestView ? 'Pull requests' : 'Sessions';
 
@@ -53,6 +68,45 @@ export function PmActivityPage({ accessToken, mode, onOpenSession, onSignOut }: 
           </p>
         </div>
 
+        {mode === 'sessions' ? (
+          <div className="mb-5 grid max-w-[980px] gap-3 rounded-xl border border-white/10 bg-[#171a20] p-4 sm:grid-cols-2">
+            <label
+              className="grid gap-2 text-xs font-semibold uppercase tracking-[0.12em] text-[#8b92a1]"
+              htmlFor="session-project-filter"
+            >
+              Projet
+              <SelectInput
+                aria-label="Filtrer par projet"
+                id="session-project-filter"
+                value={projectFilter}
+                onChange={(event) => setProjectFilter(event.target.value)}
+              >
+                <option value="all">Tous les projets</option>
+                {projectOptions.map(([projectId, projectName]) => (
+                  <option key={projectId} value={projectId}>
+                    {projectName}
+                  </option>
+                ))}
+              </SelectInput>
+            </label>
+            <label
+              className="grid gap-2 text-xs font-semibold uppercase tracking-[0.12em] text-[#8b92a1]"
+              htmlFor="session-status-filter"
+            >
+              Statut
+              <SelectInput
+                aria-label="Filtrer par statut"
+                id="session-status-filter"
+                value={statusFilter}
+                onChange={(event) => setStatusFilter(event.target.value as 'opened' | 'closed')}
+              >
+                <option value="opened">opened</option>
+                <option value="closed">closed</option>
+              </SelectInput>
+            </label>
+          </div>
+        ) : null}
+
         {historyQuery.isLoading ? (
           <SectionCard title="Chargement de l’historique" description="Lecture des sessions partagées." />
         ) : null}
@@ -65,11 +119,19 @@ export function PmActivityPage({ accessToken, mode, onOpenSession, onSignOut }: 
         ) : null}
         {!historyQuery.isLoading && !historyQuery.isError && sessions.length === 0 ? (
           <SectionCard
-            title={isReviewRequestView ? 'Aucune pull request' : 'Aucune session'}
+            title={
+              isReviewRequestView
+                ? 'Aucune pull request'
+                : allSessions.length === 0
+                  ? 'Aucune session'
+                  : 'Aucun résultat'
+            }
             description={
               isReviewRequestView
                 ? 'Une draft pull request apparaîtra ici après validation des checks et soumission par le PM.'
-                : 'Démarre une session depuis un projet partagé pour la retrouver ici.'
+                : allSessions.length === 0
+                  ? 'Démarre une session depuis un projet partagé pour la retrouver ici.'
+                  : 'Aucune session ne correspond à ces filtres.'
             }
           />
         ) : null}
