@@ -33,6 +33,7 @@ import {
   buildSessionClosedEvent,
   buildSessionProgressEvent,
   buildSessionReadyEvent,
+  buildSessionRecoveredEvent,
   parseAgentCommandEnvelope,
 } from './message-codecs.js';
 
@@ -119,11 +120,6 @@ export class AgentClient {
       throw new Error('AgentClient is already running.');
     }
 
-    const recovery = await this.sessionRunner.restore();
-    if (recovery.recoveredSessionIds.length > 0) {
-      this.logger.info(`Recovered ${recovery.recoveredSessionIds.length} prepared PairDock session(s).`);
-    }
-
     const socket = io(`${this.config.backendUrl}/agent`, {
       autoConnect: false,
       extraHeaders: this.config.authToken
@@ -136,7 +132,9 @@ export class AgentClient {
     });
 
     this.socket = socket;
-    socket.on('connect', () => {
+    let recoveryPromise: ReturnType<SessionRunner['restore']> | null = null;
+    let recoveryPublished = false;
+    const handleConnected = async () => {
       const event = buildAgentConnectedEvent({
         agentId: this.config.agentId,
         capabilities: this.config.capabilities,
@@ -144,16 +142,45 @@ export class AgentClient {
         projects: this.config.projects ?? [],
       });
 
-      socket.emit(agentProtocolMessageEventName, event);
-      void this.publishRecoveryFailures(recovery.failures).catch((error: unknown) => {
-        this.logger.error(
-          `Failed to publish session recovery errors: ${error instanceof Error ? error.message : String(error)}`,
-        );
-      });
+      await this.registerAgent(socket, event);
+      recoveryPromise ??= this.sessionRunner.restore();
+      const recovery = await recoveryPromise;
+      if (recovery.recoveredSessionIds.length > 0) {
+        this.logger.info(`Recovered ${recovery.recoveredSessionIds.length} prepared PairDock session(s).`);
+      }
+      if (!recoveryPublished) {
+        await this.publishRecoveredSessions(recovery.recoveredSessionIds);
+        await this.publishRecoveryFailures(recovery.failures);
+        recoveryPublished = true;
+      }
       void this.publishConfiguredProjectReadiness();
       this.logger.info(
         `Connected agent ${event.payload.agentId} to ${this.config.backendUrl} with ${event.payload.capabilities.length} capabilities.`,
       );
+    };
+    let resolveFirstRegistration!: () => void;
+    let rejectFirstRegistration!: (error: Error) => void;
+    let firstRegistrationPending = true;
+    const firstRegistration = new Promise<void>((resolve, reject) => {
+      resolveFirstRegistration = resolve;
+      rejectFirstRegistration = reject;
+    });
+    socket.on('connect', () => {
+      void handleConnected()
+        .then(() => {
+          if (firstRegistrationPending) {
+            firstRegistrationPending = false;
+            resolveFirstRegistration();
+          }
+        })
+        .catch((error: unknown) => {
+          const normalizedError = error instanceof Error ? error : new Error(String(error));
+          this.logger.error(`Agent registration failed: ${normalizedError.message}`);
+          if (firstRegistrationPending) {
+            firstRegistrationPending = false;
+            rejectFirstRegistration(normalizedError);
+          }
+        });
     });
     socket.on('disconnect', (reason: string) => {
       this.logger.warn(`Disconnected from PairDock backend: ${reason}.`);
@@ -173,28 +200,25 @@ export class AgentClient {
       },
     );
 
-    await new Promise<void>((resolve, reject) => {
-      const cleanup = () => {
-        socket.off('connect', onConnect);
-        socket.off('connect_error', onError);
-      };
-
-      const onConnect = () => {
-        cleanup();
-        resolve();
-      };
-
-      const onError = (error: Error) => {
-        cleanup();
-        this.socket = null;
-        socket.close();
-        reject(error);
-      };
-
-      socket.once('connect', onConnect);
-      socket.once('connect_error', onError);
-      socket.connect();
+    let rejectInitialConnection!: (error: Error) => void;
+    const initialConnection = new Promise<void>((_resolve, reject) => {
+      rejectInitialConnection = reject;
     });
+    const handleInitialConnectionError = (error: Error) => {
+      rejectInitialConnection(error);
+    };
+    socket.once('connect_error', handleInitialConnectionError);
+    socket.connect();
+
+    try {
+      await Promise.race([firstRegistration, initialConnection]);
+    } catch (error) {
+      this.socket = null;
+      socket.close();
+      throw error;
+    } finally {
+      socket.off('connect_error', handleInitialConnectionError);
+    }
   }
 
   async stop(): Promise<void> {
@@ -220,6 +244,22 @@ export class AgentClient {
   private async publishRecoveryFailures(failures: Array<{ sessionId: string; message: string }>): Promise<void> {
     for (const failure of failures) {
       await this.emitError('session.recovery.failed', failure.sessionId, new Error(failure.message), false);
+    }
+  }
+
+  private async publishRecoveredSessions(sessionIds: string[]): Promise<void> {
+    for (const sessionId of sessionIds) {
+      const workspace = this.sessionRunner.findWorkspace(sessionId);
+      if (!workspace?.previewUrl) {
+        throw new Error(`Recovered session ${sessionId} has no preview URL.`);
+      }
+
+      await this.emitRequiredEvent(
+        buildSessionRecoveredEvent({
+          sessionId,
+          previewUrl: workspace.previewUrl,
+        }),
+      );
     }
   }
 
@@ -583,18 +623,19 @@ export class AgentClient {
   ): Promise<void> {
     const message = this.logRedactor.redact(error instanceof Error ? error.message : String(error));
     this.logger.error(`[session:${sessionId ?? 'none'}] ${code}: ${message}`);
-    await this.emitEvent(
-      buildErrorEvent({
-        code,
-        message,
-        retryable,
-        sessionId,
-      }),
-    );
+    const event = buildErrorEvent({
+      code,
+      message,
+      retryable,
+      sessionId,
+    });
+
+    await this.emitEvent(event);
   }
 
   private async emitEvent(event: AgentEventEnvelope): Promise<void> {
-    if (!this.socket) {
+    const socket = this.socket;
+    if (!socket) {
       throw new Error('AgentClient socket is not connected.');
     }
 
@@ -604,7 +645,7 @@ export class AgentClient {
         resolve();
       }, 5_000);
 
-      this.socket?.emit(agentProtocolMessageEventName, event, (response?: { accepted?: boolean; error?: string }) => {
+      socket.emit(agentProtocolMessageEventName, event, (response?: { accepted?: boolean; error?: string }) => {
         clearTimeout(timeout);
 
         if (response?.accepted === false) {
@@ -617,6 +658,35 @@ export class AgentClient {
         resolve();
       });
     });
+  }
+
+  private async emitRequiredEvent(event: AgentEventEnvelope, socket = this.socket): Promise<void> {
+    if (!socket) {
+      throw new Error('AgentClient socket is not connected.');
+    }
+
+    await new Promise<void>((resolve, reject) => {
+      const timeout = setTimeout(() => {
+        reject(new Error(`PairDock backend did not acknowledge ${event.type} within 5000ms.`));
+      }, 5_000);
+
+      socket.emit(agentProtocolMessageEventName, event, (response?: { accepted?: boolean; error?: string }) => {
+        clearTimeout(timeout);
+
+        if (response?.accepted !== true) {
+          const message = response?.error ?? 'unknown error';
+          this.logger.warn(`PairDock backend rejected ${event.type}: ${message}`);
+          reject(new BackendEventRejectedError(event.type, message));
+          return;
+        }
+
+        resolve();
+      });
+    });
+  }
+
+  private async registerAgent(socket: Socket, event: AgentConnectedEventEnvelope): Promise<void> {
+    await this.emitRequiredEvent(event, socket);
   }
 }
 

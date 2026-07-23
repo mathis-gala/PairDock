@@ -126,7 +126,6 @@ async function createPreparedValidationFeedbackClient(
 
   await client.start();
   const socket = await socketPromise;
-  await waitForAgentEvent(socket, 'agent.connected');
   const prepareEventsPromise = waitForAgentEvents(socket, 5);
   socket.emit(
     agentProtocolMessageEventName,
@@ -291,8 +290,6 @@ test('Task 9: AgentClient turns agent.prompt into AGENT_RUNNING, streamed output
   try {
     await client.start();
     const socket = await socketPromise;
-    await waitForAgentEvent(socket, 'agent.connected');
-
     const prepareEventsPromise = waitForAgentEvents(socket, 5);
     socket.emit(agentProtocolMessageEventName, buildPrepareCommand(sessionId, branchName));
     await prepareEventsPromise;
@@ -379,8 +376,6 @@ test('Task 9: AgentClient forwards agent.cancel to the harness and emits the fin
   try {
     await client.start();
     const socket = await socketPromise;
-    await waitForAgentEvent(socket, 'agent.connected');
-
     const prepareEventsPromise = waitForAgentEvents(socket, 5);
     socket.emit(agentProtocolMessageEventName, buildPrepareCommand(sessionId, branchName));
     await prepareEventsPromise;
@@ -457,8 +452,6 @@ test('AgentClient accepts prompts for a session restored during agent startup', 
   try {
     await client.start();
     const socket = await socketPromise;
-    await waitForAgentEvent(socket, 'agent.connected');
-
     const eventsPromise = waitForAgentEvents(socket, 3);
     socket.emit(agentProtocolMessageEventName, buildPromptCommand(sessionId, 'Continue after restart.'));
     const [runningEvent, outputEvent, doneEvent] = await eventsPromise;
@@ -528,8 +521,6 @@ test('BT-021: AgentClient emits a masked git.diff after prompt execution when se
   try {
     await client.start();
     const socket = await socketPromise;
-    await waitForAgentEvent(socket, 'agent.connected');
-
     const prepareEventsPromise = waitForAgentEvents(socket, 5);
     socket.emit(agentProtocolMessageEventName, buildPrepareCommand(sessionId, branchName));
     await prepareEventsPromise;

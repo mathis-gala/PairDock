@@ -262,6 +262,62 @@ test('BT-011: AgentGateway streams valid agent.output events to an authorized PM
   }
 });
 
+test('AgentGateway persists a recovered preview URL without erasing the previous stable status', async () => {
+  const developerLogin = await authenticateDeveloper();
+  const project = await createOwnedProject(developerLogin.body.user.id);
+  const session = await createSession(project.id, developerLogin.body.accessToken);
+  await prisma.session.update({
+    where: { id: session.id },
+    data: { status: 'FAILED', lastError: 'Validation failed.', previewUrl: 'https://expired-preview.pairdock.test' },
+  });
+  const agentSocket = connectSocket('/agent', AGENT_AUTH_TOKEN);
+
+  try {
+    await waitForConnect(agentSocket);
+    const connectedAcknowledgement = await agentSocket.timeout(2_000).emitWithAck(agentProtocolMessageEventName, {
+      protocolVersion: AGENT_PROTOCOL_VERSION,
+      messageId: randomUUID(),
+      type: 'agent.connected',
+      payload: {
+        agentId: 'agent-local-1',
+        capabilities: ['session.prepare', 'preview'],
+        models: [],
+        projects: [
+          {
+            key: 'agent-local-1',
+            name: 'PairDock',
+            repoFullName: 'mathis/pairdock',
+            pathAlias: 'PairDock',
+            defaultBranch: 'main',
+          },
+        ],
+      },
+      sentAt: new Date().toISOString(),
+    } satisfies AgentEventEnvelope);
+    assert.deepEqual(connectedAcknowledgement, { accepted: true });
+
+    const recoveredAcknowledgement = await agentSocket.timeout(2_000).emitWithAck(agentProtocolMessageEventName, {
+      protocolVersion: AGENT_PROTOCOL_VERSION,
+      messageId: randomUUID(),
+      sessionId: session.id,
+      type: 'session.recovered',
+      payload: {
+        sessionId: session.id,
+        previewUrl: 'https://recovered-preview.pairdock.test',
+      },
+      sentAt: new Date().toISOString(),
+    } satisfies AgentEventEnvelope);
+
+    assert.deepEqual(recoveredAcknowledgement, { accepted: true });
+    const recoveredSession = await prisma.session.findUniqueOrThrow({ where: { id: session.id } });
+    assert.equal(recoveredSession.status, 'FAILED');
+    assert.equal(recoveredSession.lastError, 'Validation failed.');
+    assert.equal(recoveredSession.previewUrl, 'https://recovered-preview.pairdock.test');
+  } finally {
+    agentSocket.close();
+  }
+});
+
 test('AgentGateway rejects an authenticated agent identity mismatch', async () => {
   const agentSocket = connectSocket('/agent', AGENT_AUTH_TOKEN);
 

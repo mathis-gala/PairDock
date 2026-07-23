@@ -106,3 +106,57 @@ test('a successful agent answer without file changes resumes the relevant prompt
     assert.equal(session.lastError === null, resumeStatus !== 'FAILED');
   }
 });
+
+test('session recovery refreshes the preview URL without erasing a stable business status', () => {
+  const stateMachine = new SessionStateMachine();
+  const failedSession = {
+    ...buildSession('FAILED'),
+    previewUrl: 'https://expired-preview.pairdock.test',
+    lastError: 'Validation failed.',
+  };
+
+  const recoveredSession = stateMachine.applyAgentEvent(failedSession, {
+    type: 'session.recovered',
+    payload: { previewUrl: 'https://recovered-preview.pairdock.test' },
+  });
+
+  assert.equal(recoveredSession.status, 'FAILED');
+  assert.equal(recoveredSession.lastError, 'Validation failed.');
+  assert.equal(recoveredSession.previewUrl, 'https://recovered-preview.pairdock.test');
+});
+
+test('session recovery makes interrupted operations retryable', () => {
+  const stateMachine = new SessionStateMachine();
+
+  for (const status of ['AGENT_RUNNING', 'CHECKS_RUNNING', 'REVIEW_REQUEST_CREATING'] as const) {
+    const recoveredSession = stateMachine.applyAgentEvent(buildSession(status), {
+      type: 'session.recovered',
+      payload: { previewUrl: 'https://recovered-preview.pairdock.test' },
+    });
+
+    assert.equal(recoveredSession.status, 'FAILED');
+    assert.match(recoveredSession.lastError ?? '', /agent restarted/i);
+    assert.equal(recoveredSession.previewUrl, 'https://recovered-preview.pairdock.test');
+  }
+});
+
+test('session recovery completes interrupted preview preparation', () => {
+  const stateMachine = new SessionStateMachine();
+
+  for (const status of [
+    'CREATED',
+    'AGENT_CONNECTING',
+    'WORKTREE_CREATING',
+    'DOCKER_STARTING',
+    'PREVIEW_STARTING',
+  ] as const) {
+    const recoveredSession = stateMachine.applyAgentEvent(buildSession(status), {
+      type: 'session.recovered',
+      payload: { previewUrl: 'https://recovered-preview.pairdock.test' },
+    });
+
+    assert.equal(recoveredSession.status, 'READY');
+    assert.equal(recoveredSession.lastError, null);
+    assert.equal(recoveredSession.previewUrl, 'https://recovered-preview.pairdock.test');
+  }
+});

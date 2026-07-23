@@ -103,6 +103,7 @@ export class SessionRunner {
       const preparedWorktree = await this.worktreeService.prepare(command, repositoryPath);
       workspace = {
         ...preparedWorktree,
+        modelId: command.payload.modelId,
         projectKey: command.payload.projectKey,
         sessionId: command.sessionId,
       };
@@ -284,21 +285,13 @@ export class SessionRunner {
 
     for (const workspace of workspaces) {
       try {
-        if (!workspace.sandboxRef || !workspace.tunnelRef || !workspace.previewUrl) {
-          throw new Error('Persisted workspace is incomplete.');
-        }
-
         const configuredRepositoryPath = this.projectPaths[workspace.projectKey];
         if (!configuredRepositoryPath) {
           throw new Error(`Project ${workspace.projectKey} is no longer configured on this agent.`);
         }
 
         await this.worktreeService.validatePrepared(workspace, configuredRepositoryPath);
-
-        const healthcheck = await this.sandboxPort.check(workspace.sandboxRef);
-        if (!healthcheck.ready) {
-          throw new Error(healthcheck.message ?? 'Persisted preview is not reachable.');
-        }
+        await this.rebuildPreview(workspace);
 
         recoveredSessionIds.push(workspace.sessionId);
       } catch (error) {
@@ -308,6 +301,86 @@ export class SessionRunner {
     }
 
     return { recoveredSessionIds, failures };
+  }
+
+  private async rebuildPreview(workspace: SessionWorkspace): Promise<SessionWorkspace> {
+    const previewConfig = this.previewConfigs[workspace.projectKey];
+    let currentWorkspace = await this.removePreviewResources(workspace, previewConfig);
+
+    try {
+      this.logger?.info(`Rebuilding Docker sandbox for recovered session ${workspace.sessionId}.`);
+      const sandboxRef = await this.sandboxPort.start({
+        branchName: workspace.branchName,
+        modelId: workspace.modelId ?? 'recovered-session',
+        previewConfig,
+        projectKey: workspace.projectKey,
+        repositoryPath: workspace.repositoryPath,
+        sessionId: workspace.sessionId,
+        worktreePath: workspace.worktreePath,
+      });
+      currentWorkspace = { ...currentWorkspace, sandboxRef };
+      await this.sessionRegistry.update(currentWorkspace);
+
+      const healthcheck = await this.healthcheckService.waitUntilReady({
+        intervalMs: previewConfig?.healthcheckIntervalMs,
+        sandboxPort: this.sandboxPort,
+        sandboxRef,
+        timeoutMs: previewConfig?.healthcheckTimeoutMs,
+      });
+      const tunnelRef = await this.previewTunnelPort.open({
+        localUrl: healthcheck.url,
+        previewConfig: sandboxRef.previewConfig ?? previewConfig,
+        projectKey: workspace.projectKey,
+        sessionId: workspace.sessionId,
+        worktreePath: workspace.worktreePath,
+      });
+      currentWorkspace = {
+        ...currentWorkspace,
+        previewUrl: tunnelRef.publicUrl,
+        tunnelRef,
+      };
+      await this.sessionRegistry.update(currentWorkspace);
+      this.logger?.info(`Recovered preview for session ${workspace.sessionId}: ${tunnelRef.publicUrl}.`);
+      return currentWorkspace;
+    } catch (error) {
+      try {
+        await this.removePreviewResources(currentWorkspace, previewConfig);
+      } catch (cleanupError) {
+        throw new AggregateError(
+          [error, cleanupError],
+          `${errorMessage(error)} Recovery cleanup also failed: ${errorMessage(cleanupError)}`,
+        );
+      }
+
+      throw error;
+    }
+  }
+
+  private async removePreviewResources(
+    workspace: SessionWorkspace,
+    previewConfig: ProjectPreviewConfig | undefined,
+  ): Promise<SessionWorkspace> {
+    let currentWorkspace = workspace;
+
+    if (currentWorkspace.tunnelRef) {
+      await this.previewTunnelPort.close(currentWorkspace.tunnelRef, previewConfig);
+      const { previewUrl: _previewUrl, tunnelRef: _tunnelRef, ...withoutTunnel } = currentWorkspace;
+      currentWorkspace = withoutTunnel;
+      await this.sessionRegistry.update(currentWorkspace);
+    } else if (currentWorkspace.previewUrl) {
+      const { previewUrl: _previewUrl, ...withoutPreviewUrl } = currentWorkspace;
+      currentWorkspace = withoutPreviewUrl;
+      await this.sessionRegistry.update(currentWorkspace);
+    }
+
+    if (currentWorkspace.sandboxRef) {
+      await this.sandboxPort.stop(currentWorkspace.sandboxRef, previewConfig);
+      const { sandboxRef: _sandboxRef, ...withoutSandbox } = currentWorkspace;
+      currentWorkspace = withoutSandbox;
+      await this.sessionRegistry.update(currentWorkspace);
+    }
+
+    return currentWorkspace;
   }
 }
 

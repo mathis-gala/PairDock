@@ -7,6 +7,7 @@ import {
   agentProtocolMessageEventName,
 } from '@pairdock/shared-contracts';
 import { Server } from 'socket.io';
+import { SessionRunner } from '../../../../packages/local-agent/src/session/session-runner.js';
 import { AgentClient } from '../../../../packages/local-agent/src/websocket/agent-client.js';
 
 interface RecordedHandshake {
@@ -39,12 +40,16 @@ test('BT-012: AgentClient announces configured capabilities when it connects', a
   const { io, httpServer, backendUrl } = await createAgentServer();
   const received = new Promise<RecordedHandshake>((resolve) => {
     io.of('/agent').on('connection', (socket) => {
-      socket.on(agentProtocolMessageEventName, (payload: AgentConnectedEventEnvelope) => {
-        resolve({
-          authorizationHeader: socket.handshake.headers.authorization,
-          event: payload,
-        });
-      });
+      socket.on(
+        agentProtocolMessageEventName,
+        (payload: AgentConnectedEventEnvelope, acknowledge?: (response: { accepted: boolean }) => void) => {
+          acknowledge?.({ accepted: true });
+          resolve({
+            authorizationHeader: socket.handshake.headers.authorization,
+            event: payload,
+          });
+        },
+      );
     });
   });
 
@@ -84,3 +89,228 @@ test('BT-012: AgentClient announces configured capabilities when it connects', a
     });
   }
 });
+
+test('AgentClient does not restore previews before websocket authentication succeeds', async () => {
+  const { io, httpServer, backendUrl } = await createAgentServer();
+  io.of('/agent').use((_socket, next) => next(new Error('Unauthorized agent.')));
+  const sessionRunner = new RecordingRestoreSessionRunner();
+  const client = new AgentClient(
+    {
+      agentId: 'agent-local-1',
+      authToken: 'expired-token',
+      backendUrl,
+      capabilities: ['session.prepare'],
+      projectPaths: {},
+    },
+    { error() {}, info() {}, warn() {} },
+    { sessionRunner },
+  );
+
+  try {
+    await assert.rejects(() => client.start(), /Unauthorized agent/);
+    assert.equal(sessionRunner.restoreCalls, 0);
+  } finally {
+    await client.stop();
+    await new Promise<void>((resolve) => io.close(() => resolve()));
+    await new Promise<void>((resolve) => httpServer.close(() => resolve()));
+  }
+});
+
+test('AgentClient waits for backend registration before publishing recovery failures', async () => {
+  const { io, httpServer, backendUrl } = await createAgentServer();
+  const receivedEventTypes: string[] = [];
+  let acceptRegistration!: () => void;
+  const registrationReceived = new Promise<void>((resolve) => {
+    io.of('/agent').on('connection', (socket) => {
+      socket.on(
+        agentProtocolMessageEventName,
+        (
+          payload: AgentConnectedEventEnvelope | { type: string },
+          acknowledge?: (response: { accepted: boolean }) => void,
+        ) => {
+          receivedEventTypes.push(payload.type);
+          if (payload.type === 'agent.connected') {
+            acceptRegistration = () => acknowledge?.({ accepted: true });
+            resolve();
+            return;
+          }
+
+          acknowledge?.({ accepted: true });
+        },
+      );
+    });
+  });
+  const sessionRunner = new SessionRunnerWithRecoveryFailure();
+  const client = new AgentClient(
+    {
+      agentId: 'agent-local-1',
+      backendUrl,
+      capabilities: ['session.prepare'],
+      projectPaths: {},
+    },
+    { error() {}, info() {}, warn() {} },
+    { sessionRunner },
+  );
+  let startResolved = false;
+
+  try {
+    const startPromise = client.start().then(() => {
+      startResolved = true;
+    });
+    await registrationReceived;
+    await new Promise<void>((resolve) => setTimeout(resolve, 25));
+
+    assert.deepEqual(receivedEventTypes, ['agent.connected']);
+    assert.equal(sessionRunner.restoreCalls, 0);
+    assert.equal(startResolved, false);
+
+    acceptRegistration();
+    await startPromise;
+    await waitFor(() => receivedEventTypes.includes('error'));
+    assert.deepEqual(receivedEventTypes, ['agent.connected', 'error']);
+  } finally {
+    await client.stop();
+    await new Promise<void>((resolve) => io.close(() => resolve()));
+    await new Promise<void>((resolve) => httpServer.close(() => resolve()));
+  }
+});
+
+test('AgentClient publishes the rebuilt preview URL after backend registration', async () => {
+  const { io, httpServer, backendUrl } = await createAgentServer();
+  const receivedEventTypes: string[] = [];
+  let recoveredPreviewUrl: string | undefined;
+  const recoveredEventReceived = new Promise<void>((resolve) => {
+    io.of('/agent').on('connection', (socket) => {
+      socket.on(
+        agentProtocolMessageEventName,
+        (
+          payload: { type: string; payload?: { previewUrl?: string } },
+          acknowledge?: (response: { accepted: boolean }) => void,
+        ) => {
+          receivedEventTypes.push(payload.type);
+          recoveredPreviewUrl = payload.payload?.previewUrl ?? recoveredPreviewUrl;
+          acknowledge?.({ accepted: true });
+          if (payload.type === 'session.recovered') {
+            resolve();
+          }
+        },
+      );
+    });
+  });
+  const client = new AgentClient(
+    {
+      agentId: 'agent-local-1',
+      backendUrl,
+      capabilities: ['session.prepare'],
+      projectPaths: {},
+    },
+    { error() {}, info() {}, warn() {} },
+    { sessionRunner: new SessionRunnerWithRecoveredWorkspace() },
+  );
+
+  try {
+    await client.start();
+    await Promise.race([
+      recoveredEventReceived,
+      new Promise<never>((_resolve, reject) =>
+        setTimeout(() => reject(new Error('Timed out waiting for session.recovered.')), 500),
+      ),
+    ]);
+
+    assert.deepEqual(receivedEventTypes.slice(0, 2), ['agent.connected', 'session.recovered']);
+    assert.equal(recoveredPreviewUrl, 'https://recovered-preview.pairdock.test');
+  } finally {
+    await client.stop();
+    await new Promise<void>((resolve) => io.close(() => resolve()));
+    await new Promise<void>((resolve) => httpServer.close(() => resolve()));
+  }
+});
+
+test('AgentClient fails startup when the backend rejects a recovered preview URL', async () => {
+  const { io, httpServer, backendUrl } = await createAgentServer();
+  io.of('/agent').on('connection', (socket) => {
+    socket.on(
+      agentProtocolMessageEventName,
+      (payload: { type: string }, acknowledge?: (response: { accepted: boolean; error?: string }) => void) => {
+        if (payload.type === 'session.recovered') {
+          acknowledge?.({ accepted: false, error: 'Recovered preview rejected.' });
+          return;
+        }
+
+        acknowledge?.({ accepted: true });
+      },
+    );
+  });
+  const client = new AgentClient(
+    {
+      agentId: 'agent-local-1',
+      backendUrl,
+      capabilities: ['session.prepare'],
+      projectPaths: {},
+    },
+    { error() {}, info() {}, warn() {} },
+    { sessionRunner: new SessionRunnerWithRecoveredWorkspace() },
+  );
+
+  try {
+    await assert.rejects(() => client.start(), /Recovered preview rejected/);
+  } finally {
+    await client.stop();
+    await new Promise<void>((resolve) => io.close(() => resolve()));
+    await new Promise<void>((resolve) => httpServer.close(() => resolve()));
+  }
+});
+
+class RecordingRestoreSessionRunner extends SessionRunner {
+  restoreCalls = 0;
+
+  override async restore() {
+    this.restoreCalls += 1;
+    return { recoveredSessionIds: [], failures: [] };
+  }
+}
+
+class SessionRunnerWithRecoveryFailure extends SessionRunner {
+  restoreCalls = 0;
+
+  override async restore() {
+    this.restoreCalls += 1;
+    return {
+      recoveredSessionIds: [],
+      failures: [{ sessionId: '13131313-1313-4313-8313-131313131313', message: 'preview unavailable' }],
+    };
+  }
+}
+
+class SessionRunnerWithRecoveredWorkspace extends SessionRunner {
+  private readonly sessionId = '14141414-1414-4414-8414-141414141414';
+
+  override async restore() {
+    return { recoveredSessionIds: [this.sessionId], failures: [] };
+  }
+
+  override findWorkspace(sessionId: string) {
+    if (sessionId !== this.sessionId) {
+      return null;
+    }
+
+    return {
+      sessionId,
+      projectKey: 'pairdock',
+      repositoryPath: '/tmp/pairdock',
+      worktreePath: '/tmp/pairdock-worktree',
+      branchName: 'pairdock/session-recovered',
+      previewUrl: 'https://recovered-preview.pairdock.test',
+    };
+  }
+}
+
+async function waitFor(predicate: () => boolean): Promise<void> {
+  const deadline = Date.now() + 1_000;
+  while (!predicate()) {
+    if (Date.now() >= deadline) {
+      throw new Error('Timed out waiting for agent event.');
+    }
+    await new Promise<void>((resolve) => setTimeout(resolve, 5));
+  }
+}

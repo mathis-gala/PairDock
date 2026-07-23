@@ -196,8 +196,6 @@ test('BT-016: AgentClient emits preview progress and session.ready after session
   try {
     await client.start();
     const socket = await socketPromise;
-    await waitForAgentEvent(socket, 'agent.connected');
-
     const eventsPromise = waitForAgentEvents(socket, 5);
     socket.emit(agentProtocolMessageEventName, buildPrepareCommand(sessionId, branchName));
     const [connectingEvent, worktreeEvent, dockerEvent, previewEvent, readyEvent] = await eventsPromise;
@@ -289,8 +287,6 @@ test('BT-017: AgentClient emits a retryable error when preview healthcheck times
   try {
     await client.start();
     const socket = await socketPromise;
-    await waitForAgentEvent(socket, 'agent.connected');
-
     const errorEventPromise = waitForAgentEvent(socket, 'error');
     socket.emit(agentProtocolMessageEventName, buildPrepareCommand(sessionId, 'pairdock/session-8888'));
     const errorEvent = await errorEventPromise;
@@ -354,8 +350,6 @@ test('BT-031: AgentClient pushes the prepared session branch before review reque
   try {
     await client.start();
     const socket = await socketPromise;
-    await waitForAgentEvent(socket, 'agent.connected');
-
     const readyEventPromise = waitForAgentEvent(socket, 'session.ready');
     socket.emit(agentProtocolMessageEventName, buildPrepareCommand(sessionId, branchName));
     await readyEventPromise;

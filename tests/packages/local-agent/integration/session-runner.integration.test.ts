@@ -257,7 +257,7 @@ test('BT-016: SessionRunner.prepare returns a preview URL after the sandbox pass
   assert.equal(runner.findWorkspace(sessionId)?.previewUrl, 'https://preview.pairdock.test');
 });
 
-test('SessionRunner restores a prepared workspace after an agent restart', async () => {
+test('SessionRunner rebuilds a prepared preview from its persisted worktree after an agent restart', async () => {
   const repositoryPath = await createTempRepository();
   const managedRoot = await createManagedWorktreeRoot();
   const stateRoot = await mkdtemp(join(tmpdir(), 'pairdock-session-state-'));
@@ -302,10 +302,13 @@ test('SessionRunner restores a prepared workspace after an agent restart', async
 
   assert.deepEqual(recovery.failures, []);
   assert.deepEqual(recovery.recoveredSessionIds, [sessionId]);
-  assert.deepEqual(restartedRunner.findWorkspace(sessionId), preparedWorkspace);
-  assert.equal(restoredSandbox.startCalls.length, 0);
+  assert.equal(restartedRunner.findWorkspace(sessionId)?.worktreePath, preparedWorkspace.worktreePath);
+  assert.equal(restartedRunner.findWorkspace(sessionId)?.previewUrl, 'https://preview.pairdock.test');
+  assert.equal(restoredSandbox.startCalls.length, 1);
+  assert.equal(restoredSandbox.stopCalls.length, 1);
   assert.equal(restoredSandbox.checkCalls.length, 1);
-  assert.equal(restoredTunnel.openCalls.length, 0);
+  assert.equal(restoredTunnel.closeCalls.length, 1);
+  assert.equal(restoredTunnel.openCalls.length, 1);
 });
 
 test('SessionRunner keeps an unavailable workspace persisted but does not expose it to prompts', async () => {
@@ -343,6 +346,7 @@ test('SessionRunner keeps an unavailable workspace persisted but does not expose
       worktreeService: new WorktreeService(managedRoot),
       sandboxPort: new UnavailableSandboxPort(),
       previewTunnelPort: new FakePreviewTunnelPort(),
+      healthcheckService: new UnavailableHealthcheckService(),
     },
   );
   const failedRecovery = await unavailableRunner.restore();
@@ -687,6 +691,7 @@ class UnavailableSandboxPort extends FakeSandboxPort {
 
 class FakePreviewTunnelPort implements PreviewTunnelPort {
   readonly openCalls: Array<{ sessionId: string; localUrl: string }> = [];
+  readonly closeCalls: unknown[] = [];
 
   async open(input: { sessionId: string; localUrl: string }) {
     this.openCalls.push({ sessionId: input.sessionId, localUrl: input.localUrl });
@@ -697,7 +702,9 @@ class FakePreviewTunnelPort implements PreviewTunnelPort {
     };
   }
 
-  async close(): Promise<void> {}
+  async close(ref?: unknown): Promise<void> {
+    this.closeCalls.push(ref);
+  }
 }
 
 class FailingClosePreviewTunnelPort extends FakePreviewTunnelPort {
@@ -713,6 +720,12 @@ class FailingClosePreviewTunnelPort extends FakePreviewTunnelPort {
 class FailingHealthcheckService extends HealthcheckService {
   override waitUntilReady(): Promise<never> {
     return Promise.reject(new Error('preview failed'));
+  }
+}
+
+class UnavailableHealthcheckService extends HealthcheckService {
+  override waitUntilReady(): Promise<never> {
+    return Promise.reject(new Error('preview unavailable'));
   }
 }
 

@@ -6,6 +6,7 @@ type NoChangesResumeStatus = Extract<SessionStatus, 'READY' | 'AWAITING_PM_VALID
 export type SessionAgentEvent =
   | { type: 'session.progress'; payload: { status: ProgressStatus; message?: string } }
   | { type: 'session.ready'; payload: { previewUrl: string } }
+  | { type: 'session.recovered'; payload: { previewUrl: string } }
   | {
       type: 'agent.done';
       payload: { exitCode: number; changesDetected?: boolean; resumeStatus?: NoChangesResumeStatus };
@@ -32,6 +33,18 @@ const allowedProgressTransitions = new Map<Session['status'], SessionStatus[]>([
   ['FAILED', ['AGENT_RUNNING']],
   ['REVIEW_REQUEST_CREATING', ['REVIEW_REQUEST_CREATED']],
 ]);
+const interruptedOperationStatuses = new Set<SessionStatus>([
+  'AGENT_RUNNING',
+  'CHECKS_RUNNING',
+  'REVIEW_REQUEST_CREATING',
+]);
+const interruptedPreparationStatuses = new Set<SessionStatus>([
+  'CREATED',
+  'AGENT_CONNECTING',
+  'WORKTREE_CREATING',
+  'DOCKER_STARTING',
+  'PREVIEW_STARTING',
+]);
 
 export class SessionStateMachine {
   applyAgentEvent(session: Session, event: SessionAgentEvent): Session {
@@ -45,6 +58,29 @@ export class SessionStateMachine {
           status: 'READY',
           previewUrl: event.payload.previewUrl,
           lastError: null,
+        };
+      case 'session.recovered':
+        if (interruptedPreparationStatuses.has(session.status)) {
+          return {
+            ...session,
+            status: 'READY',
+            previewUrl: event.payload.previewUrl,
+            lastError: null,
+          };
+        }
+
+        if (interruptedOperationStatuses.has(session.status)) {
+          return {
+            ...session,
+            status: 'FAILED',
+            previewUrl: event.payload.previewUrl,
+            lastError: 'The local agent restarted during an active operation. Send a new message to retry.',
+          };
+        }
+
+        return {
+          ...session,
+          previewUrl: event.payload.previewUrl,
         };
       case 'agent.done':
         if (event.payload.exitCode === 0) {
