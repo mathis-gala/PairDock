@@ -1,4 +1,4 @@
-import type { CreateDraftReviewRequestInput } from '@pairdock/shared-contracts';
+import { type CreateDraftReviewRequestInput, isPromptableSessionStatus } from '@pairdock/shared-contracts';
 import { useState } from 'react';
 import { Button } from '../components/button.js';
 import { ConversationThread } from '../components/pm-session/conversation-thread.js';
@@ -64,13 +64,15 @@ export function PmSessionPage({ accessToken, onBack, sessionId }: PmSessionPageP
   }
 
   const session = sessionQuery.data;
-  const canCancel = session.status === 'AGENT_RUNNING' || session.status === 'CHECKS_RUNNING';
+  const canCancel = session.status === 'AGENT_RUNNING';
   const branchLabel = session.branchName ?? session.project.defaultBranch;
   const participantAvatars = session.participants.slice(0, 2).map((participant) => ({
     initial: participant.displayName.slice(0, 1),
     userId: participant.userId,
   }));
   const isOnline = session.project.agentAvailability === 'online';
+  const canSubmitPrompt = isOnline && isPromptableSessionStatus(session.status);
+  const promptBlockedReason = getPromptBlockedReason(session.status, isOnline);
   const hasFailed = session.status === 'FAILED';
   const failureRecoveryMessage = session.previewUrl
     ? 'Tu peux envoyer un nouveau message pour réessayer.'
@@ -171,7 +173,9 @@ export function PmSessionPage({ accessToken, onBack, sessionId }: PmSessionPageP
           </div>
           <div className="border-t border-white/10 p-4">
             <PromptComposer
+              blockedReason={promptBlockedReason}
               canCancel={canCancel}
+              canSubmit={canSubmitPrompt}
               isCancelling={cancelPromptMutation.isPending}
               isSubmitting={sendPromptMutation.isPending}
               onCancel={handleCancelPrompt}
@@ -271,4 +275,26 @@ function formatSessionStatus(status: string): string {
   };
 
   return labels[status] ?? status;
+}
+
+function getPromptBlockedReason(status: string, isOnline: boolean): string | null {
+  if (!isOnline) {
+    return 'L’agent local est hors ligne. Le développeur doit le redémarrer avant le prochain message.';
+  }
+
+  const reasons: Record<string, string> = {
+    CREATED: 'La session se prépare avant le premier message.',
+    AGENT_CONNECTING: 'Connexion à l’agent en cours.',
+    WORKTREE_CREATING: 'Création de l’espace de travail en cours.',
+    DOCKER_STARTING: 'Démarrage de la preview en cours.',
+    PREVIEW_STARTING: 'La preview démarre avant le premier message.',
+    AGENT_RUNNING: 'L’agent traite ton message. Tu peux préparer la suite, puis l’envoyer dès qu’il a terminé.',
+    CHECKS_RUNNING: 'L’agent vérifie les modifications. Tu pourras envoyer la suite dès la fin des contrôles.',
+    REVIEW_REQUEST_CREATING: 'La pull request est en cours de création.',
+    REVIEW_REQUEST_CREATED: 'La pull request a été créée pour cette session.',
+    CLOSING: 'Cette session est en cours de fermeture.',
+    CLOSED: 'Cette session est terminée.',
+  };
+
+  return reasons[status] ?? null;
 }

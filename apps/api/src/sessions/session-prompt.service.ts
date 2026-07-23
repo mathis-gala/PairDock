@@ -12,6 +12,7 @@ import {
   AGENT_PROTOCOL_VERSION,
   type AgentCancelCommandEnvelope,
   type AgentPromptCommandEnvelope,
+  isPromptableSessionStatus,
   MAX_AGENT_PROMPT_LENGTH,
 } from '@pairdock/shared-contracts';
 import { AgentCommandRouterService } from '../agent-gateway/agent-command-router.service.js';
@@ -63,9 +64,7 @@ export class SessionPromptService {
   async createPrompt(sessionId: string, actor: SessionPromptActor, content: string) {
     const session = await this.requireSession(sessionId);
 
-    const promptableStatuses = new Set(['READY', 'AWAITING_PM_VALIDATION', 'FAILED']);
-
-    if (!promptableStatuses.has(session.status)) {
+    if (!isPromptableSessionStatus(session.status)) {
       throw new ConflictException(
         `Session ${sessionId} must be ready, awaiting PM validation, or recoverable before prompting the local agent.`,
       );

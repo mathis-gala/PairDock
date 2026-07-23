@@ -21,6 +21,13 @@ export const sessionStatusSchema = z.enum([
   'CLOSED',
   'FAILED',
 ]);
+export type SessionStatus = z.infer<typeof sessionStatusSchema>;
+
+const promptableSessionStatuses = new Set<SessionStatus>(['READY', 'AWAITING_PM_VALIDATION', 'FAILED']);
+
+export function isPromptableSessionStatus(status: string): status is 'READY' | 'AWAITING_PM_VALIDATION' | 'FAILED' {
+  return promptableSessionStatuses.has(status as SessionStatus);
+}
 
 export const checkResultSchema = z.object({
   status: z.enum(['passed', 'failed', 'skipped']),

@@ -16,6 +16,7 @@ export type AgentHarnessEvent =
   | {
       type: 'output';
       stream: 'stdout' | 'stderr';
+      kind?: 'progress' | 'final';
       text: string;
     }
   | {

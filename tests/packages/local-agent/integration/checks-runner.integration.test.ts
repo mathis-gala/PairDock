@@ -96,3 +96,32 @@ test('ChecksRunner retries once when Bun fails to extract a dependency tarball',
   assert.match(result.build.logs ?? '', /Retry 1\/1 after a transient package extraction failure/);
   assert.equal(attempt, 2);
 });
+
+test('ChecksRunner preserves an early failing assertion when validation output is long', async () => {
+  const runner = new ChecksRunner(
+    {
+      pairdock: {
+        test: 'bun test',
+      },
+    },
+    async () => ({
+      exitCode: 1,
+      logs: [
+        'not ok 36 - AgentClient emits preview progress and session.ready',
+        'AssertionError: expected 2 events but received 3',
+        'x'.repeat(40_000),
+        'error: script "test:integration" exited with code 1',
+      ].join('\n'),
+    }),
+  );
+
+  const result = await runner.run({
+    projectKey: 'pairdock',
+    previewUrl: null,
+    sessionId: '33333333-3333-4333-8333-333333333333',
+  });
+
+  assert.match(result.tests.logs ?? '', /not ok 36 - AgentClient emits preview progress and session\.ready/);
+  assert.match(result.tests.logs ?? '', /AssertionError: expected 2 events but received 3/);
+  assert.match(result.tests.logs ?? '', /script "test:integration" exited with code 1/);
+});

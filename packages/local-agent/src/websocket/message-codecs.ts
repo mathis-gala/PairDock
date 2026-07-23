@@ -94,6 +94,7 @@ export function buildSessionRecoveredEvent(input: {
 export function buildAgentOutputEvent(input: {
   sessionId: string;
   stream: AgentOutputEventEnvelope['payload']['stream'];
+  kind?: AgentOutputEventEnvelope['payload']['kind'];
   text: string;
 }): AgentOutputEventEnvelope {
   return buildEnvelope({
@@ -102,6 +103,7 @@ export function buildAgentOutputEvent(input: {
     payload: {
       sessionId: input.sessionId,
       stream: input.stream,
+      ...(input.kind ? { kind: input.kind } : {}),
       text: input.text,
     },
   });

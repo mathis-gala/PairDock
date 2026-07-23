@@ -6,6 +6,8 @@ import {
   agentCommandEnvelopeSchema,
   agentConnectedEventEnvelopeSchema,
   agentEventEnvelopeSchema,
+  isPromptableSessionStatus,
+  summarizeChecksFailure,
 } from '@pairdock/shared-contracts';
 
 test('BT-009: shared Zod command codecs parse a valid agent.prompt payload', () => {
@@ -47,6 +49,71 @@ test('BT-010: shared Zod event codecs reject an event without protocolVersion', 
   });
 
   assert.equal(result.success, false);
+});
+
+test('agent output codecs preserve PM-visible progress and final message kinds', () => {
+  const sessionId = randomUUID();
+  const baseEnvelope = {
+    protocolVersion: AGENT_PROTOCOL_VERSION,
+    messageId: randomUUID(),
+    sessionId,
+    type: 'agent.output' as const,
+    sentAt: new Date().toISOString(),
+  };
+
+  const progress = agentEventEnvelopeSchema.parse({
+    ...baseEnvelope,
+    payload: {
+      sessionId,
+      stream: 'stdout',
+      kind: 'progress',
+      text: 'Je localise le composant concerné.',
+    },
+  });
+  const final = agentEventEnvelopeSchema.parse({
+    ...baseEnvelope,
+    messageId: randomUUID(),
+    payload: {
+      sessionId,
+      stream: 'stdout',
+      kind: 'final',
+      text: 'Le composant a été corrigé.',
+    },
+  });
+
+  assert.equal(progress.type, 'agent.output');
+  assert.equal(progress.payload.kind, 'progress');
+  assert.equal(final.type, 'agent.output');
+  assert.equal(final.payload.kind, 'final');
+});
+
+test('promptable session statuses match the retry contract shared by API and PM UI', () => {
+  assert.equal(isPromptableSessionStatus('READY'), true);
+  assert.equal(isPromptableSessionStatus('AWAITING_PM_VALIDATION'), true);
+  assert.equal(isPromptableSessionStatus('FAILED'), true);
+  assert.equal(isPromptableSessionStatus('AGENT_RUNNING'), false);
+  assert.equal(isPromptableSessionStatus('CHECKS_RUNNING'), false);
+  assert.equal(isPromptableSessionStatus('CLOSED'), false);
+});
+
+test('validation failure summaries prefer the failing test over the package script wrapper', () => {
+  const failure = summarizeChecksFailure({
+    sessionId: randomUUID(),
+    ok: false,
+    build: { status: 'passed' },
+    tests: {
+      status: 'failed',
+      logs: [
+        'TAP version 13',
+        'not ok 36 - BT-016: AgentClient emits preview progress and session.ready',
+        'error: script "test:integration" exited with code 1',
+      ].join('\n'),
+    },
+    lint: { status: 'passed' },
+    preview: { status: 'passed' },
+  });
+
+  assert.equal(failure?.cause, 'not ok 36 - BT-016: AgentClient emits preview progress and session.ready');
 });
 
 test('shared Zod codecs reject oversized prompt and agent output payloads', () => {

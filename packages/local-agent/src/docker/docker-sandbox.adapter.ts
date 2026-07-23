@@ -2,6 +2,7 @@ import { type ChildProcess, spawn } from 'node:child_process';
 import { randomUUID } from 'node:crypto';
 import { createServer } from 'node:net';
 import { setTimeout as delay } from 'node:timers/promises';
+import { compactValidationLogs } from '../checks/validation-log.js';
 import type {
   HealthcheckResult,
   ProjectPreviewConfig,
@@ -178,7 +179,7 @@ export class DockerSandboxAdapter implements SandboxPort {
         stdio: ['ignore', 'pipe', 'pipe'],
       });
       const appendCommandLogs = (chunk: Buffer | string) => {
-        logs = appendLogs(logs, chunk.toString());
+        logs = compactValidationLogs(`${logs}${chunk.toString()}`);
       };
 
       process.stdout?.on('data', appendCommandLogs);

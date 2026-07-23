@@ -30,7 +30,7 @@ test('PM conversation contains human messages and agent replies, not technical e
         sessionId,
         agentId: 'local-agent',
         type: 'agent.output',
-        payload: { stream: 'stdout', text: 'Je corrige le panier.' },
+        payload: { stream: 'stdout', kind: 'final', text: 'Je corrige le panier.' },
         createdAt: '2026-07-18T10:00:02.000Z',
       },
       {
@@ -50,6 +50,96 @@ test('PM conversation contains human messages and agent replies, not technical e
       { role: 'user', text: 'Corrige le bouton panier.' },
       { role: 'assistant', text: 'Je corrige le panier.' },
     ],
+  );
+});
+
+test('PM conversation keeps real-time agent progress separate from the final answer', () => {
+  const items = buildSessionConversation(
+    [],
+    [
+      {
+        id: '11111111-2222-4333-8444-555555555555',
+        sessionId,
+        agentId: 'local-agent',
+        type: 'agent.output',
+        payload: {
+          stream: 'stdout',
+          kind: 'progress',
+          text: 'Je repère le composant concerné.',
+        },
+        createdAt: '2026-07-18T10:00:00.000Z',
+      },
+      {
+        id: '22222222-3333-4444-8555-666666666666',
+        sessionId,
+        agentId: 'local-agent',
+        type: 'agent.output',
+        payload: {
+          stream: 'stdout',
+          kind: 'progress',
+          text: 'Je mets à jour uniquement son fond.',
+        },
+        createdAt: '2026-07-18T10:00:01.000Z',
+      },
+      {
+        id: '33333333-4444-4555-8666-777777777777',
+        sessionId,
+        agentId: 'local-agent',
+        type: 'agent.output',
+        payload: {
+          stream: 'stdout',
+          kind: 'final',
+          text: 'Le fond demandé a été mis à jour.',
+        },
+        createdAt: '2026-07-18T10:00:02.000Z',
+      },
+    ],
+  );
+
+  assert.deepEqual(
+    items.map(({ kind, text }) => ({ kind, text })),
+    [
+      { kind: 'progress', text: 'Je repère le composant concerné.' },
+      { kind: 'progress', text: 'Je mets à jour uniquement son fond.' },
+      { kind: 'message', text: 'Le fond demandé a été mis à jour.' },
+    ],
+  );
+});
+
+test('PM conversation promotes the last live progress message to the final answer without duplication', () => {
+  const items = buildSessionConversation(
+    [],
+    [
+      {
+        id: '44444444-5555-4666-8777-888888888888',
+        sessionId,
+        agentId: 'local-agent',
+        type: 'agent.output',
+        payload: {
+          stream: 'stdout',
+          kind: 'progress',
+          text: 'La modification est terminée.',
+        },
+        createdAt: '2026-07-18T10:00:00.000Z',
+      },
+      {
+        id: '55555555-6666-4777-8888-999999999999',
+        sessionId,
+        agentId: 'local-agent',
+        type: 'agent.output',
+        payload: {
+          stream: 'stdout',
+          kind: 'final',
+          text: 'La modification est terminée.',
+        },
+        createdAt: '2026-07-18T10:00:01.000Z',
+      },
+    ],
+  );
+
+  assert.deepEqual(
+    items.map(({ kind, text }) => ({ kind, text })),
+    [{ kind: 'message', text: 'La modification est terminée.' }],
   );
 });
 
