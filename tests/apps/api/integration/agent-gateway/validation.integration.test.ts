@@ -291,3 +291,66 @@ test('Task 11: successful checks move the session into AWAITING_PM_VALIDATION', 
     agentSocket.close();
   }
 });
+
+test('automatic Docker validation repair can resume the same session before publishing the final result', async () => {
+  const developerLogin = await authenticateDeveloper();
+  const project = await createOwnedProject(developerLogin.body.user.id);
+  const session = await createSession(project.id, developerLogin.body.accessToken);
+  const agentSocket = connectAgentSocket();
+
+  try {
+    await waitForConnect(agentSocket);
+    await emitAgentEvent(agentSocket, buildAgentConnectedEvent());
+
+    for (const event of [
+      buildSessionEvent(session.id, 'session.progress', { status: 'AGENT_CONNECTING' }),
+      buildSessionEvent(session.id, 'session.progress', { status: 'WORKTREE_CREATING' }),
+      buildSessionEvent(session.id, 'session.progress', { status: 'DOCKER_STARTING' }),
+      buildSessionEvent(session.id, 'session.progress', { status: 'PREVIEW_STARTING' }),
+      buildSessionEvent(session.id, 'session.ready', { previewUrl: 'https://preview.pairdock.test' }),
+      buildSessionEvent(session.id, 'session.progress', { status: 'AGENT_RUNNING' }),
+      buildSessionEvent(session.id, 'agent.done', { exitCode: 0, changesDetected: true }),
+      buildSessionEvent(session.id, 'session.progress', {
+        status: 'AGENT_RUNNING',
+        message: 'Repairing failed Docker validation (1/2).',
+      }),
+      buildSessionEvent(session.id, 'agent.done', { exitCode: 0, changesDetected: true }),
+      buildSessionEvent(session.id, 'checks.result', {
+        ok: true,
+        build: { status: 'passed', command: 'bun run build' },
+        tests: { status: 'passed', command: 'bun test' },
+        lint: { status: 'passed', command: 'bun run lint' },
+        preview: { status: 'passed' },
+      }),
+    ]) {
+      await emitAgentEvent(agentSocket, event);
+    }
+
+    const persistedSession = await prisma.session.findUnique({ where: { id: session.id } });
+    const persistedEvents = await prisma.agentEvent.findMany({
+      where: { sessionId: session.id },
+      orderBy: { createdAt: 'asc' },
+    });
+    const validationCount = await prisma.validationRun.count({ where: { sessionId: session.id } });
+
+    assert.equal(persistedSession?.status, 'AWAITING_PM_VALIDATION');
+    assert.equal(validationCount, 1);
+    assert.deepEqual(
+      persistedEvents.map((event) => event.type),
+      [
+        'session.progress',
+        'session.progress',
+        'session.progress',
+        'session.progress',
+        'session.ready',
+        'session.progress',
+        'agent.done',
+        'session.progress',
+        'agent.done',
+        'checks.result',
+      ],
+    );
+  } finally {
+    agentSocket.close();
+  }
+});

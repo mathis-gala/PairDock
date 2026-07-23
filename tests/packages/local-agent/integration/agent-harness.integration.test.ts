@@ -88,6 +88,12 @@ test('default Codex harness starts and resumes one Codex thread per PairDock ses
     reasoningEffort: 'low',
     worktreePath: '/tmp/worktree',
   };
+  const expectedPrompt = [
+    'PairDock runtime: the project preview and configured validation commands run inside Docker.',
+    'Do not install dependencies or run build, test, or lint commands on the host worktree. Host and container operating systems may differ.',
+    'Inspect and edit the worktree normally. PairDock runs the configured build, test, and lint checks inside Docker after this turn and automatically returns failures for repair.',
+    'User request:\nContinue le correctif.',
+  ].join('\n\n');
 
   assert.deepEqual(buildCommandArgs({}, input), [
     'exec',
@@ -107,7 +113,7 @@ test('default Codex harness starts and resumes one Codex thread per PairDock ses
     'gpt-5.6-luna',
     '--config',
     'model_reasoning_effort="low"',
-    'Continue le correctif.',
+    expectedPrompt,
   ]);
   assert.deepEqual(buildCommandArgs({}, input, 'codex-thread-id'), [
     'exec',
@@ -129,7 +135,7 @@ test('default Codex harness starts and resumes one Codex thread per PairDock ses
     '--config',
     'model_reasoning_effort="low"',
     'codex-thread-id',
-    'Continue le correctif.',
+    expectedPrompt,
   ]);
   assert.deepEqual(parseCodexJsonLine('{"type":"thread.started","thread_id":"thread-1"}'), {
     type: 'thread',
@@ -139,6 +145,25 @@ test('default Codex harness starts and resumes one Codex thread per PairDock ses
     parseCodexJsonLine('{"type":"item.completed","item":{"type":"agent_message","text":"Correction terminée."}}'),
     { type: 'message', text: 'Correction terminée.' },
   );
+});
+
+test('default Codex harness delegates dependency installation and validation to the Docker sandbox', () => {
+  const args = buildCommandArgs(
+    {},
+    {
+      sessionId: '12121212-1212-4212-8212-121212121212',
+      projectKey: 'pairdock',
+      prompt: 'Implement the requested change.',
+      modelId: 'gpt-5.6-sol',
+      reasoningEffort: 'high',
+      worktreePath: '/tmp/worktree',
+    },
+  );
+  const prompt = args.at(-1) ?? '';
+
+  assert.match(prompt, /Do not install dependencies/i);
+  assert.match(prompt, /PairDock runs the configured build, test, and lint checks inside Docker/i);
+  assert.match(prompt, /Implement the requested change\./);
 });
 
 test('Codex harness does not expose unrelated developer secrets to the agent process', () => {

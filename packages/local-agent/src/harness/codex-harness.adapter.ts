@@ -202,6 +202,8 @@ export function buildCommandArgs(
     );
   }
 
+  const prompt = buildCodexPrompt(input.prompt);
+
   if (codexThreadId) {
     return [
       'exec',
@@ -213,7 +215,7 @@ export function buildCommandArgs(
       '--config',
       `model_reasoning_effort="${reasoningEffort}"`,
       codexThreadId,
-      input.prompt,
+      prompt,
     ];
   }
 
@@ -225,8 +227,17 @@ export function buildCommandArgs(
     input.modelId,
     '--config',
     `model_reasoning_effort="${reasoningEffort}"`,
-    input.prompt,
+    prompt,
   ];
+}
+
+function buildCodexPrompt(userPrompt: string): string {
+  return [
+    'PairDock runtime: the project preview and configured validation commands run inside Docker.',
+    'Do not install dependencies or run build, test, or lint commands on the host worktree. Host and container operating systems may differ.',
+    'Inspect and edit the worktree normally. PairDock runs the configured build, test, and lint checks inside Docker after this turn and automatically returns failures for repair.',
+    `User request:\n${userPrompt}`,
+  ].join('\n\n');
 }
 
 function buildCodexSecurityArgs(sessionId: string): string[] {
