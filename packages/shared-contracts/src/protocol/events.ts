@@ -13,7 +13,7 @@ const sessionIdConsistencyRule = {
   path: ['sessionId'],
 };
 const MAX_AGENT_OUTPUT_LENGTH = 64 * 1024;
-const MAX_DIFF_LENGTH = 192 * 1024;
+export const MAX_DIFF_LENGTH = 192 * 1024;
 
 export const agentConnectedEventEnvelopeSchema = envelopeBaseSchema.extend({
   type: z.literal('agent.connected'),

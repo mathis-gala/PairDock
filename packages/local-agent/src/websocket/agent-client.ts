@@ -350,7 +350,7 @@ export class AgentClient {
         }),
       );
 
-      const initialDiff = await this.diffService.collect(workspace.worktreePath);
+      const initialDiff = await this.diffService.snapshot(workspace.worktreePath);
 
       for await (const event of this.agentHarnessPort.runPrompt({
         sessionId: command.sessionId,
