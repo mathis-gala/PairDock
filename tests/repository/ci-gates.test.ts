@@ -9,6 +9,11 @@ const workflowPath = path.join(repositoryRoot, '.github', 'workflows', 'ci.yml')
 const rootPackageJson = JSON.parse(readFileSync(path.join(repositoryRoot, 'package.json'), 'utf8')) as {
   scripts?: Record<string, string>;
 };
+const localAgentPackageJson = JSON.parse(
+  readFileSync(path.join(repositoryRoot, 'packages', 'local-agent', 'package.json'), 'utf8'),
+) as {
+  scripts?: Record<string, string>;
+};
 
 function readWorkflow(): string {
   assert.ok(existsSync(workflowPath), 'CI workflow must exist at .github/workflows/ci.yml');
@@ -46,7 +51,7 @@ test('CI workflow runs repository quality gates for pull requests and main pushe
     'bun run --filter @pairdock/api test:unit',
     'bun run --filter @pairdock/api test:integration',
     'bun run --filter @pairdock/api test:e2e',
-    'node --import tsx --test --test-concurrency=1 $' + '{{ matrix.test_file }}',
+    'bun run --filter @pairdock/local-agent test',
     'bun run --filter @pairdock/web test:unit',
     'bun run build',
   ]) {
@@ -56,13 +61,27 @@ test('CI workflow runs repository quality gates for pull requests and main pushe
   assert.match(workflow, /postgres:/, 'workflow must provision PostgreSQL for Prisma migration status');
   assert.match(workflow, /DATABASE_URL:/, 'workflow must provide DATABASE_URL to Prisma commands');
   assert.match(workflow, /timeout-minutes:/, 'workflow jobs and long test steps must have timeouts');
-  assert.match(workflow, /fail-fast:\s*false/, 'matrix jobs must not cancel sibling test files on first failure');
+  assert.doesNotMatch(
+    workflow,
+    /tests\/packages\/local-agent\/integration\/.+\.test\.ts/,
+    'CI must delegate local-agent test discovery to the package script',
+  );
 });
 
 test('repository quality gates are exposed as root scripts', () => {
   for (const scriptName of ['prisma:generate', 'db:status', 'typecheck', 'lint', 'test', 'build']) {
     assert.ok(rootPackageJson.scripts?.[scriptName], `root package.json must define ${scriptName}`);
   }
+});
+
+test('local-agent package owns automatic test discovery used by CI', () => {
+  const workflow = readWorkflow();
+  const packageTestScript = localAgentPackageJson.scripts?.test;
+
+  assert.match(packageTestScript ?? '', /find \.\.\/\.\.\/tests\/packages\/local-agent .*\.test\.ts/);
+  assert.doesNotMatch(packageTestScript ?? '', /tests\/packages\/local-agent\/integration/);
+  assert.match(workflow, /bun run --filter @pairdock\/local-agent test(?:\s|$)/);
+  assert.doesNotMatch(workflow, /@pairdock\/local-agent test:integration/);
 });
 
 test('CI uses Bun tooling and does not use npm lockfiles or commands', () => {
