@@ -23,13 +23,14 @@ The public configuration is environment-driven:
 - `PAIRDOCK_WEB_DOMAIN` and `PAIRDOCK_API_DOMAIN`: hostnames used by Caddy, without scheme or path.
 - `PAIRDOCK_WEB_URL` and `PAIRDOCK_API_URL`: complete HTTPS origins used by API CORS and the browser.
 - `GITHUB_REDIRECT_URI` and `SLACK_REDIRECT_URI`: exact OAuth callback URLs configured with the providers.
+- `GITHUB_WEBHOOK_SECRET`: secret shared only by GitHub and the API for signed webhook delivery.
 - `R2_PRIVATE_BUCKET`: private Cloudflare R2 bucket used for authenticated chat screenshots.
 - `R2_PUBLIC_BUCKET` and `R2_PUBLIC_BASE_URL`: public R2 bucket and its custom HTTPS domain used for durable GitHub PR screenshots.
 - `IMAGE_TAG`: optional release tag; defaults to `latest` when omitted.
 
 `PAIRDOCK_API_URL` is injected into `/config.js` when the web container starts. The same published web image can therefore be deployed under any domain without rebuilding it.
 
-Generate `POSTGRES_PASSWORD`, `AUTH_TOKEN_SECRET`, `AUTH_STATE_SECRET`, and one token per local agent independently:
+Generate `POSTGRES_PASSWORD`, `AUTH_TOKEN_SECRET`, `AUTH_STATE_SECRET`, `GITHUB_WEBHOOK_SECRET`, and one token per local agent independently:
 
 ```bash
 openssl rand -hex 32
@@ -54,6 +55,7 @@ Create separate private and public R2 buckets. Generate an R2 API token with obj
 - Never expose Docker's socket or TCP API. The local agent needs access to the developer workstation's Docker daemon, so run it only under a dedicated, trusted OS account.
 - Treat `sandbox.network: host-services` as privileged access to explicitly listed local test services. Use dedicated, least-privilege test credentials in `sandbox.env`; never put production credentials in a project manifest.
 - Keep GitHub App repository permissions at the documented minimum and install it only on repositories intended for PairDock.
+- Keep `/webhooks/github` publicly reachable through Cloudflare without an Access login or interactive challenge. PairDock authenticates deliveries with GitHub's HMAC signature; rate-limit the route, but do not cache it.
 
 PairDock limits WebSocket frames, prompt sizes, captured output, and validation logs. It also runs Codex without inherited workstation secrets or network access, runs checks in disposable networkless containers, and binds preview ports to loopback. These controls reduce impact; they do not make arbitrary PM-requested code safe to run directly on a developer host.
 
@@ -102,6 +104,7 @@ Configure the external providers with these exact environment-derived URLs:
 
 - GitHub callback: value of `GITHUB_REDIRECT_URI`.
 - GitHub setup URL: `${PAIRDOCK_API_URL}/auth/developer/setup`.
+- GitHub webhook URL: `${PAIRDOCK_API_URL}/webhooks/github`; set the same secret as `GITHUB_WEBHOOK_SECRET`, activate webhooks, and subscribe only to **Pull requests**.
 - Slack redirect: value of `SLACK_REDIRECT_URI`.
 
 ## Deploy, update, or roll back

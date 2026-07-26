@@ -43,6 +43,8 @@ Create a GitHub App and configure these exact URLs:
 - Enable **Redirect on update** so repository-access changes return to PairDock after they are saved.
 - Leave **Request user authorization (OAuth) during installation** disabled. PairDock performs the OAuth authorization itself after the setup redirect.
 - Repository permissions: **Contents: Read-only**, **Metadata: Read-only**, and **Pull requests: Read and write**.
+- **Webhook URL**: the publicly reachable API URL followed by `/webhooks/github`.
+- Set a webhook secret generated with `openssl rand -hex 32`, copy the same value to `GITHUB_WEBHOOK_SECRET`, and subscribe to the **Pull request** event.
 
 Install the App only on the repositories PairDock may use. For the TCG Collection test, grant access to `mathis-gala/Booster-Break`.
 PairDock authorizes the GitHub user first and discovers every installation accessible to that user. Existing installations therefore do not reopen `/settings/installations/<id>`. When no installation exists yet, PairDock automatically continues through GitHub App installation and the setup URL.
@@ -56,6 +58,7 @@ GITHUB_CLIENT_ID=<client-id>
 GITHUB_CLIENT_SECRET=<client-secret>
 GITHUB_REDIRECT_URI=http://127.0.0.1:3000/auth/developer/callback
 GITHUB_APP_PRIVATE_KEY="<pem contents or escaped pem>"
+GITHUB_WEBHOOK_SECRET=<different-random-secret>
 AUTH_STATE_SECRET=<random-secret-of-at-least-32-bytes>
 AUTH_TOKEN_SECRET=<different-random-secret-of-at-least-32-bytes>
 AGENT_AUTH_CREDENTIALS_JSON={"agent-local-1":{"token":"<different-random-secret-of-at-least-32-bytes>","projectKeys":["tcg-collection"]}}
@@ -63,6 +66,8 @@ DEV_PM_AUTH_ENABLED=false
 ```
 
 Generate all authentication secrets independently, for example with `openssl rand -base64 48`. Keep them stable between API restarts and never commit them. `AGENT_AUTH_CREDENTIALS_JSON` maps each local agent id to its unique token and exact project-key allowlist; one project key cannot be assigned to multiple credentials. Pass only that agent's token to its CLI.
+
+GitHub cannot deliver real webhooks to `127.0.0.1`. For local end-to-end testing, expose the API through a temporary HTTPS tunnel and use `<tunnel-url>/webhooks/github`, or use GitHub App webhook redelivery against the production API. PairDock verifies `X-Hub-Signature-256` before parsing the event. Refresh the PM history page to load the latest pull-request states.
 
 For local UI development only, set `DEV_PM_AUTH_ENABLED=true` to let the PM enter without Slack as `pm@pairdock.test`. The developer must still authenticate through the GitHub App. PairDock ignores this flag when `NODE_ENV=production`, where Slack remains mandatory.
 

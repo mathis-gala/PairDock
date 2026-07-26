@@ -14,6 +14,9 @@ const localAgentPackageJson = JSON.parse(
 ) as {
   scripts?: Record<string, string>;
 };
+const apiPackageJson = JSON.parse(readFileSync(path.join(repositoryRoot, 'apps', 'api', 'package.json'), 'utf8')) as {
+  scripts?: Record<string, string>;
+};
 
 function readWorkflow(): string {
   assert.ok(existsSync(workflowPath), 'CI workflow must exist at .github/workflows/ci.yml');
@@ -82,6 +85,14 @@ test('local-agent package owns automatic test discovery used by CI', () => {
   assert.doesNotMatch(packageTestScript ?? '', /tests\/packages\/local-agent\/integration/);
   assert.match(workflow, /bun run --filter @pairdock\/local-agent test(?:\s|$)/);
   assert.doesNotMatch(workflow, /@pairdock\/local-agent test:integration/);
+});
+
+test('API test runners isolate local agent and webhook credentials from developer environments', () => {
+  for (const scriptName of ['test:unit', 'test:integration', 'test:e2e']) {
+    const script = apiPackageJson.scripts?.[scriptName] ?? '';
+    assert.match(script, /AGENT_AUTH_CREDENTIALS_JSON=/, `${scriptName} must ignore local agent credentials`);
+    assert.match(script, /GITHUB_WEBHOOK_SECRET=/, `${scriptName} must ignore the local webhook secret`);
+  }
 });
 
 test('CI uses Bun tooling and does not use npm lockfiles or commands', () => {

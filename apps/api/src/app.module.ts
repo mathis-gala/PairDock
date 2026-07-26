@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 import { AgentGatewayModule } from './agent-gateway/agent-gateway.module.js';
 import { AuthModule } from './auth/auth.module.js';
+import { GithubWebhooksModule } from './github-webhooks/github-webhooks.module.js';
 import { HealthController } from './health.controller.js';
 import { InvitationsModule } from './invitations/invitations.module.js';
 import { PersistenceModule } from './persistence/persistence.module.js';
@@ -21,6 +22,7 @@ import { UsersModule } from './users/users.module.js';
     ProjectsModule,
     ToolReadinessModule,
     SessionsModule,
+    GithubWebhooksModule,
     UiGatewayModule,
     AgentGatewayModule,
   ],
