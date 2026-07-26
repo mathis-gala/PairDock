@@ -108,7 +108,7 @@ export function DropdownMenuField({ id, label, onValueChange, options, value }: 
     }
   }
 
-  function handleBlur(event: FocusEvent<HTMLDivElement>) {
+  function handleBlur(event: FocusEvent<HTMLFieldSetElement>) {
     if (!event.currentTarget.contains(event.relatedTarget)) {
       setIsOpen(false);
     }
