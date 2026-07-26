@@ -270,6 +270,7 @@ node --import tsx packages/local-agent/src/main.ts login \
   --project tcg=/absolute/path/to/PairDock
 
 PAIRDOCK_AGENT_CONFIG_PATH=/absolute/path/to/agent-pairdock-local.json \
+PAIRDOCK_AGENT_SESSION_STATE_PATH=/absolute/path/to/sessions-pairdock-local.json \
 node --import tsx packages/local-agent/src/main.ts start
 ```
 
@@ -277,17 +278,22 @@ The tracked `pairdock.yml` explicitly keeps PairDock's own multi-service preview
 
 This temporary mapping replaces the repository path associated with the TCG project key; it does not modify or delete either repository. In the developer UI, create a PairDock project by selecting the PairDock GitHub repository, the published PairDock agent project, and `main` as its base branch. A previously persisted project for another repository is deliberately marked unavailable when the same agent project key is repointed: PairDock rejects commands instead of risking changes or a pull request in the wrong repository.
 
-When both agents can run at the same time, give each process its own config file instead of overwriting the default one:
+When agents run at the same time, give every process its own config file, session-state file, and agent id:
 
 ```bash
 PAIRDOCK_AGENT_CONFIG_PATH=/absolute/path/to/agent-tcg.json pairdock-agent login <tcg-options>
 PAIRDOCK_AGENT_CONFIG_PATH=/absolute/path/to/agent-pairdock.json pairdock-agent login <pairdock-options>
 
-PAIRDOCK_AGENT_CONFIG_PATH=/absolute/path/to/agent-tcg.json pairdock-agent start
-PAIRDOCK_AGENT_CONFIG_PATH=/absolute/path/to/agent-pairdock.json pairdock-agent start
+PAIRDOCK_AGENT_CONFIG_PATH=/absolute/path/to/agent-tcg.json \
+PAIRDOCK_AGENT_SESSION_STATE_PATH=/absolute/path/to/sessions-tcg.json \
+pairdock-agent start
+
+PAIRDOCK_AGENT_CONFIG_PATH=/absolute/path/to/agent-pairdock.json \
+PAIRDOCK_AGENT_SESSION_STATE_PATH=/absolute/path/to/sessions-pairdock.json \
+pairdock-agent start
 ```
 
-Use distinct agent ids, tokens, and project keys for the final two-agent setup, and authorize each key in the matching backend `AGENT_AUTH_CREDENTIALS_JSON` entry.
+Use distinct agent ids for every process running on the same workstation, including agents connected to different PairDock backends. Agent ids scope Docker preview containers and dependency caches; reusing one can make an agent stop another agent's previews or prune its warm volumes. Within one backend, also use distinct tokens and project keys, and authorize each key in the matching `AGENT_AUTH_CREDENTIALS_JSON` entry. A local-development agent therefore needs a different id from its production counterpart even when both publish the same repository to different backends.
 
 Explicit `--model <id>=<label>=<provider>` options remain supported for non-Codex providers or as a fallback when the local Codex cache is unavailable. The developer selects the project's model and reasoning effort from the owning agent's published capabilities. Every new PM session inherits those server-side defaults; PM clients cannot override them. PairDock passes the persisted selection to Codex CLI as `--model` and `model_reasoning_effort`, and resumes the same Codex thread for follow-up prompts in that PairDock session.
 
