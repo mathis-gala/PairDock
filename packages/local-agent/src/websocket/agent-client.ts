@@ -243,7 +243,14 @@ export class AgentClient {
 
   private async publishRecoveryFailures(failures: Array<{ sessionId: string; message: string }>): Promise<void> {
     for (const failure of failures) {
-      await this.emitError('session.recovery.failed', failure.sessionId, new Error(failure.message), false);
+      try {
+        await this.emitError('session.recovery.failed', failure.sessionId, new Error(failure.message), false);
+      } catch (error) {
+        const message = this.logRedactor.redact(error instanceof Error ? error.message : String(error));
+        this.logger.warn(
+          `[session:${failure.sessionId}] Could not publish session.recovery.failed; continuing startup: ${message}`,
+        );
+      }
     }
   }
 
