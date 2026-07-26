@@ -38,18 +38,37 @@ test('PM demo seed accepts only loopback PostgreSQL databases', () => {
 test('PM demo seed builds stable sessions covering the PM lifecycle', () => {
   const projectId = '11111111-1111-4111-8111-111111111111';
   const now = new Date('2026-07-21T12:00:00.000Z');
+  const project = { id: projectId, repoFullName: 'mathis-gala/PairDock' };
 
-  const first = buildPmDemoSessions(projectId, now);
-  const second = buildPmDemoSessions(projectId, now);
+  const first = buildPmDemoSessions(project, now);
+  const second = buildPmDemoSessions(project, now);
 
   assert.deepEqual(first, second);
   assert.deepEqual(
     first.map((session) => session.status),
-    ['READY', 'AGENT_RUNNING', 'AWAITING_PM_VALIDATION', 'FAILED', 'REVIEW_REQUEST_CREATED', 'CLOSED'],
+    [
+      'READY',
+      'AGENT_RUNNING',
+      'AWAITING_PM_VALIDATION',
+      'FAILED',
+      'REVIEW_REQUEST_CREATED',
+      'CLOSED',
+      'CLOSED',
+      'READY',
+    ],
   );
   assert.equal(new Set(first.map((session) => session.id)).size, first.length);
   assert.ok(first.every((session) => session.messages.length >= 2));
   assert.ok(first.some((session) => session.validation?.status === 'passed'));
   assert.ok(first.some((session) => session.validation?.status === 'failed'));
-  assert.ok(first.some((session) => session.reviewRequest !== null));
+  assert.deepEqual(
+    first.flatMap((session) => (session.reviewRequest ? [session.reviewRequest.status] : [])),
+    ['open', 'closed', 'merged'],
+  );
+  assert.ok(first.some((session) => session.createdBy === 'developer'));
+  assert.ok(
+    first
+      .flatMap((session) => (session.reviewRequest ? [session.reviewRequest.url] : []))
+      .every((url) => url.startsWith('https://github.com/mathis-gala/PairDock/pull/')),
+  );
 });

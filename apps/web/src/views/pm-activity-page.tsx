@@ -1,12 +1,14 @@
 import type { SharedSessionHistoryItem } from '@pairdock/shared-contracts';
-import { useState } from 'react';
+import { type ChangeEvent, useState } from 'react';
 import { Button } from '../components/button.js';
 import { ProductShell } from '../components/product-shell.js';
+import { PullRequestStatusLink } from '../components/pull-request-status-link.js';
 import { SectionCard } from '../components/section-card.js';
 import { SelectInput } from '../components/select-input.js';
 import { StatusBadge } from '../components/status-badge.js';
 import { useAuthSession } from '../hooks/use-auth-session.js';
 import { useSharedSessionHistory } from '../hooks/use-shared-session-history.js';
+import { filterSharedSessionHistory, type SessionHistoryStatusFilter } from '../lib/session-history-filters.js';
 
 interface PmActivityPageProps {
   accessToken: string;
@@ -19,7 +21,7 @@ export function PmActivityPage({ accessToken, mode, onOpenSession, onSignOut }: 
   const authSession = useAuthSession();
   const historyQuery = useSharedSessionHistory(accessToken);
   const [projectFilter, setProjectFilter] = useState('all');
-  const [statusFilter, setStatusFilter] = useState<'opened' | 'closed'>('opened');
+  const [statusFilter, setStatusFilter] = useState<SessionHistoryStatusFilter>('all');
 
   if (!authSession) {
     return null;
@@ -33,14 +35,18 @@ export function PmActivityPage({ accessToken, mode, onOpenSession, onSignOut }: 
   );
   const sessions =
     mode === 'sessions'
-      ? sessionsForView.filter(
-          (session) =>
-            (projectFilter === 'all' || session.projectId === projectFilter) &&
-            (statusFilter === 'opened' ? session.status !== 'CLOSED' : session.status === 'CLOSED'),
-        )
+      ? filterSharedSessionHistory(sessionsForView, { projectId: projectFilter, status: statusFilter })
       : sessionsForView;
   const isReviewRequestView = mode === 'review-requests';
   const title = isReviewRequestView ? 'Pull requests' : 'Sessions';
+
+  function handleProjectFilterChange(event: ChangeEvent<HTMLSelectElement>) {
+    setProjectFilter(event.target.value);
+  }
+
+  function handleStatusFilterChange(event: ChangeEvent<HTMLSelectElement>) {
+    setStatusFilter(event.target.value as SessionHistoryStatusFilter);
+  }
 
   return (
     <ProductShell
@@ -63,7 +69,7 @@ export function PmActivityPage({ accessToken, mode, onOpenSession, onSignOut }: 
           <h1 className="font-['Space_Grotesk'] text-2xl font-semibold tracking-[-0.01em]">{title}</h1>
           <p className="mt-1 text-[13.5px] text-[#8b92a1]">
             {isReviewRequestView
-              ? 'Retrouve les draft pull requests créées après validation PM.'
+              ? 'Retrouve les pull requests créées après validation PM et suis leur statut GitHub.'
               : 'Reprends une session passée ou vérifie son état courant.'}
           </p>
         </div>
@@ -79,7 +85,7 @@ export function PmActivityPage({ accessToken, mode, onOpenSession, onSignOut }: 
                 aria-label="Filtrer par projet"
                 id="session-project-filter"
                 value={projectFilter}
-                onChange={(event) => setProjectFilter(event.target.value)}
+                onChange={handleProjectFilterChange}
               >
                 <option value="all">Tous les projets</option>
                 {projectOptions.map(([projectId, projectName]) => (
@@ -98,12 +104,16 @@ export function PmActivityPage({ accessToken, mode, onOpenSession, onSignOut }: 
                 aria-label="Filtrer par statut"
                 id="session-status-filter"
                 value={statusFilter}
-                onChange={(event) => setStatusFilter(event.target.value as 'opened' | 'closed')}
+                onChange={handleStatusFilterChange}
               >
-                <option value="opened">opened</option>
-                <option value="closed">closed</option>
+                <option value="all">Toutes les sessions</option>
+                <option value="opened">Ouvertes</option>
+                <option value="closed">Fermées</option>
               </SelectInput>
             </label>
+            <p aria-live="polite" className="text-xs text-[#8b92a1] sm:col-span-2">
+              {sessions.length} session{sessions.length === 1 ? '' : 's'} affichée{sessions.length === 1 ? '' : 's'}
+            </p>
           </div>
         ) : null}
 
@@ -171,16 +181,7 @@ function SessionHistoryRow({
         <Button onClick={handleOpenSession} variant="secondary">
           Ouvrir la session
         </Button>
-        {session.reviewRequest?.url ? (
-          <a
-            className="inline-flex min-h-11 items-center justify-center rounded-[10px] bg-[#d3a4ea] px-4 text-[13px] font-semibold text-[#25132f] transition hover:bg-[#ddb6ef] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#d3a4ea]/40"
-            href={session.reviewRequest.url}
-            rel="noreferrer"
-            target="_blank"
-          >
-            PR #{session.reviewRequest.number ?? 'draft'}
-          </a>
-        ) : null}
+        {session.reviewRequest?.url ? <PullRequestStatusLink reviewRequest={session.reviewRequest} /> : null}
       </div>
     </article>
   );

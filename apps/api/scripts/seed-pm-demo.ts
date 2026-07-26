@@ -63,13 +63,15 @@ async function main(): Promise<void> {
           update: { role: 'pm' },
         });
 
-        for (const session of buildPmDemoSessions(project.id, new Date())) {
+        for (const session of buildPmDemoSessions(project, new Date())) {
+          const sessionCreatorUserId = session.createdBy === 'pm' ? pm.id : project.ownerUserId;
+
           await transaction.session.upsert({
             where: { id: session.id },
             create: {
               id: session.id,
               projectId: project.id,
-              createdByUserId: pm.id,
+              createdByUserId: sessionCreatorUserId,
               status: session.status,
               modelId: project.defaultModelId,
               reasoningEffort: project.defaultReasoningEffort,
@@ -106,13 +108,13 @@ async function main(): Promise<void> {
               create: {
                 ...message,
                 sessionId: session.id,
-                userId: message.role === 'user' ? pm.id : null,
+                userId: message.role === 'user' ? sessionCreatorUserId : null,
               },
               update: {
                 content: message.content,
                 createdAt: message.createdAt,
                 role: message.role,
-                userId: message.role === 'user' ? pm.id : null,
+                userId: message.role === 'user' ? sessionCreatorUserId : null,
               },
             });
           }

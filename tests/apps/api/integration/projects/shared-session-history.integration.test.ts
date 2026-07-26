@@ -6,7 +6,12 @@ import { NestFactory } from '@nestjs/core';
 import { AppModule } from '../../../../../apps/api/src/app.module.js';
 import { AuthTokenService } from '../../../../../apps/api/src/auth/auth-token.service.js';
 import { DatabaseClient } from '../../../../../apps/api/src/persistence/client.js';
-import { authResponseSchema, parseJsonResponse, sharedSessionHistoryResponseSchema } from '../test-json.js';
+import {
+  authResponseSchema,
+  developerProjectListResponseSchema,
+  parseJsonResponse,
+  sharedSessionHistoryResponseSchema,
+} from '../test-json.js';
 
 const prisma = new DatabaseClient();
 
@@ -61,7 +66,7 @@ test.after(async () => {
 
 test.beforeEach(resetDatabase);
 
-test('PM browses sessions and draft review requests only for projects shared with them', async () => {
+test('PM browses only their sessions while the developer sees every session in owned projects', async () => {
   const pm = await authenticatePm();
   const otherPm = await authenticatePm();
   const developer = await prisma.user.create({
@@ -131,6 +136,27 @@ test('PM browses sessions and draft review requests only for projects shared wit
       reasoningEffort: 'low',
     },
   });
+  const developerSession = await prisma.session.create({
+    data: {
+      projectId: sharedProject.id,
+      createdByUserId: developer.id,
+      status: 'CLOSED',
+      modelId: 'gpt-5.6-terra',
+      reasoningEffort: 'low',
+      closedAt: new Date(),
+    },
+  });
+  await prisma.sessionMember.createMany({
+    data: [
+      { sessionId: sharedSession.id, userId: developer.id, role: 'developer' },
+      { sessionId: sharedSession.id, userId: pm.user.id, role: 'pm' },
+      { sessionId: otherPmSession.id, userId: developer.id, role: 'developer' },
+      { sessionId: otherPmSession.id, userId: otherPm.user.id, role: 'pm' },
+      { sessionId: developerSession.id, userId: developer.id, role: 'developer' },
+      { sessionId: developerSession.id, userId: pm.user.id, role: 'pm' },
+      { sessionId: developerSession.id, userId: otherPm.user.id, role: 'pm' },
+    ],
+  });
   await prisma.pullRequest.create({
     data: {
       sessionId: sharedSession.id,
@@ -164,6 +190,7 @@ test('PM browses sessions and draft review requests only for projects shared wit
   ]);
   assert.ok(!history.some((session) => session.id === privateSession.id));
   assert.ok(!history.some((session) => session.id === otherPmSession.id));
+  assert.ok(!history.some((session) => session.id === developerSession.id));
 
   const authTokenService = app.get(AuthTokenService);
   const developerToken = authTokenService.issue({
@@ -172,6 +199,18 @@ test('PM browses sessions and draft review requests only for projects shared wit
     displayName: developer.displayName,
     kind: 'developer',
   });
+  const developerDashboardResponse = await fetch(`${baseUrl}/projects/developer`, {
+    headers: { authorization: `Bearer ${developerToken}` },
+  });
+  assert.equal(developerDashboardResponse.status, 200);
+  const developerProjects = await parseJsonResponse(developerDashboardResponse, developerProjectListResponseSchema);
+  const sharedDeveloperProject = developerProjects.find((project) => project.id === sharedProject.id);
+  assert.ok(sharedDeveloperProject);
+  assert.deepEqual(
+    new Set(sharedDeveloperProject.sessions.map((session) => session.id)),
+    new Set([sharedSession.id, otherPmSession.id, developerSession.id]),
+  );
+
   const forbiddenResponse = await fetch(`${baseUrl}/projects/shared/sessions`, {
     headers: { authorization: `Bearer ${developerToken}` },
   });
