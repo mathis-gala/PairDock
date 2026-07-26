@@ -443,7 +443,9 @@ test('default Codex harness can read user toolchains already exposed through PAT
   }
 });
 
-test('CodexHarnessAdapter preserves sandbox-compatible Git through a macOS login shell', async () => {
+test('CodexHarnessAdapter preserves sandbox-compatible Git through a macOS login shell', {
+  skip: process.platform !== 'darwin',
+}, async () => {
   const worktreePath = await createTempWorkspace();
   const fallbackDirectory = join(worktreePath, 'codex-primary-runtime', 'dependencies', 'bin', 'fallback');
   const fallbackGitPath = join(fallbackDirectory, 'git');
