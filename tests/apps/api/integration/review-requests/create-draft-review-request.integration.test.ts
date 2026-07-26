@@ -388,6 +388,7 @@ class InMemoryReviewRequestsRepository implements ReviewRequestsRepository {
       reviewRequestUrl: input.reviewRequestUrl ?? null,
       sessionId: input.sessionId,
       status: input.status,
+      statusUpdatedAt: null,
     };
     this.records.push(record);
     return record;
@@ -399,5 +400,9 @@ class InMemoryReviewRequestsRepository implements ReviewRequestsRepository {
 
   async findManyBySessionIds(sessionIds: string[]): Promise<ReviewRequestRecord[]> {
     return this.records.filter((record) => sessionIds.includes(record.sessionId));
+  }
+
+  async updateStatus(): Promise<boolean> {
+    return false;
   }
 }

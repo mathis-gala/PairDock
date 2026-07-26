@@ -190,6 +190,7 @@ export function mapReviewRequest(record: PrismaPullRequest): ReviewRequestRecord
     reviewRequestNumber: record.githubPrNumber,
     reviewRequestUrl: record.githubPrUrl,
     status: record.status,
+    statusUpdatedAt: record.statusUpdatedAt,
     createdAt: record.createdAt,
   };
 }

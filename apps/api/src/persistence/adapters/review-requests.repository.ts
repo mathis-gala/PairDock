@@ -1,7 +1,11 @@
 import { Inject, Injectable } from '@nestjs/common';
 import type { ReviewRequestRecord } from '@pairdock/domain';
 import { DatabaseClient, type DatabaseExecutor } from '../client.js';
-import type { CreateReviewRequestInput, ReviewRequestsRepository } from '../ports/review-requests.repository.js';
+import type {
+  CreateReviewRequestInput,
+  ReviewRequestsRepository,
+  UpdateReviewRequestStatusInput,
+} from '../ports/review-requests.repository.js';
 import { mapReviewRequest } from './mappers.js';
 
 @Injectable()
@@ -45,5 +49,29 @@ export class ReviewRequestsRepositoryAdapter implements ReviewRequestsRepository
     });
 
     return records.map(mapReviewRequest);
+  }
+
+  async updateStatus(input: UpdateReviewRequestStatusInput): Promise<boolean> {
+    const result = await this.prisma.pullRequest.updateMany({
+      where: {
+        githubPrNumber: input.reviewRequestNumber,
+        session: {
+          project: {
+            repoFullName: input.repoFullName,
+            sourceControlConnection: {
+              providerConnectionId: input.providerConnectionId,
+            },
+          },
+        },
+        OR: [{ statusUpdatedAt: null }, { statusUpdatedAt: { lte: input.statusUpdatedAt } }],
+      },
+      data: {
+        githubPrUrl: input.reviewRequestUrl,
+        status: input.status,
+        statusUpdatedAt: input.statusUpdatedAt,
+      },
+    });
+
+    return result.count > 0;
   }
 }

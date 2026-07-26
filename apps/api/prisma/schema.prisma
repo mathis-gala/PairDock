@@ -262,14 +262,16 @@ model ValidationRun {
 }
 
 model PullRequest {
-  id             String   @id @default(uuid()) @db.Uuid
-  sessionId      String   @map("session_id") @db.Uuid
-  githubPrNumber Int?     @map("github_pr_number")
-  githubPrUrl    String?  @map("github_pr_url")
-  status         String
-  createdAt      DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
-  session        Session  @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  id              String    @id @default(uuid()) @db.Uuid
+  sessionId       String    @map("session_id") @db.Uuid
+  githubPrNumber  Int?      @map("github_pr_number")
+  githubPrUrl     String?   @map("github_pr_url")
+  status          String
+  statusUpdatedAt DateTime? @map("github_updated_at") @db.Timestamptz(6)
+  createdAt       DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  session         Session   @relation(fields: [sessionId], references: [id], onDelete: Cascade)
 
   @@index([sessionId])
+  @@index([githubPrNumber])
   @@map("pull_requests")
 }

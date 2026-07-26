@@ -7,5 +7,6 @@ export function useSharedSessionHistory(accessToken: string) {
   return useQuery({
     queryKey: ['shared-session-history', accessToken],
     queryFn: () => api.projects.listSharedSessionHistory(),
+    staleTime: Number.POSITIVE_INFINITY,
   });
 }

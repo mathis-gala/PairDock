@@ -201,6 +201,7 @@ export interface ReviewRequestRecord {
   reviewRequestNumber: number | null;
   reviewRequestUrl: string | null;
   status: string;
+  statusUpdatedAt: Date | null;
   createdAt: Date;
 }
 
