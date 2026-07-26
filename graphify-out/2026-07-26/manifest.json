@@ -485,8 +485,8 @@
     "semantic_hash": "c559426eb227a26ad277cb1de85888d6"
   },
   "apps/web/src/components/developer/session-control-card.tsx": {
-    "mtime": 1785087969.2418578,
-    "ast_hash": "6204c1ee4b415868e6acdb743699aa38",
+    "mtime": 1785089523.6991644,
+    "ast_hash": "c803d221febe41ade57cb86faf1d5df0",
     "semantic_hash": ""
   },
   "apps/web/src/components/developer/tool-readiness-panel.tsx": {
