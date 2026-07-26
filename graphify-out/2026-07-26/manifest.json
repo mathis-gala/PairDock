@@ -705,18 +705,18 @@
     "semantic_hash": ""
   },
   "packages/local-agent/src/config/agent-config.ts": {
-    "mtime": 1785064191.0128744,
-    "ast_hash": "1baade7070b666fbc6c25ffa0371ee52",
+    "mtime": 1785070278.0666258,
+    "ast_hash": "e94eb69a5c1ceaaac610f90572fd4dfe",
     "semantic_hash": ""
   },
   "packages/local-agent/src/config/project-manifest.ts": {
-    "mtime": 1785063275.0734286,
-    "ast_hash": "750eeb719f905a80b4c7ebdea7594eae",
+    "mtime": 1785070278.065246,
+    "ast_hash": "a9e7789c6edafe60911ff2cd3047a930",
     "semantic_hash": ""
   },
   "packages/local-agent/src/docker/docker-sandbox.adapter.ts": {
-    "mtime": 1785068131.3023727,
-    "ast_hash": "9c28cf7a6b8afc1fd943b3b01b3fff71",
+    "mtime": 1785069382.5124607,
+    "ast_hash": "e20aaafa78a2f8fc9ee05f66b02196b9",
     "semantic_hash": ""
   },
   "packages/local-agent/src/docker/healthcheck.service.ts": {
@@ -725,8 +725,8 @@
     "semantic_hash": ""
   },
   "packages/local-agent/src/docker/sandbox.port.ts": {
-    "mtime": 1785065159.2406845,
-    "ast_hash": "69e6872ee8140107e324258836d4842a",
+    "mtime": 1785069345.61613,
+    "ast_hash": "bee567057effb6122887afb95ca989fa",
     "semantic_hash": ""
   },
   "packages/local-agent/src/git/diff.service.ts": {
@@ -765,8 +765,8 @@
     "semantic_hash": ""
   },
   "packages/local-agent/src/main.ts": {
-    "mtime": 1785063815.1754055,
-    "ast_hash": "f18f1a01a1ae81e73d83d045e193d7cd",
+    "mtime": 1785069345.61778,
+    "ast_hash": "d0a2ba41b928d0edcc479bbc5ae6aee7",
     "semantic_hash": ""
   },
   "packages/local-agent/src/readiness/readiness-runner.ts": {
@@ -1055,8 +1055,8 @@
     "semantic_hash": ""
   },
   "tests/packages/local-agent/integration/agent-config.integration.test.ts": {
-    "mtime": 1785063486.3549993,
-    "ast_hash": "dc0d5a18c02e2c65f8f8a3100e5aa3c8",
+    "mtime": 1785070278.0674005,
+    "ast_hash": "a2195a33669048da96d71b18f9be7671",
     "semantic_hash": ""
   },
   "tests/packages/local-agent/integration/agent-harness.integration.test.ts": {
@@ -1090,13 +1090,13 @@
     "semantic_hash": ""
   },
   "tests/packages/local-agent/integration/preview-adapters.integration.test.ts": {
-    "mtime": 1785068115.7509704,
-    "ast_hash": "c3f803a5f4189de6ef309278ebff3b4e",
+    "mtime": 1785069869.018696,
+    "ast_hash": "ba05aa23102df89e8a1be3c598e9fe95",
     "semantic_hash": ""
   },
   "tests/packages/local-agent/integration/project-manifest.integration.test.ts": {
-    "mtime": 1785063265.139391,
-    "ast_hash": "b520ffff5f3212129b01f3a0ee8b8047",
+    "mtime": 1785070278.0680656,
+    "ast_hash": "fb579138b52d4a62da0fb6e608e6f620",
     "semantic_hash": ""
   },
   "tests/packages/local-agent/integration/readiness-runner.integration.test.ts": {
@@ -1125,8 +1125,8 @@
     "semantic_hash": ""
   },
   "README.md": {
-    "mtime": 1785065387.1696355,
-    "ast_hash": "8c8c6d658b640cd770a7de407aa22565",
+    "mtime": 1785069504.3987749,
+    "ast_hash": "d4caa7dd4706b05adc3a8a107da0fcbd",
     "semantic_hash": ""
   },
   "apps/web/index.html": {
@@ -1140,8 +1140,8 @@
     "semantic_hash": ""
   },
   "docs/architecture/pairdock-mvp/architecture.md": {
-    "mtime": 1785065387.171003,
-    "ast_hash": "e9e9ea44569d2325e25e0e1149c1d5f1",
+    "mtime": 1785069504.3997226,
+    "ast_hash": "6bc86aad58945d2e557580efd2646470",
     "semantic_hash": ""
   },
   "docs/architecture/pairdock-mvp/mvp-e2e.md": {
@@ -1505,8 +1505,8 @@
     "semantic_hash": ""
   },
   "pairdock.yml": {
-    "mtime": 1785063562.2941406,
-    "ast_hash": "99f10843c2294109f056bdc14e7c43f5",
+    "mtime": 1785069504.3981092,
+    "ast_hash": "8651c4fafa6e4ba885ec3d93e9ffbeda",
     "semantic_hash": ""
   },
   "apps/api/src/agent-gateway/agent-project-binding.service.ts": {
@@ -1627,6 +1627,16 @@
   "packages/local-agent/src/process/host-process-group.ts": {
     "mtime": 1785065030.0754883,
     "ast_hash": "89f431a48f7a9b2ec55660e335350787",
+    "semantic_hash": ""
+  },
+  "packages/local-agent/src/docker/docker-dependency-prewarmer.ts": {
+    "mtime": 1785070154.7100656,
+    "ast_hash": "d5dd8339f3a353f1bcb5c8b110f6cde3",
+    "semantic_hash": ""
+  },
+  "tests/packages/local-agent/integration/docker-dependency-prewarmer.integration.test.ts": {
+    "mtime": 1785070022.9934285,
+    "ast_hash": "ce60e03f4a5871013855e1835ba8452a",
     "semantic_hash": ""
   }
 }
