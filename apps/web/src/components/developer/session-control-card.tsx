@@ -49,42 +49,44 @@ export function SessionControlCard({ closePending, onClose, session }: SessionCo
           Open draft review request
         </a>
       ) : null}
-      <a
-        className="mt-3 inline-flex min-h-10 items-center justify-center gap-2 rounded-[10px] border border-white/10 bg-[#23272f] px-3 py-2 text-xs font-semibold text-[#eef0f4] transition hover:border-white/20 hover:bg-[#2a2f38] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#5fdf9b]/40"
-        href={`#/developer/sessions/${session.id}`}
-      >
-        <svg aria-hidden="true" className="size-4" fill="none" viewBox="0 0 24 24">
-          <path
-            d="M3.5 12s3.2-5 8.5-5 8.5 5 8.5 5-3.2 5-8.5 5-8.5-5-8.5-5Z"
-            stroke="currentColor"
-            strokeLinejoin="round"
-            strokeWidth="1.7"
-          />
-          <circle cx="12" cy="12" r="2.25" stroke="currentColor" strokeWidth="1.7" />
-        </svg>
-        Inspecter la session
-      </a>
-      {canClose ? (
-        <div className="mt-3 flex flex-wrap items-center gap-2">
-          {confirmingClose ? (
-            <>
-              <span className="text-xs text-amber-300">Confirm cleanup close?</span>
-              <Button disabled={closePending} onClick={handleConfirmClose} variant="danger">
-                {closePending ? 'Closing…' : 'Confirm close'}
+      <div className="mt-3 flex flex-col items-end gap-3">
+        <a
+          className="inline-flex min-h-10 items-center justify-center gap-2 rounded-[10px] border border-white/10 bg-[#23272f] px-3 py-2 text-xs font-semibold text-[#eef0f4] transition hover:border-white/20 hover:bg-[#2a2f38] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#5fdf9b]/40"
+          href={`#/developer/sessions/${session.id}`}
+        >
+          <svg aria-hidden="true" className="size-4" fill="none" viewBox="0 0 24 24">
+            <path
+              d="M3.5 12s3.2-5 8.5-5 8.5 5 8.5 5-3.2 5-8.5 5-8.5-5-8.5-5Z"
+              stroke="currentColor"
+              strokeLinejoin="round"
+              strokeWidth="1.7"
+            />
+            <circle cx="12" cy="12" r="2.25" stroke="currentColor" strokeWidth="1.7" />
+          </svg>
+          Inspecter la session
+        </a>
+        {canClose ? (
+          <div className="flex flex-wrap items-center justify-end gap-2">
+            {confirmingClose ? (
+              <>
+                <span className="text-xs text-amber-300">Confirm cleanup close?</span>
+                <Button disabled={closePending} onClick={handleConfirmClose} variant="danger">
+                  {closePending ? 'Closing…' : 'Confirm close'}
+                </Button>
+                <Button disabled={closePending} onClick={handleCancelClose} variant="ghost">
+                  Cancel
+                </Button>
+              </>
+            ) : (
+              <Button disabled={closePending} onClick={handleStartClose} variant="danger">
+                Close session
               </Button>
-              <Button disabled={closePending} onClick={handleCancelClose} variant="ghost">
-                Cancel
-              </Button>
-            </>
-          ) : (
-            <Button disabled={closePending} onClick={handleStartClose} variant="danger">
-              Close session
-            </Button>
-          )}
-        </div>
-      ) : (
-        <p className="mt-3 text-xs text-emerald-300">Cleanup status visible: local close completed.</p>
-      )}
+            )}
+          </div>
+        ) : (
+          <p className="text-right text-xs text-emerald-300">Cleanup status visible: local close completed.</p>
+        )}
+      </div>
     </div>
   );
 }
