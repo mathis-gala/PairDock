@@ -140,6 +140,16 @@ export const shareDeveloperProjectInputSchema = z.object({
   pmEmail: z.string().trim().email(),
 });
 
+export const updateDeveloperProjectInputSchema = z
+  .object({
+    name: z.string().trim().min(1).max(120).optional(),
+    description: z.string().trim().max(2_000).nullable().optional(),
+  })
+  .strict()
+  .refine((input) => input.name !== undefined || input.description !== undefined, {
+    message: 'At least one project field is required.',
+  });
+
 export const createDraftReviewRequestInputSchema = z
   .object({
     type: z.enum(['feat', 'fix', 'style']),
@@ -175,6 +185,7 @@ export type DeveloperSetupAgent = z.infer<typeof developerSetupAgentSchema>;
 export type DeveloperProjectSetup = z.infer<typeof developerProjectSetupSchema>;
 export type CreateDeveloperProjectInput = z.infer<typeof createDeveloperProjectInputSchema>;
 export type ShareDeveloperProjectInput = z.infer<typeof shareDeveloperProjectInputSchema>;
+export type UpdateDeveloperProjectInput = z.infer<typeof updateDeveloperProjectInputSchema>;
 export type CreateDraftReviewRequestInput = z.infer<typeof createDraftReviewRequestInputSchema>;
 export type SessionAttachmentView = z.infer<typeof sessionAttachmentViewSchema>;
 export type UpdateProjectExecutionDefaultsInput = z.infer<typeof updateProjectExecutionDefaultsInputSchema>;

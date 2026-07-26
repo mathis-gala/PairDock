@@ -153,6 +153,43 @@ test('BT-028/BT-029/BT-049: developer creates a project, shares it, starts a mod
   const pmSharedProjects = await parseJsonResponse(pmSharedProjectsResponse, sharedProjectListResponseSchema);
   assert.equal(pmSharedProjects[0]?.id, createdProject.id);
 
+  const pmUpdateResponse = await fetch(`${baseUrl}/projects/${createdProject.id}`, {
+    method: 'PATCH',
+    headers: {
+      authorization: `Bearer ${pmLogin.body.accessToken}`,
+      'content-type': 'application/json',
+    },
+    body: JSON.stringify({ name: 'Unauthorized rename' }),
+  });
+  assert.equal(pmUpdateResponse.status, 403);
+
+  const otherDeveloperLogin = await authenticateDeveloper();
+  const otherDeveloperUpdateResponse = await fetch(`${baseUrl}/projects/${createdProject.id}`, {
+    method: 'PATCH',
+    headers: {
+      authorization: `Bearer ${otherDeveloperLogin.body.accessToken}`,
+      'content-type': 'application/json',
+    },
+    body: JSON.stringify({ name: 'Unauthorized rename' }),
+  });
+  assert.equal(otherDeveloperUpdateResponse.status, 404);
+
+  const updateMetadataResponse = await fetch(`${baseUrl}/projects/${createdProject.id}`, {
+    method: 'PATCH',
+    headers: {
+      authorization: `Bearer ${developerLogin.body.accessToken}`,
+      'content-type': 'application/json',
+    },
+    body: JSON.stringify({
+      name: 'Renamed developer project',
+      description: 'Updated from the developer dashboard',
+    }),
+  });
+  assert.equal(updateMetadataResponse.status, 200);
+  const renamedProject = await parseJsonResponse(updateMetadataResponse, developerProjectResponseSchema);
+  assert.equal(renamedProject.name, 'Renamed developer project');
+  assert.equal(renamedProject.description, 'Updated from the developer dashboard');
+
   const updateDefaultsResponse = await fetch(`${baseUrl}/projects/${createdProject.id}/execution-defaults`, {
     method: 'PATCH',
     headers: {

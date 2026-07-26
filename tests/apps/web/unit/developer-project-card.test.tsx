@@ -75,13 +75,17 @@ test('BT-028/BT-029/BT-049: developer project card exposes agent defaults, shari
     createElement(DeveloperProjectCard, {
       closePendingSessionId: null,
       onCloseSession: async () => undefined,
+      onResetUpdateProject: () => undefined,
       onRequestReadiness: async () => undefined,
       onShareProject: async () => undefined,
       onUpdateExecutionDefaults: async () => undefined,
+      onUpdateProject: async () => undefined,
       project,
       readinessPendingProjectId: null,
       sharePendingProjectId: null,
       updateDefaultsPendingProjectId: null,
+      updateProjectError: null,
+      updateProjectPendingId: null,
     }),
   );
 
@@ -100,6 +104,7 @@ test('BT-028/BT-029/BT-049: developer project card exposes agent defaults, shari
   assert.match(html, /href="#\/developer\/sessions\/44444444-4444-4444-8444-444444444444"/);
   assert.match(html, /Inspecter la session/);
   assert.match(html, /Close session/);
+  assert.match(html, /Modifier/);
   assert.doesNotMatch(html, /codex-cli/);
 });
 
@@ -108,13 +113,17 @@ test('BT-044: developer project card shows readiness remediation for failed requ
     createElement(DeveloperProjectCard, {
       closePendingSessionId: null,
       onCloseSession: async () => undefined,
+      onResetUpdateProject: () => undefined,
       onRequestReadiness: async () => undefined,
       onShareProject: async () => undefined,
       onUpdateExecutionDefaults: async () => undefined,
+      onUpdateProject: async () => undefined,
       project: blockedProject,
       readinessPendingProjectId: null,
       sharePendingProjectId: null,
       updateDefaultsPendingProjectId: null,
+      updateProjectError: null,
+      updateProjectPendingId: null,
     }),
   );
 

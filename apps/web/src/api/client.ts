@@ -11,6 +11,7 @@ import {
   type SharedSessionHistoryItem,
   sharedProjectSummaryListSchema,
   sharedSessionHistoryListSchema,
+  type UpdateDeveloperProjectInput,
   type UpdateProjectExecutionDefaultsInput,
 } from '@pairdock/shared-contracts';
 import { z } from 'zod';
@@ -39,6 +40,7 @@ export interface ApiClient {
     listSharedSessionHistory(): Promise<SharedSessionHistoryItem[]>;
     requestReadinessCheck(projectId: string): Promise<void>;
     share(projectId: string, input: ShareDeveloperProjectInput): Promise<DeveloperProjectSummary>;
+    update(projectId: string, input: UpdateDeveloperProjectInput): Promise<DeveloperProjectSummary>;
     updateExecutionDefaults(
       projectId: string,
       input: UpdateProjectExecutionDefaultsInput,
@@ -109,6 +111,14 @@ export function createApiClient(accessToken: string): ApiClient {
       async share(projectId: string, input: ShareDeveloperProjectInput): Promise<DeveloperProjectSummary> {
         const value = await requestJson(`/projects/${projectId}/members`, {
           method: 'POST',
+          headers: jsonHeaders(accessToken),
+          body: JSON.stringify(input),
+        });
+        return developerProjectSummarySchema.parse(value);
+      },
+      async update(projectId: string, input: UpdateDeveloperProjectInput): Promise<DeveloperProjectSummary> {
+        const value = await requestJson(`/projects/${projectId}`, {
+          method: 'PATCH',
           headers: jsonHeaders(accessToken),
           body: JSON.stringify(input),
         });
