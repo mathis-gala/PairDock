@@ -715,8 +715,8 @@
     "semantic_hash": ""
   },
   "packages/local-agent/src/docker/docker-sandbox.adapter.ts": {
-    "mtime": 1785065298.8845427,
-    "ast_hash": "36e03332dbb61cc2265c5fdc02691db4",
+    "mtime": 1785068131.3023727,
+    "ast_hash": "9c28cf7a6b8afc1fd943b3b01b3fff71",
     "semantic_hash": ""
   },
   "packages/local-agent/src/docker/healthcheck.service.ts": {
@@ -1090,8 +1090,8 @@
     "semantic_hash": ""
   },
   "tests/packages/local-agent/integration/preview-adapters.integration.test.ts": {
-    "mtime": 1785065287.8744678,
-    "ast_hash": "76d54ce332504bfe0cbcefb4204e887d",
+    "mtime": 1785068115.7509704,
+    "ast_hash": "c3f803a5f4189de6ef309278ebff3b4e",
     "semantic_hash": ""
   },
   "tests/packages/local-agent/integration/project-manifest.integration.test.ts": {
@@ -1120,8 +1120,8 @@
     "semantic_hash": "71876e5e61823c799b8c65bc024a464a"
   },
   ".github/workflows/ci.yml": {
-    "mtime": 1784804848.1698585,
-    "ast_hash": "36e089ddae310dbc33e37d4186962ba0",
+    "mtime": 1785066345.826957,
+    "ast_hash": "e6d887ca0726e88f93b6589787296a0d",
     "semantic_hash": ""
   },
   "README.md": {
