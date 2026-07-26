@@ -1,9 +1,11 @@
 import assert from 'node:assert/strict';
+import { spawn } from 'node:child_process';
 import { EventEmitter } from 'node:events';
-import { mkdtemp } from 'node:fs/promises';
+import { mkdir, mkdtemp, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import test from 'node:test';
+import { setTimeout as delay } from 'node:timers/promises';
 import { HostPreviewRuntimeAdapter } from '../../../../packages/local-agent/src/preview/host-preview-runtime.adapter.js';
 
 test('HostPreviewRuntimeAdapter starts a session preview in its worktree on a dedicated port', async () => {
@@ -49,7 +51,7 @@ test('HostPreviewRuntimeAdapter starts a session preview in its worktree on a de
 
   assert.equal(spawnCalls.length, 1);
   assert.equal(spawnCalls[0]?.command, 'sh');
-  assert.deepEqual(spawnCalls[0]?.args, ['-lc', 'bun run dev -- --port 45123']);
+  assert.deepEqual(spawnCalls[0]?.args, ['-c', 'bun run dev -- --port 45123']);
   assert.equal(spawnCalls[0]?.cwd, worktreePath);
   assert.equal(spawnCalls[0]?.detached, true);
   assert.equal(spawnCalls[0]?.shell, false);
@@ -60,6 +62,44 @@ test('HostPreviewRuntimeAdapter starts a session preview in its worktree on a de
   assert.equal(runtimeRef.previewConfig?.tunnel?.publicUrl, 'http://127.0.0.1:45123');
   assert.equal(runtimeRef.metadata?.type, 'host');
   assert.equal(runtimeRef.metadata?.pid, '4321');
+});
+
+test('HostPreviewRuntimeAdapter does not reload secrets from the developer login profile', async () => {
+  const worktreePath = await mkdtemp(join(tmpdir(), 'pairdock-host-preview-profile-'));
+  const fakeHome = join(worktreePath, 'home');
+  await mkdir(fakeHome);
+  await writeFile(join(fakeHome, '.profile'), 'export PAIRDOCK_PROFILE_SECRET=profile-secret\n');
+  const adapter = new HostPreviewRuntimeAdapter({
+    spawn(command, args, options) {
+      return spawn(command, args, {
+        ...options,
+        env: {
+          ...options.env,
+          HOME: fakeHome,
+        },
+      });
+    },
+  });
+  const runtimeRef = await adapter.start({
+    sessionId: '91919191-9191-4191-8191-919191919191',
+    projectKey: 'pairdock',
+    repositoryPath: worktreePath,
+    worktreePath,
+    branchName: 'pairdock/session-9191',
+    modelId: 'agent/gpt-5',
+    previewConfig: {
+      runtime: 'host',
+      sandbox: {
+        startCommand: `printf "%s" "\${PAIRDOCK_PROFILE_SECRET:-}" >&2`,
+        healthcheckUrl: 'http://127.0.0.1:4000',
+      },
+    },
+  });
+
+  await delay(50);
+  const result = await adapter.check(runtimeRef);
+
+  assert.doesNotMatch(result.message ?? '', /profile-secret/);
 });
 
 test('HostPreviewRuntimeAdapter stops the complete preview process group', async () => {

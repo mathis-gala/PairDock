@@ -20,3 +20,7 @@ export interface PreviewTunnelPort {
   open(input: PreviewTunnelOpenInput): Promise<PreviewTunnelRef>;
   close(ref: PreviewTunnelRef, previewConfig?: ProjectPreviewConfig): Promise<void>;
 }
+
+export function previewUsesDockerTunnel(previewConfig?: ProjectPreviewConfig): boolean {
+  return previewConfig !== undefined && !previewConfig.tunnel?.publicUrl;
+}

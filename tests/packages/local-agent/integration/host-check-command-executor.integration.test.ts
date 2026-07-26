@@ -1,5 +1,8 @@
 import assert from 'node:assert/strict';
 import { EventEmitter } from 'node:events';
+import { mkdir, mkdtemp, writeFile } from 'node:fs/promises';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
 import test from 'node:test';
 import { HostCheckCommandExecutor } from '../../../../packages/local-agent/src/checks/host-check-command-executor.js';
 
@@ -40,7 +43,7 @@ test('HostCheckCommandExecutor runs validation in the session worktree without f
   assert.deepEqual(spawnCalls, [
     {
       command: 'sh',
-      args: ['-lc', 'bun run build'],
+      args: ['-c', 'bun run build'],
       cwd: '/tmp/pairdock-session',
       detached: true,
       env: {
@@ -54,6 +57,28 @@ test('HostCheckCommandExecutor runs validation in the session worktree without f
   ]);
   assert.equal(result.exitCode, 0);
   assert.match(result.logs, /typecheck passed/);
+});
+
+test('HostCheckCommandExecutor does not reload secrets from the developer login profile', async () => {
+  const workspacePath = await mkdtemp(join(tmpdir(), 'pairdock-host-check-profile-'));
+  const fakeHome = join(workspacePath, 'home');
+  await mkdir(fakeHome);
+  await writeFile(join(fakeHome, '.profile'), 'export PAIRDOCK_PROFILE_SECRET=profile-secret\n');
+  const executor = new HostCheckCommandExecutor({
+    environment: {
+      HOME: fakeHome,
+      PATH: process.env.PATH,
+    },
+  });
+
+  const result = await executor.run({
+    command: `printf "%s" "\${PAIRDOCK_PROFILE_SECRET:-}"`,
+    sessionId: 'profile-session',
+    worktreePath: workspacePath,
+  });
+
+  assert.equal(result.exitCode, 0);
+  assert.equal(result.logs, '');
 });
 
 test('HostCheckCommandExecutor terminates the complete process group after its timeout', async () => {

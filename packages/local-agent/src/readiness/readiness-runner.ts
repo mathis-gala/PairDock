@@ -5,6 +5,7 @@ import type { ProjectChecksConfig } from '../checks/checks-runner.js';
 import { compareVersions } from '../config/codex-model-catalog.js';
 import type { ProjectPreviewConfig } from '../docker/sandbox.port.js';
 import type { ProjectAgentHarnessConfig } from '../harness/agent-harness.port.js';
+import { previewUsesDockerTunnel } from '../tunnel/preview-tunnel.port.js';
 
 interface ReadinessRunnerConfig {
   authToken?: string;
@@ -176,9 +177,7 @@ export class ReadinessRunner {
 
   private async checkDocker(projectKey: string): Promise<ToolReadinessCheck> {
     const previewConfig = this.config.previewConfigs?.[projectKey];
-    const requiresDocker =
-      previewConfig?.runtime === 'docker' ||
-      (previewConfig?.tunnel?.provider === 'cloudflare' && !previewConfig.tunnel.publicUrl);
+    const requiresDocker = previewConfig?.runtime === 'docker' || previewUsesDockerTunnel(previewConfig);
     if (!requiresDocker) {
       return skipped('docker', false, 'Docker is not required by this project preview.');
     }

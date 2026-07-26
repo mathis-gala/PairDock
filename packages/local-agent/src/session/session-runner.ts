@@ -11,7 +11,7 @@ import type { ProjectPreviewConfig, SandboxPort } from '../docker/sandbox.port.j
 import { WorktreeService } from '../git/worktree.service.js';
 import { PreviewRuntimeRouter } from '../preview/preview-runtime-router.js';
 import { CloudflarePreviewTunnelAdapter } from '../tunnel/cloudflare-preview-tunnel.adapter.js';
-import type { PreviewTunnelPort } from '../tunnel/preview-tunnel.port.js';
+import { type PreviewTunnelPort, previewUsesDockerTunnel } from '../tunnel/preview-tunnel.port.js';
 import { SessionRegistry, type SessionWorkspace } from './session-registry.js';
 
 export interface SessionRunnerConfig {
@@ -477,9 +477,7 @@ export class SessionRunner {
 
   private requiresDockerResources(): boolean {
     return Object.values(this.previewConfigs).some(
-      (previewConfig) =>
-        previewConfig.runtime === 'docker' ||
-        (previewConfig.tunnel?.provider === 'cloudflare' && !previewConfig.tunnel.publicUrl),
+      (previewConfig) => previewConfig.runtime === 'docker' || previewUsesDockerTunnel(previewConfig),
     );
   }
 }

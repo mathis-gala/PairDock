@@ -1,9 +1,13 @@
 import assert from 'node:assert/strict';
 import { EventEmitter } from 'node:events';
-import { mkdir, mkdtemp } from 'node:fs/promises';
+import { mkdir, mkdtemp, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import test from 'node:test';
+import {
+  createDockerDependencyCacheKey,
+  DockerDependencyPrewarmer,
+} from '../../../../packages/local-agent/src/docker/docker-dependency-prewarmer.js';
 import { DockerSandboxAdapter } from '../../../../packages/local-agent/src/docker/docker-sandbox.adapter.js';
 import { CloudflarePreviewTunnelAdapter } from '../../../../packages/local-agent/src/tunnel/cloudflare-preview-tunnel.adapter.js';
 
@@ -149,6 +153,8 @@ test('DockerSandboxAdapter masks host node_modules from every monorepo workspace
 
 test('DockerSandboxAdapter reuses prewarmed Linux dependency volumes instead of empty tmpfs mounts', async () => {
   const worktreePath = await createTempWorkspace();
+  await writeFile(join(worktreePath, 'package.json'), JSON.stringify({ name: 'source' }));
+  await writeFile(join(worktreePath, 'bun.lock'), 'source-lockfile');
   await mkdir(join(worktreePath, 'apps', 'api', 'node_modules'), { recursive: true });
   const spawnCalls: Array<{ command: string; args: string[] }> = [];
   const adapter = new DockerSandboxAdapter({
@@ -158,7 +164,24 @@ test('DockerSandboxAdapter reuses prewarmed Linux dependency volumes instead of 
     },
   });
 
+  const previewConfig = {
+    runtime: 'docker' as const,
+    prepareCommand: 'bun install --frozen-lockfile',
+    sandbox: {
+      image: 'oven/bun:1',
+      startCommand: 'bun install --frozen-lockfile && bun dev',
+      healthcheckUrl: 'http://127.0.0.1:4000',
+    },
+  };
+  const cacheKey = await createDockerDependencyCacheKey({
+    ownerId: 'developer-mac',
+    projectKey: 'tcg',
+    repositoryPath: worktreePath,
+    previewConfig,
+  });
+
   await adapter.start({
+    runtimeOwnerId: 'developer-mac',
     sessionId: '90909090-9090-4090-8090-909090909090',
     projectKey: 'tcg',
     repositoryPath: worktreePath,
@@ -166,9 +189,9 @@ test('DockerSandboxAdapter reuses prewarmed Linux dependency volumes instead of 
     branchName: 'pairdock/session-9090',
     modelId: 'agent/gpt-5',
     previewConfig: {
-      runtime: 'docker',
+      ...previewConfig,
       dependencyCache: {
-        cacheKey: 'test-cache-key',
+        cacheKey,
         mounts: [
           { volumeName: 'pairdock-deps-1111111111111111111111111111111111111111', target: '/workspace/node_modules' },
           {
@@ -176,11 +199,6 @@ test('DockerSandboxAdapter reuses prewarmed Linux dependency volumes instead of 
             target: '/workspace/apps/api/node_modules',
           },
         ],
-      },
-      sandbox: {
-        image: 'oven/bun:1',
-        startCommand: 'bun install --frozen-lockfile && bun dev',
-        healthcheckUrl: 'http://127.0.0.1:4000',
       },
     },
   });
@@ -192,6 +210,63 @@ test('DockerSandboxAdapter reuses prewarmed Linux dependency volumes instead of 
   );
   assert.ok(!startArgs.some((arg) => arg.startsWith('/workspace/node_modules:rw,exec,')));
   assert.ok(!startArgs.some((arg) => arg.startsWith('/workspace/apps/api/node_modules:rw,exec,')));
+});
+
+test('DockerSandboxAdapter isolates a session whose lockfile differs from the prewarmed dependency cache', async () => {
+  const repositoryPath = await createTempWorkspace();
+  await writeFile(join(repositoryPath, 'package.json'), JSON.stringify({ name: 'source' }));
+  await writeFile(join(repositoryPath, 'bun.lock'), 'source-lockfile');
+  const previewConfig = {
+    runtime: 'docker' as const,
+    prepareCommand: 'bun install --frozen-lockfile',
+    sandbox: {
+      image: 'oven/bun:1',
+      startCommand: 'bun install --frozen-lockfile && bun dev',
+      healthcheckUrl: 'http://127.0.0.1:4000',
+    },
+  };
+  const warmedConfigs = await new DockerDependencyPrewarmer({
+    async runDocker(args) {
+      if (args[0] === 'volume' && args[1] === 'inspect') {
+        throw new Error('volume missing');
+      }
+      return { stdout: '' };
+    },
+  }).prepareAll({
+    ownerId: 'developer-mac',
+    projectPaths: { tcg: repositoryPath },
+    previewConfigs: { tcg: previewConfig },
+  });
+
+  const worktreePath = await createTempWorkspace();
+  await writeFile(join(worktreePath, 'package.json'), JSON.stringify({ name: 'source' }));
+  await writeFile(join(worktreePath, 'bun.lock'), 'session-lockfile');
+  await mkdir(join(worktreePath, 'node_modules'));
+  const spawnCalls: Array<{ command: string; args: string[] }> = [];
+  const adapter = new DockerSandboxAdapter({
+    spawn(command, args) {
+      spawnCalls.push({ command, args });
+      return createRunningProcess() as never;
+    },
+  });
+
+  await adapter.start({
+    runtimeOwnerId: 'developer-mac',
+    sessionId: '91919191-9191-4191-8191-919191919191',
+    projectKey: 'tcg',
+    repositoryPath,
+    worktreePath,
+    branchName: 'pairdock/session-9191',
+    modelId: 'agent/gpt-5',
+    previewConfig: warmedConfigs.tcg,
+  });
+
+  const startArgs = spawnCalls[0]?.args ?? [];
+  assert.equal(
+    startArgs.some((arg) => arg.startsWith('pairdock-deps-')),
+    false,
+  );
+  assert.ok(startArgs.some((arg) => arg.startsWith('/workspace/node_modules:rw,exec,')));
 });
 
 test('V1: DockerSandboxAdapter resolves a dedicated host preview port for each session', async () => {

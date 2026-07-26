@@ -75,7 +75,7 @@ export class HostPreviewRuntimeAdapter implements SandboxPort {
         : {}),
     };
     const runtimeToken = randomUUID();
-    const childProcess = this.spawn('sh', ['-lc', resolvedPreviewConfig.sandbox.startCommand], {
+    const childProcess = this.spawn('sh', ['-c', resolvedPreviewConfig.sandbox.startCommand], {
       cwd: input.worktreePath,
       detached: true,
       env: {

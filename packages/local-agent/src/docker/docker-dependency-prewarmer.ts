@@ -100,12 +100,11 @@ export class DockerDependencyPrewarmer {
     const workdir = sandboxConfig.workdir ?? '/workspace';
     const image = sandboxConfig.image ?? DEFAULT_SANDBOX_IMAGE;
     const dependencyLocations = await findDependencyLocations(input.repositoryPath, workdir);
-    const cacheKey = await createDependencyCacheKey({
-      image,
+    const cacheKey = await createDockerDependencyCacheKey({
       ownerId: input.ownerId,
-      prepareCommand,
       projectKey: input.projectKey,
       repositoryPath: input.repositoryPath,
+      previewConfig: input.previewConfig,
     });
     const mounts = dependencyLocations.map((location) => ({
       target: location.target,
@@ -369,15 +368,20 @@ async function removeEmptyMountpoint(path: string): Promise<void> {
   }
 }
 
-async function createDependencyCacheKey(input: {
-  image: string;
+export async function createDockerDependencyCacheKey(input: {
   ownerId: string;
-  prepareCommand: string;
   projectKey: string;
   repositoryPath: string;
+  previewConfig: ProjectPreviewConfig;
 }): Promise<string> {
+  const prepareCommand = input.previewConfig.prepareCommand;
+  if (!prepareCommand) {
+    throw new Error('Docker dependency cache keys require a prepare command.');
+  }
+
+  const image = input.previewConfig.sandbox?.image ?? DEFAULT_SANDBOX_IMAGE;
   const hash = createHash('sha256');
-  hash.update(`${input.ownerId}\0${input.projectKey}\0${input.image}\0${input.prepareCommand}\0`);
+  hash.update(`${input.ownerId}\0${input.projectKey}\0${image}\0${prepareCommand}\0`);
   let lockfileFound = false;
 
   for (const lockfileName of LOCKFILE_NAMES) {

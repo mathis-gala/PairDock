@@ -217,6 +217,7 @@ jobs:
           - tests/packages/local-agent/integration/checks-runner.integration.test.ts
           - tests/packages/local-agent/integration/command-handling.integration.test.ts
           - tests/packages/local-agent/integration/diff-service.integration.test.ts
+          - tests/packages/local-agent/integration/docker-dependency-prewarmer.integration.test.ts
           - tests/packages/local-agent/integration/docker-orphan-reconciler.integration.test.ts
           - tests/packages/local-agent/integration/example-project.integration.test.ts
           - tests/packages/local-agent/integration/host-check-command-executor.integration.test.ts

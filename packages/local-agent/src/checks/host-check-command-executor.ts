@@ -58,7 +58,7 @@ export class HostCheckCommandExecutor implements HostCheckCommandRunner {
     return new Promise((resolve, reject) => {
       let logs = '';
       let timedOut = false;
-      const childProcess = this.spawn('sh', ['-lc', input.command], {
+      const childProcess = this.spawn('sh', ['-c', input.command], {
         cwd: input.worktreePath,
         detached: true,
         env: buildHostCommandEnvironment(this.dependencies.environment ?? process.env, input.sessionId),

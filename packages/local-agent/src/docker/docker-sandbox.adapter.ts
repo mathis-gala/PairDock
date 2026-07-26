@@ -4,6 +4,7 @@ import { readdir } from 'node:fs/promises';
 import { createServer } from 'node:net';
 import { join, posix, relative, sep } from 'node:path';
 import { setTimeout as delay } from 'node:timers/promises';
+import { createDockerDependencyCacheKey } from './docker-dependency-prewarmer.js';
 import { PAIRDOCK_DOCKER_OWNER_LABEL, PAIRDOCK_DOCKER_SESSION_LABEL } from './docker-orphan-reconciler.js';
 import type {
   HealthcheckResult,
@@ -46,11 +47,17 @@ export class DockerSandboxAdapter implements SandboxPort {
   constructor(private readonly dependencies: DockerSandboxAdapterDependencies = {}) {}
 
   async start(input: SandboxStartInput): Promise<SandboxRef> {
-    const previewConfig = await resolveSessionPreviewConfig(
+    const resolvedPreviewConfig = await resolveSessionPreviewConfig(
       input.previewConfig,
       input.sessionId,
       this.dependencies.allocateHostPort ?? allocateHostPort,
     );
+    const previewConfig = await discardStaleDependencyCache({
+      previewConfig: resolvedPreviewConfig,
+      projectKey: input.projectKey,
+      runtimeOwnerId: input.runtimeOwnerId,
+      worktreePath: input.worktreePath,
+    });
     const sandboxConfig = previewConfig?.sandbox;
 
     if (!sandboxConfig?.startCommand || !sandboxConfig.healthcheckUrl) {
@@ -362,6 +369,41 @@ function sandboxDependencyVolumes(previewConfig: ProjectPreviewConfig | undefine
       return [mount.target, mount.volumeName];
     }),
   );
+}
+
+async function discardStaleDependencyCache(input: {
+  previewConfig?: ProjectPreviewConfig;
+  projectKey: string;
+  runtimeOwnerId?: string;
+  worktreePath: string;
+}): Promise<ProjectPreviewConfig | undefined> {
+  const previewConfig = input.previewConfig;
+  const dependencyCache = previewConfig?.dependencyCache;
+  if (!dependencyCache) {
+    return previewConfig;
+  }
+
+  if (!input.runtimeOwnerId || !previewConfig.prepareCommand) {
+    const { dependencyCache: _dependencyCache, ...coldPreviewConfig } = previewConfig;
+    return coldPreviewConfig;
+  }
+
+  try {
+    const worktreeCacheKey = await createDockerDependencyCacheKey({
+      ownerId: input.runtimeOwnerId,
+      projectKey: input.projectKey,
+      repositoryPath: input.worktreePath,
+      previewConfig,
+    });
+    if (worktreeCacheKey === dependencyCache.cacheKey) {
+      return previewConfig;
+    }
+  } catch {
+    // A cache that cannot be verified must not be shared with this session.
+  }
+
+  const { dependencyCache: _dependencyCache, ...coldPreviewConfig } = previewConfig;
+  return coldPreviewConfig;
 }
 
 async function findNodeModulesPaths(worktreePath: string): Promise<string[]> {
