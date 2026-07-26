@@ -101,8 +101,9 @@ test('BT-020: normalizeAgentConfig trims and preserves preview config fields', (
     },
     previewConfigs: {
       ' pairdock ': {
-        runtime: 'host',
+        runtime: 'docker',
         setupCommand: ' bun install --frozen-lockfile ',
+        prepareCommand: ' bun install --frozen-lockfile ',
         sandbox: {
           startCommand: ' bun dev ',
           stopCommand: ' bun stop ',
@@ -131,8 +132,9 @@ test('BT-020: normalizeAgentConfig trims and preserves preview config fields', (
     },
     previewConfigs: {
       pairdock: {
-        runtime: 'host',
+        runtime: 'docker',
         setupCommand: 'bun install --frozen-lockfile',
+        prepareCommand: 'bun install --frozen-lockfile',
         sandbox: {
           startCommand: 'bun dev',
           stopCommand: 'bun stop',

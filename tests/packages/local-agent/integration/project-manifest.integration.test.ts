@@ -27,6 +27,7 @@ test('V1: local agent loads pairdock.yml and publishes safe project metadata', a
       '    - "127.0.0.1:4000:4000"',
       'preview:',
       '  runtime: docker',
+      '  prepare: "pnpm install --frozen-lockfile"',
       '  start: "pnpm dev --host 0.0.0.0 --port 4000"',
       '  healthcheck: "http://127.0.0.1:4000"',
       '  healthcheckTimeoutMs: 60000',
@@ -62,6 +63,7 @@ test('V1: local agent loads pairdock.yml and publishes safe project metadata', a
   ]);
   assert.equal(config.previewConfigs.pairdock?.sandbox?.image, 'oven/bun:1');
   assert.equal(config.previewConfigs.pairdock?.runtime, 'docker');
+  assert.equal(config.previewConfigs.pairdock?.prepareCommand, 'pnpm install --frozen-lockfile');
   assert.equal(config.previewConfigs.pairdock?.setupCommand, 'pnpm install --frozen-lockfile');
   assert.equal(config.previewConfigs.pairdock?.sandbox?.workdir, '/workspace');
   assert.equal(config.previewConfigs.pairdock?.sandbox?.network, 'host-services');
@@ -114,6 +116,40 @@ test('local agent uses the host preview runtime by default when no Docker sandbo
 
   assert.equal(config.previewConfigs.pairdock?.runtime, 'host');
   assert.equal(config.previewConfigs.pairdock?.setupCommand, 'bun install --frozen-lockfile');
+});
+
+test('local agent rejects Docker dependency preparation for a host preview', async () => {
+  const projectPath = await mkdtemp(join(tmpdir(), 'pairdock-host-prepare-manifest-'));
+  await writeFile(
+    join(projectPath, 'pairdock.yml'),
+    [
+      'version: 1',
+      'repoFullName: mathis-gala/PairDock',
+      'preview:',
+      '  runtime: host',
+      '  prepare: "bun install --frozen-lockfile"',
+      '  start: "bun dev --port {{hostPort}}"',
+      '  healthcheck: "http://127.0.0.1:{{hostPort}}"',
+      'checks:',
+      '  build: "bun run build"',
+      '  test: "bun test"',
+      '  lint: "bun run lint"',
+      '',
+    ].join('\n'),
+  );
+
+  const config = await enrichConfigWithProjectManifests({
+    backendUrl: 'https://pairdock.test',
+    agentId: 'local-agent-1',
+    capabilities: ['session.prepare'],
+    models: [],
+    projects: [],
+    projectPaths: { pairdock: projectPath },
+    previewConfigs: {},
+  });
+
+  assert.deepEqual(config.projects, []);
+  assert.deepEqual(config.previewConfigs, {});
 });
 
 test('V1: local agent does not publish projects without pairdock.yml', async () => {

@@ -15,6 +15,7 @@ sandbox:
     - '127.0.0.1:{{hostPort}}:4000'
 preview:
   runtime: docker
+  prepare: 'bun install --frozen-lockfile && bun run prisma:generate'
   start: >-
     bun install --frozen-lockfile &&
     bun run prisma:generate &&

@@ -28,7 +28,7 @@ Hexagonal rule: use-case modules never depend directly on a provider SDK, CLI, t
 - PostgreSQL: durable state for users, projects, sessions, events, validations, review requests.
 - Prisma ORM: schema, migrations, generated client, and persistence adapter implementation.
 - Local Agent CLI: resident service connected to the backend. It reads local project paths and `pairdock.yml`, then publishes safe metadata only.
-- Preview runtime: project-defined command from `pairdock.yml`, executed from the session worktree on the host by default. Docker is an explicit alternative for containerized or multi-service previews.
+- Preview runtime: project-defined command from `pairdock.yml`, executed from the session worktree on the host by default. Docker is an explicit alternative for containerized or multi-service previews; an optional `preview.prepare` command prewarms lockfile-keyed Linux dependency volumes before the local agent publishes availability.
 - Validation runtime: setup, build, test, and lint commands execute from the host worktree with a filtered environment; PairDock reruns them independently after each agent turn.
 - Agent harness: pluggable local CLI adapter launched inside the worktree. `CodexHarnessAdapter` is one backend/local-agent implementation, not product language.
 - Cloudflare Tunnel: temporary preview exposure.

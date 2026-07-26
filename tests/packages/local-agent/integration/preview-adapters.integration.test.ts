@@ -147,6 +147,53 @@ test('DockerSandboxAdapter masks host node_modules from every monorepo workspace
   assert.ok(tmpfsTargets.some((target) => target.startsWith('/workspace/packages/shared/node_modules:rw,exec,')));
 });
 
+test('DockerSandboxAdapter reuses prewarmed Linux dependency volumes instead of empty tmpfs mounts', async () => {
+  const worktreePath = await createTempWorkspace();
+  await mkdir(join(worktreePath, 'apps', 'api', 'node_modules'), { recursive: true });
+  const spawnCalls: Array<{ command: string; args: string[] }> = [];
+  const adapter = new DockerSandboxAdapter({
+    spawn(command, args) {
+      spawnCalls.push({ command, args });
+      return createRunningProcess() as never;
+    },
+  });
+
+  await adapter.start({
+    sessionId: '90909090-9090-4090-8090-909090909090',
+    projectKey: 'tcg',
+    repositoryPath: worktreePath,
+    worktreePath,
+    branchName: 'pairdock/session-9090',
+    modelId: 'agent/gpt-5',
+    previewConfig: {
+      runtime: 'docker',
+      dependencyCache: {
+        cacheKey: 'test-cache-key',
+        mounts: [
+          { volumeName: 'pairdock-deps-1111111111111111111111111111111111111111', target: '/workspace/node_modules' },
+          {
+            volumeName: 'pairdock-deps-2222222222222222222222222222222222222222',
+            target: '/workspace/apps/api/node_modules',
+          },
+        ],
+      },
+      sandbox: {
+        image: 'oven/bun:1',
+        startCommand: 'bun install --frozen-lockfile && bun dev',
+        healthcheckUrl: 'http://127.0.0.1:4000',
+      },
+    },
+  });
+
+  const startArgs = spawnCalls[0]?.args ?? [];
+  assert.ok(startArgs.includes('pairdock-deps-1111111111111111111111111111111111111111:/workspace/node_modules'));
+  assert.ok(
+    startArgs.includes('pairdock-deps-2222222222222222222222222222222222222222:/workspace/apps/api/node_modules'),
+  );
+  assert.ok(!startArgs.some((arg) => arg.startsWith('/workspace/node_modules:rw,exec,')));
+  assert.ok(!startArgs.some((arg) => arg.startsWith('/workspace/apps/api/node_modules:rw,exec,')));
+});
+
 test('V1: DockerSandboxAdapter resolves a dedicated host preview port for each session', async () => {
   const worktreePath = await createTempWorkspace();
   const spawnCalls: Array<{ command: string; args: string[] }> = [];

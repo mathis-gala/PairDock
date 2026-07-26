@@ -1,6 +1,14 @@
 export interface ProjectPreviewConfig {
   runtime?: 'host' | 'docker';
   setupCommand?: string;
+  prepareCommand?: string;
+  dependencyCache?: {
+    cacheKey: string;
+    mounts: Array<{
+      volumeName: string;
+      target: string;
+    }>;
+  };
   sandbox?: {
     startCommand: string;
     stopCommand?: string;

@@ -70,6 +70,7 @@ const tunnelConfigSchema = z.object({
 const previewConfigSchema = z.object({
   runtime: z.enum(['host', 'docker']).optional(),
   setupCommand: z.string().min(1).optional(),
+  prepareCommand: z.string().min(1).optional(),
   sandbox: sandboxConfigSchema.optional(),
   tunnel: tunnelConfigSchema.optional(),
   healthcheckTimeoutMs: z.number().int().positive().optional(),
@@ -344,6 +345,17 @@ function normalizePreviewConfig(previewConfig: ProjectPreviewConfig, projectKey:
   const setupCommand = normalizeOptionalConfigString(previewConfig.setupCommand, `setupCommand for ${projectKey}`);
   if (setupCommand !== undefined) {
     normalizedPreviewConfig.setupCommand = setupCommand;
+  }
+
+  const prepareCommand = normalizeOptionalConfigString(
+    previewConfig.prepareCommand,
+    `prepareCommand for ${projectKey}`,
+  );
+  if (prepareCommand !== undefined) {
+    if (normalizedPreviewConfig.runtime !== 'docker') {
+      throw new Error(`prepareCommand for ${projectKey} requires the Docker preview runtime.`);
+    }
+    normalizedPreviewConfig.prepareCommand = prepareCommand;
   }
 
   const sandbox = normalizeSandboxConfig(previewConfig, projectKey);

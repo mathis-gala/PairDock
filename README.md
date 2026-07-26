@@ -153,7 +153,17 @@ models:
 ```
 
 PairDock creates one Git worktree per session. `setup`, preview, build, test, and lint commands run from that worktree on the developer machine by default, using the same runtime and dependencies as normal local development. `setup` runs before initial preview startup and again when the agent recovers that session after a restart; keep it idempotent and use it for dependency installation and generated artifacts.
-Set `preview.runtime: docker` only when the preview requires container isolation or a multi-service container. Docker mode bind-mounts the worktree for hot reload but masks `/workspace/node_modules` with a writable container-only tmpfs, so Linux dependencies cannot overwrite host dependencies. Omit `sandbox.image` to use PairDock's pinned multi-platform default; custom images should be pinned by digest.
+Set `preview.runtime: docker` only when the preview requires container isolation or a multi-service container. Docker mode bind-mounts the worktree for hot reload but masks every workspace `node_modules`, so Linux dependencies cannot overwrite host dependencies. Add `preview.prepare` with the idempotent Docker dependency setup command to prewarm persistent Linux `node_modules` volumes before the agent publishes itself:
+
+```yaml
+preview:
+  runtime: docker
+  prepare: "bun install --frozen-lockfile && bun run generate"
+  start: "bun install --frozen-lockfile && bun run dev --host 0.0.0.0 --port 4000"
+  healthcheck: "http://127.0.0.1:4000"
+```
+
+The cache key includes the agent, project, container image, prepare command, and lockfile. New sessions therefore reuse warm Linux dependencies, while lockfile or image changes create a fresh cache. Keep dependency installation in `preview.start` as an idempotent safety net: when prewarming fails, PairDock logs the cause and starts the session with the existing cold-install path. Omit `sandbox.image` to use PairDock's pinned multi-platform default; custom images should be pinned by digest.
 Install Codex CLI 0.138.0 or newer and authenticate it with `codex login` before starting the local agent. PairDock deliberately does not forward `OPENAI_API_KEY` or unrelated workstation secrets to the Codex process; the CLI must use its protected local login state. Model-generated commands use a restricted permission profile: they can read/write the session worktree, cannot read common credential files (including tracked `.env` and private keys), cannot read the rest of the developer home, and cannot access the network.
 Use `{{hostPort}}` for host-side preview bindings and URLs. PairDock resolves it to a free port per session, so concurrent sessions cannot reuse another session's preview or healthcheck.
 Set `preview.healthcheckTimeoutMs` when dependency installation, code generation, or migrations can make preview startup exceed the 30-second default. The accepted maximum is 10 minutes.

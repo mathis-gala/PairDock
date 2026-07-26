@@ -234,6 +234,7 @@ async function resolveSessionPreviewConfig(
   const tunnel = previewConfig.tunnel;
 
   return {
+    ...previewConfig,
     ...(sandbox
       ? {
           sandbox: {
@@ -319,7 +320,14 @@ function buildDockerRunArgs(input: SandboxStartInput, containerName: string, nod
   ];
 
   for (const nodeModulesPath of nodeModulesPaths) {
-    args.push('--tmpfs', buildNodeModulesTmpfsArg(workdir, nodeModulesPath));
+    const target = posix.join(workdir, nodeModulesPath);
+    const dependencyVolume = sandboxDependencyVolumes(input.previewConfig).get(target);
+
+    if (dependencyVolume) {
+      args.push('--volume', `${dependencyVolume}:${target}`);
+    } else {
+      args.push('--tmpfs', buildNodeModulesTmpfsArg(workdir, nodeModulesPath));
+    }
   }
 
   for (const port of sandboxConfig.ports ?? inferPortsFromHealthcheck(sandboxConfig.healthcheckUrl)) {
@@ -342,6 +350,18 @@ function buildDockerRunArgs(input: SandboxStartInput, containerName: string, nod
   assertSafeContainerImage(image);
   args.push(image, 'sh', '-lc', sandboxConfig.startCommand);
   return args;
+}
+
+function sandboxDependencyVolumes(previewConfig: ProjectPreviewConfig | undefined): Map<string, string> {
+  return new Map(
+    (previewConfig?.dependencyCache?.mounts ?? []).map((mount) => {
+      if (!/^pairdock-deps-[a-f0-9]{40}$/.test(mount.volumeName)) {
+        throw new Error('Invalid PairDock Docker dependency volume name.');
+      }
+
+      return [mount.target, mount.volumeName];
+    }),
+  );
 }
 
 async function findNodeModulesPaths(worktreePath: string): Promise<string[]> {

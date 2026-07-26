@@ -21,51 +21,63 @@ const containerImageSchema = z.string().min(1).max(512).refine(isSafeContainerIm
   message: 'Container image must be a valid image reference, not a Docker option.',
 });
 
-const pairdockManifestSchema = z.object({
-  version: z.literal(1),
-  name: z.string().min(1).optional(),
-  repoFullName: z.string().min(1).optional(),
-  defaultBranch: z.string().min(1).optional(),
-  models: z.array(z.string().min(1)).optional(),
-  setup: z.string().min(1).optional(),
-  sandbox: z
-    .object({
-      image: containerImageSchema.optional(),
-      workdir: z.string().min(1).optional(),
-      network: z.enum(['isolated', 'host-services']).optional(),
-      env: z.record(z.string().min(1), z.string()).optional(),
-      ports: z.array(loopbackPortMappingSchema).optional(),
-    })
-    .optional(),
-  preview: z.object({
-    runtime: z.enum(['host', 'docker']).optional(),
-    start: z.string().min(1),
-    healthcheck: healthcheckUrlTemplateSchema,
-    healthcheckTimeoutMs: z
-      .number()
-      .int()
-      .positive()
-      .max(10 * 60 * 1_000)
+const pairdockManifestSchema = z
+  .object({
+    version: z.literal(1),
+    name: z.string().min(1).optional(),
+    repoFullName: z.string().min(1).optional(),
+    defaultBranch: z.string().min(1).optional(),
+    models: z.array(z.string().min(1)).optional(),
+    setup: z.string().min(1).optional(),
+    sandbox: z
+      .object({
+        image: containerImageSchema.optional(),
+        workdir: z.string().min(1).optional(),
+        network: z.enum(['isolated', 'host-services']).optional(),
+        env: z.record(z.string().min(1), z.string()).optional(),
+        ports: z.array(loopbackPortMappingSchema).optional(),
+      })
       .optional(),
-    healthcheckIntervalMs: z.number().int().positive().max(60_000).optional(),
-    tunnel: z
-      .union([
-        z.literal('cloudflare'),
-        z.object({
-          provider: z.literal('cloudflare').optional(),
-          publicUrl: publicPreviewUrlTemplateSchema.optional(),
-          image: containerImageSchema.optional(),
-          startupTimeoutMs: z.number().int().positive().optional(),
-        }),
-      ])
-      .optional(),
-  }),
-  checks: z.object({
-    build: z.string().min(1),
-    test: z.string().min(1),
-    lint: z.string().min(1),
-  }),
-});
+    preview: z.object({
+      runtime: z.enum(['host', 'docker']).optional(),
+      prepare: z.string().min(1).optional(),
+      start: z.string().min(1),
+      healthcheck: healthcheckUrlTemplateSchema,
+      healthcheckTimeoutMs: z
+        .number()
+        .int()
+        .positive()
+        .max(10 * 60 * 1_000)
+        .optional(),
+      healthcheckIntervalMs: z.number().int().positive().max(60_000).optional(),
+      tunnel: z
+        .union([
+          z.literal('cloudflare'),
+          z.object({
+            provider: z.literal('cloudflare').optional(),
+            publicUrl: publicPreviewUrlTemplateSchema.optional(),
+            image: containerImageSchema.optional(),
+            startupTimeoutMs: z.number().int().positive().optional(),
+          }),
+        ])
+        .optional(),
+    }),
+    checks: z.object({
+      build: z.string().min(1),
+      test: z.string().min(1),
+      lint: z.string().min(1),
+    }),
+  })
+  .superRefine((manifest, context) => {
+    const previewRuntime = manifest.preview.runtime ?? (manifest.sandbox ? 'docker' : 'host');
+    if (manifest.preview.prepare && previewRuntime !== 'docker') {
+      context.addIssue({
+        code: 'custom',
+        message: 'preview.prepare requires preview.runtime: docker.',
+        path: ['preview', 'prepare'],
+      });
+    }
+  });
 
 interface ProjectManifestLoadResult {
   descriptor: AgentProjectDescriptor;
@@ -179,6 +191,7 @@ async function loadProjectManifest(projectKey: string, projectPath: string): Pro
     previewConfig: {
       runtime: manifest.preview.runtime ?? (manifest.sandbox ? 'docker' : 'host'),
       ...(manifest.setup ? { setupCommand: manifest.setup } : {}),
+      ...(manifest.preview.prepare ? { prepareCommand: manifest.preview.prepare } : {}),
       sandbox: {
         startCommand: manifest.preview.start,
         healthcheckUrl: manifest.preview.healthcheck,
