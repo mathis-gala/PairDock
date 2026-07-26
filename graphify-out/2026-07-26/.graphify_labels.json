@@ -171,7 +171,7 @@
   "169": "migration.sql",
   "170": "EmptySessionAttachmentsService",
   "171": "Prototype Reference Package",
-  "173": "@nestjs/core",
+  "172": "@aws-sdk/client-s3",
   "174": "@nestjs/websockets",
   "175": "Containers",
   "176": "socket.io",
