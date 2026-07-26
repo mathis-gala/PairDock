@@ -65,6 +65,7 @@ export function PmSessionPage({ accessToken, onBack, sessionId }: PmSessionPageP
 
   const session = sessionQuery.data;
   const canCancel = session.status === 'AGENT_RUNNING';
+  const isAgentWriting = sendPromptMutation.isPending || session.status === 'AGENT_RUNNING';
   const branchLabel = session.branchName ?? session.project.defaultBranch;
   const participantAvatars = session.participants.slice(0, 2).map((participant) => ({
     initial: participant.displayName.slice(0, 1),
@@ -109,7 +110,7 @@ export function PmSessionPage({ accessToken, onBack, sessionId }: PmSessionPageP
   }
 
   return (
-    <div className="flex h-screen flex-col overflow-hidden bg-[#0f1115]">
+    <div className="flex h-full flex-col overflow-hidden bg-[#0f1115]">
       <header className="flex h-14 flex-none items-center gap-4 border-b border-white/10 bg-[#16181e] px-4">
         <button
           className="flex size-8 items-center justify-center rounded-[8px] border border-white/10 bg-[#0f1115] text-[#8b92a1] transition hover:text-[#eef0f4]"
@@ -169,7 +170,7 @@ export function PmSessionPage({ accessToken, onBack, sessionId }: PmSessionPageP
             </p>
           </div>
           <div className="min-h-0 flex-1 overflow-auto">
-            <ConversationThread items={conversation} />
+            <ConversationThread isTyping={isAgentWriting} items={conversation} />
           </div>
           <div className="border-t border-white/10 p-4">
             <PromptComposer
