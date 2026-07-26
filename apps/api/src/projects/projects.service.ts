@@ -163,7 +163,7 @@ export class ProjectsService {
 
     const sharedProjectRecords = await this.projectsRepository.listSharedByUserId(user.id);
     const projectsById = new Map(sharedProjectRecords.map(({ project }) => [project.id, project]));
-    const sessions = await this.sessionsRepository.listByProjectIds([...projectsById.keys()]);
+    const sessions = await this.sessionsRepository.listByProjectIds([...projectsById.keys()], user.id);
     const reviewRequests = await this.reviewRequestsRepository.findManyBySessionIds(
       sessions.map((session) => session.id),
     );

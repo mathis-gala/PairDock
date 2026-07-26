@@ -26,11 +26,12 @@ export interface PmDemoSession {
   branchName: string;
   closedAt: Date | null;
   createdAt: Date;
+  createdBy: 'developer' | 'pm';
   diff: { changedFiles: string[]; diff: string; id: string } | null;
   id: string;
   lastError: string | null;
   messages: PmDemoMessage[];
-  reviewRequest: { id: string; number: number; status: 'draft'; url: null } | null;
+  reviewRequest: { id: string; number: number; status: 'closed' | 'merged' | 'open'; url: string } | null;
   status: SessionStatus;
   validation: PmDemoValidation | null;
 }
@@ -64,16 +65,17 @@ export function assertLocalDevelopmentSeedTarget(environment: SeedEnvironment): 
   return target;
 }
 
-export function buildPmDemoSessions(projectId: string, now: Date): PmDemoSession[] {
+export function buildPmDemoSessions(project: { id: string; repoFullName: string }, now: Date): PmDemoSession[] {
   const definitions: Array<{
     ageInDays: number;
     assistantMessage: string;
+    createdBy?: PmDemoSession['createdBy'];
     lastError?: string;
     pmMessage: string;
+    reviewRequestStatus?: NonNullable<PmDemoSession['reviewRequest']>['status'];
     status: SessionStatus;
     validation?: Omit<PmDemoValidation, 'id'>;
     withDiff?: boolean;
-    withReviewRequest?: boolean;
   }> = [
     {
       ageInDays: 0,
@@ -117,28 +119,46 @@ export function buildPmDemoSessions(projectId: string, now: Date): PmDemoSession
       assistantMessage: 'Travail validé. Une draft pull request de démonstration a été créée.',
       validation: passingValidation(),
       withDiff: true,
-      withReviewRequest: true,
+      reviewRequestStatus: 'open',
     },
     {
       ageInDays: 8,
       status: 'CLOSED',
       pmMessage: 'Démo UI : corrige l’alignement mobile des cartes.',
-      assistantMessage: 'Demande terminée et session nettoyée.',
+      assistantMessage: 'Pull request fermée sans merge. Demande terminée et session nettoyée.',
       validation: passingValidation(),
       withDiff: true,
-      withReviewRequest: true,
+      reviewRequestStatus: 'closed',
+    },
+    {
+      ageInDays: 12,
+      status: 'CLOSED',
+      pmMessage: 'Démo UI : simplifie la navigation secondaire.',
+      assistantMessage: 'Pull request mergée. Demande terminée et session nettoyée.',
+      validation: passingValidation(),
+      withDiff: true,
+      reviewRequestStatus: 'merged',
+    },
+    {
+      ageInDays: 14,
+      status: 'READY',
+      createdBy: 'developer',
+      pmMessage: 'Démo UI : session créée par le développeur.',
+      assistantMessage: 'Cette session contrôle reste visible côté développeur, pas dans Mes sessions côté PM.',
     },
   ];
 
   return definitions.map((definition, index) => {
-    const id = deterministicUuid(`${projectId}:pm-demo-session:${index}`);
+    const id = deterministicUuid(`${project.id}:pm-demo-session:${index}`);
     const createdAt = new Date(now.getTime() - definition.ageInDays * 24 * 60 * 60 * 1_000);
     const messageBaseTime = createdAt.getTime() + 60_000;
+    const reviewRequestNumber = 100 + index;
 
     return {
       id,
       status: definition.status,
-      branchName: `pairdock/demo-${definition.status.toLowerCase().replaceAll('_', '-')}`,
+      createdBy: definition.createdBy ?? 'pm',
+      branchName: `pairdock/demo-${index}-${definition.status.toLowerCase().replaceAll('_', '-')}`,
       createdAt,
       closedAt: definition.status === 'CLOSED' ? new Date(createdAt.getTime() + 45 * 60 * 1_000) : null,
       lastError: definition.lastError ?? null,
@@ -160,8 +180,13 @@ export function buildPmDemoSessions(projectId: string, now: Date): PmDemoSession
       validation: definition.validation
         ? { ...definition.validation, id: deterministicUuid(`${id}:validation`) }
         : null,
-      reviewRequest: definition.withReviewRequest
-        ? { id: deterministicUuid(`${id}:review-request`), number: 100 + index, status: 'draft', url: null }
+      reviewRequest: definition.reviewRequestStatus
+        ? {
+            id: deterministicUuid(`${id}:review-request`),
+            number: reviewRequestNumber,
+            status: definition.reviewRequestStatus,
+            url: `https://github.com/${project.repoFullName}/pull/${reviewRequestNumber}`,
+          }
         : null,
     };
   });

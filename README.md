@@ -72,7 +72,7 @@ To populate the local application database with PM demo history, first create at
 bun run db:seed:pm-demo
 ```
 
-The command shares every existing local project with `pm@pairdock.test` and idempotently adds six UI-only demo sessions per project: ready, running, awaiting validation, failed, draft pull request created, and closed. It also adds conversations, diffs, successful and failed checks, and draft pull-request records. It never deletes records, never changes project readiness, refuses `NODE_ENV=production`, and refuses non-loopback database hosts. Seeded sessions are historical UI fixtures and are not prepared on the local agent; create a new session from the PM dashboard for an end-to-end agent test.
+The command shares every existing local project with `pm@pairdock.test` and idempotently adds eight UI-only demo sessions per project. Seven are PM-created and cover ready, running, awaiting validation, failed, pull-request open, pull-request closed, and pull-request merged states. One developer-created control session verifies that the PM `Mes sessions` view excludes sessions created by someone else while the developer dashboard still lists every session for its projects. The seed also adds conversations, diffs, successful and failed checks, and GitHub-style pull-request URLs. It never deletes records, never changes project readiness, refuses `NODE_ENV=production`, and refuses non-loopback database hosts. Seeded sessions are historical UI fixtures and are not prepared on the local agent; create a new session from the PM dashboard for an end-to-end agent test.
 
 Use `http://localhost:5173` for `FRONTEND_URL` unless you intentionally run the web app on another origin. The configured origin is also the only origin allowed by API CORS.
 

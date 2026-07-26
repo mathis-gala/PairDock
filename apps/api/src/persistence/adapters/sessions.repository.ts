@@ -32,7 +32,7 @@ export class SessionsRepositoryAdapter implements SessionsRepository {
     return record ? mapSession(record) : null;
   }
 
-  async listByProjectIds(projectIds: string[]): Promise<Session[]> {
+  async listByProjectIds(projectIds: string[], createdByUserId?: string): Promise<Session[]> {
     if (projectIds.length === 0) {
       return [];
     }
@@ -42,6 +42,7 @@ export class SessionsRepositoryAdapter implements SessionsRepository {
         projectId: {
           in: projectIds,
         },
+        ...(createdByUserId ? { createdByUserId } : {}),
       },
       orderBy: { createdAt: 'desc' },
     });
