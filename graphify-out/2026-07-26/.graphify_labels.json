@@ -167,7 +167,11 @@
   "165": "getReact",
   "166": "ReadyPreviewTunnelPort",
   "167": "@nestjs/common",
+  "168": "session-access.guard.ts",
+  "169": "agent-client.integration.test.ts",
+  "170": "session-history.integration.test.ts",
   "171": "Prototype Reference Package",
+  "172": "@nestjs/common",
   "181": "mock-harness.mjs",
   "182": "pass-check.mjs"
 }

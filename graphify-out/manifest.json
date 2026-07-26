@@ -715,8 +715,8 @@
     "semantic_hash": ""
   },
   "packages/local-agent/src/docker/docker-sandbox.adapter.ts": {
-    "mtime": 1785069382.5124607,
-    "ast_hash": "e20aaafa78a2f8fc9ee05f66b02196b9",
+    "mtime": 1785071876.6146326,
+    "ast_hash": "dd89da5d166928180ca4740219536e16",
     "semantic_hash": ""
   },
   "packages/local-agent/src/docker/healthcheck.service.ts": {
@@ -770,8 +770,8 @@
     "semantic_hash": ""
   },
   "packages/local-agent/src/readiness/readiness-runner.ts": {
-    "mtime": 1785063533.4851909,
-    "ast_hash": "1df397be19ad5018c6203525cd73b882",
+    "mtime": 1785071631.603086,
+    "ast_hash": "841b4fdd1894c95678995022ff816ccd",
     "semantic_hash": ""
   },
   "packages/local-agent/src/session/session-registry.ts": {
@@ -780,8 +780,8 @@
     "semantic_hash": ""
   },
   "packages/local-agent/src/session/session-runner.ts": {
-    "mtime": 1785065364.113311,
-    "ast_hash": "e9ddc6665d045731cd646e259c0e5212",
+    "mtime": 1785071876.6170814,
+    "ast_hash": "9a6ddf96f2fb737bd6ed2b9fd4585f35",
     "semantic_hash": ""
   },
   "packages/local-agent/src/tunnel/cloudflare-preview-tunnel.adapter.ts": {
@@ -790,8 +790,8 @@
     "semantic_hash": ""
   },
   "packages/local-agent/src/tunnel/preview-tunnel.port.ts": {
-    "mtime": 1785063792.0244572,
-    "ast_hash": "de77d45c0bc07999a99966d1ed296542",
+    "mtime": 1785071642.6777847,
+    "ast_hash": "5d70cb8d823bc74e8303ae00a5979ee2",
     "semantic_hash": ""
   },
   "packages/local-agent/src/websocket/agent-client.ts": {
@@ -1090,8 +1090,8 @@
     "semantic_hash": ""
   },
   "tests/packages/local-agent/integration/preview-adapters.integration.test.ts": {
-    "mtime": 1785069869.018696,
-    "ast_hash": "ba05aa23102df89e8a1be3c598e9fe95",
+    "mtime": 1785071876.6192827,
+    "ast_hash": "457427e2158c5316515eac2f47a4e958",
     "semantic_hash": ""
   },
   "tests/packages/local-agent/integration/project-manifest.integration.test.ts": {
@@ -1100,8 +1100,8 @@
     "semantic_hash": ""
   },
   "tests/packages/local-agent/integration/readiness-runner.integration.test.ts": {
-    "mtime": 1785063533.485976,
-    "ast_hash": "17a8202f62004a9891f580b536ead03e",
+    "mtime": 1785071613.1769152,
+    "ast_hash": "a431631381fafaec1a7cfef51b276ffc",
     "semantic_hash": ""
   },
   "tests/packages/local-agent/integration/session-runner.integration.test.ts": {
@@ -1120,8 +1120,8 @@
     "semantic_hash": "71876e5e61823c799b8c65bc024a464a"
   },
   ".github/workflows/ci.yml": {
-    "mtime": 1785066345.826957,
-    "ast_hash": "e6d887ca0726e88f93b6589787296a0d",
+    "mtime": 1785071693.799874,
+    "ast_hash": "8a98df92f19717f9580c7ccae81ea3d1",
     "semantic_hash": ""
   },
   "README.md": {
@@ -1585,8 +1585,8 @@
     "semantic_hash": ""
   },
   "packages/local-agent/src/checks/host-check-command-executor.ts": {
-    "mtime": 1785065030.0759537,
-    "ast_hash": "62437e5dfa012b85f7369233258a1b95",
+    "mtime": 1785071448.7907057,
+    "ast_hash": "f86417cc99dedd33934b4739ac85451a",
     "semantic_hash": ""
   },
   "packages/local-agent/src/docker/docker-orphan-reconciler.ts": {
@@ -1595,8 +1595,8 @@
     "semantic_hash": ""
   },
   "packages/local-agent/src/preview/host-preview-runtime.adapter.ts": {
-    "mtime": 1785065069.2235608,
-    "ast_hash": "e85b422437d6675b996c950827d0b373",
+    "mtime": 1785071508.1233203,
+    "ast_hash": "538c12a5e656bfa3972035f9b9932e34",
     "semantic_hash": ""
   },
   "packages/local-agent/src/preview/preview-runtime-router.ts": {
@@ -1610,13 +1610,13 @@
     "semantic_hash": ""
   },
   "tests/packages/local-agent/integration/host-check-command-executor.integration.test.ts": {
-    "mtime": 1785065039.595704,
-    "ast_hash": "965c0abcd46665355763ca64a68831ee",
+    "mtime": 1785071897.1962895,
+    "ast_hash": "9bca09b9eb236bda384a2504c791b184",
     "semantic_hash": ""
   },
   "tests/packages/local-agent/integration/host-preview-runtime.integration.test.ts": {
-    "mtime": 1785065049.6443324,
-    "ast_hash": "2c3cb061db8e4e0ab7272cf26d3b2d0a",
+    "mtime": 1785071897.1969748,
+    "ast_hash": "de8cc601b5c1609aaaca3ae003cb8bad",
     "semantic_hash": ""
   },
   "tests/packages/local-agent/integration/preview-runtime-router.integration.test.ts": {
@@ -1630,8 +1630,8 @@
     "semantic_hash": ""
   },
   "packages/local-agent/src/docker/docker-dependency-prewarmer.ts": {
-    "mtime": 1785070154.7100656,
-    "ast_hash": "d5dd8339f3a353f1bcb5c8b110f6cde3",
+    "mtime": 1785071742.4187496,
+    "ast_hash": "effa02b14fb296bef3c4535b4f38a532",
     "semantic_hash": ""
   },
   "tests/packages/local-agent/integration/docker-dependency-prewarmer.integration.test.ts": {
