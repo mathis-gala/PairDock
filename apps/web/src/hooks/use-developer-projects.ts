@@ -1,12 +1,17 @@
 import type {
   CreateDeveloperProjectInput,
   DeveloperProjectSummary,
+  UpdateDeveloperProjectInput,
   UpdateProjectExecutionDefaultsInput,
 } from '@pairdock/shared-contracts';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { createApiClient } from '../api/client.js';
 
 interface UpdateExecutionDefaultsInput extends UpdateProjectExecutionDefaultsInput {
+  projectId: string;
+}
+
+interface UpdateProjectInput extends UpdateDeveloperProjectInput {
   projectId: string;
 }
 
@@ -64,6 +69,15 @@ export function useDeveloperProjects(accessToken: string) {
     },
   });
 
+  const updateProjectMutation = useMutation({
+    mutationFn: ({ projectId, ...input }: UpdateProjectInput) => api.projects.update(projectId, input),
+    onSuccess: (updatedProject) => {
+      queryClient.setQueryData<DeveloperProjectSummary[]>(queryKey, (currentProjects) =>
+        currentProjects?.map((project) => (project.id === updatedProject.id ? updatedProject : project)),
+      );
+    },
+  });
+
   const closeSessionMutation = useMutation({
     mutationFn: (sessionId: string) => api.sessions.close(sessionId),
     onSuccess: () => {
@@ -79,5 +93,6 @@ export function useDeveloperProjects(accessToken: string) {
     shareProjectMutation,
     setupQuery,
     updateExecutionDefaultsMutation,
+    updateProjectMutation,
   };
 }

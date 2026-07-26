@@ -47,6 +47,16 @@ export class ProjectsController {
     return this.projectsService.shareDeveloperProjectResponse(projectId, body, request.user);
   }
 
+  @Patch(':projectId')
+  @RequireAuth()
+  updateDeveloperProject(
+    @Param('projectId') projectId: string,
+    @Body() body: unknown,
+    @Req() request: AuthenticatedRequest,
+  ) {
+    return this.projectsService.updateDeveloperProjectResponse(projectId, body, request.user);
+  }
+
   @Patch(':projectId/execution-defaults')
   @RequireAuth()
   updateExecutionDefaults(

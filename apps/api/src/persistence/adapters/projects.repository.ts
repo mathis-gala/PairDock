@@ -114,6 +114,18 @@ export class ProjectsRepositoryAdapter implements ProjectsRepository {
     }));
   }
 
+  async updateMetadata(input: { id: string; name?: string; description?: string | null }): Promise<Project> {
+    const record = await this.prisma.project.update({
+      where: { id: input.id },
+      data: {
+        ...(input.name !== undefined ? { name: input.name } : {}),
+        ...(input.description !== undefined ? { description: input.description } : {}),
+      },
+    });
+
+    return mapProject(record);
+  }
+
   async updateExecutionDefaults(input: {
     id: string;
     defaultModelId: string;

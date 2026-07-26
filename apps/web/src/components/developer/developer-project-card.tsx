@@ -1,7 +1,10 @@
-import type { DeveloperProjectSummary } from '@pairdock/shared-contracts';
+import type { DeveloperProjectSummary, UpdateDeveloperProjectInput } from '@pairdock/shared-contracts';
+import { useState } from 'react';
+import { Button } from '../button.js';
 import { ExecutionSelectionControls } from '../execution-selection.js';
 import { SectionCard } from '../section-card.js';
 import { StatusBadge } from '../status-badge.js';
+import { ProjectMetadataForm } from './project-metadata-form.js';
 import { ProjectShareForm } from './project-share-form.js';
 import { SessionControlCard } from './session-control-card.js';
 import { ToolReadinessPanel } from './tool-readiness-panel.js';
@@ -9,41 +12,82 @@ import { ToolReadinessPanel } from './tool-readiness-panel.js';
 interface DeveloperProjectCardProps {
   closePendingSessionId: string | null;
   onCloseSession: (sessionId: string) => Promise<void>;
+  onResetUpdateProject: () => void;
   onRequestReadiness: (projectId: string) => Promise<void>;
   onShareProject: (projectId: string, pmEmail: string) => Promise<void>;
   onUpdateExecutionDefaults: (projectId: string, modelId: string, reasoningEffort: string) => Promise<void>;
+  onUpdateProject: (projectId: string, input: UpdateDeveloperProjectInput) => Promise<void>;
   project: DeveloperProjectSummary;
   readinessPendingProjectId: string | null;
   sharePendingProjectId: string | null;
   updateDefaultsPendingProjectId: string | null;
+  updateProjectError: string | null;
+  updateProjectPendingId: string | null;
 }
 
 export function DeveloperProjectCard({
   closePendingSessionId,
   onCloseSession,
+  onResetUpdateProject,
   onRequestReadiness,
   onShareProject,
   onUpdateExecutionDefaults,
+  onUpdateProject,
   project,
   readinessPendingProjectId,
   sharePendingProjectId,
   updateDefaultsPendingProjectId,
+  updateProjectError,
+  updateProjectPendingId,
 }: DeveloperProjectCardProps) {
+  const [isEditingMetadata, setIsEditingMetadata] = useState(false);
   const updateDefaultsPending = updateDefaultsPendingProjectId === project.id;
+  const updateProjectPending = updateProjectPendingId === project.id;
   const readinessPending = readinessPendingProjectId === project.id;
   const sharePending = sharePendingProjectId === project.id;
+
+  function handleStartEditingMetadata() {
+    onResetUpdateProject();
+    setIsEditingMetadata(true);
+  }
+
+  function handleCancelEditingMetadata() {
+    setIsEditingMetadata(false);
+  }
+
+  async function handleUpdateProject(input: UpdateDeveloperProjectInput) {
+    await onUpdateProject(project.id, input);
+    setIsEditingMetadata(false);
+  }
 
   return (
     <SectionCard
       actions={
-        <StatusBadge tone={project.agentAvailability === 'online' ? 'positive' : 'warning'}>
-          {project.agentAvailability}
-        </StatusBadge>
+        <>
+          <StatusBadge tone={project.agentAvailability === 'online' ? 'positive' : 'warning'}>
+            {project.agentAvailability}
+          </StatusBadge>
+          {!isEditingMetadata ? (
+            <Button onClick={handleStartEditingMetadata} variant="secondary">
+              Modifier
+            </Button>
+          ) : null}
+        </>
       }
       eyebrow="Developer project"
       title={project.name}
       description={project.description ?? 'No project description set.'}
     >
+      {isEditingMetadata ? (
+        <ProjectMetadataForm
+          description={project.description}
+          error={updateProjectError}
+          isSubmitting={updateProjectPending}
+          name={project.name}
+          onCancel={handleCancelEditingMetadata}
+          onSubmit={handleUpdateProject}
+        />
+      ) : null}
       <div className="grid gap-4 text-sm text-slate-300 lg:grid-cols-[1fr_0.85fr]">
         <div className="space-y-4">
           <dl className="grid gap-3 rounded-xl border border-slate-800 bg-slate-950/70 p-3 sm:grid-cols-2">

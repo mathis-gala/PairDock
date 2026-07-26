@@ -20,6 +20,7 @@ export function DeveloperHomePage({ onSignOut, session }: DeveloperHomePageProps
     shareProjectMutation,
     setupQuery,
     updateExecutionDefaultsMutation,
+    updateProjectMutation,
   } = useDeveloperProjects(session.accessToken);
   const projects = projectsQuery.data ?? [];
   const createError = createProjectMutation.error instanceof Error ? createProjectMutation.error.message : null;
@@ -29,6 +30,7 @@ export function DeveloperHomePage({ onSignOut, session }: DeveloperHomePageProps
     updateExecutionDefaultsMutation.error instanceof Error ? updateExecutionDefaultsMutation.error.message : null;
   const readinessError =
     requestReadinessMutation.error instanceof Error ? requestReadinessMutation.error.message : null;
+  const updateProjectError = updateProjectMutation.error instanceof Error ? updateProjectMutation.error.message : null;
 
   return (
     <ProductShell
@@ -94,6 +96,7 @@ export function DeveloperHomePage({ onSignOut, session }: DeveloperHomePageProps
                     closeSessionMutation.reset();
                     await closeSessionMutation.mutateAsync(sessionId);
                   }}
+                  onResetUpdateProject={updateProjectMutation.reset}
                   onRequestReadiness={async (projectId) => {
                     requestReadinessMutation.reset();
                     await requestReadinessMutation.mutateAsync(projectId);
@@ -106,6 +109,10 @@ export function DeveloperHomePage({ onSignOut, session }: DeveloperHomePageProps
                     updateExecutionDefaultsMutation.reset();
                     await updateExecutionDefaultsMutation.mutateAsync({ projectId, modelId, reasoningEffort });
                   }}
+                  onUpdateProject={async (projectId, input) => {
+                    updateProjectMutation.reset();
+                    await updateProjectMutation.mutateAsync({ projectId, ...input });
+                  }}
                   project={project}
                   readinessPendingProjectId={
                     requestReadinessMutation.isPending ? (requestReadinessMutation.variables ?? null) : null
@@ -117,6 +124,12 @@ export function DeveloperHomePage({ onSignOut, session }: DeveloperHomePageProps
                     updateExecutionDefaultsMutation.isPending
                       ? (updateExecutionDefaultsMutation.variables?.projectId ?? null)
                       : null
+                  }
+                  updateProjectError={
+                    updateProjectMutation.variables?.projectId === project.id ? updateProjectError : null
+                  }
+                  updateProjectPendingId={
+                    updateProjectMutation.isPending ? (updateProjectMutation.variables?.projectId ?? null) : null
                   }
                 />
               ))

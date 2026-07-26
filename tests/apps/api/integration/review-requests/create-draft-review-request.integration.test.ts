@@ -342,6 +342,7 @@ class InMemoryRepositories {
       listByAgentProjectKey: async () => [project],
       listOwnedByUserId: async () => [],
       listSharedByUserId: async () => [],
+      updateMetadata: async () => project,
       updateExecutionDefaults: async () => project,
     };
     this.validationRuns = {

@@ -35,6 +35,7 @@ export interface ProjectsRepository {
   listByAgentProjectKey(agentProjectKey: string): Promise<Project[]>;
   listOwnedByUserId(userId: string): Promise<DeveloperProjectRecord[]>;
   listSharedByUserId(userId: string): Promise<SharedProjectRecord[]>;
+  updateMetadata(input: { id: string; name?: string; description?: string | null }): Promise<Project>;
   updateExecutionDefaults(input: {
     id: string;
     defaultModelId: string;

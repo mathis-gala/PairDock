@@ -15,6 +15,8 @@ import {
   type SharedProjectSummary,
   type SharedSessionHistoryItem,
   shareDeveloperProjectInputSchema,
+  type UpdateDeveloperProjectInput,
+  updateDeveloperProjectInputSchema,
   updateProjectExecutionDefaultsInputSchema,
 } from '@pairdock/shared-contracts';
 import { AgentExecutionCapabilitiesService } from '../agent-gateway/agent-execution-capabilities.service.js';
@@ -116,6 +118,20 @@ export class ProjectsService {
     }
 
     return this.updateExecutionDefaults(projectId, input.data, this.requireDeveloper(user));
+  }
+
+  async updateDeveloperProjectResponse(
+    projectId: string,
+    body: unknown,
+    user: PairDockIdentity | undefined,
+  ): Promise<DeveloperProjectSummary> {
+    const input = updateDeveloperProjectInputSchema.safeParse(body);
+
+    if (!input.success) {
+      throw new BadRequestException('Project name or description is invalid.');
+    }
+
+    return this.updateDeveloperProject(projectId, input.data, this.requireDeveloper(user));
   }
 
   async listSharedProjects(user: PairDockIdentity): Promise<SharedProjectSummary[]> {
@@ -366,6 +382,32 @@ export class ProjectsService {
     const readiness = await this.projectReadinessRepository.findByProjectId(projectId);
 
     return this.buildDeveloperProjectSummary(refreshedRecord, sessions, reviewRequestUrlsBySessionId, readiness);
+  }
+
+  async updateDeveloperProject(
+    projectId: string,
+    input: UpdateDeveloperProjectInput,
+    user: PairDockIdentity,
+  ): Promise<DeveloperProjectSummary> {
+    const projectRecord = await this.findOwnedProjectRecord(projectId, user.id);
+    const project = await this.projectsRepository.updateMetadata({
+      id: projectId,
+      ...(input.name !== undefined ? { name: input.name } : {}),
+      ...(input.description !== undefined ? { description: input.description || null } : {}),
+    });
+    const sessionsByProjectId = await this.listSessionsByProjectId([projectId]);
+    const sessions = sessionsByProjectId.get(projectId) ?? [];
+    const reviewRequestUrlsBySessionId = await this.listReviewRequestUrlsBySessionId(
+      sessions.map((session) => session.id),
+    );
+    const readiness = await this.projectReadinessRepository.findByProjectId(projectId);
+
+    return this.buildDeveloperProjectSummary(
+      { ...projectRecord, project },
+      sessions,
+      reviewRequestUrlsBySessionId,
+      readiness,
+    );
   }
 
   private parseCreateProjectInput(body: unknown): CreateDeveloperProjectInput {
