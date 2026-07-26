@@ -356,7 +356,7 @@
       "source_location": "L28",
       "_origin": "ast",
       "id": "users_mathis_pairdock_worktrees_dee8fa99_c598_4d28_9d69_51407273a2e5_apps_api_package_dependencies_nestjs_common",
-      "community": 162,
+      "community": 130,
       "norm_label": "@nestjs/common"
     },
     {
@@ -366,7 +366,7 @@
       "source_location": "L28",
       "_origin": "ast",
       "id": "nestjs_common",
-      "community": 162,
+      "community": 130,
       "norm_label": "@nestjs/common"
     },
     {
@@ -876,7 +876,7 @@
       "source_location": "L25",
       "_origin": "ast",
       "id": "apps_api_src_agent_gateway_agent_authentication_service_agentauthenticationservice",
-      "community": 89,
+      "community": 36,
       "norm_label": "agentauthenticationservice"
     },
     {
@@ -886,7 +886,7 @@
       "source_location": "",
       "_origin": "ast",
       "id": "apps_api_src_agent_gateway_agent_authentication_service_ts_injectable",
-      "community": 89,
+      "community": 36,
       "norm_label": "injectable"
     },
     {
@@ -966,7 +966,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "apps_api_src_agent_gateway_agent_command_router_service",
-      "community": 25,
+      "community": 89,
       "norm_label": "agent-command-router.service.ts"
     },
     {
@@ -976,7 +976,7 @@
       "source_location": "L10",
       "_origin": "ast",
       "id": "apps_api_src_agent_gateway_agent_command_router_service_agentcommandrouterservice",
-      "community": 25,
+      "community": 99,
       "norm_label": "agentcommandrouterservice"
     },
     {
@@ -986,7 +986,7 @@
       "source_location": "",
       "_origin": "ast",
       "id": "apps_api_src_agent_gateway_agent_command_router_service_ts_injectable",
-      "community": 25,
+      "community": 99,
       "norm_label": "injectable"
     },
     {
@@ -996,7 +996,7 @@
       "source_location": "",
       "_origin": "ast",
       "id": "apps_api_src_agent_gateway_agent_command_router_service_ts_inject",
-      "community": 25,
+      "community": 99,
       "norm_label": "inject"
     },
     {
@@ -1006,7 +1006,7 @@
       "source_location": "L11",
       "_origin": "ast",
       "id": "apps_api_src_agent_gateway_agent_command_router_service_agentcommandrouterservice_constructor",
-      "community": 25,
+      "community": 99,
       "norm_label": ".constructor()"
     },
     {
@@ -1016,7 +1016,7 @@
       "source_location": "L22",
       "_origin": "ast",
       "id": "apps_api_src_agent_gateway_agent_command_router_service_agentcommandrouterservice_routetoowningagent",
-      "community": 40,
+      "community": 68,
       "norm_label": ".routetoowningagent()"
     },
     {
@@ -1026,7 +1026,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "apps_api_src_agent_gateway_agent_execution_capabilities_service",
-      "community": 25,
+      "community": 89,
       "norm_label": "agent-execution-capabilities.service.ts"
     },
     {
@@ -1036,7 +1036,7 @@
       "source_location": "L5",
       "_origin": "ast",
       "id": "apps_api_src_agent_gateway_agent_execution_capabilities_service_sessionexecutionselection",
-      "community": 25,
+      "community": 89,
       "norm_label": "sessionexecutionselection"
     },
     {
@@ -1046,7 +1046,7 @@
       "source_location": "L11",
       "_origin": "ast",
       "id": "apps_api_src_agent_gateway_agent_execution_capabilities_service_agentexecutioncapabilitiesservice",
-      "community": 25,
+      "community": 89,
       "norm_label": "agentexecutioncapabilitiesservice"
     },
     {
@@ -1056,7 +1056,7 @@
       "source_location": "",
       "_origin": "ast",
       "id": "apps_api_src_agent_gateway_agent_execution_capabilities_service_ts_injectable",
-      "community": 25,
+      "community": 89,
       "norm_label": "injectable"
     },
     {
@@ -1186,7 +1186,7 @@
       "source_location": "L12",
       "_origin": "ast",
       "id": "apps_api_src_agent_gateway_agent_project_binding_service_agentprojectbindingservice_isconnected",
-      "community": 40,
+      "community": 68,
       "norm_label": ".isconnected()"
     },
     {
@@ -1196,7 +1196,7 @@
       "source_location": "L17",
       "_origin": "ast",
       "id": "apps_api_src_agent_gateway_agent_project_binding_service_agentprojectbindingservice_assertconnected",
-      "community": 40,
+      "community": 68,
       "norm_label": ".assertconnected()"
     },
     {
@@ -1206,7 +1206,7 @@
       "source_location": "L25",
       "_origin": "ast",
       "id": "apps_api_src_agent_gateway_agent_project_binding_service_agentprojectbindingservice_assertcompatibleifconnected",
-      "community": 40,
+      "community": 68,
       "norm_label": ".assertcompatibleifconnected()"
     },
     {
@@ -1216,7 +1216,7 @@
       "source_location": "L33",
       "_origin": "ast",
       "id": "apps_api_src_agent_gateway_agent_project_binding_service_agentprojectbindingservice_assertpublishedrepositorymatches",
-      "community": 40,
+      "community": 68,
       "norm_label": ".assertpublishedrepositorymatches()"
     },
     {
@@ -1226,7 +1226,7 @@
       "source_location": "L43",
       "_origin": "ast",
       "id": "apps_api_src_agent_gateway_agent_project_binding_service_agentprojectbindingservice_findpublishedproject",
-      "community": 40,
+      "community": 68,
       "norm_label": ".findpublishedproject()"
     },
     {
@@ -1236,7 +1236,7 @@
       "source_location": "L56",
       "_origin": "ast",
       "id": "apps_api_src_agent_gateway_agent_project_binding_service_repositoriesmatch",
-      "community": 40,
+      "community": 68,
       "norm_label": "repositoriesmatch()"
     },
     {
@@ -1296,7 +1296,7 @@
       "source_location": "",
       "_origin": "ast",
       "id": "apps_api_src_agent_gateway_agent_gateway_ts_inject",
-      "community": 89,
+      "community": 36,
       "norm_label": "inject"
     },
     {
@@ -1336,7 +1336,7 @@
       "source_location": "L48",
       "_origin": "ast",
       "id": "apps_api_src_agent_gateway_agent_gateway_agentgateway_constructor",
-      "community": 89,
+      "community": 36,
       "norm_label": ".constructor()"
     },
     {
@@ -1566,7 +1566,7 @@
       "source_location": "L68",
       "_origin": "ast",
       "id": "apps_api_src_agent_gateway_connected_agents_registry_connectedagentsregistry_findsocketid",
-      "community": 40,
+      "community": 68,
       "norm_label": ".findsocketid()"
     },
     {
@@ -1606,7 +1606,7 @@
       "source_location": "L86",
       "_origin": "ast",
       "id": "apps_api_src_agent_gateway_connected_agents_registry_connectedagentsregistry_findsocketidbyprojectkey",
-      "community": 40,
+      "community": 68,
       "norm_label": ".findsocketidbyprojectkey()"
     },
     {
@@ -2636,7 +2636,7 @@
       "source_location": "L87",
       "_origin": "ast",
       "id": "apps_api_src_auth_auth_service_authservice_getdeveloperstarturl",
-      "community": 12,
+      "community": 95,
       "norm_label": ".getdeveloperstarturl()"
     },
     {
@@ -2646,7 +2646,7 @@
       "source_location": "L107",
       "_origin": "ast",
       "id": "apps_api_src_auth_auth_service_authservice_getdeveloperinstallationurl",
-      "community": 12,
+      "community": 95,
       "norm_label": ".getdeveloperinstallationurl()"
     },
     {
@@ -2666,7 +2666,7 @@
       "source_location": "L143",
       "_origin": "ast",
       "id": "apps_api_src_auth_auth_service_authservice_getpmstarturl",
-      "community": 12,
+      "community": 95,
       "norm_label": ".getpmstarturl()"
     },
     {
@@ -2726,7 +2726,7 @@
       "source_location": "L248",
       "_origin": "ast",
       "id": "apps_api_src_auth_auth_service_readoauthstarturlconfig",
-      "community": 12,
+      "community": 95,
       "norm_label": "readoauthstarturlconfig()"
     },
     {
@@ -2746,7 +2746,7 @@
       "source_location": "L276",
       "_origin": "ast",
       "id": "apps_api_src_auth_auth_service_hasaccessiblegithubinstallation",
-      "community": 109,
+      "community": 12,
       "norm_label": "hasaccessiblegithubinstallation()"
     },
     {
@@ -2836,7 +2836,7 @@
       "source_location": "",
       "_origin": "ast",
       "id": "apps_api_src_auth_authenticated_user_guard_ts_inject",
-      "community": 113,
+      "community": 29,
       "norm_label": "inject"
     },
     {
@@ -2846,7 +2846,7 @@
       "source_location": "L7",
       "_origin": "ast",
       "id": "apps_api_src_auth_authenticated_user_guard_authenticateduserguard_constructor",
-      "community": 113,
+      "community": 29,
       "norm_label": ".constructor()"
     },
     {
@@ -3016,7 +3016,7 @@
       "source_location": "L52",
       "_origin": "ast",
       "id": "apps_api_src_auth_github_auth_state_service_githubauthstateservice_verifyauthorizationstate",
-      "community": 95,
+      "community": 12,
       "norm_label": ".verifyauthorizationstate()"
     },
     {
@@ -3036,7 +3036,7 @@
       "source_location": "L61",
       "_origin": "ast",
       "id": "apps_api_src_auth_github_auth_state_service_githubauthstateservice_verifyslackauthorizationstate",
-      "community": 95,
+      "community": 12,
       "norm_label": ".verifyslackauthorizationstate()"
     },
     {
@@ -3166,7 +3166,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "apps_api_src_auth_require_session_access_decorator",
-      "community": 25,
+      "community": 89,
       "norm_label": "require-session-access.decorator.ts"
     },
     {
@@ -3176,7 +3176,7 @@
       "source_location": "L4",
       "_origin": "ast",
       "id": "apps_api_src_auth_require_session_access_decorator_requiresessionaccess",
-      "community": 25,
+      "community": 89,
       "norm_label": "requiresessionaccess()"
     },
     {
@@ -3186,7 +3186,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "apps_api_src_auth_session_access_guard",
-      "community": 91,
+      "community": 60,
       "norm_label": "session-access.guard.ts"
     },
     {
@@ -3516,7 +3516,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "apps_api_src_invitations_invitations_service",
-      "community": 91,
+      "community": 60,
       "norm_label": "invitations.service.ts"
     },
     {
@@ -3526,7 +3526,7 @@
       "source_location": "L8",
       "_origin": "ast",
       "id": "apps_api_src_invitations_invitations_service_invitationsservice",
-      "community": 91,
+      "community": 60,
       "norm_label": "invitationsservice"
     },
     {
@@ -3536,7 +3536,7 @@
       "source_location": "",
       "_origin": "ast",
       "id": "apps_api_src_invitations_invitations_service_ts_injectable",
-      "community": 91,
+      "community": 60,
       "norm_label": "injectable"
     },
     {
@@ -3546,7 +3546,7 @@
       "source_location": "",
       "_origin": "ast",
       "id": "apps_api_src_invitations_invitations_service_ts_inject",
-      "community": 91,
+      "community": 60,
       "norm_label": "inject"
     },
     {
@@ -3556,7 +3556,7 @@
       "source_location": "L9",
       "_origin": "ast",
       "id": "apps_api_src_invitations_invitations_service_invitationsservice_constructor",
-      "community": 91,
+      "community": 60,
       "norm_label": ".constructor()"
     },
     {
@@ -3586,7 +3586,7 @@
       "source_location": "L24",
       "_origin": "ast",
       "id": "apps_api_src_invitations_invitations_service_invitationsservice_findprojectmembership",
-      "community": 91,
+      "community": 60,
       "norm_label": ".findprojectmembership()"
     },
     {
@@ -3916,7 +3916,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "apps_api_src_persistence_adapters_json_parsers",
-      "community": 55,
+      "community": 74,
       "norm_label": "json-parsers.ts"
     },
     {
@@ -3936,7 +3936,7 @@
       "source_location": "L12",
       "_origin": "ast",
       "id": "apps_api_src_persistence_adapters_json_parsers_parsetoolreadinesschecks",
-      "community": 55,
+      "community": 74,
       "norm_label": "parsetoolreadinesschecks()"
     },
     {
@@ -3946,7 +3946,7 @@
       "source_location": "L29",
       "_origin": "ast",
       "id": "apps_api_src_persistence_adapters_json_parsers_parsetoolreadinesscheck",
-      "community": 55,
+      "community": 74,
       "norm_label": "parsetoolreadinesscheck()"
     },
     {
@@ -3956,7 +3956,7 @@
       "source_location": "L53",
       "_origin": "ast",
       "id": "apps_api_src_persistence_adapters_json_parsers_istoolreadinesskey",
-      "community": 55,
+      "community": 74,
       "norm_label": "istoolreadinesskey()"
     },
     {
@@ -3966,7 +3966,7 @@
       "source_location": "L66",
       "_origin": "ast",
       "id": "apps_api_src_persistence_adapters_json_parsers_istoolreadinessstatus",
-      "community": 55,
+      "community": 74,
       "norm_label": "istoolreadinessstatus()"
     },
     {
@@ -3996,7 +3996,7 @@
       "source_location": "L78",
       "_origin": "ast",
       "id": "apps_api_src_persistence_adapters_json_parsers_serializechecks",
-      "community": 55,
+      "community": 74,
       "norm_label": "serializechecks()"
     },
     {
@@ -4006,7 +4006,7 @@
       "source_location": "L82",
       "_origin": "ast",
       "id": "apps_api_src_persistence_adapters_json_parsers_serializetoolreadinesscheck",
-      "community": 55,
+      "community": 74,
       "norm_label": "serializetoolreadinesscheck()"
     },
     {
@@ -4016,7 +4016,7 @@
       "source_location": "L92",
       "_origin": "ast",
       "id": "apps_api_src_persistence_adapters_json_parsers_toinputjsonvalue",
-      "community": 55,
+      "community": 74,
       "norm_label": "toinputjsonvalue()"
     },
     {
@@ -4026,7 +4026,7 @@
       "source_location": "L108",
       "_origin": "ast",
       "id": "apps_api_src_persistence_adapters_json_parsers_toinputjsonobject",
-      "community": 55,
+      "community": 74,
       "norm_label": "toinputjsonobject()"
     },
     {
@@ -4066,7 +4066,7 @@
       "source_location": "L55",
       "_origin": "ast",
       "id": "apps_api_src_persistence_adapters_mappers_mapsourcecontrolconnection",
-      "community": 81,
+      "community": 25,
       "norm_label": "mapsourcecontrolconnection()"
     },
     {
@@ -4086,7 +4086,7 @@
       "source_location": "L83",
       "_origin": "ast",
       "id": "apps_api_src_persistence_adapters_mappers_mapprojectmembership",
-      "community": 91,
+      "community": 55,
       "norm_label": "mapprojectmembership()"
     },
     {
@@ -4126,7 +4126,7 @@
       "source_location": "L130",
       "_origin": "ast",
       "id": "apps_api_src_persistence_adapters_mappers_mapmessage",
-      "community": 15,
+      "community": 34,
       "norm_label": "mapmessage()"
     },
     {
@@ -4146,7 +4146,7 @@
       "source_location": "L152",
       "_origin": "ast",
       "id": "apps_api_src_persistence_adapters_mappers_mapvalidationrun",
-      "community": 81,
+      "community": 105,
       "norm_label": "mapvalidationrun()"
     },
     {
@@ -4156,7 +4156,7 @@
       "source_location": "L166",
       "_origin": "ast",
       "id": "apps_api_src_persistence_adapters_mappers_mapreviewrequest",
-      "community": 130,
+      "community": 81,
       "norm_label": "mapreviewrequest()"
     },
     {
@@ -4206,7 +4206,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "apps_api_src_persistence_adapters_messages_repository",
-      "community": 15,
+      "community": 34,
       "norm_label": "messages.repository.ts"
     },
     {
@@ -4216,7 +4216,7 @@
       "source_location": "L8",
       "_origin": "ast",
       "id": "apps_api_src_persistence_adapters_messages_repository_messagesrepositoryadapter",
-      "community": 15,
+      "community": 34,
       "norm_label": "messagesrepositoryadapter"
     },
     {
@@ -4226,7 +4226,7 @@
       "source_location": "",
       "_origin": "ast",
       "id": "apps_api_src_persistence_adapters_messages_repository_ts_injectable",
-      "community": 15,
+      "community": 34,
       "norm_label": "injectable"
     },
     {
@@ -4236,7 +4236,7 @@
       "source_location": "",
       "_origin": "ast",
       "id": "apps_api_src_persistence_adapters_messages_repository_ts_inject",
-      "community": 15,
+      "community": 34,
       "norm_label": "inject"
     },
     {
@@ -4246,7 +4246,7 @@
       "source_location": "L9",
       "_origin": "ast",
       "id": "apps_api_src_persistence_adapters_messages_repository_messagesrepositoryadapter_constructor",
-      "community": 15,
+      "community": 34,
       "norm_label": ".constructor()"
     },
     {
@@ -4256,7 +4256,7 @@
       "source_location": "L11",
       "_origin": "ast",
       "id": "apps_api_src_persistence_adapters_messages_repository_messagesrepositoryadapter_create",
-      "community": 15,
+      "community": 34,
       "norm_label": ".create()"
     },
     {
@@ -4266,7 +4266,7 @@
       "source_location": "L24",
       "_origin": "ast",
       "id": "apps_api_src_persistence_adapters_messages_repository_messagesrepositoryadapter_listbysessionid",
-      "community": 15,
+      "community": 34,
       "norm_label": ".listbysessionid()"
     },
     {
@@ -4276,7 +4276,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "apps_api_src_persistence_adapters_project_members_repository",
-      "community": 91,
+      "community": 55,
       "norm_label": "project-members.repository.ts"
     },
     {
@@ -4286,7 +4286,7 @@
       "source_location": "L8",
       "_origin": "ast",
       "id": "apps_api_src_persistence_adapters_project_members_repository_projectmembersrepositoryadapter",
-      "community": 91,
+      "community": 55,
       "norm_label": "projectmembersrepositoryadapter"
     },
     {
@@ -4296,7 +4296,7 @@
       "source_location": "",
       "_origin": "ast",
       "id": "apps_api_src_persistence_adapters_project_members_repository_ts_injectable",
-      "community": 91,
+      "community": 55,
       "norm_label": "injectable"
     },
     {
@@ -4326,7 +4326,7 @@
       "source_location": "L11",
       "_origin": "ast",
       "id": "apps_api_src_persistence_adapters_project_members_repository_projectmembersrepositoryadapter_add",
-      "community": 91,
+      "community": 55,
       "norm_label": ".add()"
     },
     {
@@ -4336,7 +4336,7 @@
       "source_location": "L32",
       "_origin": "ast",
       "id": "apps_api_src_persistence_adapters_project_members_repository_projectmembersrepositoryadapter_findbyprojectidanduserid",
-      "community": 91,
+      "community": 55,
       "norm_label": ".findbyprojectidanduserid()"
     },
     {
@@ -4346,7 +4346,7 @@
       "source_location": "L45",
       "_origin": "ast",
       "id": "apps_api_src_persistence_adapters_project_members_repository_projectmembersrepositoryadapter_listbyprojectid",
-      "community": 91,
+      "community": 55,
       "norm_label": ".listbyprojectid()"
     },
     {
@@ -4556,7 +4556,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "apps_api_src_persistence_adapters_review_requests_repository",
-      "community": 130,
+      "community": 81,
       "norm_label": "review-requests.repository.ts"
     },
     {
@@ -4566,7 +4566,7 @@
       "source_location": "L8",
       "_origin": "ast",
       "id": "apps_api_src_persistence_adapters_review_requests_repository_reviewrequestsrepositoryadapter",
-      "community": 130,
+      "community": 81,
       "norm_label": "reviewrequestsrepositoryadapter"
     },
     {
@@ -4576,7 +4576,7 @@
       "source_location": "",
       "_origin": "ast",
       "id": "apps_api_src_persistence_adapters_review_requests_repository_ts_injectable",
-      "community": 130,
+      "community": 81,
       "norm_label": "injectable"
     },
     {
@@ -4606,7 +4606,7 @@
       "source_location": "L11",
       "_origin": "ast",
       "id": "apps_api_src_persistence_adapters_review_requests_repository_reviewrequestsrepositoryadapter_create",
-      "community": 130,
+      "community": 81,
       "norm_label": ".create()"
     },
     {
@@ -4616,7 +4616,7 @@
       "source_location": "L24",
       "_origin": "ast",
       "id": "apps_api_src_persistence_adapters_review_requests_repository_reviewrequestsrepositoryadapter_findbysessionid",
-      "community": 130,
+      "community": 81,
       "norm_label": ".findbysessionid()"
     },
     {
@@ -4626,7 +4626,7 @@
       "source_location": "L33",
       "_origin": "ast",
       "id": "apps_api_src_persistence_adapters_review_requests_repository_reviewrequestsrepositoryadapter_findmanybysessionids",
-      "community": 130,
+      "community": 81,
       "norm_label": ".findmanybysessionids()"
     },
     {
@@ -4806,7 +4806,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "apps_api_src_persistence_adapters_source_control_connections_repository",
-      "community": 81,
+      "community": 25,
       "norm_label": "source-control-connections.repository.ts"
     },
     {
@@ -4816,7 +4816,7 @@
       "source_location": "L11",
       "_origin": "ast",
       "id": "apps_api_src_persistence_adapters_source_control_connections_repository_sourcecontrolconnectionsrepositoryadapter",
-      "community": 81,
+      "community": 25,
       "norm_label": "sourcecontrolconnectionsrepositoryadapter"
     },
     {
@@ -4826,7 +4826,7 @@
       "source_location": "",
       "_origin": "ast",
       "id": "apps_api_src_persistence_adapters_source_control_connections_repository_ts_injectable",
-      "community": 81,
+      "community": 25,
       "norm_label": "injectable"
     },
     {
@@ -4856,7 +4856,7 @@
       "source_location": "L14",
       "_origin": "ast",
       "id": "apps_api_src_persistence_adapters_source_control_connections_repository_sourcecontrolconnectionsrepositoryadapter_create",
-      "community": 81,
+      "community": 25,
       "norm_label": ".create()"
     },
     {
@@ -4866,7 +4866,7 @@
       "source_location": "L26",
       "_origin": "ast",
       "id": "apps_api_src_persistence_adapters_source_control_connections_repository_sourcecontrolconnectionsrepositoryadapter_findbyid",
-      "community": 81,
+      "community": 25,
       "norm_label": ".findbyid()"
     },
     {
@@ -4876,7 +4876,7 @@
       "source_location": "L31",
       "_origin": "ast",
       "id": "apps_api_src_persistence_adapters_source_control_connections_repository_sourcecontrolconnectionsrepositoryadapter_findbyownerandproviderconnection",
-      "community": 81,
+      "community": 25,
       "norm_label": ".findbyownerandproviderconnection()"
     },
     {
@@ -4886,7 +4886,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "apps_api_src_persistence_adapters_unit_of_work",
-      "community": 81,
+      "community": 36,
       "norm_label": "unit-of-work.ts"
     },
     {
@@ -4896,7 +4896,7 @@
       "source_location": "L17",
       "_origin": "ast",
       "id": "apps_api_src_persistence_adapters_unit_of_work_createpersistencerepositories",
-      "community": 81,
+      "community": 36,
       "norm_label": "createpersistencerepositories()"
     },
     {
@@ -4906,7 +4906,7 @@
       "source_location": "L34",
       "_origin": "ast",
       "id": "apps_api_src_persistence_adapters_unit_of_work_persistenceunitofworkadapter",
-      "community": 81,
+      "community": 36,
       "norm_label": "persistenceunitofworkadapter"
     },
     {
@@ -4916,7 +4916,7 @@
       "source_location": "",
       "_origin": "ast",
       "id": "apps_api_src_persistence_adapters_unit_of_work_ts_injectable",
-      "community": 81,
+      "community": 36,
       "norm_label": "injectable"
     },
     {
@@ -4946,7 +4946,7 @@
       "source_location": "L37",
       "_origin": "ast",
       "id": "apps_api_src_persistence_adapters_unit_of_work_persistenceunitofworkadapter_execute",
-      "community": 81,
+      "community": 36,
       "norm_label": ".execute()"
     },
     {
@@ -5046,7 +5046,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "apps_api_src_persistence_adapters_validation_runs_repository",
-      "community": 81,
+      "community": 105,
       "norm_label": "validation-runs.repository.ts"
     },
     {
@@ -5056,7 +5056,7 @@
       "source_location": "L8",
       "_origin": "ast",
       "id": "apps_api_src_persistence_adapters_validation_runs_repository_validationrunsrepositoryadapter",
-      "community": 81,
+      "community": 105,
       "norm_label": "validationrunsrepositoryadapter"
     },
     {
@@ -5066,7 +5066,7 @@
       "source_location": "",
       "_origin": "ast",
       "id": "apps_api_src_persistence_adapters_validation_runs_repository_ts_injectable",
-      "community": 81,
+      "community": 105,
       "norm_label": "injectable"
     },
     {
@@ -5096,7 +5096,7 @@
       "source_location": "L11",
       "_origin": "ast",
       "id": "apps_api_src_persistence_adapters_validation_runs_repository_validationrunsrepositoryadapter_create",
-      "community": 81,
+      "community": 105,
       "norm_label": ".create()"
     },
     {
@@ -5106,7 +5106,7 @@
       "source_location": "L27",
       "_origin": "ast",
       "id": "apps_api_src_persistence_adapters_validation_runs_repository_validationrunsrepositoryadapter_findlatestbysessionid",
-      "community": 81,
+      "community": 105,
       "norm_label": ".findlatestbysessionid()"
     },
     {
@@ -5286,7 +5286,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "apps_api_src_persistence_persistence_tokens",
-      "community": 25,
+      "community": 89,
       "norm_label": "persistence.tokens.ts"
     },
     {
@@ -5296,7 +5296,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "apps_api_src_persistence_persistence_tokens_users_repository",
-      "community": 25,
+      "community": 89,
       "norm_label": "users_repository"
     },
     {
@@ -5306,7 +5306,7 @@
       "source_location": "L2",
       "_origin": "ast",
       "id": "apps_api_src_persistence_persistence_tokens_external_identities_repository",
-      "community": 25,
+      "community": 89,
       "norm_label": "external_identities_repository"
     },
     {
@@ -5316,7 +5316,7 @@
       "source_location": "L3",
       "_origin": "ast",
       "id": "apps_api_src_persistence_persistence_tokens_source_control_connections_repository",
-      "community": 25,
+      "community": 89,
       "norm_label": "source_control_connections_repository"
     },
     {
@@ -5326,7 +5326,7 @@
       "source_location": "L4",
       "_origin": "ast",
       "id": "apps_api_src_persistence_persistence_tokens_projects_repository",
-      "community": 25,
+      "community": 89,
       "norm_label": "projects_repository"
     },
     {
@@ -5336,7 +5336,7 @@
       "source_location": "L5",
       "_origin": "ast",
       "id": "apps_api_src_persistence_persistence_tokens_project_members_repository",
-      "community": 25,
+      "community": 89,
       "norm_label": "project_members_repository"
     },
     {
@@ -5346,7 +5346,7 @@
       "source_location": "L6",
       "_origin": "ast",
       "id": "apps_api_src_persistence_persistence_tokens_project_readiness_repository",
-      "community": 25,
+      "community": 89,
       "norm_label": "project_readiness_repository"
     },
     {
@@ -5356,7 +5356,7 @@
       "source_location": "L7",
       "_origin": "ast",
       "id": "apps_api_src_persistence_persistence_tokens_sessions_repository",
-      "community": 25,
+      "community": 89,
       "norm_label": "sessions_repository"
     },
     {
@@ -5366,7 +5366,7 @@
       "source_location": "L8",
       "_origin": "ast",
       "id": "apps_api_src_persistence_persistence_tokens_session_members_repository",
-      "community": 25,
+      "community": 89,
       "norm_label": "session_members_repository"
     },
     {
@@ -5376,7 +5376,7 @@
       "source_location": "L9",
       "_origin": "ast",
       "id": "apps_api_src_persistence_persistence_tokens_messages_repository",
-      "community": 25,
+      "community": 89,
       "norm_label": "messages_repository"
     },
     {
@@ -5386,7 +5386,7 @@
       "source_location": "L10",
       "_origin": "ast",
       "id": "apps_api_src_persistence_persistence_tokens_agent_events_repository",
-      "community": 9,
+      "community": 89,
       "norm_label": "agent_events_repository"
     },
     {
@@ -5416,7 +5416,7 @@
       "source_location": "L13",
       "_origin": "ast",
       "id": "apps_api_src_persistence_persistence_tokens_review_requests_repository",
-      "community": 25,
+      "community": 89,
       "norm_label": "review_requests_repository"
     },
     {
@@ -5426,7 +5426,7 @@
       "source_location": "L15",
       "_origin": "ast",
       "id": "apps_api_src_persistence_persistence_tokens_persistence_unit_of_work",
-      "community": 25,
+      "community": 89,
       "norm_label": "persistence_unit_of_work"
     },
     {
@@ -5626,7 +5626,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "apps_api_src_persistence_ports_messages_repository",
-      "community": 15,
+      "community": 34,
       "norm_label": "messages.repository.ts"
     },
     {
@@ -5636,7 +5636,7 @@
       "source_location": "L3",
       "_origin": "ast",
       "id": "apps_api_src_persistence_ports_messages_repository_createmessageinput",
-      "community": 15,
+      "community": 34,
       "norm_label": "createmessageinput"
     },
     {
@@ -5646,7 +5646,7 @@
       "source_location": "L10",
       "_origin": "ast",
       "id": "apps_api_src_persistence_ports_messages_repository_messagesrepository",
-      "community": 15,
+      "community": 34,
       "norm_label": "messagesrepository"
     },
     {
@@ -5656,7 +5656,7 @@
       "source_location": "L11",
       "_origin": "ast",
       "id": "apps_api_src_persistence_ports_messages_repository_messagesrepository_create",
-      "community": 15,
+      "community": 34,
       "norm_label": ".create()"
     },
     {
@@ -5666,7 +5666,7 @@
       "source_location": "L12",
       "_origin": "ast",
       "id": "apps_api_src_persistence_ports_messages_repository_messagesrepository_listbysessionid",
-      "community": 15,
+      "community": 34,
       "norm_label": ".listbysessionid()"
     },
     {
@@ -5676,7 +5676,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "apps_api_src_persistence_ports_persistence_unit_of_work",
-      "community": 81,
+      "community": 36,
       "norm_label": "persistence-unit-of-work.ts"
     },
     {
@@ -5686,7 +5686,7 @@
       "source_location": "L13",
       "_origin": "ast",
       "id": "apps_api_src_persistence_ports_persistence_unit_of_work_persistencerepositories",
-      "community": 81,
+      "community": 36,
       "norm_label": "persistencerepositories"
     },
     {
@@ -5696,7 +5696,7 @@
       "source_location": "L27",
       "_origin": "ast",
       "id": "apps_api_src_persistence_ports_persistence_unit_of_work_persistenceunitofwork",
-      "community": 81,
+      "community": 36,
       "norm_label": "persistenceunitofwork"
     },
     {
@@ -5706,7 +5706,7 @@
       "source_location": "L28",
       "_origin": "ast",
       "id": "apps_api_src_persistence_ports_persistence_unit_of_work_persistenceunitofwork_execute",
-      "community": 81,
+      "community": 36,
       "norm_label": ".execute()"
     },
     {
@@ -5716,7 +5716,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "apps_api_src_persistence_ports_project_members_repository",
-      "community": 91,
+      "community": 55,
       "norm_label": "project-members.repository.ts"
     },
     {
@@ -5726,7 +5726,7 @@
       "source_location": "L3",
       "_origin": "ast",
       "id": "apps_api_src_persistence_ports_project_members_repository_addprojectmemberinput",
-      "community": 91,
+      "community": 55,
       "norm_label": "addprojectmemberinput"
     },
     {
@@ -5736,7 +5736,7 @@
       "source_location": "L9",
       "_origin": "ast",
       "id": "apps_api_src_persistence_ports_project_members_repository_projectmembersrepository",
-      "community": 91,
+      "community": 55,
       "norm_label": "projectmembersrepository"
     },
     {
@@ -5746,7 +5746,7 @@
       "source_location": "L10",
       "_origin": "ast",
       "id": "apps_api_src_persistence_ports_project_members_repository_projectmembersrepository_add",
-      "community": 91,
+      "community": 55,
       "norm_label": ".add()"
     },
     {
@@ -5756,7 +5756,7 @@
       "source_location": "L11",
       "_origin": "ast",
       "id": "apps_api_src_persistence_ports_project_members_repository_projectmembersrepository_findbyprojectidanduserid",
-      "community": 91,
+      "community": 55,
       "norm_label": ".findbyprojectidanduserid()"
     },
     {
@@ -5766,7 +5766,7 @@
       "source_location": "L12",
       "_origin": "ast",
       "id": "apps_api_src_persistence_ports_project_members_repository_projectmembersrepository_listbyprojectid",
-      "community": 91,
+      "community": 55,
       "norm_label": ".listbyprojectid()"
     },
     {
@@ -5956,7 +5956,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "apps_api_src_persistence_ports_review_requests_repository",
-      "community": 130,
+      "community": 81,
       "norm_label": "review-requests.repository.ts"
     },
     {
@@ -5966,7 +5966,7 @@
       "source_location": "L3",
       "_origin": "ast",
       "id": "apps_api_src_persistence_ports_review_requests_repository_createreviewrequestinput",
-      "community": 130,
+      "community": 81,
       "norm_label": "createreviewrequestinput"
     },
     {
@@ -5976,7 +5976,7 @@
       "source_location": "L10",
       "_origin": "ast",
       "id": "apps_api_src_persistence_ports_review_requests_repository_reviewrequestsrepository",
-      "community": 130,
+      "community": 81,
       "norm_label": "reviewrequestsrepository"
     },
     {
@@ -5986,7 +5986,7 @@
       "source_location": "L11",
       "_origin": "ast",
       "id": "apps_api_src_persistence_ports_review_requests_repository_reviewrequestsrepository_create",
-      "community": 130,
+      "community": 81,
       "norm_label": ".create()"
     },
     {
@@ -5996,7 +5996,7 @@
       "source_location": "L12",
       "_origin": "ast",
       "id": "apps_api_src_persistence_ports_review_requests_repository_reviewrequestsrepository_findbysessionid",
-      "community": 130,
+      "community": 81,
       "norm_label": ".findbysessionid()"
     },
     {
@@ -6006,7 +6006,7 @@
       "source_location": "L13",
       "_origin": "ast",
       "id": "apps_api_src_persistence_ports_review_requests_repository_reviewrequestsrepository_findmanybysessionids",
-      "community": 130,
+      "community": 81,
       "norm_label": ".findmanybysessionids()"
     },
     {
@@ -6076,7 +6076,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "apps_api_src_persistence_ports_sessions_repository",
-      "community": 25,
+      "community": 99,
       "norm_label": "sessions.repository.ts"
     },
     {
@@ -6096,7 +6096,7 @@
       "source_location": "L16",
       "_origin": "ast",
       "id": "apps_api_src_persistence_ports_sessions_repository_sessionsrepository",
-      "community": 25,
+      "community": 99,
       "norm_label": "sessionsrepository"
     },
     {
@@ -6146,7 +6146,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "apps_api_src_persistence_ports_source_control_connections_repository",
-      "community": 81,
+      "community": 25,
       "norm_label": "source-control-connections.repository.ts"
     },
     {
@@ -6156,7 +6156,7 @@
       "source_location": "L3",
       "_origin": "ast",
       "id": "apps_api_src_persistence_ports_source_control_connections_repository_createsourcecontrolconnectioninput",
-      "community": 81,
+      "community": 25,
       "norm_label": "createsourcecontrolconnectioninput"
     },
     {
@@ -6166,7 +6166,7 @@
       "source_location": "L10",
       "_origin": "ast",
       "id": "apps_api_src_persistence_ports_source_control_connections_repository_sourcecontrolconnectionsrepository",
-      "community": 81,
+      "community": 25,
       "norm_label": "sourcecontrolconnectionsrepository"
     },
     {
@@ -6176,7 +6176,7 @@
       "source_location": "L11",
       "_origin": "ast",
       "id": "apps_api_src_persistence_ports_source_control_connections_repository_sourcecontrolconnectionsrepository_create",
-      "community": 81,
+      "community": 25,
       "norm_label": ".create()"
     },
     {
@@ -6186,7 +6186,7 @@
       "source_location": "L12",
       "_origin": "ast",
       "id": "apps_api_src_persistence_ports_source_control_connections_repository_sourcecontrolconnectionsrepository_findbyid",
-      "community": 81,
+      "community": 25,
       "norm_label": ".findbyid()"
     },
     {
@@ -6196,7 +6196,7 @@
       "source_location": "L13",
       "_origin": "ast",
       "id": "apps_api_src_persistence_ports_source_control_connections_repository_sourcecontrolconnectionsrepository_findbyownerandproviderconnection",
-      "community": 81,
+      "community": 25,
       "norm_label": ".findbyownerandproviderconnection()"
     },
     {
@@ -6276,7 +6276,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "apps_api_src_persistence_ports_validation_runs_repository",
-      "community": 81,
+      "community": 105,
       "norm_label": "validation-runs.repository.ts"
     },
     {
@@ -6286,7 +6286,7 @@
       "source_location": "L3",
       "_origin": "ast",
       "id": "apps_api_src_persistence_ports_validation_runs_repository_createvalidationruninput",
-      "community": 81,
+      "community": 105,
       "norm_label": "createvalidationruninput"
     },
     {
@@ -6296,7 +6296,7 @@
       "source_location": "L13",
       "_origin": "ast",
       "id": "apps_api_src_persistence_ports_validation_runs_repository_validationrunsrepository",
-      "community": 81,
+      "community": 105,
       "norm_label": "validationrunsrepository"
     },
     {
@@ -6306,7 +6306,7 @@
       "source_location": "L14",
       "_origin": "ast",
       "id": "apps_api_src_persistence_ports_validation_runs_repository_validationrunsrepository_create",
-      "community": 81,
+      "community": 105,
       "norm_label": ".create()"
     },
     {
@@ -6316,7 +6316,7 @@
       "source_location": "L15",
       "_origin": "ast",
       "id": "apps_api_src_persistence_ports_validation_runs_repository_validationrunsrepository_findlatestbysessionid",
-      "community": 81,
+      "community": 105,
       "norm_label": ".findlatestbysessionid()"
     },
     {
@@ -6546,7 +6546,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "apps_api_src_projects_projects_service",
-      "community": 25,
+      "community": 89,
       "norm_label": "projects.service.ts"
     },
     {
@@ -6886,7 +6886,7 @@
       "source_location": "L36",
       "_origin": "ast",
       "id": "apps_api_src_review_requests_create_draft_review_request_use_case_createdraftreviewrequestusecase",
-      "community": 105,
+      "community": 25,
       "norm_label": "createdraftreviewrequestusecase"
     },
     {
@@ -6896,7 +6896,7 @@
       "source_location": "",
       "_origin": "ast",
       "id": "apps_api_src_review_requests_create_draft_review_request_use_case_ts_injectable",
-      "community": 105,
+      "community": 25,
       "norm_label": "injectable"
     },
     {
@@ -6906,7 +6906,7 @@
       "source_location": "",
       "_origin": "ast",
       "id": "apps_api_src_review_requests_create_draft_review_request_use_case_ts_inject",
-      "community": 81,
+      "community": 99,
       "norm_label": "inject"
     },
     {
@@ -6916,7 +6916,7 @@
       "source_location": "L37",
       "_origin": "ast",
       "id": "apps_api_src_review_requests_create_draft_review_request_use_case_createdraftreviewrequestusecase_constructor",
-      "community": 81,
+      "community": 99,
       "norm_label": ".constructor()"
     },
     {
@@ -6926,7 +6926,7 @@
       "source_location": "L58",
       "_origin": "ast",
       "id": "apps_api_src_review_requests_create_draft_review_request_use_case_createdraftreviewrequestusecase_create",
-      "community": 105,
+      "community": 25,
       "norm_label": ".create()"
     },
     {
@@ -6936,7 +6936,7 @@
       "source_location": "L118",
       "_origin": "ast",
       "id": "apps_api_src_review_requests_create_draft_review_request_use_case_createdraftreviewrequestusecase_requiresession",
-      "community": 105,
+      "community": 25,
       "norm_label": ".requiresession()"
     },
     {
@@ -6946,7 +6946,7 @@
       "source_location": "L128",
       "_origin": "ast",
       "id": "apps_api_src_review_requests_create_draft_review_request_use_case_createdraftreviewrequestusecase_requireproject",
-      "community": 105,
+      "community": 25,
       "norm_label": ".requireproject()"
     },
     {
@@ -6956,7 +6956,7 @@
       "source_location": "L138",
       "_origin": "ast",
       "id": "apps_api_src_review_requests_create_draft_review_request_use_case_createdraftreviewrequestusecase_requiresourcecontrolconnection",
-      "community": 105,
+      "community": 25,
       "norm_label": ".requiresourcecontrolconnection()"
     },
     {
@@ -6966,7 +6966,7 @@
       "source_location": "L148",
       "_origin": "ast",
       "id": "apps_api_src_review_requests_create_draft_review_request_use_case_createdraftreviewrequestusecase_assertactorcancreatereviewrequest",
-      "community": 105,
+      "community": 25,
       "norm_label": ".assertactorcancreatereviewrequest()"
     },
     {
@@ -6976,7 +6976,7 @@
       "source_location": "L167",
       "_origin": "ast",
       "id": "apps_api_src_review_requests_create_draft_review_request_use_case_buildgitpushbranchcommand",
-      "community": 105,
+      "community": 25,
       "norm_label": "buildgitpushbranchcommand()"
     },
     {
@@ -6986,7 +6986,7 @@
       "source_location": "L181",
       "_origin": "ast",
       "id": "apps_api_src_review_requests_create_draft_review_request_use_case_buildsessionbranchname",
-      "community": 105,
+      "community": 25,
       "norm_label": "buildsessionbranchname()"
     },
     {
@@ -6996,7 +6996,7 @@
       "source_location": "L185",
       "_origin": "ast",
       "id": "apps_api_src_review_requests_create_draft_review_request_use_case_buildconventionalcommitmessage",
-      "community": 105,
+      "community": 25,
       "norm_label": "buildconventionalcommitmessage()"
     },
     {
@@ -7036,7 +7036,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "apps_api_src_sessions_session_close_service",
-      "community": 25,
+      "community": 99,
       "norm_label": "session-close.service.ts"
     },
     {
@@ -7046,7 +7046,7 @@
       "source_location": "L11",
       "_origin": "ast",
       "id": "apps_api_src_sessions_session_close_service_sessioncloseservice",
-      "community": 25,
+      "community": 99,
       "norm_label": "sessioncloseservice"
     },
     {
@@ -7056,7 +7056,7 @@
       "source_location": "",
       "_origin": "ast",
       "id": "apps_api_src_sessions_session_close_service_ts_injectable",
-      "community": 25,
+      "community": 99,
       "norm_label": "injectable"
     },
     {
@@ -7066,7 +7066,7 @@
       "source_location": "",
       "_origin": "ast",
       "id": "apps_api_src_sessions_session_close_service_ts_inject",
-      "community": 25,
+      "community": 99,
       "norm_label": "inject"
     },
     {
@@ -7076,7 +7076,7 @@
       "source_location": "",
       "_origin": "ast",
       "id": "apps_api_src_sessions_session_close_service_ts_optional",
-      "community": 25,
+      "community": 99,
       "norm_label": "optional"
     },
     {
@@ -7086,7 +7086,7 @@
       "source_location": "L14",
       "_origin": "ast",
       "id": "apps_api_src_sessions_session_close_service_sessioncloseservice_constructor",
-      "community": 25,
+      "community": 99,
       "norm_label": ".constructor()"
     },
     {
@@ -7126,7 +7126,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "apps_api_src_sessions_session_prompt_service",
-      "community": 25,
+      "community": 89,
       "norm_label": "session-prompt.service.ts"
     },
     {
@@ -7136,7 +7136,7 @@
       "source_location": "L23",
       "_origin": "ast",
       "id": "apps_api_src_sessions_session_prompt_service_sessionpromptactor",
-      "community": 25,
+      "community": 89,
       "norm_label": "sessionpromptactor"
     },
     {
@@ -7176,7 +7176,7 @@
       "source_location": "",
       "_origin": "ast",
       "id": "apps_api_src_sessions_session_prompt_service_ts_inject",
-      "community": 25,
+      "community": 99,
       "norm_label": "inject"
     },
     {
@@ -7186,7 +7186,7 @@
       "source_location": "L36",
       "_origin": "ast",
       "id": "apps_api_src_sessions_session_prompt_service_sessionpromptservice_constructor",
-      "community": 25,
+      "community": 99,
       "norm_label": ".constructor()"
     },
     {
@@ -7276,7 +7276,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "apps_api_src_sessions_session_start_policy",
-      "community": 25,
+      "community": 89,
       "norm_label": "session-start-policy.ts"
     },
     {
@@ -7286,7 +7286,7 @@
       "source_location": "L13",
       "_origin": "ast",
       "id": "apps_api_src_sessions_session_start_policy_sessionstartsource",
-      "community": 25,
+      "community": 89,
       "norm_label": "sessionstartsource"
     },
     {
@@ -7296,7 +7296,7 @@
       "source_location": "L16",
       "_origin": "ast",
       "id": "apps_api_src_sessions_session_start_policy_sessionstartpolicy",
-      "community": 25,
+      "community": 89,
       "norm_label": "sessionstartpolicy"
     },
     {
@@ -7306,7 +7306,7 @@
       "source_location": "",
       "_origin": "ast",
       "id": "apps_api_src_sessions_session_start_policy_ts_injectable",
-      "community": 25,
+      "community": 89,
       "norm_label": "injectable"
     },
     {
@@ -7316,7 +7316,7 @@
       "source_location": "",
       "_origin": "ast",
       "id": "apps_api_src_sessions_session_start_policy_ts_inject",
-      "community": 91,
+      "community": 89,
       "norm_label": "inject"
     },
     {
@@ -7326,7 +7326,7 @@
       "source_location": "L17",
       "_origin": "ast",
       "id": "apps_api_src_sessions_session_start_policy_sessionstartpolicy_constructor",
-      "community": 91,
+      "community": 89,
       "norm_label": ".constructor()"
     },
     {
@@ -7336,7 +7336,7 @@
       "source_location": "L28",
       "_origin": "ast",
       "id": "apps_api_src_sessions_session_start_policy_sessionstartpolicy_assertcanstart",
-      "community": 40,
+      "community": 68,
       "norm_label": ".assertcanstart()"
     },
     {
@@ -7346,7 +7346,7 @@
       "source_location": "L87",
       "_origin": "ast",
       "id": "apps_api_src_sessions_session_start_policy_resolvedeveloperreadinessfailure",
-      "community": 40,
+      "community": 68,
       "norm_label": "resolvedeveloperreadinessfailure()"
     },
     {
@@ -7386,7 +7386,7 @@
       "source_location": "L6",
       "_origin": "ast",
       "id": "apps_api_src_sessions_session_state_machine_sessionagentevent",
-      "community": 99,
+      "community": 89,
       "norm_label": "sessionagentevent"
     },
     {
@@ -7496,7 +7496,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "apps_api_src_sessions_sessions_controller",
-      "community": 25,
+      "community": 89,
       "norm_label": "sessions.controller.ts"
     },
     {
@@ -7506,7 +7506,7 @@
       "source_location": "L22",
       "_origin": "ast",
       "id": "apps_api_src_sessions_sessions_controller_createpromptbody",
-      "community": 25,
+      "community": 89,
       "norm_label": "createpromptbody"
     },
     {
@@ -7516,7 +7516,7 @@
       "source_location": "L26",
       "_origin": "ast",
       "id": "apps_api_src_sessions_sessions_controller_createsessionbody",
-      "community": 25,
+      "community": 89,
       "norm_label": "createsessionbody"
     },
     {
@@ -7766,7 +7766,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "apps_api_src_sessions_sessions_service",
-      "community": 25,
+      "community": 89,
       "norm_label": "sessions.service.ts"
     },
     {
@@ -7776,7 +7776,7 @@
       "source_location": "L42",
       "_origin": "ast",
       "id": "apps_api_src_sessions_sessions_service_createsessioninput",
-      "community": 25,
+      "community": 89,
       "norm_label": "createsessioninput"
     },
     {
@@ -7786,7 +7786,7 @@
       "source_location": "L47",
       "_origin": "ast",
       "id": "apps_api_src_sessions_sessions_service_createsessionrequest",
-      "community": 25,
+      "community": 89,
       "norm_label": "createsessionrequest"
     },
     {
@@ -7816,7 +7816,7 @@
       "source_location": "",
       "_origin": "ast",
       "id": "apps_api_src_sessions_sessions_service_ts_inject",
-      "community": 25,
+      "community": 36,
       "norm_label": "inject"
     },
     {
@@ -7826,7 +7826,7 @@
       "source_location": "L56",
       "_origin": "ast",
       "id": "apps_api_src_sessions_sessions_service_sessionsservice_constructor",
-      "community": 25,
+      "community": 36,
       "norm_label": ".constructor()"
     },
     {
@@ -7986,7 +7986,7 @@
       "source_location": "L352",
       "_origin": "ast",
       "id": "apps_api_src_sessions_sessions_service_parsesessionagentevent",
-      "community": 25,
+      "community": 89,
       "norm_label": "parsesessionagentevent()"
     },
     {
@@ -7996,7 +7996,7 @@
       "source_location": "L434",
       "_origin": "ast",
       "id": "apps_api_src_sessions_sessions_service_requireobject",
-      "community": 25,
+      "community": 89,
       "norm_label": "requireobject()"
     },
     {
@@ -8006,7 +8006,7 @@
       "source_location": "L442",
       "_origin": "ast",
       "id": "apps_api_src_sessions_sessions_service_isrecord",
-      "community": 25,
+      "community": 89,
       "norm_label": "isrecord()"
     },
     {
@@ -8016,7 +8016,7 @@
       "source_location": "L446",
       "_origin": "ast",
       "id": "apps_api_src_sessions_sessions_service_isprogressstatus",
-      "community": 25,
+      "community": 89,
       "norm_label": "isprogressstatus()"
     },
     {
@@ -8036,7 +8036,7 @@
       "source_location": "L469",
       "_origin": "ast",
       "id": "apps_api_src_sessions_sessions_service_comparesessionmembers",
-      "community": 25,
+      "community": 89,
       "norm_label": "comparesessionmembers()"
     },
     {
@@ -8046,7 +8046,7 @@
       "source_location": "L476",
       "_origin": "ast",
       "id": "apps_api_src_sessions_sessions_service_sessionmemberorder",
-      "community": 25,
+      "community": 89,
       "norm_label": "sessionmemberorder()"
     },
     {
@@ -8056,7 +8056,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "apps_api_src_source_control_adapters_github_github_source_control_adapter",
-      "community": 26,
+      "community": 110,
       "norm_label": "github-source-control.adapter.ts"
     },
     {
@@ -8066,7 +8066,7 @@
       "source_location": "L6",
       "_origin": "ast",
       "id": "apps_api_src_source_control_adapters_github_github_source_control_adapter_githubpullresponse",
-      "community": 26,
+      "community": 110,
       "norm_label": "githubpullresponse"
     },
     {
@@ -8076,7 +8076,7 @@
       "source_location": "L11",
       "_origin": "ast",
       "id": "apps_api_src_source_control_adapters_github_github_source_control_adapter_githubrepositoryresponse",
-      "community": 26,
+      "community": 110,
       "norm_label": "githubrepositoryresponse"
     },
     {
@@ -8086,7 +8086,7 @@
       "source_location": "L17",
       "_origin": "ast",
       "id": "apps_api_src_source_control_adapters_github_github_source_control_adapter_githubinstallationrepositoriesresponse",
-      "community": 26,
+      "community": 110,
       "norm_label": "githubinstallationrepositoriesresponse"
     },
     {
@@ -8096,7 +8096,7 @@
       "source_location": "L21",
       "_origin": "ast",
       "id": "apps_api_src_source_control_adapters_github_github_source_control_adapter_githubbranchresponse",
-      "community": 26,
+      "community": 110,
       "norm_label": "githubbranchresponse"
     },
     {
@@ -8106,7 +8106,7 @@
       "source_location": "L25",
       "_origin": "ast",
       "id": "apps_api_src_source_control_adapters_github_github_source_control_adapter_githubsourcecontrolconfig",
-      "community": 26,
+      "community": 110,
       "norm_label": "githubsourcecontrolconfig"
     },
     {
@@ -8116,7 +8116,7 @@
       "source_location": "L33",
       "_origin": "ast",
       "id": "apps_api_src_source_control_adapters_github_github_source_control_adapter_githubinstallationtokenresponse",
-      "community": 26,
+      "community": 110,
       "norm_label": "githubinstallationtokenresponse"
     },
     {
@@ -8126,7 +8126,7 @@
       "source_location": "L37",
       "_origin": "ast",
       "id": "apps_api_src_source_control_adapters_github_github_source_control_adapter_fetcher",
-      "community": 26,
+      "community": 110,
       "norm_label": "fetcher"
     },
     {
@@ -8256,7 +8256,7 @@
       "source_location": "L273",
       "_origin": "ast",
       "id": "apps_api_src_source_control_adapters_github_github_source_control_adapter_creategithubappjwt",
-      "community": 26,
+      "community": 110,
       "norm_label": "creategithubappjwt()"
     },
     {
@@ -8266,7 +8266,7 @@
       "source_location": "L286",
       "_origin": "ast",
       "id": "apps_api_src_source_control_adapters_github_github_source_control_adapter_base64urlencode",
-      "community": 26,
+      "community": 110,
       "norm_label": "base64urlencode()"
     },
     {
@@ -8276,7 +8276,7 @@
       "source_location": "L290",
       "_origin": "ast",
       "id": "apps_api_src_source_control_adapters_github_github_source_control_adapter_normalizeprivatekey",
-      "community": 26,
+      "community": 110,
       "norm_label": "normalizeprivatekey()"
     },
     {
@@ -8326,7 +8326,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "apps_api_src_source_control_source_control_port",
-      "community": 25,
+      "community": 81,
       "norm_label": "source-control.port.ts"
     },
     {
@@ -8646,7 +8646,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "apps_api_src_ui_gateway_ui_gateway",
-      "community": 91,
+      "community": 60,
       "norm_label": "ui.gateway.ts"
     },
     {
@@ -8656,7 +8656,7 @@
       "source_location": "L20",
       "_origin": "ast",
       "id": "apps_api_src_ui_gateway_ui_gateway_uigateway",
-      "community": 104,
+      "community": 29,
       "norm_label": "uigateway"
     },
     {
@@ -8666,7 +8666,7 @@
       "source_location": "",
       "_origin": "ast",
       "id": "apps_api_src_ui_gateway_ui_gateway_ts_injectable",
-      "community": 104,
+      "community": 29,
       "norm_label": "injectable"
     },
     {
@@ -8676,7 +8676,7 @@
       "source_location": "",
       "_origin": "ast",
       "id": "apps_api_src_ui_gateway_ui_gateway_ts_websocketgateway",
-      "community": 104,
+      "community": 29,
       "norm_label": "websocketgateway"
     },
     {
@@ -8686,7 +8686,7 @@
       "source_location": "",
       "_origin": "ast",
       "id": "apps_api_src_ui_gateway_ui_gateway_ts_websocketserver",
-      "community": 104,
+      "community": 29,
       "norm_label": "websocketserver"
     },
     {
@@ -8696,7 +8696,7 @@
       "source_location": "",
       "_origin": "ast",
       "id": "apps_api_src_ui_gateway_ui_gateway_ts_inject",
-      "community": 104,
+      "community": 29,
       "norm_label": "inject"
     },
     {
@@ -8706,7 +8706,7 @@
       "source_location": "",
       "_origin": "ast",
       "id": "apps_api_src_ui_gateway_ui_gateway_ts_subscribemessage",
-      "community": 104,
+      "community": 29,
       "norm_label": "subscribemessage"
     },
     {
@@ -8716,7 +8716,7 @@
       "source_location": "",
       "_origin": "ast",
       "id": "apps_api_src_ui_gateway_ui_gateway_ts_messagebody",
-      "community": 104,
+      "community": 29,
       "norm_label": "messagebody"
     },
     {
@@ -8726,7 +8726,7 @@
       "source_location": "",
       "_origin": "ast",
       "id": "apps_api_src_ui_gateway_ui_gateway_ts_connectedsocket",
-      "community": 104,
+      "community": 29,
       "norm_label": "connectedsocket"
     },
     {
@@ -8736,7 +8736,7 @@
       "source_location": "L24",
       "_origin": "ast",
       "id": "apps_api_src_ui_gateway_ui_gateway_uigateway_constructor",
-      "community": 104,
+      "community": 29,
       "norm_label": ".constructor()"
     },
     {
@@ -8746,7 +8746,7 @@
       "source_location": "L32",
       "_origin": "ast",
       "id": "apps_api_src_ui_gateway_ui_gateway_uigateway_subscribetosession",
-      "community": 104,
+      "community": 29,
       "norm_label": ".subscribetosession()"
     },
     {
@@ -8756,7 +8756,7 @@
       "source_location": "L46",
       "_origin": "ast",
       "id": "apps_api_src_ui_gateway_ui_gateway_uigateway_publishsessionevent",
-      "community": 104,
+      "community": 29,
       "norm_label": ".publishsessionevent()"
     },
     {
@@ -8766,7 +8766,7 @@
       "source_location": "L50",
       "_origin": "ast",
       "id": "apps_api_src_ui_gateway_ui_gateway_uigateway_roomname",
-      "community": 104,
+      "community": 29,
       "norm_label": ".roomname()"
     },
     {
@@ -8776,7 +8776,7 @@
       "source_location": "L54",
       "_origin": "ast",
       "id": "apps_api_src_ui_gateway_ui_gateway_uigateway_extractauthtoken",
-      "community": 104,
+      "community": 29,
       "norm_label": ".extractauthtoken()"
     },
     {
@@ -8786,7 +8786,7 @@
       "source_location": "L64",
       "_origin": "ast",
       "id": "apps_api_src_ui_gateway_ui_gateway_uigateway_extractauthtokenfromhandshake",
-      "community": 104,
+      "community": 29,
       "norm_label": ".extractauthtokenfromhandshake()"
     },
     {
@@ -8796,7 +8796,7 @@
       "source_location": "L80",
       "_origin": "ast",
       "id": "apps_api_src_ui_gateway_ui_gateway_uigateway_extractbearertoken",
-      "community": 104,
+      "community": 29,
       "norm_label": ".extractbearertoken()"
     },
     {
@@ -8846,7 +8846,7 @@
       "source_location": "L7",
       "_origin": "ast",
       "id": "apps_api_src_users_users_service_usersservice",
-      "community": 10,
+      "community": 12,
       "norm_label": "usersservice"
     },
     {
@@ -8856,7 +8856,7 @@
       "source_location": "",
       "_origin": "ast",
       "id": "apps_api_src_users_users_service_ts_injectable",
-      "community": 10,
+      "community": 12,
       "norm_label": "injectable"
     },
     {
@@ -8866,7 +8866,7 @@
       "source_location": "",
       "_origin": "ast",
       "id": "apps_api_src_users_users_service_ts_inject",
-      "community": 10,
+      "community": 12,
       "norm_label": "inject"
     },
     {
@@ -8876,7 +8876,7 @@
       "source_location": "L8",
       "_origin": "ast",
       "id": "apps_api_src_users_users_service_usersservice_constructor",
-      "community": 10,
+      "community": 12,
       "norm_label": ".constructor()"
     },
     {
@@ -8886,7 +8886,7 @@
       "source_location": "L10",
       "_origin": "ast",
       "id": "apps_api_src_users_users_service_usersservice_findbyid",
-      "community": 10,
+      "community": 12,
       "norm_label": ".findbyid()"
     },
     {
@@ -8896,7 +8896,7 @@
       "source_location": "L14",
       "_origin": "ast",
       "id": "apps_api_src_users_users_service_usersservice_findbyemail",
-      "community": 10,
+      "community": 12,
       "norm_label": ".findbyemail()"
     },
     {
@@ -8906,7 +8906,7 @@
       "source_location": "L18",
       "_origin": "ast",
       "id": "apps_api_src_users_users_service_usersservice_create",
-      "community": 10,
+      "community": 12,
       "norm_label": ".create()"
     },
     {
@@ -8916,7 +8916,7 @@
       "source_location": "L22",
       "_origin": "ast",
       "id": "apps_api_src_users_users_service_usersservice_updateprofile",
-      "community": 10,
+      "community": 12,
       "norm_label": ".updateprofile()"
     },
     {
@@ -8956,7 +8956,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "apps_api_src_validation_validation_policy",
-      "community": 99,
+      "community": 105,
       "norm_label": "validation.policy.ts"
     },
     {
@@ -8966,7 +8966,7 @@
       "source_location": "L5",
       "_origin": "ast",
       "id": "apps_api_src_validation_validation_policy_validationpolicy",
-      "community": 99,
+      "community": 105,
       "norm_label": "validationpolicy"
     },
     {
@@ -8976,7 +8976,7 @@
       "source_location": "",
       "_origin": "ast",
       "id": "apps_api_src_validation_validation_policy_ts_injectable",
-      "community": 99,
+      "community": 105,
       "norm_label": "injectable"
     },
     {
@@ -8986,7 +8986,7 @@
       "source_location": "L6",
       "_origin": "ast",
       "id": "apps_api_src_validation_validation_policy_validationpolicy_cancreatedraftreviewrequest",
-      "community": 99,
+      "community": 105,
       "norm_label": ".cancreatedraftreviewrequest()"
     },
     {
@@ -8996,7 +8996,7 @@
       "source_location": "L10",
       "_origin": "ast",
       "id": "apps_api_src_validation_validation_policy_validationpolicy_failurereasons",
-      "community": 99,
+      "community": 105,
       "norm_label": ".failurereasons()"
     },
     {
@@ -9006,7 +9006,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "apps_api_src_validation_validation_service",
-      "community": 81,
+      "community": 105,
       "norm_label": "validation.service.ts"
     },
     {
@@ -9016,7 +9016,7 @@
       "source_location": "L10",
       "_origin": "ast",
       "id": "apps_api_src_validation_validation_service_sessionvalidationview",
-      "community": 81,
+      "community": 105,
       "norm_label": "sessionvalidationview"
     },
     {
@@ -9026,7 +9026,7 @@
       "source_location": "L19",
       "_origin": "ast",
       "id": "apps_api_src_validation_validation_service_validationservice",
-      "community": 89,
+      "community": 105,
       "norm_label": "validationservice"
     },
     {
@@ -9036,7 +9036,7 @@
       "source_location": "",
       "_origin": "ast",
       "id": "apps_api_src_validation_validation_service_ts_injectable",
-      "community": 89,
+      "community": 105,
       "norm_label": "injectable"
     },
     {
@@ -9046,7 +9046,7 @@
       "source_location": "",
       "_origin": "ast",
       "id": "apps_api_src_validation_validation_service_ts_inject",
-      "community": 89,
+      "community": 105,
       "norm_label": "inject"
     },
     {
@@ -9056,7 +9056,7 @@
       "source_location": "L20",
       "_origin": "ast",
       "id": "apps_api_src_validation_validation_service_validationservice_constructor",
-      "community": 89,
+      "community": 105,
       "norm_label": ".constructor()"
     },
     {
@@ -9066,7 +9066,7 @@
       "source_location": "L25",
       "_origin": "ast",
       "id": "apps_api_src_validation_validation_service_validationservice_getlatestvalidation",
-      "community": 81,
+      "community": 105,
       "norm_label": ".getlatestvalidation()"
     },
     {
@@ -9116,7 +9116,7 @@
       "source_location": "L70",
       "_origin": "ast",
       "id": "apps_api_src_validation_validation_service_tovalidationview",
-      "community": 81,
+      "community": 105,
       "norm_label": "tovalidationview()"
     },
     {
@@ -9416,7 +9416,7 @@
       "source_location": "L18",
       "_origin": "ast",
       "id": "users_mathis_pairdock_worktrees_dee8fa99_c598_4d28_9d69_51407273a2e5_apps_web_package_dependencies_react_dom",
-      "community": 167,
+      "community": 91,
       "norm_label": "react-dom"
     },
     {
@@ -9426,7 +9426,7 @@
       "source_location": "L18",
       "_origin": "ast",
       "id": "react_dom",
-      "community": 167,
+      "community": 91,
       "norm_label": "react-dom"
     },
     {
@@ -10066,7 +10066,7 @@
       "source_location": "L37",
       "_origin": "ast",
       "id": "apps_web_src_components_brand_icons_slackicon",
-      "community": 69,
+      "community": 6,
       "norm_label": "slackicon()"
     },
     {
@@ -10116,7 +10116,7 @@
       "source_location": "L19",
       "_origin": "ast",
       "id": "apps_web_src_components_button_button",
-      "community": 76,
+      "community": 6,
       "norm_label": "button()"
     },
     {
@@ -10126,7 +10126,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "apps_web_src_components_developer_connection_activity_rail",
-      "community": 148,
+      "community": 76,
       "norm_label": "connection-activity-rail.tsx"
     },
     {
@@ -10136,7 +10136,7 @@
       "source_location": "L5",
       "_origin": "ast",
       "id": "apps_web_src_components_developer_connection_activity_rail_connectionactivityrailprops",
-      "community": 148,
+      "community": 76,
       "norm_label": "connectionactivityrailprops"
     },
     {
@@ -10146,7 +10146,7 @@
       "source_location": "L9",
       "_origin": "ast",
       "id": "apps_web_src_components_developer_connection_activity_rail_connectionactivityrail",
-      "community": 148,
+      "community": 76,
       "norm_label": "connectionactivityrail()"
     },
     {
@@ -10156,7 +10156,7 @@
       "source_location": "L55",
       "_origin": "ast",
       "id": "apps_web_src_components_developer_connection_activity_rail_railmetricprops",
-      "community": 148,
+      "community": 76,
       "norm_label": "railmetricprops"
     },
     {
@@ -10166,7 +10166,7 @@
       "source_location": "L60",
       "_origin": "ast",
       "id": "apps_web_src_components_developer_connection_activity_rail_railmetric",
-      "community": 148,
+      "community": 76,
       "norm_label": "railmetric()"
     },
     {
@@ -10176,7 +10176,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "apps_web_src_components_developer_developer_project_card",
-      "community": 76,
+      "community": 47,
       "norm_label": "developer-project-card.tsx"
     },
     {
@@ -10186,7 +10186,7 @@
       "source_location": "L9",
       "_origin": "ast",
       "id": "apps_web_src_components_developer_developer_project_card_developerprojectcardprops",
-      "community": 76,
+      "community": 47,
       "norm_label": "developerprojectcardprops"
     },
     {
@@ -10196,7 +10196,7 @@
       "source_location": "L21",
       "_origin": "ast",
       "id": "apps_web_src_components_developer_developer_project_card_developerprojectcard",
-      "community": 6,
+      "community": 47,
       "norm_label": "developerprojectcard()"
     },
     {
@@ -10206,7 +10206,7 @@
       "source_location": "L141",
       "_origin": "ast",
       "id": "apps_web_src_components_developer_developer_project_card_projectfactprops",
-      "community": 76,
+      "community": 47,
       "norm_label": "projectfactprops"
     },
     {
@@ -10216,7 +10216,7 @@
       "source_location": "L146",
       "_origin": "ast",
       "id": "apps_web_src_components_developer_developer_project_card_projectfact",
-      "community": 76,
+      "community": 47,
       "norm_label": "projectfact()"
     },
     {
@@ -10226,7 +10226,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "apps_web_src_components_developer_developer_project_form",
-      "community": 76,
+      "community": 20,
       "norm_label": "developer-project-form.tsx"
     },
     {
@@ -10246,7 +10246,7 @@
       "source_location": "L21",
       "_origin": "ast",
       "id": "apps_web_src_components_developer_developer_project_form_projectformstate",
-      "community": 76,
+      "community": 20,
       "norm_label": "projectformstate"
     },
     {
@@ -10256,7 +10256,7 @@
       "source_location": "L32",
       "_origin": "ast",
       "id": "apps_web_src_components_developer_developer_project_form_agentprojectoption",
-      "community": 76,
+      "community": 20,
       "norm_label": "agentprojectoption"
     },
     {
@@ -10266,7 +10266,7 @@
       "source_location": "L41",
       "_origin": "ast",
       "id": "apps_web_src_components_developer_developer_project_form_developerprojectform",
-      "community": 76,
+      "community": 20,
       "norm_label": "developerprojectform()"
     },
     {
@@ -10276,7 +10276,7 @@
       "source_location": "L302",
       "_origin": "ast",
       "id": "apps_web_src_components_developer_developer_project_form_projectsetupstateprops",
-      "community": 76,
+      "community": 20,
       "norm_label": "projectsetupstateprops"
     },
     {
@@ -10286,7 +10286,7 @@
       "source_location": "L310",
       "_origin": "ast",
       "id": "apps_web_src_components_developer_developer_project_form_projectsetupstate",
-      "community": 76,
+      "community": 20,
       "norm_label": "projectsetupstate()"
     },
     {
@@ -10296,7 +10296,7 @@
       "source_location": "L338",
       "_origin": "ast",
       "id": "apps_web_src_components_developer_developer_project_form_setuphint",
-      "community": 76,
+      "community": 20,
       "norm_label": "setuphint()"
     },
     {
@@ -10306,7 +10306,7 @@
       "source_location": "L346",
       "_origin": "ast",
       "id": "apps_web_src_components_developer_developer_project_form_resolvemodeloptions",
-      "community": 76,
+      "community": 20,
       "norm_label": "resolvemodeloptions()"
     },
     {
@@ -10316,7 +10316,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "apps_web_src_components_developer_project_share_form",
-      "community": 76,
+      "community": 47,
       "norm_label": "project-share-form.tsx"
     },
     {
@@ -10326,7 +10326,7 @@
       "source_location": "L5",
       "_origin": "ast",
       "id": "apps_web_src_components_developer_project_share_form_projectshareformprops",
-      "community": 76,
+      "community": 47,
       "norm_label": "projectshareformprops"
     },
     {
@@ -10336,7 +10336,7 @@
       "source_location": "L11",
       "_origin": "ast",
       "id": "apps_web_src_components_developer_project_share_form_projectshareform",
-      "community": 76,
+      "community": 47,
       "norm_label": "projectshareform()"
     },
     {
@@ -10346,7 +10346,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "apps_web_src_components_developer_session_control_card",
-      "community": 76,
+      "community": 47,
       "norm_label": "session-control-card.tsx"
     },
     {
@@ -10356,7 +10356,7 @@
       "source_location": "L6",
       "_origin": "ast",
       "id": "apps_web_src_components_developer_session_control_card_sessioncontrolcardprops",
-      "community": 76,
+      "community": 47,
       "norm_label": "sessioncontrolcardprops"
     },
     {
@@ -10366,7 +10366,7 @@
       "source_location": "L12",
       "_origin": "ast",
       "id": "apps_web_src_components_developer_session_control_card_sessioncontrolcard",
-      "community": 76,
+      "community": 47,
       "norm_label": "sessioncontrolcard()"
     },
     {
@@ -10506,7 +10506,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "apps_web_src_components_execution_selection",
-      "community": 76,
+      "community": 20,
       "norm_label": "execution-selection.tsx"
     },
     {
@@ -10516,7 +10516,7 @@
       "source_location": "L6",
       "_origin": "ast",
       "id": "apps_web_src_components_execution_selection_executionselection",
-      "community": 76,
+      "community": 20,
       "norm_label": "executionselection"
     },
     {
@@ -10526,7 +10526,7 @@
       "source_location": "L11",
       "_origin": "ast",
       "id": "apps_web_src_components_execution_selection_executionselectionprops",
-      "community": 76,
+      "community": 20,
       "norm_label": "executionselectionprops"
     },
     {
@@ -10536,7 +10536,7 @@
       "source_location": "L21",
       "_origin": "ast",
       "id": "apps_web_src_components_execution_selection_executionselectioncontrols",
-      "community": 76,
+      "community": 47,
       "norm_label": "executionselectioncontrols()"
     },
     {
@@ -10576,7 +10576,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "apps_web_src_components_pm_session_preview_frame",
-      "community": 50,
+      "community": 15,
       "norm_label": "preview-frame.tsx"
     },
     {
@@ -10586,7 +10586,7 @@
       "source_location": "L4",
       "_origin": "ast",
       "id": "apps_web_src_components_pm_session_preview_frame_previewframeprops",
-      "community": 50,
+      "community": 15,
       "norm_label": "previewframeprops"
     },
     {
@@ -10596,7 +10596,7 @@
       "source_location": "L9",
       "_origin": "ast",
       "id": "apps_web_src_components_pm_session_preview_frame_previewareasize",
-      "community": 50,
+      "community": 15,
       "norm_label": "previewareasize"
     },
     {
@@ -10606,7 +10606,7 @@
       "source_location": "L14",
       "_origin": "ast",
       "id": "apps_web_src_components_pm_session_preview_frame_previewframe",
-      "community": 50,
+      "community": 15,
       "norm_label": "previewframe()"
     },
     {
@@ -10616,7 +10616,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "apps_web_src_components_pm_session_preview_toolbar",
-      "community": 50,
+      "community": 15,
       "norm_label": "preview-toolbar.tsx"
     },
     {
@@ -10626,7 +10626,7 @@
       "source_location": "L5",
       "_origin": "ast",
       "id": "apps_web_src_components_pm_session_preview_toolbar_previewtoolbarprops",
-      "community": 50,
+      "community": 15,
       "norm_label": "previewtoolbarprops"
     },
     {
@@ -10636,7 +10636,7 @@
       "source_location": "L11",
       "_origin": "ast",
       "id": "apps_web_src_components_pm_session_preview_toolbar_previewtoolbar",
-      "community": 50,
+      "community": 15,
       "norm_label": "previewtoolbar()"
     },
     {
@@ -10646,7 +10646,7 @@
       "source_location": "L67",
       "_origin": "ast",
       "id": "apps_web_src_components_pm_session_preview_toolbar_preseticon",
-      "community": 50,
+      "community": 15,
       "norm_label": "preseticon()"
     },
     {
@@ -10656,7 +10656,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "apps_web_src_components_pm_session_prompt_composer",
-      "community": 76,
+      "community": 6,
       "norm_label": "prompt-composer.tsx"
     },
     {
@@ -10666,7 +10666,7 @@
       "source_location": "L6",
       "_origin": "ast",
       "id": "apps_web_src_components_pm_session_prompt_composer_promptcomposerprops",
-      "community": 76,
+      "community": 6,
       "norm_label": "promptcomposerprops"
     },
     {
@@ -10676,7 +10676,7 @@
       "source_location": "L16",
       "_origin": "ast",
       "id": "apps_web_src_components_pm_session_prompt_composer_promptcomposer",
-      "community": 88,
+      "community": 6,
       "norm_label": "promptcomposer()"
     },
     {
@@ -10686,7 +10686,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "apps_web_src_components_pm_session_review_request_dialog",
-      "community": 88,
+      "community": 13,
       "norm_label": "review-request-dialog.tsx"
     },
     {
@@ -10696,7 +10696,7 @@
       "source_location": "L5",
       "_origin": "ast",
       "id": "apps_web_src_components_pm_session_review_request_dialog_reviewrequestdialogprops",
-      "community": 88,
+      "community": 13,
       "norm_label": "reviewrequestdialogprops"
     },
     {
@@ -10706,7 +10706,7 @@
       "source_location": "L12",
       "_origin": "ast",
       "id": "apps_web_src_components_pm_session_review_request_dialog_reviewrequestdialog",
-      "community": 88,
+      "community": 13,
       "norm_label": "reviewrequestdialog()"
     },
     {
@@ -11216,7 +11216,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "apps_web_src_hooks_use_developer_projects",
-      "community": 13,
+      "community": 6,
       "norm_label": "use-developer-projects.ts"
     },
     {
@@ -11226,7 +11226,7 @@
       "source_location": "L9",
       "_origin": "ast",
       "id": "apps_web_src_hooks_use_developer_projects_updateexecutiondefaultsinput",
-      "community": 13,
+      "community": 6,
       "norm_label": "updateexecutiondefaultsinput"
     },
     {
@@ -11236,7 +11236,7 @@
       "source_location": "L13",
       "_origin": "ast",
       "id": "apps_web_src_hooks_use_developer_projects_sharedeveloperprojectinput",
-      "community": 13,
+      "community": 6,
       "norm_label": "sharedeveloperprojectinput"
     },
     {
@@ -11576,7 +11576,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "apps_web_src_lib_preview_presets",
-      "community": 50,
+      "community": 15,
       "norm_label": "preview-presets.ts"
     },
     {
@@ -11586,7 +11586,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "apps_web_src_lib_preview_presets_previewpresetid",
-      "community": 50,
+      "community": 15,
       "norm_label": "previewpresetid"
     },
     {
@@ -11596,7 +11596,7 @@
       "source_location": "L3",
       "_origin": "ast",
       "id": "apps_web_src_lib_preview_presets_previewpreset",
-      "community": 50,
+      "community": 15,
       "norm_label": "previewpreset"
     },
     {
@@ -11606,7 +11606,7 @@
       "source_location": "L13",
       "_origin": "ast",
       "id": "apps_web_src_lib_preview_presets_previewpresets",
-      "community": 50,
+      "community": 15,
       "norm_label": "previewpresets"
     },
     {
@@ -11616,7 +11616,7 @@
       "source_location": "L52",
       "_origin": "ast",
       "id": "apps_web_src_lib_preview_presets_getpreviewframestyle",
-      "community": 50,
+      "community": 15,
       "norm_label": "getpreviewframestyle()"
     },
     {
@@ -11626,7 +11626,7 @@
       "source_location": "L65",
       "_origin": "ast",
       "id": "apps_web_src_lib_preview_presets_getfittedpreviewscale",
-      "community": 50,
+      "community": 15,
       "norm_label": "getfittedpreviewscale()"
     },
     {
@@ -11636,7 +11636,7 @@
       "source_location": "L78",
       "_origin": "ast",
       "id": "apps_web_src_lib_preview_presets_ispreviewpresetid",
-      "community": 50,
+      "community": 15,
       "norm_label": "ispreviewpresetid()"
     },
     {
@@ -13164,7 +13164,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "packages_domain_src_index",
-      "community": 99,
+      "community": 55,
       "norm_label": "index.ts"
     },
     {
@@ -13174,7 +13174,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "packages_domain_src_index_userkind",
-      "community": 99,
+      "community": 55,
       "norm_label": "userkind"
     },
     {
@@ -13194,7 +13194,7 @@
       "source_location": "L4",
       "_origin": "ast",
       "id": "packages_domain_src_index_sourcecontrolprovider",
-      "community": 99,
+      "community": 55,
       "norm_label": "sourcecontrolprovider"
     },
     {
@@ -13204,7 +13204,7 @@
       "source_location": "L5",
       "_origin": "ast",
       "id": "packages_domain_src_index_projectmembershiprole",
-      "community": 91,
+      "community": 55,
       "norm_label": "projectmembershiprole"
     },
     {
@@ -13214,7 +13214,7 @@
       "source_location": "L6",
       "_origin": "ast",
       "id": "packages_domain_src_index_toolreadinesskey",
-      "community": 55,
+      "community": 74,
       "norm_label": "toolreadinesskey"
     },
     {
@@ -13224,7 +13224,7 @@
       "source_location": "L15",
       "_origin": "ast",
       "id": "packages_domain_src_index_toolreadinessstatus",
-      "community": 55,
+      "community": 74,
       "norm_label": "toolreadinessstatus"
     },
     {
@@ -13234,7 +13234,7 @@
       "source_location": "L17",
       "_origin": "ast",
       "id": "packages_domain_src_index_sessionstatus",
-      "community": 99,
+      "community": 105,
       "norm_label": "sessionstatus"
     },
     {
@@ -13264,7 +13264,7 @@
       "source_location": "L51",
       "_origin": "ast",
       "id": "packages_domain_src_index_sourcecontrolconnection",
-      "community": 81,
+      "community": 25,
       "norm_label": "sourcecontrolconnection"
     },
     {
@@ -13284,7 +13284,7 @@
       "source_location": "L75",
       "_origin": "ast",
       "id": "packages_domain_src_index_projectmembership",
-      "community": 91,
+      "community": 55,
       "norm_label": "projectmembership"
     },
     {
@@ -13334,7 +13334,7 @@
       "source_location": "L122",
       "_origin": "ast",
       "id": "packages_domain_src_index_sessionmessage",
-      "community": 15,
+      "community": 34,
       "norm_label": "sessionmessage"
     },
     {
@@ -13364,7 +13364,7 @@
       "source_location": "L169",
       "_origin": "ast",
       "id": "packages_domain_src_index_validationrun",
-      "community": 81,
+      "community": 105,
       "norm_label": "validationrun"
     },
     {
@@ -13374,7 +13374,7 @@
       "source_location": "L181",
       "_origin": "ast",
       "id": "packages_domain_src_index_reviewrequestrecord",
-      "community": 130,
+      "community": 81,
       "norm_label": "reviewrequestrecord"
     },
     {
@@ -13444,7 +13444,7 @@
       "source_location": "L215",
       "_origin": "ast",
       "id": "packages_domain_src_index_sourcecontrolport",
-      "community": 120,
+      "community": 81,
       "norm_label": "sourcecontrolport"
     },
     {
@@ -13454,7 +13454,7 @@
       "source_location": "L216",
       "_origin": "ast",
       "id": "packages_domain_src_index_sourcecontrolport_assertprojectaccess",
-      "community": 120,
+      "community": 81,
       "norm_label": ".assertprojectaccess()"
     },
     {
@@ -13464,7 +13464,7 @@
       "source_location": "L217",
       "_origin": "ast",
       "id": "packages_domain_src_index_sourcecontrolport_listinstallationrepositories",
-      "community": 120,
+      "community": 81,
       "norm_label": ".listinstallationrepositories()"
     },
     {
@@ -13474,7 +13474,7 @@
       "source_location": "L221",
       "_origin": "ast",
       "id": "packages_domain_src_index_sourcecontrolport_listrepositorybranches",
-      "community": 120,
+      "community": 81,
       "norm_label": ".listrepositorybranches()"
     },
     {
@@ -13484,7 +13484,7 @@
       "source_location": "L226",
       "_origin": "ast",
       "id": "packages_domain_src_index_sourcecontrolport_createdraftreviewrequest",
-      "community": 120,
+      "community": 81,
       "norm_label": ".createdraftreviewrequest()"
     },
     {
@@ -13824,7 +13824,7 @@
       "source_location": "L15",
       "_origin": "ast",
       "id": "packages_local_agent_src_checks_checks_runner_checksresult",
-      "community": 145,
+      "community": 31,
       "norm_label": "checksresult"
     },
     {
@@ -13974,7 +13974,7 @@
       "source_location": "L46",
       "_origin": "ast",
       "id": "packages_local_agent_src_checks_host_check_command_executor_hostcheckcommandrunner",
-      "community": 42,
+      "community": 71,
       "norm_label": "hostcheckcommandrunner"
     },
     {
@@ -13984,7 +13984,7 @@
       "source_location": "L47",
       "_origin": "ast",
       "id": "packages_local_agent_src_checks_host_check_command_executor_hostcheckcommandrunner_run",
-      "community": 42,
+      "community": 71,
       "norm_label": ".run()"
     },
     {
@@ -15154,7 +15154,7 @@
       "source_location": "L22",
       "_origin": "ast",
       "id": "packages_local_agent_src_docker_docker_orphan_reconciler_dockerorphanreconciler",
-      "community": 164,
+      "community": 71,
       "norm_label": "dockerorphanreconciler"
     },
     {
@@ -15164,7 +15164,7 @@
       "source_location": "L23",
       "_origin": "ast",
       "id": "packages_local_agent_src_docker_docker_orphan_reconciler_dockerorphanreconciler_constructor",
-      "community": 164,
+      "community": 71,
       "norm_label": ".constructor()"
     },
     {
@@ -15174,7 +15174,7 @@
       "source_location": "L25",
       "_origin": "ast",
       "id": "packages_local_agent_src_docker_docker_orphan_reconciler_dockerorphanreconciler_reconcile",
-      "community": 164,
+      "community": 71,
       "norm_label": ".reconcile()"
     },
     {
@@ -15254,7 +15254,7 @@
       "source_location": "L33",
       "_origin": "ast",
       "id": "packages_local_agent_src_docker_docker_sandbox_adapter_dockersandboxadapterdependencies",
-      "community": 5,
+      "community": 1,
       "norm_label": "dockersandboxadapterdependencies"
     },
     {
@@ -15264,7 +15264,7 @@
       "source_location": "L44",
       "_origin": "ast",
       "id": "packages_local_agent_src_docker_docker_sandbox_adapter_dockersandboxadapter",
-      "community": 5,
+      "community": 1,
       "norm_label": "dockersandboxadapter"
     },
     {
@@ -15274,7 +15274,7 @@
       "source_location": "L47",
       "_origin": "ast",
       "id": "packages_local_agent_src_docker_docker_sandbox_adapter_dockersandboxadapter_constructor",
-      "community": 5,
+      "community": 1,
       "norm_label": ".constructor()"
     },
     {
@@ -15284,7 +15284,7 @@
       "source_location": "L49",
       "_origin": "ast",
       "id": "packages_local_agent_src_docker_docker_sandbox_adapter_dockersandboxadapter_start",
-      "community": 5,
+      "community": 1,
       "norm_label": ".start()"
     },
     {
@@ -15294,7 +15294,7 @@
       "source_location": "L109",
       "_origin": "ast",
       "id": "packages_local_agent_src_docker_docker_sandbox_adapter_dockersandboxadapter_stop",
-      "community": 5,
+      "community": 1,
       "norm_label": ".stop()"
     },
     {
@@ -15304,7 +15304,7 @@
       "source_location": "L149",
       "_origin": "ast",
       "id": "packages_local_agent_src_docker_docker_sandbox_adapter_dockersandboxadapter_check",
-      "community": 5,
+      "community": 1,
       "norm_label": ".check()"
     },
     {
@@ -15314,7 +15314,7 @@
       "source_location": "L185",
       "_origin": "ast",
       "id": "packages_local_agent_src_docker_docker_sandbox_adapter_dockersandboxadapter_spawn",
-      "community": 5,
+      "community": 1,
       "norm_label": ".spawn()"
     },
     {
@@ -15324,7 +15324,7 @@
       "source_location": "L189",
       "_origin": "ast",
       "id": "packages_local_agent_src_docker_docker_sandbox_adapter_dockersandboxadapter_fetch",
-      "community": 5,
+      "community": 1,
       "norm_label": ".fetch()"
     },
     {
@@ -15334,7 +15334,7 @@
       "source_location": "L193",
       "_origin": "ast",
       "id": "packages_local_agent_src_docker_docker_sandbox_adapter_dockersandboxadapter_getstartuplogsuffix",
-      "community": 5,
+      "community": 1,
       "norm_label": ".getstartuplogsuffix()"
     },
     {
@@ -15344,7 +15344,7 @@
       "source_location": "L198",
       "_origin": "ast",
       "id": "packages_local_agent_src_docker_docker_sandbox_adapter_dockersandboxadapter_getexitedprocessmessage",
-      "community": 5,
+      "community": 1,
       "norm_label": ".getexitedprocessmessage()"
     },
     {
@@ -15564,7 +15564,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "packages_local_agent_src_docker_sandbox_port_projectpreviewconfig",
-      "community": 41,
+      "community": 35,
       "norm_label": "projectpreviewconfig"
     },
     {
@@ -16094,7 +16094,7 @@
       "source_location": "L15",
       "_origin": "ast",
       "id": "packages_local_agent_src_harness_agent_harness_port_agentharnessevent",
-      "community": 110,
+      "community": 50,
       "norm_label": "agentharnessevent"
     },
     {
@@ -16174,7 +16174,7 @@
       "source_location": "L39",
       "_origin": "ast",
       "id": "packages_local_agent_src_harness_codex_harness_adapter_codexharnessadapter_runprompt",
-      "community": 110,
+      "community": 50,
       "norm_label": ".runprompt()"
     },
     {
@@ -16204,7 +16204,7 @@
       "source_location": "L209",
       "_origin": "ast",
       "id": "packages_local_agent_src_harness_codex_harness_adapter_prepareharnessshell",
-      "community": 110,
+      "community": 50,
       "norm_label": "prepareharnessshell()"
     },
     {
@@ -16214,7 +16214,7 @@
       "source_location": "L223",
       "_origin": "ast",
       "id": "packages_local_agent_src_harness_codex_harness_adapter_quoteshellvalue",
-      "community": 110,
+      "community": 50,
       "norm_label": "quoteshellvalue()"
     },
     {
@@ -16364,7 +16364,7 @@
       "source_location": "L518",
       "_origin": "ast",
       "id": "packages_local_agent_src_harness_codex_harness_adapter_iscodexcommand",
-      "community": 110,
+      "community": 50,
       "norm_label": "iscodexcommand()"
     },
     {
@@ -16384,7 +16384,7 @@
       "source_location": "L526",
       "_origin": "ast",
       "id": "packages_local_agent_src_harness_codex_harness_adapter_normalizeexitcode",
-      "community": 110,
+      "community": 50,
       "norm_label": "normalizeexitcode()"
     },
     {
@@ -16404,7 +16404,7 @@
       "source_location": "L541",
       "_origin": "ast",
       "id": "packages_local_agent_src_harness_codex_harness_adapter_agentharnesseventqueue",
-      "community": 110,
+      "community": 50,
       "norm_label": "agentharnesseventqueue"
     },
     {
@@ -16414,7 +16414,7 @@
       "source_location": "L547",
       "_origin": "ast",
       "id": "packages_local_agent_src_harness_codex_harness_adapter_agentharnesseventqueue_push",
-      "community": 110,
+      "community": 50,
       "norm_label": ".push()"
     },
     {
@@ -16424,7 +16424,7 @@
       "source_location": "L561",
       "_origin": "ast",
       "id": "packages_local_agent_src_harness_codex_harness_adapter_agentharnesseventqueue_close",
-      "community": 110,
+      "community": 50,
       "norm_label": ".close()"
     },
     {
@@ -16434,7 +16434,7 @@
       "source_location": "L568",
       "_origin": "ast",
       "id": "packages_local_agent_src_harness_codex_harness_adapter_agentharnesseventqueue_fail",
-      "community": 110,
+      "community": 50,
       "norm_label": ".fail()"
     },
     {
@@ -16444,7 +16444,7 @@
       "source_location": "L576",
       "_origin": "ast",
       "id": "packages_local_agent_src_harness_codex_harness_adapter_agentharnesseventqueue_symbol_asynciterator",
-      "community": 110,
+      "community": 50,
       "norm_label": ".[symbol.asynciterator]()"
     },
     {
@@ -16624,7 +16624,7 @@
       "source_location": "L17",
       "_origin": "ast",
       "id": "packages_local_agent_src_preview_host_preview_runtime_adapter_hostpreviewruntimedependencies",
-      "community": 42,
+      "community": 1,
       "norm_label": "hostpreviewruntimedependencies"
     },
     {
@@ -16644,7 +16644,7 @@
       "source_location": "L31",
       "_origin": "ast",
       "id": "packages_local_agent_src_preview_host_preview_runtime_adapter_hostpreviewruntimeadapter",
-      "community": 42,
+      "community": 1,
       "norm_label": "hostpreviewruntimeadapter"
     },
     {
@@ -16654,7 +16654,7 @@
       "source_location": "L34",
       "_origin": "ast",
       "id": "packages_local_agent_src_preview_host_preview_runtime_adapter_hostpreviewruntimeadapter_constructor",
-      "community": 42,
+      "community": 1,
       "norm_label": ".constructor()"
     },
     {
@@ -16664,7 +16664,7 @@
       "source_location": "L36",
       "_origin": "ast",
       "id": "packages_local_agent_src_preview_host_preview_runtime_adapter_hostpreviewruntimeadapter_start",
-      "community": 42,
+      "community": 1,
       "norm_label": ".start()"
     },
     {
@@ -16674,7 +16674,7 @@
       "source_location": "L121",
       "_origin": "ast",
       "id": "packages_local_agent_src_preview_host_preview_runtime_adapter_hostpreviewruntimeadapter_stop",
-      "community": 42,
+      "community": 1,
       "norm_label": ".stop()"
     },
     {
@@ -16684,7 +16684,7 @@
       "source_location": "L145",
       "_origin": "ast",
       "id": "packages_local_agent_src_preview_host_preview_runtime_adapter_hostpreviewruntimeadapter_check",
-      "community": 42,
+      "community": 1,
       "norm_label": ".check()"
     },
     {
@@ -16694,7 +16694,7 @@
       "source_location": "L192",
       "_origin": "ast",
       "id": "packages_local_agent_src_preview_host_preview_runtime_adapter_hostpreviewruntimeadapter_spawn",
-      "community": 42,
+      "community": 1,
       "norm_label": ".spawn()"
     },
     {
@@ -17384,7 +17384,7 @@
       "source_location": "L17",
       "_origin": "ast",
       "id": "packages_local_agent_src_session_session_runner_sessionrunnerconfig",
-      "community": 41,
+      "community": 35,
       "norm_label": "sessionrunnerconfig"
     },
     {
@@ -17444,7 +17444,7 @@
       "source_location": "L56",
       "_origin": "ast",
       "id": "packages_local_agent_src_session_session_runner_sessionrunner_constructor",
-      "community": 42,
+      "community": 71,
       "norm_label": ".constructor()"
     },
     {
@@ -17954,7 +17954,7 @@
       "source_location": "L12",
       "_origin": "ast",
       "id": "packages_local_agent_src_tunnel_preview_tunnel_port_previewtunnelref",
-      "community": 37,
+      "community": 41,
       "norm_label": "previewtunnelref"
     },
     {
@@ -17964,7 +17964,7 @@
       "source_location": "L19",
       "_origin": "ast",
       "id": "packages_local_agent_src_tunnel_preview_tunnel_port_previewtunnelport",
-      "community": 41,
+      "community": 18,
       "norm_label": "previewtunnelport"
     },
     {
@@ -17974,7 +17974,7 @@
       "source_location": "L20",
       "_origin": "ast",
       "id": "packages_local_agent_src_tunnel_preview_tunnel_port_previewtunnelport_open",
-      "community": 41,
+      "community": 18,
       "norm_label": ".open()"
     },
     {
@@ -17984,7 +17984,7 @@
       "source_location": "L21",
       "_origin": "ast",
       "id": "packages_local_agent_src_tunnel_preview_tunnel_port_previewtunnelport_close",
-      "community": 41,
+      "community": 18,
       "norm_label": ".close()"
     },
     {
@@ -18131,7 +18131,7 @@
       "label": ".publishRecoveredSessions()",
       "file_type": "code",
       "source_file": "packages/local-agent/src/websocket/agent-client.ts",
-      "source_location": "L250",
+      "source_location": "L257",
       "_origin": "ast",
       "id": "packages_local_agent_src_websocket_agent_client_agentclient_publishrecoveredsessions",
       "community": 52,
@@ -18141,7 +18141,7 @@
       "label": ".handleProtocolMessage()",
       "file_type": "code",
       "source_file": "packages/local-agent/src/websocket/agent-client.ts",
-      "source_location": "L266",
+      "source_location": "L273",
       "_origin": "ast",
       "id": "packages_local_agent_src_websocket_agent_client_agentclient_handleprotocolmessage",
       "community": 52,
@@ -18151,7 +18151,7 @@
       "label": ".describeCommand()",
       "file_type": "code",
       "source_file": "packages/local-agent/src/websocket/agent-client.ts",
-      "source_location": "L303",
+      "source_location": "L310",
       "_origin": "ast",
       "id": "packages_local_agent_src_websocket_agent_client_agentclient_describecommand",
       "community": 52,
@@ -18161,7 +18161,7 @@
       "label": ".publishConfiguredProjectReadiness()",
       "file_type": "code",
       "source_file": "packages/local-agent/src/websocket/agent-client.ts",
-      "source_location": "L307",
+      "source_location": "L314",
       "_origin": "ast",
       "id": "packages_local_agent_src_websocket_agent_client_agentclient_publishconfiguredprojectreadiness",
       "community": 52,
@@ -18171,7 +18171,7 @@
       "label": ".handleReadinessCheck()",
       "file_type": "code",
       "source_file": "packages/local-agent/src/websocket/agent-client.ts",
-      "source_location": "L319",
+      "source_location": "L326",
       "_origin": "ast",
       "id": "packages_local_agent_src_websocket_agent_client_agentclient_handlereadinesscheck",
       "community": 52,
@@ -18181,7 +18181,7 @@
       "label": ".handleSessionPrepare()",
       "file_type": "code",
       "source_file": "packages/local-agent/src/websocket/agent-client.ts",
-      "source_location": "L329",
+      "source_location": "L336",
       "_origin": "ast",
       "id": "packages_local_agent_src_websocket_agent_client_agentclient_handlesessionprepare",
       "community": 52,
@@ -18191,7 +18191,7 @@
       "label": ".handleSessionClose()",
       "file_type": "code",
       "source_file": "packages/local-agent/src/websocket/agent-client.ts",
-      "source_location": "L362",
+      "source_location": "L369",
       "_origin": "ast",
       "id": "packages_local_agent_src_websocket_agent_client_agentclient_handlesessionclose",
       "community": 52,
@@ -18201,7 +18201,7 @@
       "label": ".handleAgentPrompt()",
       "file_type": "code",
       "source_file": "packages/local-agent/src/websocket/agent-client.ts",
-      "source_location": "L378",
+      "source_location": "L385",
       "_origin": "ast",
       "id": "packages_local_agent_src_websocket_agent_client_agentclient_handleagentprompt",
       "community": 52,
@@ -18211,7 +18211,7 @@
       "label": ".runHarness()",
       "file_type": "code",
       "source_file": "packages/local-agent/src/websocket/agent-client.ts",
-      "source_location": "L518",
+      "source_location": "L525",
       "_origin": "ast",
       "id": "packages_local_agent_src_websocket_agent_client_agentclient_runharness",
       "community": 52,
@@ -18221,7 +18221,7 @@
       "label": ".emitAgentDone()",
       "file_type": "code",
       "source_file": "packages/local-agent/src/websocket/agent-client.ts",
-      "source_location": "L556",
+      "source_location": "L563",
       "_origin": "ast",
       "id": "packages_local_agent_src_websocket_agent_client_agentclient_emitagentdone",
       "community": 52,
@@ -18231,7 +18231,7 @@
       "label": ".runChecks()",
       "file_type": "code",
       "source_file": "packages/local-agent/src/websocket/agent-client.ts",
-      "source_location": "L567",
+      "source_location": "L574",
       "_origin": "ast",
       "id": "packages_local_agent_src_websocket_agent_client_agentclient_runchecks",
       "community": 52,
@@ -18241,7 +18241,7 @@
       "label": ".handleAgentCancel()",
       "file_type": "code",
       "source_file": "packages/local-agent/src/websocket/agent-client.ts",
-      "source_location": "L577",
+      "source_location": "L584",
       "_origin": "ast",
       "id": "packages_local_agent_src_websocket_agent_client_agentclient_handleagentcancel",
       "community": 52,
@@ -18251,7 +18251,7 @@
       "label": ".handleGitPushBranch()",
       "file_type": "code",
       "source_file": "packages/local-agent/src/websocket/agent-client.ts",
-      "source_location": "L585",
+      "source_location": "L592",
       "_origin": "ast",
       "id": "packages_local_agent_src_websocket_agent_client_agentclient_handlegitpushbranch",
       "community": 52,
@@ -18261,27 +18261,27 @@
       "label": ".redactChecksResult()",
       "file_type": "code",
       "source_file": "packages/local-agent/src/websocket/agent-client.ts",
-      "source_location": "L599",
+      "source_location": "L606",
       "_origin": "ast",
       "id": "packages_local_agent_src_websocket_agent_client_agentclient_redactchecksresult",
-      "community": 31,
+      "community": 52,
       "norm_label": ".redactchecksresult()"
     },
     {
       "label": ".redactCheckResult()",
       "file_type": "code",
       "source_file": "packages/local-agent/src/websocket/agent-client.ts",
-      "source_location": "L611",
+      "source_location": "L618",
       "_origin": "ast",
       "id": "packages_local_agent_src_websocket_agent_client_agentclient_redactcheckresult",
-      "community": 31,
+      "community": 52,
       "norm_label": ".redactcheckresult()"
     },
     {
       "label": ".emitError()",
       "file_type": "code",
       "source_file": "packages/local-agent/src/websocket/agent-client.ts",
-      "source_location": "L619",
+      "source_location": "L626",
       "_origin": "ast",
       "id": "packages_local_agent_src_websocket_agent_client_agentclient_emiterror",
       "community": 52,
@@ -18291,7 +18291,7 @@
       "label": ".emitEvent()",
       "file_type": "code",
       "source_file": "packages/local-agent/src/websocket/agent-client.ts",
-      "source_location": "L637",
+      "source_location": "L644",
       "_origin": "ast",
       "id": "packages_local_agent_src_websocket_agent_client_agentclient_emitevent",
       "community": 52,
@@ -18301,7 +18301,7 @@
       "label": ".emitRequiredEvent()",
       "file_type": "code",
       "source_file": "packages/local-agent/src/websocket/agent-client.ts",
-      "source_location": "L664",
+      "source_location": "L671",
       "_origin": "ast",
       "id": "packages_local_agent_src_websocket_agent_client_agentclient_emitrequiredevent",
       "community": 52,
@@ -18311,7 +18311,7 @@
       "label": ".registerAgent()",
       "file_type": "code",
       "source_file": "packages/local-agent/src/websocket/agent-client.ts",
-      "source_location": "L689",
+      "source_location": "L696",
       "_origin": "ast",
       "id": "packages_local_agent_src_websocket_agent_client_agentclient_registeragent",
       "community": 52,
@@ -18321,7 +18321,7 @@
       "label": "buildValidationRepairPrompt()",
       "file_type": "code",
       "source_file": "packages/local-agent/src/websocket/agent-client.ts",
-      "source_location": "L694",
+      "source_location": "L701",
       "_origin": "ast",
       "id": "packages_local_agent_src_websocket_agent_client_buildvalidationrepairprompt",
       "community": 39,
@@ -18331,7 +18331,7 @@
       "label": "hasRepairableCheckFailure()",
       "file_type": "code",
       "source_file": "packages/local-agent/src/websocket/agent-client.ts",
-      "source_location": "L734",
+      "source_location": "L741",
       "_origin": "ast",
       "id": "packages_local_agent_src_websocket_agent_client_hasrepairablecheckfailure",
       "community": 39,
@@ -18341,7 +18341,7 @@
       "label": "isRetryableError()",
       "file_type": "code",
       "source_file": "packages/local-agent/src/websocket/agent-client.ts",
-      "source_location": "L738",
+      "source_location": "L745",
       "_origin": "ast",
       "id": "packages_local_agent_src_websocket_agent_client_isretryableerror",
       "community": 39,
@@ -18704,7 +18704,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "packages_shared_contracts_src_index",
-      "community": 25,
+      "community": 89,
       "norm_label": "index.ts"
     },
     {
@@ -18904,7 +18904,7 @@
       "source_location": "L95",
       "_origin": "ast",
       "id": "packages_shared_contracts_src_protocol_commands_agentcommandenvelope",
-      "community": 68,
+      "community": 43,
       "norm_label": "agentcommandenvelope"
     },
     {
@@ -19234,7 +19234,7 @@
       "source_location": "L190",
       "_origin": "ast",
       "id": "packages_shared_contracts_src_protocol_events_sessionprogresseventenvelope",
-      "community": 4,
+      "community": 39,
       "norm_label": "sessionprogresseventenvelope"
     },
     {
@@ -19244,7 +19244,7 @@
       "source_location": "L191",
       "_origin": "ast",
       "id": "packages_shared_contracts_src_protocol_events_sessionreadyeventenvelope",
-      "community": 4,
+      "community": 39,
       "norm_label": "sessionreadyeventenvelope"
     },
     {
@@ -19254,7 +19254,7 @@
       "source_location": "L192",
       "_origin": "ast",
       "id": "packages_shared_contracts_src_protocol_events_sessionrecoveredeventenvelope",
-      "community": 4,
+      "community": 39,
       "norm_label": "sessionrecoveredeventenvelope"
     },
     {
@@ -19264,7 +19264,7 @@
       "source_location": "L193",
       "_origin": "ast",
       "id": "packages_shared_contracts_src_protocol_events_agentoutputeventenvelope",
-      "community": 4,
+      "community": 39,
       "norm_label": "agentoutputeventenvelope"
     },
     {
@@ -19274,7 +19274,7 @@
       "source_location": "L194",
       "_origin": "ast",
       "id": "packages_shared_contracts_src_protocol_events_agentdoneeventenvelope",
-      "community": 4,
+      "community": 39,
       "norm_label": "agentdoneeventenvelope"
     },
     {
@@ -19284,7 +19284,7 @@
       "source_location": "L195",
       "_origin": "ast",
       "id": "packages_shared_contracts_src_protocol_events_gitdiffeventenvelope",
-      "community": 4,
+      "community": 39,
       "norm_label": "gitdiffeventenvelope"
     },
     {
@@ -19304,7 +19304,7 @@
       "source_location": "L197",
       "_origin": "ast",
       "id": "packages_shared_contracts_src_protocol_events_gitbranchpushedeventenvelope",
-      "community": 4,
+      "community": 39,
       "norm_label": "gitbranchpushedeventenvelope"
     },
     {
@@ -19314,7 +19314,7 @@
       "source_location": "L198",
       "_origin": "ast",
       "id": "packages_shared_contracts_src_protocol_events_sessionclosedeventenvelope",
-      "community": 4,
+      "community": 39,
       "norm_label": "sessionclosedeventenvelope"
     },
     {
@@ -19594,7 +19594,7 @@
       "source_location": "L161",
       "_origin": "ast",
       "id": "packages_shared_contracts_src_protocol_ui_developerprojectsessionsummary",
-      "community": 76,
+      "community": 47,
       "norm_label": "developerprojectsessionsummary"
     },
     {
@@ -19634,7 +19634,7 @@
       "source_location": "L165",
       "_origin": "ast",
       "id": "packages_shared_contracts_src_protocol_ui_developersetupagentmodel",
-      "community": 76,
+      "community": 20,
       "norm_label": "developersetupagentmodel"
     },
     {
@@ -19694,7 +19694,7 @@
       "source_location": "L171",
       "_origin": "ast",
       "id": "packages_shared_contracts_src_protocol_ui_createdraftreviewrequestinput",
-      "community": 88,
+      "community": 13,
       "norm_label": "createdraftreviewrequestinput"
     },
     {
@@ -19704,7 +19704,7 @@
       "source_location": "L172",
       "_origin": "ast",
       "id": "packages_shared_contracts_src_protocol_ui_updateprojectexecutiondefaultsinput",
-      "community": 13,
+      "community": 6,
       "norm_label": "updateprojectexecutiondefaultsinput"
     },
     {
@@ -19784,7 +19784,7 @@
       "source_location": "L14",
       "_origin": "ast",
       "id": "prototype_support_getreactdom",
-      "community": 167,
+      "community": 91,
       "norm_label": "getreactdom()"
     },
     {
@@ -19794,7 +19794,7 @@
       "source_location": "L24",
       "_origin": "ast",
       "id": "prototype_support_parsedcdocument",
-      "community": 167,
+      "community": 91,
       "norm_label": "parsedcdocument()"
     },
     {
@@ -19804,7 +19804,7 @@
       "source_location": "L38",
       "_origin": "ast",
       "id": "prototype_support_parsedctext",
-      "community": 167,
+      "community": 91,
       "norm_label": "parsedctext()"
     },
     {
@@ -19814,7 +19814,7 @@
       "source_location": "L56",
       "_origin": "ast",
       "id": "prototype_support_parsedataprops",
-      "community": 167,
+      "community": 91,
       "norm_label": "parsedataprops()"
     },
     {
@@ -19854,7 +19854,7 @@
       "source_location": "L148",
       "_origin": "ast",
       "id": "prototype_support_boot",
-      "community": 167,
+      "community": 91,
       "norm_label": "boot()"
     },
     {
@@ -20294,7 +20294,7 @@
       "source_location": "L1544",
       "_origin": "ast",
       "id": "prototype_support_init",
-      "community": 167,
+      "community": 91,
       "norm_label": "init()"
     },
     {
@@ -20604,7 +20604,7 @@
       "source_location": "L453",
       "_origin": "ast",
       "id": "tests_apps_api_e2e_mvp_flow_e2e_test_readypreviewtunnelport",
-      "community": 41,
+      "community": 120,
       "norm_label": "readypreviewtunnelport"
     },
     {
@@ -20614,7 +20614,7 @@
       "source_location": "L456",
       "_origin": "ast",
       "id": "tests_apps_api_e2e_mvp_flow_e2e_test_readypreviewtunnelport_constructor",
-      "community": 41,
+      "community": 120,
       "norm_label": ".constructor()"
     },
     {
@@ -20624,7 +20624,7 @@
       "source_location": "L458",
       "_origin": "ast",
       "id": "tests_apps_api_e2e_mvp_flow_e2e_test_readypreviewtunnelport_open",
-      "community": 41,
+      "community": 120,
       "norm_label": ".open()"
     },
     {
@@ -20634,7 +20634,7 @@
       "source_location": "L466",
       "_origin": "ast",
       "id": "tests_apps_api_e2e_mvp_flow_e2e_test_readypreviewtunnelport_close",
-      "community": 41,
+      "community": 120,
       "norm_label": ".close()"
     },
     {
@@ -21334,7 +21334,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "tests_apps_api_integration_persistence_persistence_integration_test",
-      "community": 60,
+      "community": 36,
       "norm_label": "persistence.integration.test.ts"
     },
     {
@@ -21344,7 +21344,7 @@
       "source_location": "L14",
       "_origin": "ast",
       "id": "tests_apps_api_integration_persistence_persistence_integration_test_prisma",
-      "community": 60,
+      "community": 36,
       "norm_label": "prisma"
     },
     {
@@ -21354,7 +21354,7 @@
       "source_location": "L16",
       "_origin": "ast",
       "id": "tests_apps_api_integration_persistence_persistence_integration_test_users",
-      "community": 60,
+      "community": 36,
       "norm_label": "users"
     },
     {
@@ -21364,7 +21364,7 @@
       "source_location": "L17",
       "_origin": "ast",
       "id": "tests_apps_api_integration_persistence_persistence_integration_test_externalidentities",
-      "community": 60,
+      "community": 36,
       "norm_label": "externalidentities"
     },
     {
@@ -21374,7 +21374,7 @@
       "source_location": "L18",
       "_origin": "ast",
       "id": "tests_apps_api_integration_persistence_persistence_integration_test_sourcecontrolconnections",
-      "community": 60,
+      "community": 36,
       "norm_label": "sourcecontrolconnections"
     },
     {
@@ -21384,7 +21384,7 @@
       "source_location": "L19",
       "_origin": "ast",
       "id": "tests_apps_api_integration_persistence_persistence_integration_test_projects",
-      "community": 60,
+      "community": 36,
       "norm_label": "projects"
     },
     {
@@ -21394,7 +21394,7 @@
       "source_location": "L20",
       "_origin": "ast",
       "id": "tests_apps_api_integration_persistence_persistence_integration_test_sessions",
-      "community": 60,
+      "community": 36,
       "norm_label": "sessions"
     },
     {
@@ -21404,7 +21404,7 @@
       "source_location": "L21",
       "_origin": "ast",
       "id": "tests_apps_api_integration_persistence_persistence_integration_test_sessionmembers",
-      "community": 60,
+      "community": 36,
       "norm_label": "sessionmembers"
     },
     {
@@ -21414,7 +21414,7 @@
       "source_location": "L22",
       "_origin": "ast",
       "id": "tests_apps_api_integration_persistence_persistence_integration_test_agentevents",
-      "community": 60,
+      "community": 36,
       "norm_label": "agentevents"
     },
     {
@@ -21424,7 +21424,7 @@
       "source_location": "L23",
       "_origin": "ast",
       "id": "tests_apps_api_integration_persistence_persistence_integration_test_unitofwork",
-      "community": 60,
+      "community": 36,
       "norm_label": "unitofwork"
     },
     {
@@ -21434,7 +21434,7 @@
       "source_location": "L25",
       "_origin": "ast",
       "id": "tests_apps_api_integration_persistence_persistence_integration_test_resetdatabase",
-      "community": 60,
+      "community": 36,
       "norm_label": "resetdatabase()"
     },
     {
@@ -21444,7 +21444,7 @@
       "source_location": "L40",
       "_origin": "ast",
       "id": "tests_apps_api_integration_persistence_persistence_integration_test_seedsessionfixture",
-      "community": 60,
+      "community": 10,
       "norm_label": "seedsessionfixture()"
     },
     {
@@ -21454,7 +21454,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "tests_apps_api_integration_projects_developer_project_control_integration_test",
-      "community": 54,
+      "community": 104,
       "norm_label": "developer-project-control.integration.test.ts"
     },
     {
@@ -21464,7 +21464,7 @@
       "source_location": "L18",
       "_origin": "ast",
       "id": "tests_apps_api_integration_projects_developer_project_control_integration_test_prisma",
-      "community": 54,
+      "community": 104,
       "norm_label": "prisma"
     },
     {
@@ -21474,7 +21474,7 @@
       "source_location": "L24",
       "_origin": "ast",
       "id": "tests_apps_api_integration_projects_developer_project_control_integration_test_resetdatabase",
-      "community": 54,
+      "community": 104,
       "norm_label": "resetdatabase()"
     },
     {
@@ -21484,7 +21484,7 @@
       "source_location": "L39",
       "_origin": "ast",
       "id": "tests_apps_api_integration_projects_developer_project_control_integration_test_startapplication",
-      "community": 54,
+      "community": 104,
       "norm_label": "startapplication()"
     },
     {
@@ -21494,7 +21494,7 @@
       "source_location": "L52",
       "_origin": "ast",
       "id": "tests_apps_api_integration_projects_developer_project_control_integration_test_authenticatedeveloper",
-      "community": 54,
+      "community": 104,
       "norm_label": "authenticatedeveloper()"
     },
     {
@@ -21504,7 +21504,7 @@
       "source_location": "L67",
       "_origin": "ast",
       "id": "tests_apps_api_integration_projects_developer_project_control_integration_test_authenticatepm",
-      "community": 54,
+      "community": 104,
       "norm_label": "authenticatepm()"
     },
     {
@@ -21514,7 +21514,7 @@
       "source_location": "L264",
       "_origin": "ast",
       "id": "tests_apps_api_integration_projects_developer_project_control_integration_test_registeronlineagentproject",
-      "community": 54,
+      "community": 104,
       "norm_label": "registeronlineagentproject()"
     },
     {
@@ -21724,7 +21724,7 @@
       "source_location": "L193",
       "_origin": "ast",
       "id": "tests_apps_api_integration_review_requests_create_draft_review_request_integration_test_recordingagentcommandrouter",
-      "community": 68,
+      "community": 43,
       "norm_label": "recordingagentcommandrouter"
     },
     {
@@ -21734,7 +21734,7 @@
       "source_location": "L196",
       "_origin": "ast",
       "id": "tests_apps_api_integration_review_requests_create_draft_review_request_integration_test_recordingagentcommandrouter_constructor",
-      "community": 68,
+      "community": 43,
       "norm_label": ".constructor()"
     },
     {
@@ -21744,7 +21744,7 @@
       "source_location": "L198",
       "_origin": "ast",
       "id": "tests_apps_api_integration_review_requests_create_draft_review_request_integration_test_recordingagentcommandrouter_routetoowningagent",
-      "community": 68,
+      "community": 43,
       "norm_label": ".routetoowningagent()"
     },
     {
@@ -21754,7 +21754,7 @@
       "source_location": "L204",
       "_origin": "ast",
       "id": "tests_apps_api_integration_review_requests_create_draft_review_request_integration_test_recordingsourcecontrolport",
-      "community": 120,
+      "community": 81,
       "norm_label": "recordingsourcecontrolport"
     },
     {
@@ -21764,7 +21764,7 @@
       "source_location": "L207",
       "_origin": "ast",
       "id": "tests_apps_api_integration_review_requests_create_draft_review_request_integration_test_recordingsourcecontrolport_constructor",
-      "community": 120,
+      "community": 81,
       "norm_label": ".constructor()"
     },
     {
@@ -21774,7 +21774,7 @@
       "source_location": "L209",
       "_origin": "ast",
       "id": "tests_apps_api_integration_review_requests_create_draft_review_request_integration_test_recordingsourcecontrolport_assertprojectaccess",
-      "community": 120,
+      "community": 81,
       "norm_label": ".assertprojectaccess()"
     },
     {
@@ -21784,7 +21784,7 @@
       "source_location": "L211",
       "_origin": "ast",
       "id": "tests_apps_api_integration_review_requests_create_draft_review_request_integration_test_recordingsourcecontrolport_listinstallationrepositories",
-      "community": 120,
+      "community": 81,
       "norm_label": ".listinstallationrepositories()"
     },
     {
@@ -21794,7 +21794,7 @@
       "source_location": "L215",
       "_origin": "ast",
       "id": "tests_apps_api_integration_review_requests_create_draft_review_request_integration_test_recordingsourcecontrolport_listrepositorybranches",
-      "community": 120,
+      "community": 81,
       "norm_label": ".listrepositorybranches()"
     },
     {
@@ -21804,7 +21804,7 @@
       "source_location": "L219",
       "_origin": "ast",
       "id": "tests_apps_api_integration_review_requests_create_draft_review_request_integration_test_recordingsourcecontrolport_createdraftreviewrequest",
-      "community": 120,
+      "community": 81,
       "norm_label": ".createdraftreviewrequest()"
     },
     {
@@ -21814,7 +21814,7 @@
       "source_location": "L229",
       "_origin": "ast",
       "id": "tests_apps_api_integration_review_requests_create_draft_review_request_integration_test_inmemoryrepositories",
-      "community": 81,
+      "community": 99,
       "norm_label": "inmemoryrepositories"
     },
     {
@@ -21824,7 +21824,7 @@
       "source_location": "L242",
       "_origin": "ast",
       "id": "tests_apps_api_integration_review_requests_create_draft_review_request_integration_test_inmemoryrepositories_constructor",
-      "community": 81,
+      "community": 99,
       "norm_label": ".constructor()"
     },
     {
@@ -21834,7 +21834,7 @@
       "source_location": "L303",
       "_origin": "ast",
       "id": "tests_apps_api_integration_review_requests_create_draft_review_request_integration_test_inmemoryreviewrequestsrepository",
-      "community": 130,
+      "community": 81,
       "norm_label": "inmemoryreviewrequestsrepository"
     },
     {
@@ -21844,7 +21844,7 @@
       "source_location": "L306",
       "_origin": "ast",
       "id": "tests_apps_api_integration_review_requests_create_draft_review_request_integration_test_inmemoryreviewrequestsrepository_constructor",
-      "community": 130,
+      "community": 81,
       "norm_label": ".constructor()"
     },
     {
@@ -21854,7 +21854,7 @@
       "source_location": "L308",
       "_origin": "ast",
       "id": "tests_apps_api_integration_review_requests_create_draft_review_request_integration_test_inmemoryreviewrequestsrepository_create",
-      "community": 130,
+      "community": 81,
       "norm_label": ".create()"
     },
     {
@@ -21864,7 +21864,7 @@
       "source_location": "L322",
       "_origin": "ast",
       "id": "tests_apps_api_integration_review_requests_create_draft_review_request_integration_test_inmemoryreviewrequestsrepository_findbysessionid",
-      "community": 130,
+      "community": 81,
       "norm_label": ".findbysessionid()"
     },
     {
@@ -21874,7 +21874,7 @@
       "source_location": "L326",
       "_origin": "ast",
       "id": "tests_apps_api_integration_review_requests_create_draft_review_request_integration_test_inmemoryreviewrequestsrepository_findmanybysessionids",
-      "community": 130,
+      "community": 81,
       "norm_label": ".findmanybysessionids()"
     },
     {
@@ -22004,7 +22004,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "tests_apps_api_integration_sessions_session_details_integration_test",
-      "community": 127,
+      "community": 54,
       "norm_label": "session-details.integration.test.ts"
     },
     {
@@ -22014,7 +22014,7 @@
       "source_location": "L10",
       "_origin": "ast",
       "id": "tests_apps_api_integration_sessions_session_details_integration_test_prisma",
-      "community": 127,
+      "community": 54,
       "norm_label": "prisma"
     },
     {
@@ -22024,7 +22024,7 @@
       "source_location": "L15",
       "_origin": "ast",
       "id": "tests_apps_api_integration_sessions_session_details_integration_test_resetdatabase",
-      "community": 127,
+      "community": 54,
       "norm_label": "resetdatabase()"
     },
     {
@@ -22034,7 +22034,7 @@
       "source_location": "L30",
       "_origin": "ast",
       "id": "tests_apps_api_integration_sessions_session_details_integration_test_startapplication",
-      "community": 127,
+      "community": 54,
       "norm_label": "startapplication()"
     },
     {
@@ -22044,7 +22044,7 @@
       "source_location": "L42",
       "_origin": "ast",
       "id": "tests_apps_api_integration_sessions_session_details_integration_test_authenticatepm",
-      "community": 127,
+      "community": 54,
       "norm_label": "authenticatepm()"
     },
     {
@@ -22054,7 +22054,7 @@
       "source_location": "L55",
       "_origin": "ast",
       "id": "tests_apps_api_integration_sessions_session_details_integration_test_createsessionfixture",
-      "community": 127,
+      "community": 54,
       "norm_label": "createsessionfixture()"
     },
     {
@@ -22064,7 +22064,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "tests_apps_api_integration_sessions_session_history_integration_test",
-      "community": 170,
+      "community": 54,
       "norm_label": "session-history.integration.test.ts"
     },
     {
@@ -22074,7 +22074,7 @@
       "source_location": "L15",
       "_origin": "ast",
       "id": "tests_apps_api_integration_sessions_session_history_integration_test_prisma",
-      "community": 170,
+      "community": 54,
       "norm_label": "prisma"
     },
     {
@@ -22084,7 +22084,7 @@
       "source_location": "L20",
       "_origin": "ast",
       "id": "tests_apps_api_integration_sessions_session_history_integration_test_resetdatabase",
-      "community": 170,
+      "community": 54,
       "norm_label": "resetdatabase()"
     },
     {
@@ -22094,7 +22094,7 @@
       "source_location": "L35",
       "_origin": "ast",
       "id": "tests_apps_api_integration_sessions_session_history_integration_test_startapplication",
-      "community": 170,
+      "community": 54,
       "norm_label": "startapplication()"
     },
     {
@@ -22104,7 +22104,7 @@
       "source_location": "L47",
       "_origin": "ast",
       "id": "tests_apps_api_integration_sessions_session_history_integration_test_authenticatepm",
-      "community": 170,
+      "community": 54,
       "norm_label": "authenticatepm()"
     },
     {
@@ -22114,7 +22114,7 @@
       "source_location": "L60",
       "_origin": "ast",
       "id": "tests_apps_api_integration_sessions_session_history_integration_test_createsessionfixture",
-      "community": 170,
+      "community": 54,
       "norm_label": "createsessionfixture()"
     },
     {
@@ -22124,7 +22124,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "tests_apps_api_integration_sessions_session_lifecycle_integration_test",
-      "community": 54,
+      "community": 143,
       "norm_label": "session-lifecycle.integration.test.ts"
     },
     {
@@ -22134,7 +22134,7 @@
       "source_location": "L16",
       "_origin": "ast",
       "id": "tests_apps_api_integration_sessions_session_lifecycle_integration_test_prisma",
-      "community": 54,
+      "community": 143,
       "norm_label": "prisma"
     },
     {
@@ -22144,7 +22144,7 @@
       "source_location": "L21",
       "_origin": "ast",
       "id": "tests_apps_api_integration_sessions_session_lifecycle_integration_test_resetdatabase",
-      "community": 54,
+      "community": 143,
       "norm_label": "resetdatabase()"
     },
     {
@@ -22154,7 +22154,7 @@
       "source_location": "L36",
       "_origin": "ast",
       "id": "tests_apps_api_integration_sessions_session_lifecycle_integration_test_startapplication",
-      "community": 127,
+      "community": 143,
       "norm_label": "startapplication()"
     },
     {
@@ -22164,7 +22164,7 @@
       "source_location": "L48",
       "_origin": "ast",
       "id": "tests_apps_api_integration_sessions_session_lifecycle_integration_test_authenticatedeveloper",
-      "community": 54,
+      "community": 143,
       "norm_label": "authenticatedeveloper()"
     },
     {
@@ -22174,7 +22174,7 @@
       "source_location": "L61",
       "_origin": "ast",
       "id": "tests_apps_api_integration_sessions_session_lifecycle_integration_test_createownedproject",
-      "community": 54,
+      "community": 143,
       "norm_label": "createownedproject()"
     },
     {
@@ -22314,7 +22314,7 @@
       "source_location": "L14",
       "_origin": "ast",
       "id": "tests_apps_api_integration_test_json_idresponseschema",
-      "community": 54,
+      "community": 143,
       "norm_label": "idresponseschema"
     },
     {
@@ -22334,7 +22334,7 @@
       "source_location": "L17",
       "_origin": "ast",
       "id": "tests_apps_api_integration_test_json_sessioncreateresponseschema",
-      "community": 54,
+      "community": 79,
       "norm_label": "sessioncreateresponseschema"
     },
     {
@@ -22344,7 +22344,7 @@
       "source_location": "L28",
       "_origin": "ast",
       "id": "tests_apps_api_integration_test_json_sessionstateresponseschema",
-      "community": 54,
+      "community": 143,
       "norm_label": "sessionstateresponseschema"
     },
     {
@@ -22354,7 +22354,7 @@
       "source_location": "L47",
       "_origin": "ast",
       "id": "tests_apps_api_integration_test_json_sessiondetailsresponseschema",
-      "community": 127,
+      "community": 54,
       "norm_label": "sessiondetailsresponseschema"
     },
     {
@@ -22384,7 +22384,7 @@
       "source_location": "L94",
       "_origin": "ast",
       "id": "tests_apps_api_integration_test_json_developerprojectresponseschema",
-      "community": 54,
+      "community": 104,
       "norm_label": "developerprojectresponseschema"
     },
     {
@@ -22414,7 +22414,7 @@
       "source_location": "L146",
       "_origin": "ast",
       "id": "tests_apps_api_integration_test_json_sessionmessagelistresponseschema",
-      "community": 170,
+      "community": 54,
       "norm_label": "sessionmessagelistresponseschema"
     },
     {
@@ -22424,7 +22424,7 @@
       "source_location": "L147",
       "_origin": "ast",
       "id": "tests_apps_api_integration_test_json_sessioneventlistresponseschema",
-      "community": 170,
+      "community": 54,
       "norm_label": "sessioneventlistresponseschema"
     },
     {
@@ -22674,7 +22674,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "tests_apps_api_unit_agent_gateway_agent_command_router_service_test",
-      "community": 89,
+      "community": 147,
       "norm_label": "agent-command-router.service.test.ts"
     },
     {
@@ -22684,7 +22684,7 @@
       "source_location": "L16",
       "_origin": "ast",
       "id": "tests_apps_api_unit_agent_gateway_agent_command_router_service_test_assertconnected",
-      "community": 89,
+      "community": 147,
       "norm_label": "assertconnected()"
     },
     {
@@ -22694,7 +22694,7 @@
       "source_location": "L21",
       "_origin": "ast",
       "id": "tests_apps_api_unit_agent_gateway_agent_command_router_service_test_emittoagent",
-      "community": 89,
+      "community": 147,
       "norm_label": "emittoagent()"
     },
     {
@@ -22704,7 +22704,7 @@
       "source_location": "L37",
       "_origin": "ast",
       "id": "tests_apps_api_unit_agent_gateway_agent_command_router_service_test_project",
-      "community": 89,
+      "community": 147,
       "norm_label": "project"
     },
     {
@@ -22714,7 +22714,7 @@
       "source_location": "L52",
       "_origin": "ast",
       "id": "tests_apps_api_unit_agent_gateway_agent_command_router_service_test_session",
-      "community": 89,
+      "community": 147,
       "norm_label": "session"
     },
     {
@@ -22724,7 +22724,7 @@
       "source_location": "L67",
       "_origin": "ast",
       "id": "tests_apps_api_unit_agent_gateway_agent_command_router_service_test_command",
-      "community": 89,
+      "community": 147,
       "norm_label": "command"
     },
     {
@@ -22734,7 +22734,7 @@
       "source_location": "L81",
       "_origin": "ast",
       "id": "tests_apps_api_unit_agent_gateway_agent_command_router_service_test_repositoryreturning",
-      "community": 89,
+      "community": 147,
       "norm_label": "repositoryreturning()"
     },
     {
@@ -23054,7 +23054,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "tests_apps_api_unit_sessions_session_close_service_test",
-      "community": 25,
+      "community": 99,
       "norm_label": "session-close.service.test.ts"
     },
     {
@@ -23064,7 +23064,7 @@
       "source_location": "L8",
       "_origin": "ast",
       "id": "tests_apps_api_unit_sessions_session_close_service_test_buildsession",
-      "community": 25,
+      "community": 99,
       "norm_label": "buildsession()"
     },
     {
@@ -23104,7 +23104,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "tests_apps_api_unit_validation_validation_policy_test",
-      "community": 99,
+      "community": 105,
       "norm_label": "validation-policy.test.ts"
     },
     {
@@ -23114,7 +23114,7 @@
       "source_location": "L6",
       "_origin": "ast",
       "id": "tests_apps_api_unit_validation_validation_policy_test_buildvalidationrun",
-      "community": 99,
+      "community": 105,
       "norm_label": "buildvalidationrun()"
     },
     {
@@ -23134,7 +23134,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "tests_apps_web_unit_developer_project_card_test",
-      "community": 6,
+      "community": 47,
       "norm_label": "developer-project-card.test.tsx"
     },
     {
@@ -23144,7 +23144,7 @@
       "source_location": "L8",
       "_origin": "ast",
       "id": "tests_apps_web_unit_developer_project_card_test_project",
-      "community": 6,
+      "community": 47,
       "norm_label": "project"
     },
     {
@@ -23154,7 +23154,7 @@
       "source_location": "L47",
       "_origin": "ast",
       "id": "tests_apps_web_unit_developer_project_card_test_blockedproject",
-      "community": 6,
+      "community": 47,
       "norm_label": "blockedproject"
     },
     {
@@ -23164,7 +23164,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "tests_apps_web_unit_developer_project_form_test",
-      "community": 76,
+      "community": 20,
       "norm_label": "developer-project-form.test.tsx"
     },
     {
@@ -23174,7 +23174,7 @@
       "source_location": "L8",
       "_origin": "ast",
       "id": "tests_apps_web_unit_developer_project_form_test_setup",
-      "community": 76,
+      "community": 20,
       "norm_label": "setup"
     },
     {
@@ -23244,7 +23244,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "tests_apps_web_unit_preview_frame_test",
-      "community": 50,
+      "community": 15,
       "norm_label": "preview-frame.test.tsx"
     },
     {
@@ -23254,7 +23254,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "tests_apps_web_unit_preview_presets_test",
-      "community": 50,
+      "community": 15,
       "norm_label": "preview-presets.test.ts"
     },
     {
@@ -23264,7 +23264,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "tests_apps_web_unit_preview_toolbar_test",
-      "community": 50,
+      "community": 15,
       "norm_label": "preview-toolbar.test.tsx"
     },
     {
@@ -23274,7 +23274,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "tests_apps_web_unit_prompt_composer_test",
-      "community": 88,
+      "community": 6,
       "norm_label": "prompt-composer.test.tsx"
     },
     {
@@ -23294,7 +23294,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "tests_apps_web_unit_review_request_dialog_test",
-      "community": 88,
+      "community": 13,
       "norm_label": "review-request-dialog.test.tsx"
     },
     {
@@ -23591,77 +23591,77 @@
       "label": "RecordingRestoreSessionRunner",
       "file_type": "code",
       "source_file": "tests/packages/local-agent/integration/agent-client.integration.test.ts",
-      "source_location": "L264",
+      "source_location": "L310",
       "_origin": "ast",
       "id": "tests_packages_local_agent_integration_agent_client_integration_test_recordingrestoresessionrunner",
-      "community": 71,
+      "community": 103,
       "norm_label": "recordingrestoresessionrunner"
     },
     {
       "label": ".restore()",
       "file_type": "code",
       "source_file": "tests/packages/local-agent/integration/agent-client.integration.test.ts",
-      "source_location": "L267",
+      "source_location": "L313",
       "_origin": "ast",
       "id": "tests_packages_local_agent_integration_agent_client_integration_test_recordingrestoresessionrunner_restore",
-      "community": 71,
+      "community": 103,
       "norm_label": ".restore()"
     },
     {
       "label": "SessionRunnerWithRecoveryFailure",
       "file_type": "code",
       "source_file": "tests/packages/local-agent/integration/agent-client.integration.test.ts",
-      "source_location": "L273",
+      "source_location": "L319",
       "_origin": "ast",
       "id": "tests_packages_local_agent_integration_agent_client_integration_test_sessionrunnerwithrecoveryfailure",
-      "community": 71,
+      "community": 103,
       "norm_label": "sessionrunnerwithrecoveryfailure"
     },
     {
       "label": ".restore()",
       "file_type": "code",
       "source_file": "tests/packages/local-agent/integration/agent-client.integration.test.ts",
-      "source_location": "L276",
+      "source_location": "L322",
       "_origin": "ast",
       "id": "tests_packages_local_agent_integration_agent_client_integration_test_sessionrunnerwithrecoveryfailure_restore",
-      "community": 71,
+      "community": 103,
       "norm_label": ".restore()"
     },
     {
       "label": "SessionRunnerWithRecoveredWorkspace",
       "file_type": "code",
       "source_file": "tests/packages/local-agent/integration/agent-client.integration.test.ts",
-      "source_location": "L285",
+      "source_location": "L331",
       "_origin": "ast",
       "id": "tests_packages_local_agent_integration_agent_client_integration_test_sessionrunnerwithrecoveredworkspace",
-      "community": 71,
+      "community": 103,
       "norm_label": "sessionrunnerwithrecoveredworkspace"
     },
     {
       "label": ".restore()",
       "file_type": "code",
       "source_file": "tests/packages/local-agent/integration/agent-client.integration.test.ts",
-      "source_location": "L288",
+      "source_location": "L334",
       "_origin": "ast",
       "id": "tests_packages_local_agent_integration_agent_client_integration_test_sessionrunnerwithrecoveredworkspace_restore",
-      "community": 71,
+      "community": 103,
       "norm_label": ".restore()"
     },
     {
       "label": ".findWorkspace()",
       "file_type": "code",
       "source_file": "tests/packages/local-agent/integration/agent-client.integration.test.ts",
-      "source_location": "L292",
+      "source_location": "L338",
       "_origin": "ast",
       "id": "tests_packages_local_agent_integration_agent_client_integration_test_sessionrunnerwithrecoveredworkspace_findworkspace",
-      "community": 71,
+      "community": 103,
       "norm_label": ".findworkspace()"
     },
     {
       "label": "waitFor()",
       "file_type": "code",
       "source_file": "tests/packages/local-agent/integration/agent-client.integration.test.ts",
-      "source_location": "L308",
+      "source_location": "L354",
       "_origin": "ast",
       "id": "tests_packages_local_agent_integration_agent_client_integration_test_waitfor",
       "community": 103,
@@ -23774,7 +23774,7 @@
       "source_location": "L44",
       "_origin": "ast",
       "id": "tests_packages_local_agent_integration_agent_prompt_command_integration_test_createagentserver",
-      "community": 125,
+      "community": 68,
       "norm_label": "createagentserver()"
     },
     {
@@ -24084,7 +24084,7 @@
       "source_location": "L929",
       "_origin": "ast",
       "id": "tests_packages_local_agent_integration_agent_prompt_command_integration_test_sequencedchecksrunner",
-      "community": 145,
+      "community": 31,
       "norm_label": "sequencedchecksrunner"
     },
     {
@@ -24094,7 +24094,7 @@
       "source_location": "L932",
       "_origin": "ast",
       "id": "tests_packages_local_agent_integration_agent_prompt_command_integration_test_sequencedchecksrunner_constructor",
-      "community": 145,
+      "community": 31,
       "norm_label": ".constructor()"
     },
     {
@@ -24104,7 +24104,7 @@
       "source_location": "L936",
       "_origin": "ast",
       "id": "tests_packages_local_agent_integration_agent_prompt_command_integration_test_sequencedchecksrunner_run",
-      "community": 145,
+      "community": 31,
       "norm_label": ".run()"
     },
     {
@@ -24114,7 +24114,7 @@
       "source_location": "L948",
       "_origin": "ast",
       "id": "tests_packages_local_agent_integration_agent_prompt_command_integration_test_worktreemutatingchecksrunner",
-      "community": 145,
+      "community": 31,
       "norm_label": "worktreemutatingchecksrunner"
     },
     {
@@ -24124,7 +24124,7 @@
       "source_location": "L951",
       "_origin": "ast",
       "id": "tests_packages_local_agent_integration_agent_prompt_command_integration_test_worktreemutatingchecksrunner_run",
-      "community": 145,
+      "community": 31,
       "norm_label": ".run()"
     },
     {
@@ -24194,7 +24194,7 @@
       "source_location": "L1000",
       "_origin": "ast",
       "id": "tests_packages_local_agent_integration_agent_prompt_command_integration_test_readypreviewtunnelport",
-      "community": 158,
+      "community": 125,
       "norm_label": "readypreviewtunnelport"
     },
     {
@@ -24204,7 +24204,7 @@
       "source_location": "L1001",
       "_origin": "ast",
       "id": "tests_packages_local_agent_integration_agent_prompt_command_integration_test_readypreviewtunnelport_open",
-      "community": 158,
+      "community": 125,
       "norm_label": ".open()"
     },
     {
@@ -24214,7 +24214,7 @@
       "source_location": "L1009",
       "_origin": "ast",
       "id": "tests_packages_local_agent_integration_agent_prompt_command_integration_test_readypreviewtunnelport_close",
-      "community": 158,
+      "community": 125,
       "norm_label": ".close()"
     },
     {
@@ -24674,7 +24674,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "tests_packages_local_agent_integration_example_project_integration_test",
-      "community": 20,
+      "community": 18,
       "norm_label": "example-project.integration.test.ts"
     },
     {
@@ -24684,7 +24684,7 @@
       "source_location": "L18",
       "_origin": "ast",
       "id": "tests_packages_local_agent_integration_example_project_integration_test_execfileasync",
-      "community": 20,
+      "community": 18,
       "norm_label": "execfileasync"
     },
     {
@@ -24694,7 +24694,7 @@
       "source_location": "L19",
       "_origin": "ast",
       "id": "tests_packages_local_agent_integration_example_project_integration_test_harness_script_path",
-      "community": 20,
+      "community": 18,
       "norm_label": "harness_script_path"
     },
     {
@@ -24704,7 +24704,7 @@
       "source_location": "L21",
       "_origin": "ast",
       "id": "tests_packages_local_agent_integration_example_project_integration_test_createtemprepository",
-      "community": 20,
+      "community": 18,
       "norm_label": "createtemprepository()"
     },
     {
@@ -24714,7 +24714,7 @@
       "source_location": "L30",
       "_origin": "ast",
       "id": "tests_packages_local_agent_integration_example_project_integration_test_createmanagedworktreeroot",
-      "community": 20,
+      "community": 18,
       "norm_label": "createmanagedworktreeroot()"
     },
     {
@@ -24724,7 +24724,7 @@
       "source_location": "L34",
       "_origin": "ast",
       "id": "tests_packages_local_agent_integration_example_project_integration_test_buildpreparecommand",
-      "community": 20,
+      "community": 18,
       "norm_label": "buildpreparecommand()"
     },
     {
@@ -24734,7 +24734,7 @@
       "source_location": "L54",
       "_origin": "ast",
       "id": "tests_packages_local_agent_integration_example_project_integration_test_buildclosecommand",
-      "community": 20,
+      "community": 18,
       "norm_label": "buildclosecommand()"
     },
     {
@@ -24744,7 +24744,7 @@
       "source_location": "L68",
       "_origin": "ast",
       "id": "tests_packages_local_agent_integration_example_project_integration_test_collectevents",
-      "community": 20,
+      "community": 18,
       "norm_label": "collectevents()"
     },
     {
@@ -24794,7 +24794,7 @@
       "source_location": "L181",
       "_origin": "ast",
       "id": "tests_packages_local_agent_integration_example_project_integration_test_readypreviewtunnelport",
-      "community": 20,
+      "community": 18,
       "norm_label": "readypreviewtunnelport"
     },
     {
@@ -24804,7 +24804,7 @@
       "source_location": "L184",
       "_origin": "ast",
       "id": "tests_packages_local_agent_integration_example_project_integration_test_readypreviewtunnelport_open",
-      "community": 20,
+      "community": 18,
       "norm_label": ".open()"
     },
     {
@@ -24814,7 +24814,7 @@
       "source_location": "L193",
       "_origin": "ast",
       "id": "tests_packages_local_agent_integration_example_project_integration_test_readypreviewtunnelport_close",
-      "community": 20,
+      "community": 18,
       "norm_label": ".close()"
     },
     {
@@ -24824,7 +24824,7 @@
       "source_location": "L196",
       "_origin": "ast",
       "id": "tests_packages_local_agent_integration_example_project_integration_test_execgit",
-      "community": 20,
+      "community": 18,
       "norm_label": "execgit()"
     },
     {
@@ -66107,7 +66107,7 @@
       "context": "parameter_type",
       "confidence": "EXTRACTED",
       "source_file": "packages/local-agent/src/websocket/agent-client.ts",
-      "source_location": "L611",
+      "source_location": "L618",
       "weight": 1.0,
       "source": "packages_local_agent_src_websocket_agent_client_agentclient_redactcheckresult",
       "target": "packages_local_agent_src_checks_checks_runner_checkresult",
@@ -66245,7 +66245,7 @@
       "context": "generic_arg",
       "confidence": "EXTRACTED",
       "source_file": "packages/local-agent/src/websocket/agent-client.ts",
-      "source_location": "L599",
+      "source_location": "L606",
       "weight": 1.0,
       "source": "packages_local_agent_src_websocket_agent_client_agentclient_redactchecksresult",
       "target": "packages_local_agent_src_checks_checks_runner_checksrunner",
@@ -73654,7 +73654,7 @@
       "context": "generic_arg",
       "confidence": "EXTRACTED",
       "source_file": "packages/local-agent/src/websocket/agent-client.ts",
-      "source_location": "L518",
+      "source_location": "L525",
       "weight": 1.0,
       "source": "packages_local_agent_src_websocket_agent_client_agentclient_runharness",
       "target": "packages_local_agent_src_harness_agent_harness_port_agentharnessport",
@@ -77531,7 +77531,7 @@
       "context": "type",
       "confidence": "EXTRACTED",
       "source_file": "tests/packages/local-agent/integration/agent-client.integration.test.ts",
-      "source_location": "L264",
+      "source_location": "L310",
       "weight": 1.0,
       "source": "tests_packages_local_agent_integration_agent_client_integration_test_recordingrestoresessionrunner",
       "target": "packages_local_agent_src_session_session_runner_sessionrunner",
@@ -77542,7 +77542,7 @@
       "context": "type",
       "confidence": "EXTRACTED",
       "source_file": "tests/packages/local-agent/integration/agent-client.integration.test.ts",
-      "source_location": "L285",
+      "source_location": "L331",
       "weight": 1.0,
       "source": "tests_packages_local_agent_integration_agent_client_integration_test_sessionrunnerwithrecoveredworkspace",
       "target": "packages_local_agent_src_session_session_runner_sessionrunner",
@@ -77553,7 +77553,7 @@
       "context": "type",
       "confidence": "EXTRACTED",
       "source_file": "tests/packages/local-agent/integration/agent-client.integration.test.ts",
-      "source_location": "L273",
+      "source_location": "L319",
       "weight": 1.0,
       "source": "tests_packages_local_agent_integration_agent_client_integration_test_sessionrunnerwithrecoveryfailure",
       "target": "packages_local_agent_src_session_session_runner_sessionrunner",
@@ -78976,7 +78976,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "packages/local-agent/src/websocket/agent-client.ts",
-      "source_location": "L694",
+      "source_location": "L701",
       "weight": 1.0,
       "source": "packages_local_agent_src_websocket_agent_client",
       "target": "packages_local_agent_src_websocket_agent_client_buildvalidationrepairprompt",
@@ -78986,7 +78986,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "packages/local-agent/src/websocket/agent-client.ts",
-      "source_location": "L734",
+      "source_location": "L741",
       "weight": 1.0,
       "source": "packages_local_agent_src_websocket_agent_client",
       "target": "packages_local_agent_src_websocket_agent_client_hasrepairablecheckfailure",
@@ -78996,7 +78996,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "packages/local-agent/src/websocket/agent-client.ts",
-      "source_location": "L738",
+      "source_location": "L745",
       "weight": 1.0,
       "source": "packages_local_agent_src_websocket_agent_client",
       "target": "packages_local_agent_src_websocket_agent_client_isretryableerror",
@@ -79161,7 +79161,7 @@
       "context": "export",
       "confidence": "EXTRACTED",
       "source_file": "packages/local-agent/src/websocket/agent-client.ts",
-      "source_location": "L742",
+      "source_location": "L749",
       "weight": 1.0,
       "source": "packages_local_agent_src_websocket_agent_client",
       "target": "packages_shared_contracts_src_index",
@@ -79390,7 +79390,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "packages/local-agent/src/websocket/agent-client.ts",
-      "source_location": "L564",
+      "source_location": "L571",
       "weight": 1.0,
       "source": "packages_local_agent_src_websocket_agent_client_agentclient_emitagentdone",
       "target": "packages_local_agent_src_websocket_agent_client_agentclientlogger_info"
@@ -79401,7 +79401,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "packages/local-agent/src/websocket/agent-client.ts",
-      "source_location": "L392",
+      "source_location": "L399",
       "weight": 1.0,
       "source": "packages_local_agent_src_websocket_agent_client_agentclient_handleagentprompt",
       "target": "packages_local_agent_src_websocket_agent_client_agentclientlogger_info"
@@ -79412,7 +79412,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "packages/local-agent/src/websocket/agent-client.ts",
-      "source_location": "L277",
+      "source_location": "L284",
       "weight": 1.0,
       "source": "packages_local_agent_src_websocket_agent_client_agentclient_handleprotocolmessage",
       "target": "packages_local_agent_src_websocket_agent_client_agentclientlogger_info"
@@ -79423,7 +79423,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "packages/local-agent/src/websocket/agent-client.ts",
-      "source_location": "L320",
+      "source_location": "L327",
       "weight": 1.0,
       "source": "packages_local_agent_src_websocket_agent_client_agentclient_handlereadinesscheck",
       "target": "packages_local_agent_src_websocket_agent_client_agentclientlogger_info"
@@ -79445,7 +79445,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "packages/local-agent/src/websocket/agent-client.ts",
-      "source_location": "L645",
+      "source_location": "L652",
       "weight": 1.0,
       "source": "packages_local_agent_src_websocket_agent_client_agentclient_emitevent",
       "target": "packages_local_agent_src_websocket_agent_client_agentclientlogger_warn"
@@ -79456,7 +79456,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "packages/local-agent/src/websocket/agent-client.ts",
-      "source_location": "L679",
+      "source_location": "L686",
       "weight": 1.0,
       "source": "packages_local_agent_src_websocket_agent_client_agentclient_emitrequiredevent",
       "target": "packages_local_agent_src_websocket_agent_client_agentclientlogger_warn"
@@ -79467,7 +79467,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "packages/local-agent/src/websocket/agent-client.ts",
-      "source_location": "L483",
+      "source_location": "L490",
       "weight": 1.0,
       "source": "packages_local_agent_src_websocket_agent_client_agentclient_handleagentprompt",
       "target": "packages_local_agent_src_websocket_agent_client_agentclientlogger_warn"
@@ -79478,7 +79478,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "packages/local-agent/src/websocket/agent-client.ts",
-      "source_location": "L273",
+      "source_location": "L280",
       "weight": 1.0,
       "source": "packages_local_agent_src_websocket_agent_client_agentclient_handleprotocolmessage",
       "target": "packages_local_agent_src_websocket_agent_client_agentclientlogger_warn"
@@ -79489,7 +79489,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "packages/local-agent/src/websocket/agent-client.ts",
-      "source_location": "L314",
+      "source_location": "L321",
       "weight": 1.0,
       "source": "packages_local_agent_src_websocket_agent_client_agentclient_publishconfiguredprojectreadiness",
       "target": "packages_local_agent_src_websocket_agent_client_agentclientlogger_warn"
@@ -79500,7 +79500,18 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "packages/local-agent/src/websocket/agent-client.ts",
-      "source_location": "L541",
+      "source_location": "L250",
+      "weight": 1.0,
+      "source": "packages_local_agent_src_websocket_agent_client_agentclient_publishrecoveryfailures",
+      "target": "packages_local_agent_src_websocket_agent_client_agentclientlogger_warn"
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "packages/local-agent/src/websocket/agent-client.ts",
+      "source_location": "L548",
       "weight": 1.0,
       "source": "packages_local_agent_src_websocket_agent_client_agentclient_runharness",
       "target": "packages_local_agent_src_websocket_agent_client_agentclientlogger_warn"
@@ -79522,7 +79533,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "packages/local-agent/src/websocket/agent-client.ts",
-      "source_location": "L626",
+      "source_location": "L633",
       "weight": 1.0,
       "source": "packages_local_agent_src_websocket_agent_client_agentclient_emiterror",
       "target": "packages_local_agent_src_websocket_agent_client_agentclientlogger_error"
@@ -79532,7 +79543,7 @@
       "context": "argument",
       "confidence": "INFERRED",
       "source_file": "packages/local-agent/src/websocket/agent-client.ts",
-      "source_location": "L581",
+      "source_location": "L588",
       "weight": 1.0,
       "source": "packages_local_agent_src_websocket_agent_client_agentclient_handleagentcancel",
       "target": "packages_local_agent_src_websocket_agent_client_agentclientlogger_error",
@@ -79543,7 +79554,7 @@
       "context": "argument",
       "confidence": "INFERRED",
       "source_file": "packages/local-agent/src/websocket/agent-client.ts",
-      "source_location": "L514",
+      "source_location": "L521",
       "weight": 1.0,
       "source": "packages_local_agent_src_websocket_agent_client_agentclient_handleagentprompt",
       "target": "packages_local_agent_src_websocket_agent_client_agentclientlogger_error",
@@ -79554,7 +79565,7 @@
       "context": "argument",
       "confidence": "INFERRED",
       "source_file": "packages/local-agent/src/websocket/agent-client.ts",
-      "source_location": "L595",
+      "source_location": "L602",
       "weight": 1.0,
       "source": "packages_local_agent_src_websocket_agent_client_agentclient_handlegitpushbranch",
       "target": "packages_local_agent_src_websocket_agent_client_agentclientlogger_error",
@@ -79565,7 +79576,7 @@
       "context": "argument",
       "confidence": "INFERRED",
       "source_file": "packages/local-agent/src/websocket/agent-client.ts",
-      "source_location": "L272",
+      "source_location": "L279",
       "weight": 1.0,
       "source": "packages_local_agent_src_websocket_agent_client_agentclient_handleprotocolmessage",
       "target": "packages_local_agent_src_websocket_agent_client_agentclientlogger_error",
@@ -79576,7 +79587,7 @@
       "context": "argument",
       "confidence": "INFERRED",
       "source_file": "packages/local-agent/src/websocket/agent-client.ts",
-      "source_location": "L373",
+      "source_location": "L380",
       "weight": 1.0,
       "source": "packages_local_agent_src_websocket_agent_client_agentclient_handlesessionclose",
       "target": "packages_local_agent_src_websocket_agent_client_agentclientlogger_error",
@@ -79587,7 +79598,7 @@
       "context": "argument",
       "confidence": "INFERRED",
       "source_file": "packages/local-agent/src/websocket/agent-client.ts",
-      "source_location": "L357",
+      "source_location": "L364",
       "weight": 1.0,
       "source": "packages_local_agent_src_websocket_agent_client_agentclient_handlesessionprepare",
       "target": "packages_local_agent_src_websocket_agent_client_agentclientlogger_error",
@@ -79598,9 +79609,20 @@
       "context": "argument",
       "confidence": "INFERRED",
       "source_file": "packages/local-agent/src/websocket/agent-client.ts",
-      "source_location": "L313",
+      "source_location": "L320",
       "weight": 1.0,
       "source": "packages_local_agent_src_websocket_agent_client_agentclient_publishconfiguredprojectreadiness",
+      "target": "packages_local_agent_src_websocket_agent_client_agentclientlogger_error",
+      "confidence_score": 0.5
+    },
+    {
+      "relation": "indirect_call",
+      "context": "argument",
+      "confidence": "INFERRED",
+      "source_file": "packages/local-agent/src/websocket/agent-client.ts",
+      "source_location": "L249",
+      "weight": 1.0,
+      "source": "packages_local_agent_src_websocket_agent_client_agentclient_publishrecoveryfailures",
       "target": "packages_local_agent_src_websocket_agent_client_agentclientlogger_error",
       "confidence_score": 0.5
     },
@@ -79661,7 +79683,7 @@
       "relation": "method",
       "confidence": "EXTRACTED",
       "source_file": "packages/local-agent/src/websocket/agent-client.ts",
-      "source_location": "L303",
+      "source_location": "L310",
       "weight": 1.0,
       "source": "packages_local_agent_src_websocket_agent_client_agentclient",
       "target": "packages_local_agent_src_websocket_agent_client_agentclient_describecommand",
@@ -79671,7 +79693,7 @@
       "relation": "method",
       "confidence": "EXTRACTED",
       "source_file": "packages/local-agent/src/websocket/agent-client.ts",
-      "source_location": "L556",
+      "source_location": "L563",
       "weight": 1.0,
       "source": "packages_local_agent_src_websocket_agent_client_agentclient",
       "target": "packages_local_agent_src_websocket_agent_client_agentclient_emitagentdone",
@@ -79681,7 +79703,7 @@
       "relation": "method",
       "confidence": "EXTRACTED",
       "source_file": "packages/local-agent/src/websocket/agent-client.ts",
-      "source_location": "L619",
+      "source_location": "L626",
       "weight": 1.0,
       "source": "packages_local_agent_src_websocket_agent_client_agentclient",
       "target": "packages_local_agent_src_websocket_agent_client_agentclient_emiterror",
@@ -79691,7 +79713,7 @@
       "relation": "method",
       "confidence": "EXTRACTED",
       "source_file": "packages/local-agent/src/websocket/agent-client.ts",
-      "source_location": "L637",
+      "source_location": "L644",
       "weight": 1.0,
       "source": "packages_local_agent_src_websocket_agent_client_agentclient",
       "target": "packages_local_agent_src_websocket_agent_client_agentclient_emitevent",
@@ -79701,7 +79723,7 @@
       "relation": "method",
       "confidence": "EXTRACTED",
       "source_file": "packages/local-agent/src/websocket/agent-client.ts",
-      "source_location": "L664",
+      "source_location": "L671",
       "weight": 1.0,
       "source": "packages_local_agent_src_websocket_agent_client_agentclient",
       "target": "packages_local_agent_src_websocket_agent_client_agentclient_emitrequiredevent",
@@ -79711,7 +79733,7 @@
       "relation": "method",
       "confidence": "EXTRACTED",
       "source_file": "packages/local-agent/src/websocket/agent-client.ts",
-      "source_location": "L577",
+      "source_location": "L584",
       "weight": 1.0,
       "source": "packages_local_agent_src_websocket_agent_client_agentclient",
       "target": "packages_local_agent_src_websocket_agent_client_agentclient_handleagentcancel",
@@ -79721,7 +79743,7 @@
       "relation": "method",
       "confidence": "EXTRACTED",
       "source_file": "packages/local-agent/src/websocket/agent-client.ts",
-      "source_location": "L378",
+      "source_location": "L385",
       "weight": 1.0,
       "source": "packages_local_agent_src_websocket_agent_client_agentclient",
       "target": "packages_local_agent_src_websocket_agent_client_agentclient_handleagentprompt",
@@ -79731,7 +79753,7 @@
       "relation": "method",
       "confidence": "EXTRACTED",
       "source_file": "packages/local-agent/src/websocket/agent-client.ts",
-      "source_location": "L585",
+      "source_location": "L592",
       "weight": 1.0,
       "source": "packages_local_agent_src_websocket_agent_client_agentclient",
       "target": "packages_local_agent_src_websocket_agent_client_agentclient_handlegitpushbranch",
@@ -79741,7 +79763,7 @@
       "relation": "method",
       "confidence": "EXTRACTED",
       "source_file": "packages/local-agent/src/websocket/agent-client.ts",
-      "source_location": "L266",
+      "source_location": "L273",
       "weight": 1.0,
       "source": "packages_local_agent_src_websocket_agent_client_agentclient",
       "target": "packages_local_agent_src_websocket_agent_client_agentclient_handleprotocolmessage",
@@ -79751,7 +79773,7 @@
       "relation": "method",
       "confidence": "EXTRACTED",
       "source_file": "packages/local-agent/src/websocket/agent-client.ts",
-      "source_location": "L319",
+      "source_location": "L326",
       "weight": 1.0,
       "source": "packages_local_agent_src_websocket_agent_client_agentclient",
       "target": "packages_local_agent_src_websocket_agent_client_agentclient_handlereadinesscheck",
@@ -79761,7 +79783,7 @@
       "relation": "method",
       "confidence": "EXTRACTED",
       "source_file": "packages/local-agent/src/websocket/agent-client.ts",
-      "source_location": "L362",
+      "source_location": "L369",
       "weight": 1.0,
       "source": "packages_local_agent_src_websocket_agent_client_agentclient",
       "target": "packages_local_agent_src_websocket_agent_client_agentclient_handlesessionclose",
@@ -79771,7 +79793,7 @@
       "relation": "method",
       "confidence": "EXTRACTED",
       "source_file": "packages/local-agent/src/websocket/agent-client.ts",
-      "source_location": "L329",
+      "source_location": "L336",
       "weight": 1.0,
       "source": "packages_local_agent_src_websocket_agent_client_agentclient",
       "target": "packages_local_agent_src_websocket_agent_client_agentclient_handlesessionprepare",
@@ -79781,7 +79803,7 @@
       "relation": "method",
       "confidence": "EXTRACTED",
       "source_file": "packages/local-agent/src/websocket/agent-client.ts",
-      "source_location": "L307",
+      "source_location": "L314",
       "weight": 1.0,
       "source": "packages_local_agent_src_websocket_agent_client_agentclient",
       "target": "packages_local_agent_src_websocket_agent_client_agentclient_publishconfiguredprojectreadiness",
@@ -79791,7 +79813,7 @@
       "relation": "method",
       "confidence": "EXTRACTED",
       "source_file": "packages/local-agent/src/websocket/agent-client.ts",
-      "source_location": "L250",
+      "source_location": "L257",
       "weight": 1.0,
       "source": "packages_local_agent_src_websocket_agent_client_agentclient",
       "target": "packages_local_agent_src_websocket_agent_client_agentclient_publishrecoveredsessions",
@@ -79811,7 +79833,7 @@
       "relation": "method",
       "confidence": "EXTRACTED",
       "source_file": "packages/local-agent/src/websocket/agent-client.ts",
-      "source_location": "L611",
+      "source_location": "L618",
       "weight": 1.0,
       "source": "packages_local_agent_src_websocket_agent_client_agentclient",
       "target": "packages_local_agent_src_websocket_agent_client_agentclient_redactcheckresult",
@@ -79821,7 +79843,7 @@
       "relation": "method",
       "confidence": "EXTRACTED",
       "source_file": "packages/local-agent/src/websocket/agent-client.ts",
-      "source_location": "L599",
+      "source_location": "L606",
       "weight": 1.0,
       "source": "packages_local_agent_src_websocket_agent_client_agentclient",
       "target": "packages_local_agent_src_websocket_agent_client_agentclient_redactchecksresult",
@@ -79831,7 +79853,7 @@
       "relation": "method",
       "confidence": "EXTRACTED",
       "source_file": "packages/local-agent/src/websocket/agent-client.ts",
-      "source_location": "L689",
+      "source_location": "L696",
       "weight": 1.0,
       "source": "packages_local_agent_src_websocket_agent_client_agentclient",
       "target": "packages_local_agent_src_websocket_agent_client_agentclient_registeragent",
@@ -79841,7 +79863,7 @@
       "relation": "method",
       "confidence": "EXTRACTED",
       "source_file": "packages/local-agent/src/websocket/agent-client.ts",
-      "source_location": "L567",
+      "source_location": "L574",
       "weight": 1.0,
       "source": "packages_local_agent_src_websocket_agent_client_agentclient",
       "target": "packages_local_agent_src_websocket_agent_client_agentclient_runchecks",
@@ -79851,7 +79873,7 @@
       "relation": "method",
       "confidence": "EXTRACTED",
       "source_file": "packages/local-agent/src/websocket/agent-client.ts",
-      "source_location": "L518",
+      "source_location": "L525",
       "weight": 1.0,
       "source": "packages_local_agent_src_websocket_agent_client_agentclient",
       "target": "packages_local_agent_src_websocket_agent_client_agentclient_runharness",
@@ -80014,7 +80036,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "packages/local-agent/src/websocket/agent-client.ts",
-      "source_location": "L246",
+      "source_location": "L247",
       "weight": 1.0,
       "source": "packages_local_agent_src_websocket_agent_client_agentclient_publishrecoveryfailures",
       "target": "packages_local_agent_src_websocket_agent_client_agentclient_emiterror",
@@ -80025,7 +80047,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "packages/local-agent/src/websocket/agent-client.ts",
-      "source_location": "L257",
+      "source_location": "L264",
       "weight": 1.0,
       "source": "packages_local_agent_src_websocket_agent_client_agentclient_publishrecoveredsessions",
       "target": "packages_local_agent_src_websocket_agent_client_agentclient_emitrequiredevent",
@@ -80037,7 +80059,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "packages/local-agent/src/websocket/agent-client.ts",
-      "source_location": "L258",
+      "source_location": "L265",
       "weight": 1.0,
       "source": "packages_local_agent_src_websocket_agent_client_agentclient_publishrecoveredsessions",
       "target": "packages_local_agent_src_websocket_message_codecs_buildsessionrecoveredevent"
@@ -80047,7 +80069,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "packages/local-agent/src/websocket/agent-client.ts",
-      "source_location": "L277",
+      "source_location": "L284",
       "weight": 1.0,
       "source": "packages_local_agent_src_websocket_agent_client_agentclient_handleprotocolmessage",
       "target": "packages_local_agent_src_websocket_agent_client_agentclient_describecommand",
@@ -80058,7 +80080,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "packages/local-agent/src/websocket/agent-client.ts",
-      "source_location": "L293",
+      "source_location": "L300",
       "weight": 1.0,
       "source": "packages_local_agent_src_websocket_agent_client_agentclient_handleprotocolmessage",
       "target": "packages_local_agent_src_websocket_agent_client_agentclient_handleagentcancel",
@@ -80069,7 +80091,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "packages/local-agent/src/websocket/agent-client.ts",
-      "source_location": "L290",
+      "source_location": "L297",
       "weight": 1.0,
       "source": "packages_local_agent_src_websocket_agent_client_agentclient_handleprotocolmessage",
       "target": "packages_local_agent_src_websocket_agent_client_agentclient_handleagentprompt",
@@ -80080,7 +80102,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "packages/local-agent/src/websocket/agent-client.ts",
-      "source_location": "L296",
+      "source_location": "L303",
       "weight": 1.0,
       "source": "packages_local_agent_src_websocket_agent_client_agentclient_handleprotocolmessage",
       "target": "packages_local_agent_src_websocket_agent_client_agentclient_handlegitpushbranch",
@@ -80091,7 +80113,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "packages/local-agent/src/websocket/agent-client.ts",
-      "source_location": "L284",
+      "source_location": "L291",
       "weight": 1.0,
       "source": "packages_local_agent_src_websocket_agent_client_agentclient_handleprotocolmessage",
       "target": "packages_local_agent_src_websocket_agent_client_agentclient_handlereadinesscheck",
@@ -80102,7 +80124,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "packages/local-agent/src/websocket/agent-client.ts",
-      "source_location": "L287",
+      "source_location": "L294",
       "weight": 1.0,
       "source": "packages_local_agent_src_websocket_agent_client_agentclient_handleprotocolmessage",
       "target": "packages_local_agent_src_websocket_agent_client_agentclient_handlesessionclose",
@@ -80113,7 +80135,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "packages/local-agent/src/websocket/agent-client.ts",
-      "source_location": "L281",
+      "source_location": "L288",
       "weight": 1.0,
       "source": "packages_local_agent_src_websocket_agent_client_agentclient_handleprotocolmessage",
       "target": "packages_local_agent_src_websocket_agent_client_agentclient_handlesessionprepare",
@@ -80125,7 +80147,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "packages/local-agent/src/websocket/agent-client.ts",
-      "source_location": "L270",
+      "source_location": "L277",
       "weight": 1.0,
       "source": "packages_local_agent_src_websocket_agent_client_agentclient_handleprotocolmessage",
       "target": "packages_local_agent_src_websocket_message_codecs_parseagentcommandenvelope"
@@ -80135,7 +80157,7 @@
       "context": "parameter_type",
       "confidence": "EXTRACTED",
       "source_file": "packages/local-agent/src/websocket/agent-client.ts",
-      "source_location": "L303",
+      "source_location": "L310",
       "weight": 1.0,
       "source": "packages_local_agent_src_websocket_agent_client_agentclient_describecommand",
       "target": "packages_shared_contracts_src_protocol_commands_agentcommandenvelope",
@@ -80146,7 +80168,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "packages/local-agent/src/websocket/agent-client.ts",
-      "source_location": "L311",
+      "source_location": "L318",
       "weight": 1.0,
       "source": "packages_local_agent_src_websocket_agent_client_agentclient_publishconfiguredprojectreadiness",
       "target": "packages_local_agent_src_websocket_agent_client_agentclient_emitevent",
@@ -80158,7 +80180,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "packages/local-agent/src/websocket/agent-client.ts",
-      "source_location": "L311",
+      "source_location": "L318",
       "weight": 1.0,
       "source": "packages_local_agent_src_websocket_agent_client_agentclient_publishconfiguredprojectreadiness",
       "target": "packages_local_agent_src_websocket_message_codecs_buildreadinessresultevent"
@@ -80168,7 +80190,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "packages/local-agent/src/websocket/agent-client.ts",
-      "source_location": "L326",
+      "source_location": "L333",
       "weight": 1.0,
       "source": "packages_local_agent_src_websocket_agent_client_agentclient_handlereadinesscheck",
       "target": "packages_local_agent_src_websocket_agent_client_agentclient_emitevent",
@@ -80180,7 +80202,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "packages/local-agent/src/websocket/agent-client.ts",
-      "source_location": "L326",
+      "source_location": "L333",
       "weight": 1.0,
       "source": "packages_local_agent_src_websocket_agent_client_agentclient_handlereadinesscheck",
       "target": "packages_local_agent_src_websocket_message_codecs_buildreadinessresultevent"
@@ -80190,7 +80212,7 @@
       "context": "parameter_type",
       "confidence": "EXTRACTED",
       "source_file": "packages/local-agent/src/websocket/agent-client.ts",
-      "source_location": "L319",
+      "source_location": "L326",
       "weight": 1.0,
       "source": "packages_local_agent_src_websocket_agent_client_agentclient_handlereadinesscheck",
       "target": "packages_shared_contracts_src_protocol_commands_readinesscheckcommandenvelope",
@@ -80201,7 +80223,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "packages/local-agent/src/websocket/agent-client.ts",
-      "source_location": "L358",
+      "source_location": "L365",
       "weight": 1.0,
       "source": "packages_local_agent_src_websocket_agent_client_agentclient_handlesessionprepare",
       "target": "packages_local_agent_src_websocket_agent_client_agentclient_emiterror",
@@ -80212,7 +80234,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "packages/local-agent/src/websocket/agent-client.ts",
-      "source_location": "L331",
+      "source_location": "L338",
       "weight": 1.0,
       "source": "packages_local_agent_src_websocket_agent_client_agentclient_handlesessionprepare",
       "target": "packages_local_agent_src_websocket_agent_client_agentclient_emitevent",
@@ -80223,7 +80245,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "packages/local-agent/src/websocket/agent-client.ts",
-      "source_location": "L357",
+      "source_location": "L364",
       "weight": 1.0,
       "source": "packages_local_agent_src_websocket_agent_client_agentclient_handlesessionprepare",
       "target": "packages_local_agent_src_websocket_agent_client_isretryableerror",
@@ -80235,7 +80257,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "packages/local-agent/src/websocket/agent-client.ts",
-      "source_location": "L332",
+      "source_location": "L339",
       "weight": 1.0,
       "source": "packages_local_agent_src_websocket_agent_client_agentclient_handlesessionprepare",
       "target": "packages_local_agent_src_websocket_message_codecs_buildsessionprogressevent"
@@ -80246,7 +80268,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "packages/local-agent/src/websocket/agent-client.ts",
-      "source_location": "L351",
+      "source_location": "L358",
       "weight": 1.0,
       "source": "packages_local_agent_src_websocket_agent_client_agentclient_handlesessionprepare",
       "target": "packages_local_agent_src_websocket_message_codecs_buildsessionreadyevent"
@@ -80256,7 +80278,7 @@
       "context": "parameter_type",
       "confidence": "EXTRACTED",
       "source_file": "packages/local-agent/src/websocket/agent-client.ts",
-      "source_location": "L329",
+      "source_location": "L336",
       "weight": 1.0,
       "source": "packages_local_agent_src_websocket_agent_client_agentclient_handlesessionprepare",
       "target": "packages_shared_contracts_src_protocol_commands_sessionpreparecommandenvelope",
@@ -80267,7 +80289,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "packages/local-agent/src/websocket/agent-client.ts",
-      "source_location": "L373",
+      "source_location": "L380",
       "weight": 1.0,
       "source": "packages_local_agent_src_websocket_agent_client_agentclient_handlesessionclose",
       "target": "packages_local_agent_src_websocket_agent_client_agentclient_emiterror",
@@ -80278,7 +80300,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "packages/local-agent/src/websocket/agent-client.ts",
-      "source_location": "L366",
+      "source_location": "L373",
       "weight": 1.0,
       "source": "packages_local_agent_src_websocket_agent_client_agentclient_handlesessionclose",
       "target": "packages_local_agent_src_websocket_agent_client_agentclient_emitevent",
@@ -80290,7 +80312,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "packages/local-agent/src/websocket/agent-client.ts",
-      "source_location": "L367",
+      "source_location": "L374",
       "weight": 1.0,
       "source": "packages_local_agent_src_websocket_agent_client_agentclient_handlesessionclose",
       "target": "packages_local_agent_src_websocket_message_codecs_buildsessionclosedevent"
@@ -80300,7 +80322,7 @@
       "context": "parameter_type",
       "confidence": "EXTRACTED",
       "source_file": "packages/local-agent/src/websocket/agent-client.ts",
-      "source_location": "L362",
+      "source_location": "L369",
       "weight": 1.0,
       "source": "packages_local_agent_src_websocket_agent_client_agentclient_handlesessionclose",
       "target": "packages_shared_contracts_src_protocol_commands_sessionclosecommandenvelope",
@@ -80311,7 +80333,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "packages/local-agent/src/websocket/agent-client.ts",
-      "source_location": "L433",
+      "source_location": "L440",
       "weight": 1.0,
       "source": "packages_local_agent_src_websocket_agent_client_agentclient_handleagentprompt",
       "target": "packages_local_agent_src_websocket_agent_client_agentclient_emitagentdone",
@@ -80322,7 +80344,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "packages/local-agent/src/websocket/agent-client.ts",
-      "source_location": "L382",
+      "source_location": "L389",
       "weight": 1.0,
       "source": "packages_local_agent_src_websocket_agent_client_agentclient_handleagentprompt",
       "target": "packages_local_agent_src_websocket_agent_client_agentclient_emiterror",
@@ -80333,7 +80355,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "packages/local-agent/src/websocket/agent-client.ts",
-      "source_location": "L396",
+      "source_location": "L403",
       "weight": 1.0,
       "source": "packages_local_agent_src_websocket_agent_client_agentclient_handleagentprompt",
       "target": "packages_local_agent_src_websocket_agent_client_agentclient_emitevent",
@@ -80344,7 +80366,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "packages/local-agent/src/websocket/agent-client.ts",
-      "source_location": "L439",
+      "source_location": "L446",
       "weight": 1.0,
       "source": "packages_local_agent_src_websocket_agent_client_agentclient_handleagentprompt",
       "target": "packages_local_agent_src_websocket_agent_client_agentclient_runchecks",
@@ -80355,7 +80377,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "packages/local-agent/src/websocket/agent-client.ts",
-      "source_location": "L412",
+      "source_location": "L419",
       "weight": 1.0,
       "source": "packages_local_agent_src_websocket_agent_client_agentclient_handleagentprompt",
       "target": "packages_local_agent_src_websocket_agent_client_agentclient_runharness",
@@ -80366,7 +80388,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "packages/local-agent/src/websocket/agent-client.ts",
-      "source_location": "L446",
+      "source_location": "L453",
       "weight": 1.0,
       "source": "packages_local_agent_src_websocket_agent_client_agentclient_handleagentprompt",
       "target": "packages_local_agent_src_websocket_agent_client_buildvalidationrepairprompt",
@@ -80377,7 +80399,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "packages/local-agent/src/websocket/agent-client.ts",
-      "source_location": "L442",
+      "source_location": "L449",
       "weight": 1.0,
       "source": "packages_local_agent_src_websocket_agent_client_agentclient_handleagentprompt",
       "target": "packages_local_agent_src_websocket_agent_client_hasrepairablecheckfailure",
@@ -80389,7 +80411,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "packages/local-agent/src/websocket/agent-client.ts",
-      "source_location": "L416",
+      "source_location": "L423",
       "weight": 1.0,
       "source": "packages_local_agent_src_websocket_agent_client_agentclient_handleagentprompt",
       "target": "packages_local_agent_src_websocket_message_codecs_buildagentdoneevent"
@@ -80400,7 +80422,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "packages/local-agent/src/websocket/agent-client.ts",
-      "source_location": "L508",
+      "source_location": "L515",
       "weight": 1.0,
       "source": "packages_local_agent_src_websocket_agent_client_agentclient_handleagentprompt",
       "target": "packages_local_agent_src_websocket_message_codecs_buildchecksresultevent"
@@ -80411,7 +80433,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "packages/local-agent/src/websocket/agent-client.ts",
-      "source_location": "L494",
+      "source_location": "L501",
       "weight": 1.0,
       "source": "packages_local_agent_src_websocket_agent_client_agentclient_handleagentprompt",
       "target": "packages_local_agent_src_websocket_message_codecs_buildgitdiffevent"
@@ -80422,7 +80444,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "packages/local-agent/src/websocket/agent-client.ts",
-      "source_location": "L397",
+      "source_location": "L404",
       "weight": 1.0,
       "source": "packages_local_agent_src_websocket_agent_client_agentclient_handleagentprompt",
       "target": "packages_local_agent_src_websocket_message_codecs_buildsessionprogressevent"
@@ -80432,7 +80454,7 @@
       "context": "parameter_type",
       "confidence": "EXTRACTED",
       "source_file": "packages/local-agent/src/websocket/agent-client.ts",
-      "source_location": "L378",
+      "source_location": "L385",
       "weight": 1.0,
       "source": "packages_local_agent_src_websocket_agent_client_agentclient_handleagentprompt",
       "target": "packages_shared_contracts_src_protocol_commands_agentpromptcommandenvelope",
@@ -80444,7 +80466,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "packages/local-agent/src/websocket/agent-client.ts",
-      "source_location": "L503",
+      "source_location": "L510",
       "weight": 1.0,
       "source": "packages_local_agent_src_websocket_agent_client_agentclient_handleagentprompt",
       "target": "packages_shared_contracts_src_protocol_events_summarizechecksfailure"
@@ -80454,7 +80476,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "packages/local-agent/src/websocket/agent-client.ts",
-      "source_location": "L524",
+      "source_location": "L531",
       "weight": 1.0,
       "source": "packages_local_agent_src_websocket_agent_client_agentclient_runharness",
       "target": "packages_local_agent_src_websocket_agent_client_agentclient_emitevent",
@@ -80466,7 +80488,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "packages/local-agent/src/websocket/agent-client.ts",
-      "source_location": "L525",
+      "source_location": "L532",
       "weight": 1.0,
       "source": "packages_local_agent_src_websocket_agent_client_agentclient_runharness",
       "target": "packages_local_agent_src_websocket_message_codecs_buildagentoutputevent"
@@ -80476,7 +80498,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "packages/local-agent/src/websocket/agent-client.ts",
-      "source_location": "L557",
+      "source_location": "L564",
       "weight": 1.0,
       "source": "packages_local_agent_src_websocket_agent_client_agentclient_emitagentdone",
       "target": "packages_local_agent_src_websocket_agent_client_agentclient_emitevent",
@@ -80488,7 +80510,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "packages/local-agent/src/websocket/agent-client.ts",
-      "source_location": "L558",
+      "source_location": "L565",
       "weight": 1.0,
       "source": "packages_local_agent_src_websocket_agent_client_agentclient_emitagentdone",
       "target": "packages_local_agent_src_websocket_message_codecs_buildagentdoneevent"
@@ -80498,7 +80520,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "packages/local-agent/src/websocket/agent-client.ts",
-      "source_location": "L568",
+      "source_location": "L575",
       "weight": 1.0,
       "source": "packages_local_agent_src_websocket_agent_client_agentclient_runchecks",
       "target": "packages_local_agent_src_websocket_agent_client_agentclient_redactchecksresult",
@@ -80509,7 +80531,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "packages/local-agent/src/websocket/agent-client.ts",
-      "source_location": "L581",
+      "source_location": "L588",
       "weight": 1.0,
       "source": "packages_local_agent_src_websocket_agent_client_agentclient_handleagentcancel",
       "target": "packages_local_agent_src_websocket_agent_client_agentclient_emiterror",
@@ -80520,7 +80542,7 @@
       "context": "parameter_type",
       "confidence": "EXTRACTED",
       "source_file": "packages/local-agent/src/websocket/agent-client.ts",
-      "source_location": "L577",
+      "source_location": "L584",
       "weight": 1.0,
       "source": "packages_local_agent_src_websocket_agent_client_agentclient_handleagentcancel",
       "target": "packages_shared_contracts_src_protocol_commands_agentcancelcommandenvelope",
@@ -80531,7 +80553,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "packages/local-agent/src/websocket/agent-client.ts",
-      "source_location": "L595",
+      "source_location": "L602",
       "weight": 1.0,
       "source": "packages_local_agent_src_websocket_agent_client_agentclient_handlegitpushbranch",
       "target": "packages_local_agent_src_websocket_agent_client_agentclient_emiterror",
@@ -80542,7 +80564,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "packages/local-agent/src/websocket/agent-client.ts",
-      "source_location": "L588",
+      "source_location": "L595",
       "weight": 1.0,
       "source": "packages_local_agent_src_websocket_agent_client_agentclient_handlegitpushbranch",
       "target": "packages_local_agent_src_websocket_agent_client_agentclient_emitevent",
@@ -80554,7 +80576,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "packages/local-agent/src/websocket/agent-client.ts",
-      "source_location": "L589",
+      "source_location": "L596",
       "weight": 1.0,
       "source": "packages_local_agent_src_websocket_agent_client_agentclient_handlegitpushbranch",
       "target": "packages_local_agent_src_websocket_message_codecs_buildgitbranchpushedevent"
@@ -80564,7 +80586,7 @@
       "context": "parameter_type",
       "confidence": "EXTRACTED",
       "source_file": "packages/local-agent/src/websocket/agent-client.ts",
-      "source_location": "L585",
+      "source_location": "L592",
       "weight": 1.0,
       "source": "packages_local_agent_src_websocket_agent_client_agentclient_handlegitpushbranch",
       "target": "packages_shared_contracts_src_protocol_commands_gitpushbranchcommandenvelope",
@@ -80575,7 +80597,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "packages/local-agent/src/websocket/agent-client.ts",
-      "source_location": "L604",
+      "source_location": "L611",
       "weight": 1.0,
       "source": "packages_local_agent_src_websocket_agent_client_agentclient_redactchecksresult",
       "target": "packages_local_agent_src_websocket_agent_client_agentclient_redactcheckresult",
@@ -80586,7 +80608,7 @@
       "context": "generic_arg",
       "confidence": "EXTRACTED",
       "source_file": "packages/local-agent/src/websocket/agent-client.ts",
-      "source_location": "L599",
+      "source_location": "L606",
       "weight": 1.0,
       "source": "packages_local_agent_src_websocket_agent_client_agentclient_redactchecksresult",
       "target": "packages_shared_contracts_src_protocol_events_checksresulteventenvelope",
@@ -80597,7 +80619,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "packages/local-agent/src/websocket/agent-client.ts",
-      "source_location": "L634",
+      "source_location": "L641",
       "weight": 1.0,
       "source": "packages_local_agent_src_websocket_agent_client_agentclient_emiterror",
       "target": "packages_local_agent_src_websocket_agent_client_agentclient_emitevent",
@@ -80609,7 +80631,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "packages/local-agent/src/websocket/agent-client.ts",
-      "source_location": "L627",
+      "source_location": "L634",
       "weight": 1.0,
       "source": "packages_local_agent_src_websocket_agent_client_agentclient_emiterror",
       "target": "packages_local_agent_src_websocket_message_codecs_builderrorevent"
@@ -80619,7 +80641,7 @@
       "context": "parameter_type",
       "confidence": "EXTRACTED",
       "source_file": "packages/local-agent/src/websocket/agent-client.ts",
-      "source_location": "L637",
+      "source_location": "L644",
       "weight": 1.0,
       "source": "packages_local_agent_src_websocket_agent_client_agentclient_emitevent",
       "target": "packages_shared_contracts_src_protocol_events_agenteventenvelope",
@@ -80630,7 +80652,7 @@
       "context": "parameter_type",
       "confidence": "EXTRACTED",
       "source_file": "packages/local-agent/src/websocket/agent-client.ts",
-      "source_location": "L664",
+      "source_location": "L671",
       "weight": 1.0,
       "source": "packages_local_agent_src_websocket_agent_client_agentclient_emitrequiredevent",
       "target": "packages_shared_contracts_src_protocol_events_agenteventenvelope",
@@ -80641,7 +80663,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "packages/local-agent/src/websocket/agent-client.ts",
-      "source_location": "L690",
+      "source_location": "L697",
       "weight": 1.0,
       "source": "packages_local_agent_src_websocket_agent_client_agentclient_registeragent",
       "target": "packages_local_agent_src_websocket_agent_client_agentclient_emitrequiredevent",
@@ -80652,7 +80674,7 @@
       "context": "parameter_type",
       "confidence": "EXTRACTED",
       "source_file": "packages/local-agent/src/websocket/agent-client.ts",
-      "source_location": "L689",
+      "source_location": "L696",
       "weight": 1.0,
       "source": "packages_local_agent_src_websocket_agent_client_agentclient_registeragent",
       "target": "packages_shared_contracts_src_protocol_events_agentconnectedeventenvelope",
@@ -84006,7 +84028,7 @@
       "confidence": "INFERRED",
       "confidence_score": 0.8,
       "source_file": "tests/packages/local-agent/integration/agent-client.integration.test.ts",
-      "source_location": "L314",
+      "source_location": "L360",
       "weight": 1.0,
       "source": "tests_packages_local_agent_integration_agent_client_integration_test_waitfor",
       "target": "prototype_support_resolve"
@@ -88384,7 +88406,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "tests/packages/local-agent/integration/agent-client.integration.test.ts",
-      "source_location": "L251",
+      "source_location": "L297",
       "weight": 1.0,
       "source": "tests_packages_local_agent_integration_agent_client_integration_test",
       "target": "tests_packages_local_agent_integration_agent_client_integration_test_error",
@@ -88394,7 +88416,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "tests/packages/local-agent/integration/agent-client.integration.test.ts",
-      "source_location": "L251",
+      "source_location": "L297",
       "weight": 1.0,
       "source": "tests_packages_local_agent_integration_agent_client_integration_test",
       "target": "tests_packages_local_agent_integration_agent_client_integration_test_info",
@@ -88414,7 +88436,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "tests/packages/local-agent/integration/agent-client.integration.test.ts",
-      "source_location": "L264",
+      "source_location": "L310",
       "weight": 1.0,
       "source": "tests_packages_local_agent_integration_agent_client_integration_test",
       "target": "tests_packages_local_agent_integration_agent_client_integration_test_recordingrestoresessionrunner",
@@ -88424,7 +88446,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "tests/packages/local-agent/integration/agent-client.integration.test.ts",
-      "source_location": "L285",
+      "source_location": "L331",
       "weight": 1.0,
       "source": "tests_packages_local_agent_integration_agent_client_integration_test",
       "target": "tests_packages_local_agent_integration_agent_client_integration_test_sessionrunnerwithrecoveredworkspace",
@@ -88434,7 +88456,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "tests/packages/local-agent/integration/agent-client.integration.test.ts",
-      "source_location": "L273",
+      "source_location": "L319",
       "weight": 1.0,
       "source": "tests_packages_local_agent_integration_agent_client_integration_test",
       "target": "tests_packages_local_agent_integration_agent_client_integration_test_sessionrunnerwithrecoveryfailure",
@@ -88444,7 +88466,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "tests/packages/local-agent/integration/agent-client.integration.test.ts",
-      "source_location": "L308",
+      "source_location": "L354",
       "weight": 1.0,
       "source": "tests_packages_local_agent_integration_agent_client_integration_test",
       "target": "tests_packages_local_agent_integration_agent_client_integration_test_waitfor",
@@ -88454,7 +88476,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "tests/packages/local-agent/integration/agent-client.integration.test.ts",
-      "source_location": "L251",
+      "source_location": "L297",
       "weight": 1.0,
       "source": "tests_packages_local_agent_integration_agent_client_integration_test",
       "target": "tests_packages_local_agent_integration_agent_client_integration_test_warn",
@@ -88464,7 +88486,7 @@
       "relation": "method",
       "confidence": "EXTRACTED",
       "source_file": "tests/packages/local-agent/integration/agent-client.integration.test.ts",
-      "source_location": "L267",
+      "source_location": "L313",
       "weight": 1.0,
       "source": "tests_packages_local_agent_integration_agent_client_integration_test_recordingrestoresessionrunner",
       "target": "tests_packages_local_agent_integration_agent_client_integration_test_recordingrestoresessionrunner_restore",
@@ -88474,7 +88496,7 @@
       "relation": "method",
       "confidence": "EXTRACTED",
       "source_file": "tests/packages/local-agent/integration/agent-client.integration.test.ts",
-      "source_location": "L276",
+      "source_location": "L322",
       "weight": 1.0,
       "source": "tests_packages_local_agent_integration_agent_client_integration_test_sessionrunnerwithrecoveryfailure",
       "target": "tests_packages_local_agent_integration_agent_client_integration_test_sessionrunnerwithrecoveryfailure_restore",
@@ -88484,7 +88506,7 @@
       "relation": "method",
       "confidence": "EXTRACTED",
       "source_file": "tests/packages/local-agent/integration/agent-client.integration.test.ts",
-      "source_location": "L292",
+      "source_location": "L338",
       "weight": 1.0,
       "source": "tests_packages_local_agent_integration_agent_client_integration_test_sessionrunnerwithrecoveredworkspace",
       "target": "tests_packages_local_agent_integration_agent_client_integration_test_sessionrunnerwithrecoveredworkspace_findworkspace",
@@ -88494,7 +88516,7 @@
       "relation": "method",
       "confidence": "EXTRACTED",
       "source_file": "tests/packages/local-agent/integration/agent-client.integration.test.ts",
-      "source_location": "L288",
+      "source_location": "L334",
       "weight": 1.0,
       "source": "tests_packages_local_agent_integration_agent_client_integration_test_sessionrunnerwithrecoveredworkspace",
       "target": "tests_packages_local_agent_integration_agent_client_integration_test_sessionrunnerwithrecoveredworkspace_restore",
@@ -92591,5 +92613,5 @@
       "source_file": "prototype/screenshots/03-flow.png"
     }
   ],
-  "built_at_commit": "f71ecac6f9044a7419bdcd9759166df77e8af437"
+  "built_at_commit": "daa8e5f6ab3248632a46afba7da004d286108772"
 }
