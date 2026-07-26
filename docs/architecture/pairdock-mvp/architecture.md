@@ -28,7 +28,8 @@ Hexagonal rule: use-case modules never depend directly on a provider SDK, CLI, t
 - PostgreSQL: durable state for users, projects, sessions, events, validations, review requests.
 - Prisma ORM: schema, migrations, generated client, and persistence adapter implementation.
 - Local Agent CLI: resident service connected to the backend. It reads local project paths and `pairdock.yml`, then publishes safe metadata only.
-- Preview runtime: project-defined command from `pairdock.yml`; Docker/Compose can be used inside that command but is not required.
+- Preview runtime: project-defined command from `pairdock.yml`, executed from the session worktree on the host by default. Docker is an explicit alternative for containerized or multi-service previews; an optional `preview.prepare` command prewarms lockfile-keyed Linux dependency volumes before the local agent publishes availability.
+- Validation runtime: setup, build, test, and lint commands execute from the host worktree with a filtered environment; PairDock reruns them independently after each agent turn.
 - Agent harness: pluggable local CLI adapter launched inside the worktree. `CodexHarnessAdapter` is one backend/local-agent implementation, not product language.
 - Cloudflare Tunnel: temporary preview exposure.
 - GitHub App: developer login, repository installation, and draft review request creation as the MVP source-control adapter; internally maps to GitHub draft PRs.
@@ -38,11 +39,11 @@ Hexagonal rule: use-case modules never depend directly on a provider SDK, CLI, t
 ### Session recovery ownership
 
 - PostgreSQL remains the source of truth for session lifecycle, ownership, prompts, events, and validation state.
-- The local agent persists only machine-local runtime references required to reattach to prepared worktrees, Docker sandboxes, and preview tunnels after a process restart.
+- The local agent persists only machine-local runtime references required to reattach to prepared worktrees, host/Docker preview runtimes, and preview tunnels after a process restart.
 - Local runtime state is written atomically to `~/.pairdock/sessions.json` with owner-only permissions. Preview environment variables and secrets are never persisted in this file.
 - On startup, the local agent validates the configured repository, Git worktree, branch, and preview healthcheck before exposing a recovered session to prompts.
 - Invalid recovered state remains available for explicit cleanup but is not considered prepared. The agent reports a non-retryable recovery failure to the backend.
-- Successful session cleanup removes the local runtime record. Docker and Cloudflare containers use deterministic names so cleanup remains possible without the original child-process handle.
+- Successful session cleanup removes the local runtime record. Host previews use dedicated process groups and runtime tokens. Docker and Cloudflare containers use deterministic names plus agent/session labels; startup reconciliation removes every container owned by that agent before valid persisted worktrees receive rebuilt previews.
 
 ## Backend NestJS modules
 
@@ -635,7 +636,9 @@ MVP adapters:
 - `SlackPmIdentityAdapter` for PM login.
 - `GithubSourceControlAdapter` for repositories and draft review requests. Internally it maps to GitHub draft PR APIs.
 - `CodexHarnessAdapter` for Codex CLI.
-- `DockerSandboxAdapter` for sandbox execution.
+- `HostPreviewRuntimeAdapter` for default local previews.
+- `DockerSandboxAdapter` for explicit containerized previews.
+- `PreviewRuntimeRouter` for runtime selection without changing session orchestration.
 - `CloudflarePreviewTunnelAdapter` for preview.
 
 Possible future adapters:

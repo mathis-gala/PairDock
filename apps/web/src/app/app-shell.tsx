@@ -12,7 +12,7 @@ export function AppShell() {
 
   if (!authSession) {
     return (
-      <main className="min-h-screen text-[#eef0f4]">
+      <main className="min-h-dvh text-[#eef0f4]">
         <LoginPage
           onAuthenticated={(session) => {
             setAuthSession(session);
@@ -27,8 +27,10 @@ export function AppShell() {
     );
   }
 
+  const isFullscreenSession = authSession.user.kind === 'pm' && route.kind === 'pm-session';
+
   return (
-    <main className="min-h-screen text-[#eef0f4]">
+    <main className={isFullscreenSession ? 'h-dvh overflow-hidden text-[#eef0f4]' : 'min-h-dvh text-[#eef0f4]'}>
       {authSession.user.kind === 'pm' ? (
         route.kind === 'pm-session' ? (
           <PmSessionPage accessToken={authSession.accessToken} onBack={openPmDashboard} sessionId={route.sessionId} />

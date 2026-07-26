@@ -216,11 +216,19 @@ jobs:
           - tests/packages/local-agent/integration/agent-prompt-command.integration.test.ts
           - tests/packages/local-agent/integration/checks-runner.integration.test.ts
           - tests/packages/local-agent/integration/command-handling.integration.test.ts
+          - tests/packages/local-agent/integration/diff-service.integration.test.ts
+          - tests/packages/local-agent/integration/docker-dependency-prewarmer.integration.test.ts
+          - tests/packages/local-agent/integration/docker-orphan-reconciler.integration.test.ts
           - tests/packages/local-agent/integration/example-project.integration.test.ts
+          - tests/packages/local-agent/integration/host-check-command-executor.integration.test.ts
+          - tests/packages/local-agent/integration/host-preview-runtime.integration.test.ts
           - tests/packages/local-agent/integration/log-redactor.integration.test.ts
           - tests/packages/local-agent/integration/preview-adapters.integration.test.ts
+          - tests/packages/local-agent/integration/preview-runtime-router.integration.test.ts
+          - tests/packages/local-agent/integration/project-manifest.integration.test.ts
           - tests/packages/local-agent/integration/readiness-runner.integration.test.ts
           - tests/packages/local-agent/integration/session-runner.integration.test.ts
+          - tests/packages/local-agent/integration/session-workspace-store.integration.test.ts
     steps:
       - name: Check out repository
         uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0

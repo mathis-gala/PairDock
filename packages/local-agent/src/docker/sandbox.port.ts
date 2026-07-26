@@ -1,4 +1,14 @@
 export interface ProjectPreviewConfig {
+  runtime?: 'host' | 'docker';
+  setupCommand?: string;
+  prepareCommand?: string;
+  dependencyCache?: {
+    cacheKey: string;
+    mounts: Array<{
+      volumeName: string;
+      target: string;
+    }>;
+  };
   sandbox?: {
     startCommand: string;
     stopCommand?: string;
@@ -20,6 +30,7 @@ export interface ProjectPreviewConfig {
 }
 
 export interface SandboxStartInput {
+  runtimeOwnerId?: string;
   sessionId: string;
   projectKey: string;
   repositoryPath: string;
@@ -43,14 +54,8 @@ export interface HealthcheckResult {
   message?: string;
 }
 
-export interface SandboxCommandResult {
-  exitCode: number;
-  logs: string;
-}
-
 export interface SandboxPort {
   start(input: SandboxStartInput): Promise<SandboxRef>;
   stop(ref: SandboxRef, previewConfig?: ProjectPreviewConfig): Promise<void>;
   check(ref: SandboxRef): Promise<HealthcheckResult>;
-  runCommand(ref: SandboxRef, command: string, worktreePath: string): Promise<SandboxCommandResult>;
 }

@@ -131,15 +131,10 @@ version: 1
 name: my-web-app
 repoFullName: owner/repository
 defaultBranch: main
-sandbox:
-  workdir: /workspace
-  network: host-services
-  env:
-    DATABASE_URL: "postgresql://postgres:pairdockdev@host.docker.internal:55432/pairdock"
-  ports:
-    - "127.0.0.1:{{hostPort}}:4000"
+setup: "pnpm install --frozen-lockfile"
 preview:
-  start: "pnpm install --frozen-lockfile && pnpm dev --host 0.0.0.0 --port 4000"
+  runtime: host
+  start: "pnpm dev --host 127.0.0.1 --port {{hostPort}}"
   healthcheck: "http://127.0.0.1:{{hostPort}}"
   healthcheckTimeoutMs: 60000
   tunnel: cloudflare
@@ -157,15 +152,24 @@ models:
   - gpt-5.6-terra
 ```
 
-PairDock always runs preview commands in a Docker sandbox with only the session worktree mounted at `/workspace`.
-Omit `sandbox.image` to use PairDock's pinned multi-platform default. If a project needs another image, pin it by digest instead of using a mutable tag.
+PairDock creates one Git worktree per session. `setup`, preview, build, test, and lint commands run from that worktree on the developer machine by default, using the same runtime and dependencies as normal local development. `setup` runs before initial preview startup and again when the agent recovers that session after a restart; keep it idempotent and use it for dependency installation and generated artifacts.
+Set `preview.runtime: docker` only when the preview requires container isolation or a multi-service container. Docker mode bind-mounts the worktree for hot reload but masks every workspace `node_modules`, so Linux dependencies cannot overwrite host dependencies. Add `preview.prepare` with the idempotent Docker dependency setup command to prewarm persistent Linux `node_modules` volumes before the agent publishes itself:
+
+```yaml
+preview:
+  runtime: docker
+  prepare: "bun install --frozen-lockfile && bun run generate"
+  start: "bun install --frozen-lockfile && bun run dev --host 0.0.0.0 --port 4000"
+  healthcheck: "http://127.0.0.1:4000"
+```
+
+The cache key includes the agent, project, container image, prepare command, and lockfile. New sessions therefore reuse warm Linux dependencies, while lockfile or image changes create a fresh cache. Keep dependency installation in `preview.start` as an idempotent safety net: when prewarming fails, PairDock logs the cause and starts the session with the existing cold-install path. Omit `sandbox.image` to use PairDock's pinned multi-platform default; custom images should be pinned by digest.
 Install Codex CLI 0.138.0 or newer and authenticate it with `codex login` before starting the local agent. PairDock deliberately does not forward `OPENAI_API_KEY` or unrelated workstation secrets to the Codex process; the CLI must use its protected local login state. Model-generated commands use a restricted permission profile: they can read/write the session worktree, cannot read common credential files (including tracked `.env` and private keys), cannot read the rest of the developer home, and cannot access the network.
 Use `{{hostPort}}` for host-side preview bindings and URLs. PairDock resolves it to a free port per session, so concurrent sessions cannot reuse another session's preview or healthcheck.
 Set `preview.healthcheckTimeoutMs` when dependency installation, code generation, or migrations can make preview startup exceed the 30-second default. The accepted maximum is 10 minutes.
 For same-machine development without a public tunnel, set `preview.tunnel.publicUrl` to `http://127.0.0.1:{{hostPort}}`.
-`network: host-services` is the explicit opt-in that lets the container reach local services such as Postgres through `host.docker.internal`.
-Only variables listed in `sandbox.env` are passed to the container; PairDock does not mount `.env` or the developer home directory.
-Each check runs in its own process. A check command must therefore generate required artifacts such as Prisma Client before running migrations or tests.
+In Docker preview mode, `network: host-services` lets the container reach local services such as Postgres through `host.docker.internal`. Only variables listed in `sandbox.env` are passed to that container; PairDock does not mount `.env` or the developer home directory.
+Checks always run as separate host processes in the session worktree with an environment allowlist that excludes PairDock, OpenAI, GitHub, and other token-like variables. They still execute repository code with the developer user's filesystem permissions: configure only trusted local repositories. Codex may run relevant project checks during its turn; PairDock independently reruns configured checks afterward.
 
 For a stable team URL, create a Cloudflare named tunnel outside PairDock and set `publicUrl`:
 
@@ -234,7 +238,7 @@ PAIRDOCK_AGENT_CONFIG_PATH=/absolute/path/to/agent-pairdock-local.json \
 node --import tsx packages/local-agent/src/main.ts start
 ```
 
-The tracked `pairdock.yml` publishes PairDock metadata under that temporary key and starts both the API and web preview inside the session sandbox. Only the web app is published on a dynamically allocated host port; the internal API remains on the container's private port `3000`, so no host process or reserved API port is required. The preview API connects to the local development PostgreSQL service through `host.docker.internal:55432`, enables only the local PM identity, and receives a random throwaway agent credential at startup. It does not receive GitHub, Slack, or production secrets, and no agent connects to this inner API. Run the local database migrations and optional PM demo seed before starting the preview. Complete developer OAuth in the top-level PairDock window, not inside the sandboxed PM preview iframe; external identity providers intentionally cannot navigate the parent window.
+The tracked `pairdock.yml` explicitly keeps PairDock's own multi-service preview in Docker while running setup and final checks on macOS. The Docker-only `node_modules` tmpfs prevents Linux artifacts from contaminating host validation. Only the web app is published on a dynamically allocated host port; the internal API remains on the container's private port `3000`, so no host process or reserved API port is required. The preview API connects to the local development PostgreSQL service through `host.docker.internal:55432`, enables only the local PM identity, and receives a random throwaway agent credential at startup. It does not receive GitHub, Slack, or production secrets, and no agent connects to this inner API. Run the local database migrations and optional PM demo seed before starting the preview. Complete developer OAuth in the top-level PairDock window, not inside the sandboxed PM preview iframe; external identity providers intentionally cannot navigate the parent window.
 
 This temporary mapping replaces the repository path associated with the TCG project key; it does not modify or delete either repository. In the developer UI, create a PairDock project by selecting the PairDock GitHub repository, the published PairDock agent project, and `main` as its base branch. A previously persisted project for another repository is deliberately marked unavailable when the same agent project key is repointed: PairDock rejects commands instead of risking changes or a pull request in the wrong repository.
 
@@ -252,7 +256,7 @@ Use distinct agent ids, tokens, and project keys for the final two-agent setup, 
 
 Explicit `--model <id>=<label>=<provider>` options remain supported for non-Codex providers or as a fallback when the local Codex cache is unavailable. The developer selects the project's model and reasoning effort from the owning agent's published capabilities. Every new PM session inherits those server-side defaults; PM clients cannot override them. PairDock passes the persisted selection to Codex CLI as `--model` and `model_reasoning_effort`, and resumes the same Codex thread for follow-up prompts in that PairDock session.
 
-Agent console logs prefix execution failures with the PairDock session ID. Agent outputs and final validation results are persisted as session events. Codex edits the host worktree but does not install dependencies or run project checks there; PairDock runs the configured build, test, and lint commands inside the existing Docker sandbox. When one of those checks fails, PairDock returns bounded, redacted diagnostics to the same Codex thread and reruns validation after at most two automatic repair attempts. Explicit backend rejection stops the workflow before further local work, and Codex never receives Docker socket access. PM users receive the final concise failed-check summary and recovery instruction in the conversation; final redacted check logs remain available in persisted events for diagnosis.
+Agent console logs prefix execution failures with the PairDock session ID. Agent outputs and final validation results are persisted as session events. Codex works normally inside the host worktree and may install dependencies or run project checks. PairDock independently runs the configured build, test, and lint commands on the host after each turn. When one fails, PairDock returns bounded, redacted diagnostics to the same Codex thread and reruns validation after at most two automatic repair attempts. Explicit backend rejection stops the workflow before further local work. PM users receive the final concise failed-check summary and recovery instruction in the conversation; final redacted check logs remain available in persisted events for diagnosis. Docker preview and tunnel containers are labeled by agent and session. On startup, the agent removes all of its own labeled containers, then rebuilds previews for valid persisted worktrees.
 
 ### 7. Create a PairDock project
 

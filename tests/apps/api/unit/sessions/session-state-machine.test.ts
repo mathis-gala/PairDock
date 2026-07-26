@@ -85,12 +85,12 @@ test('automatic validation repair can resume the agent from CHECKS_RUNNING', () 
     type: 'session.progress',
     payload: {
       status: 'AGENT_RUNNING',
-      message: 'Repairing failed Docker validation.',
+      message: 'Repairing failed validation.',
     },
   });
 
   assert.equal(session.status, 'AGENT_RUNNING');
-  assert.equal(session.lastError, 'Repairing failed Docker validation.');
+  assert.equal(session.lastError, 'Repairing failed validation.');
 });
 
 test('a successful agent answer without file changes resumes the relevant promptable status', () => {

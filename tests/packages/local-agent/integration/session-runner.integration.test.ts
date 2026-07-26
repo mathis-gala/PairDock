@@ -11,6 +11,7 @@ import {
   type SessionCloseCommandEnvelope,
   type SessionPrepareCommandEnvelope,
 } from '@pairdock/shared-contracts';
+import { DockerOrphanReconciler } from '../../../../packages/local-agent/src/docker/docker-orphan-reconciler.js';
 import { HealthcheckService } from '../../../../packages/local-agent/src/docker/healthcheck.service.js';
 import type { SandboxPort, SandboxRef } from '../../../../packages/local-agent/src/docker/sandbox.port.js';
 import { SensitiveFilesPolicy } from '../../../../packages/local-agent/src/git/sensitive-files.policy.js';
@@ -92,6 +93,51 @@ test('BT-013: WorktreeService creates a dedicated branch and worktree for sessio
   assert.equal(await execGit(repositoryPath, ['branch', '--show-current']), 'main');
   assert.equal(await execGit(workspace.worktreePath, ['branch', '--show-current']), command.payload.branchName);
   assert.match(workspace.worktreePath, new RegExp(`${command.sessionId}$`));
+});
+
+test('SessionRunner prepares host dependencies before starting the preview and reuses host execution for checks', async () => {
+  const repositoryPath = await createTempRepository();
+  const managedRoot = await createManagedWorktreeRoot();
+  const commandExecutor = new FakeHostCommandExecutor();
+  const sandboxPort = new FakeSandboxPort();
+  const runner = new SessionRunner(
+    {
+      projectPaths: { pairdock: repositoryPath },
+      previewConfigs: {
+        pairdock: {
+          runtime: 'host',
+          setupCommand: 'bun install --frozen-lockfile',
+          sandbox: {
+            startCommand: 'bun run dev',
+            healthcheckUrl: 'http://127.0.0.1:3100/health',
+          },
+        },
+      },
+    },
+    {
+      checkCommandExecutor: commandExecutor,
+      worktreeService: new WorktreeService(managedRoot),
+      sandboxPort,
+      previewTunnelPort: new FakePreviewTunnelPort(),
+    },
+  );
+
+  const workspace = await runner.prepare(buildPrepareCommand());
+  await runner.runCommand(workspace.sessionId, 'bun run build');
+
+  assert.deepEqual(commandExecutor.commands, [
+    {
+      command: 'bun install --frozen-lockfile',
+      sessionId: workspace.sessionId,
+      worktreePath: workspace.worktreePath,
+    },
+    {
+      command: 'bun run build',
+      sessionId: workspace.sessionId,
+      worktreePath: workspace.worktreePath,
+    },
+  ]);
+  assert.equal(sandboxPort.startCalls.length, 1);
 });
 
 test('V1: WorktreeService creates the session branch from the selected base branch instead of current HEAD', async () => {
@@ -288,9 +334,22 @@ test('SessionRunner rebuilds a prepared preview from its persisted worktree afte
 
   const restoredSandbox = new FakeSandboxPort();
   const restoredTunnel = new FakePreviewTunnelPort();
+  const restoredCommandExecutor = new FakeHostCommandExecutor();
   const restartedRunner = new SessionRunner(
-    { projectPaths: { pairdock: repositoryPath } },
     {
+      projectPaths: { pairdock: repositoryPath },
+      previewConfigs: {
+        pairdock: {
+          setupCommand: 'bun install --frozen-lockfile',
+          sandbox: {
+            startCommand: 'bun run dev',
+            healthcheckUrl: 'http://127.0.0.1:3100/health',
+          },
+        },
+      },
+    },
+    {
+      checkCommandExecutor: restoredCommandExecutor,
       sessionRegistry: new SessionRegistry(new FileSessionWorkspaceStore(statePath)),
       worktreeService: new WorktreeService(managedRoot),
       sandboxPort: restoredSandbox,
@@ -309,6 +368,139 @@ test('SessionRunner rebuilds a prepared preview from its persisted worktree afte
   assert.equal(restoredSandbox.checkCalls.length, 1);
   assert.equal(restoredTunnel.closeCalls.length, 1);
   assert.equal(restoredTunnel.openCalls.length, 1);
+  assert.deepEqual(restoredCommandExecutor.commands, [
+    {
+      command: 'bun install --frozen-lockfile',
+      sessionId,
+      worktreePath: preparedWorkspace.worktreePath,
+    },
+  ]);
+});
+
+test('SessionRunner reconciles old Docker resources after every restart, including host-only configurations', async () => {
+  const stoppedContainers: string[][] = [];
+  const statePath = join(await mkdtemp(join(tmpdir(), 'pairdock-session-state-')), 'sessions.json');
+  const runner = new SessionRunner(
+    {
+      runtimeOwnerId: 'developer-mac',
+      previewConfigs: {
+        pairdock: {
+          runtime: 'host',
+          sandbox: {
+            startCommand: 'bun run dev',
+            healthcheckUrl: 'http://127.0.0.1:3100/health',
+          },
+        },
+      },
+    },
+    {
+      orphanReconciler: new DockerOrphanReconciler({
+        async listManagedContainers(ownerId) {
+          assert.equal(ownerId, 'developer-mac');
+          return [{ name: 'pairdock-old-preview', sessionId: 'closed-session' }];
+        },
+        async stopContainers(names) {
+          stoppedContainers.push(names);
+        },
+      }),
+      sessionRegistry: new SessionRegistry(new FileSessionWorkspaceStore(statePath)),
+    },
+  );
+
+  await runner.restore();
+
+  assert.deepEqual(stoppedContainers, [['pairdock-old-preview']]);
+});
+
+test('SessionRunner removes persisted Docker resources before deciding whether their sessions can recover', async () => {
+  const stoppedContainers: string[][] = [];
+  const sessionId = '78787878-7878-4878-8878-787878787878';
+  const statePath = join(await mkdtemp(join(tmpdir(), 'pairdock-session-state-')), 'sessions.json');
+  const store = new FileSessionWorkspaceStore(statePath);
+  await store.save([
+    {
+      branchName: 'pairdock/session-7878',
+      projectKey: 'removed-project',
+      repositoryPath: '/tmp/removed-project',
+      sessionId,
+      worktreePath: '/tmp/removed-worktree',
+    },
+  ]);
+  const runner = new SessionRunner(
+    {
+      runtimeOwnerId: 'developer-mac',
+      previewConfigs: {},
+      projectPaths: {},
+    },
+    {
+      orphanReconciler: new DockerOrphanReconciler({
+        async listManagedContainers() {
+          return [{ name: 'pairdock-old-preview', sessionId }];
+        },
+        async stopContainers(names) {
+          stoppedContainers.push(names);
+        },
+      }),
+      sessionRegistry: new SessionRegistry(store),
+    },
+  );
+
+  const recovery = await runner.restore();
+
+  assert.equal(recovery.failures.length, 1);
+  assert.deepEqual(stoppedContainers, [['pairdock-old-preview']]);
+});
+
+test('SessionRunner shutdown stops preview resources but preserves worktrees for recovery', async () => {
+  const repositoryPath = await createTempRepository();
+  const managedRoot = await createManagedWorktreeRoot();
+  const statePath = join(await mkdtemp(join(tmpdir(), 'pairdock-session-state-')), 'sessions.json');
+  const sandbox = new FakeSandboxPort();
+  const tunnel = new FakePreviewTunnelPort();
+  const runner = new SessionRunner(
+    { projectPaths: { pairdock: repositoryPath } },
+    {
+      sessionRegistry: new SessionRegistry(new FileSessionWorkspaceStore(statePath)),
+      worktreeService: new WorktreeService(managedRoot),
+      sandboxPort: sandbox,
+      previewTunnelPort: tunnel,
+    },
+  );
+  const workspace = await runner.prepare(buildPrepareCommand());
+
+  await runner.shutdown();
+
+  assert.equal(sandbox.stopCalls.length, 1);
+  assert.equal(tunnel.closeCalls.length, 1);
+  assert.equal(await execGit(workspace.worktreePath, ['rev-parse', '--is-inside-work-tree']), 'true');
+  const persisted = await new FileSessionWorkspaceStore(statePath).load();
+  assert.equal(persisted[0]?.sandboxRef, undefined);
+  assert.equal(persisted[0]?.tunnelRef, undefined);
+  assert.equal(persisted[0]?.previewUrl, undefined);
+});
+
+test('SessionRunner shutdown still stops the preview when tunnel cleanup fails', async () => {
+  const repositoryPath = await createTempRepository();
+  const managedRoot = await createManagedWorktreeRoot();
+  const statePath = join(await mkdtemp(join(tmpdir(), 'pairdock-session-state-')), 'sessions.json');
+  const sandbox = new FakeSandboxPort();
+  const runner = new SessionRunner(
+    { projectPaths: { pairdock: repositoryPath } },
+    {
+      sessionRegistry: new SessionRegistry(new FileSessionWorkspaceStore(statePath)),
+      worktreeService: new WorktreeService(managedRoot),
+      sandboxPort: sandbox,
+      previewTunnelPort: new FailingClosePreviewTunnelPort(),
+    },
+  );
+  await runner.prepare(buildPrepareCommand());
+
+  await assert.rejects(() => runner.shutdown(), /tunnel close failed/);
+
+  assert.equal(sandbox.stopCalls.length, 1);
+  const persisted = await new FileSessionWorkspaceStore(statePath).load();
+  assert.notEqual(persisted[0]?.tunnelRef, undefined);
+  assert.equal(persisted[0]?.sandboxRef, undefined);
 });
 
 test('SessionRunner keeps an unavailable workspace persisted but does not expose it to prompts', async () => {
@@ -652,10 +844,6 @@ class FakeSandboxPort implements SandboxPort {
   readonly checkCalls: SandboxRef[] = [];
   readonly stopCalls: SandboxRef[] = [];
 
-  async runCommand() {
-    return { exitCode: 0, logs: '' };
-  }
-
   async start(input: { sessionId: string; worktreePath: string }): Promise<SandboxRef> {
     this.startCalls.push({ sessionId: input.sessionId, worktreePath: input.worktreePath });
     return {
@@ -675,6 +863,15 @@ class FakeSandboxPort implements SandboxPort {
       ready: true,
       url: ref.healthcheckUrl,
     };
+  }
+}
+
+class FakeHostCommandExecutor {
+  readonly commands: Array<{ command: string; sessionId: string; worktreePath: string }> = [];
+
+  async run(input: { command: string; sessionId: string; worktreePath: string }) {
+    this.commands.push(input);
+    return { exitCode: 0, logs: '' };
   }
 }
 

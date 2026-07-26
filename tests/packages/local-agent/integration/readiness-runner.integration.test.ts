@@ -48,8 +48,7 @@ test('BT-044: ReadinessRunner fails hanging developer commands with a clear time
   assert.equal(result.ok, false);
   assert.equal(checksByKey.get('git')?.status, 'failed');
   assert.match(checksByKey.get('git')?.message ?? '', /timed out/i);
-  assert.equal(checksByKey.get('docker')?.status, 'failed');
-  assert.match(checksByKey.get('docker')?.message ?? '', /timed out/i);
+  assert.equal(checksByKey.get('docker')?.status, 'skipped');
 });
 
 test('ReadinessRunner rejects Codex versions without restricted permission profiles', async () => {
@@ -82,4 +81,71 @@ test('ReadinessRunner rejects Codex versions without restricted permission profi
   assert.equal(harnessCheck?.status, 'failed');
   assert.match(harnessCheck?.message ?? '', /0\.138\.0 or newer/);
   assert.match(harnessCheck?.remediation ?? '', /codex update/);
+});
+
+test('ReadinessRunner does not require Docker for a host preview with a direct public URL', async () => {
+  const commands: string[] = [];
+  const runner = new ReadinessRunner(
+    {
+      authToken: 'test-token',
+      projectPaths: { pairdock: '.' },
+      previewConfigs: {
+        pairdock: {
+          runtime: 'host',
+          sandbox: { startCommand: 'npm start', healthcheckUrl: 'http://127.0.0.1:4000' },
+          tunnel: { publicUrl: 'http://127.0.0.1:4000' },
+        },
+      },
+      checksConfigs: { pairdock: { build: 'npm run build', test: 'npm test', lint: 'npm run lint' } },
+      agentHarnessConfigs: {},
+    },
+    async (command, args) => {
+      commands.push(command);
+      if (command === 'codex' && args[0] === '--version') {
+        return { ok: true, output: 'codex-cli 0.143.0' };
+      }
+      return { ok: true, output: 'ok' };
+    },
+  );
+
+  const result = await runner.run({ projectKey: 'pairdock' });
+  const dockerCheck = result.checks.find((check) => check.key === 'docker');
+
+  assert.equal(dockerCheck?.status, 'skipped');
+  assert.equal(dockerCheck?.required, false);
+  assert.equal(commands.includes('docker'), false);
+});
+
+test('ReadinessRunner requires Docker for the default Cloudflare tunnel on a host preview', async () => {
+  const runner = new ReadinessRunner(
+    {
+      authToken: 'test-token',
+      projectPaths: { pairdock: '.' },
+      previewConfigs: {
+        pairdock: {
+          runtime: 'host',
+          sandbox: { startCommand: 'npm start', healthcheckUrl: 'http://127.0.0.1:4000' },
+        },
+      },
+      checksConfigs: { pairdock: { build: 'npm run build', test: 'npm test', lint: 'npm run lint' } },
+      agentHarnessConfigs: {},
+    },
+    async (command, args) => {
+      if (command === 'docker') {
+        return { ok: false, output: 'Docker daemon is unavailable' };
+      }
+      if (command === 'codex' && args[0] === '--version') {
+        return { ok: true, output: 'codex-cli 0.143.0' };
+      }
+      return { ok: true, output: 'ok' };
+    },
+  );
+
+  const result = await runner.run({ projectKey: 'pairdock' });
+  const dockerCheck = result.checks.find((check) => check.key === 'docker');
+
+  assert.equal(result.ok, false);
+  assert.equal(dockerCheck?.status, 'failed');
+  assert.equal(dockerCheck?.required, true);
+  assert.match(dockerCheck?.message ?? '', /Docker daemon is unavailable/);
 });

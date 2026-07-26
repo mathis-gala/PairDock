@@ -1,6 +1,6 @@
 import { type ChildProcess, spawn } from 'node:child_process';
-import { mkdirSync, rmSync } from 'node:fs';
-import { basename, join } from 'node:path';
+import { mkdirSync, readdirSync, readFileSync, realpathSync, rmSync, statSync, writeFileSync } from 'node:fs';
+import { basename, delimiter, dirname, isAbsolute, join, relative, resolve, sep } from 'node:path';
 import { setTimeout as delay } from 'node:timers/promises';
 import type {
   AgentHarnessEvent,
@@ -44,8 +44,8 @@ export class CodexHarnessAdapter implements AgentHarnessPort {
     const projectConfig = this.projectConfigs[input.projectKey] ?? {};
     const command = projectConfig.command?.trim() || 'codex';
     const usesCodexJsonProtocol = !projectConfig.args?.length && isCodexCommand(command);
-    const args = buildCommandArgs(projectConfig, input, this.codexThreadIds.get(input.sessionId));
     const environment = buildHarnessEnvironment(process.env, input);
+    const args = buildCommandArgs(projectConfig, input, this.codexThreadIds.get(input.sessionId), environment);
     const harnessTempDirectory = environment.TMPDIR;
 
     if (!harnessTempDirectory) {
@@ -53,6 +53,7 @@ export class CodexHarnessAdapter implements AgentHarnessPort {
     }
 
     mkdirSync(harnessTempDirectory, { recursive: true, mode: 0o700 });
+    prepareHarnessShell(environment);
     const childProcess = spawn(command, args, {
       cwd: input.worktreePath,
       env: environment,
@@ -181,7 +182,12 @@ export function buildHarnessEnvironment(source: NodeJS.ProcessEnv, input: RunPro
     }
   }
 
+  if (environment.PATH) {
+    environment.PATH = prioritizeSandboxCompatibleGit(environment.PATH);
+  }
+
   const harnessTempDirectory = resolveHarnessTempDirectory(input.sessionId);
+  const shellConfigDirectory = join(harnessTempDirectory, 'shell');
 
   return {
     ...environment,
@@ -196,16 +202,68 @@ export function buildHarnessEnvironment(source: NodeJS.ProcessEnv, input: RunPro
     XDG_CACHE_HOME: join(harnessTempDirectory, 'cache'),
     XDG_CONFIG_HOME: join(harnessTempDirectory, 'config'),
     XDG_DATA_HOME: join(harnessTempDirectory, 'data'),
+    ZDOTDIR: shellConfigDirectory,
   };
+}
+
+function prepareHarnessShell(environment: NodeJS.ProcessEnv): void {
+  const shellConfigDirectory = environment.ZDOTDIR;
+  if (!shellConfigDirectory) {
+    throw new Error('PairDock could not configure an isolated shell directory for the agent harness.');
+  }
+
+  mkdirSync(shellConfigDirectory, { recursive: true, mode: 0o700 });
+  // macOS login shells prepend /usr/bin again via path_helper; restore the sanitized PATH afterwards.
+  writeFileSync(join(shellConfigDirectory, '.zprofile'), `export PATH=${quoteShellValue(environment.PATH ?? '')}\n`, {
+    encoding: 'utf8',
+    mode: 0o600,
+  });
+}
+
+function quoteShellValue(value: string): string {
+  return `'${value.replaceAll("'", "'\\''")}'`;
+}
+
+function prioritizeSandboxCompatibleGit(pathValue: string): string {
+  const pathEntries = pathValue.split(delimiter).filter(Boolean);
+  const codexFallbackDirectory = pathEntries.find(
+    (pathEntry) =>
+      pathEntry.endsWith(`${sep}codex-primary-runtime${sep}dependencies${sep}bin${sep}fallback`) &&
+      isExecutableFile(join(pathEntry, 'git')),
+  );
+  const macOsDeveloperGitDirectory =
+    process.platform === 'darwin'
+      ? ['/Library/Developer/CommandLineTools/usr/bin', '/Applications/Xcode.app/Contents/Developer/usr/bin'].find(
+          (pathEntry) => isExecutableFile(join(pathEntry, 'git')),
+        )
+      : undefined;
+  const selectedGitDirectory = codexFallbackDirectory ?? macOsDeveloperGitDirectory;
+
+  if (!selectedGitDirectory) {
+    return pathValue;
+  }
+
+  return [selectedGitDirectory, ...pathEntries.filter((pathEntry) => pathEntry !== selectedGitDirectory)].join(
+    delimiter,
+  );
+}
+
+function isExecutableFile(path: string): boolean {
+  try {
+    const stats = statSync(path);
+    return stats.isFile() && (stats.mode & 0o111) !== 0;
+  } catch {
+    return false;
+  }
 }
 
 export function buildCommandArgs(
   projectConfig: ProjectAgentHarnessConfig,
   input: RunPromptInput,
   codexThreadId?: string,
+  harnessEnvironment?: NodeJS.ProcessEnv,
 ): string[] {
   const reasoningEffort = input.reasoningEffort ?? 'medium';
-  const codexSecurityArgs = buildCodexSecurityArgs(input.sessionId);
 
   if (projectConfig.args?.length) {
     return projectConfig.args.map((arg) =>
@@ -218,6 +276,7 @@ export function buildCommandArgs(
     );
   }
 
+  const codexSecurityArgs = buildCodexSecurityArgs(input, harnessEnvironment);
   const prompt = buildCodexPrompt(input.prompt);
 
   if (codexThreadId) {
@@ -249,20 +308,26 @@ export function buildCommandArgs(
 
 function buildCodexPrompt(userPrompt: string): string {
   return [
-    'PairDock runtime: the project preview and configured validation commands run inside Docker.',
-    'Do not install dependencies or run build, test, or lint commands on the host worktree. Host and container operating systems may differ.',
     'Read the project manifest before editing. Use its preview start command to identify the source files that power the live preview. Treat prototypes, design references, generated files, and documentation as non-runtime references unless the user explicitly asks to change them.',
     'Your progress updates are visible to a product manager in real time. Keep them concise and user-facing. Explain what you are locating, changing, and verifying without exposing secrets or unrelated environment details.',
-    'Inspect and edit the worktree normally. PairDock runs the configured build, test, and lint checks inside Docker after this turn and automatically returns failures for repair.',
+    'PairDock independently reruns the configured checks after this turn and automatically returns failures for repair.',
     `User request:\n${userPrompt}`,
   ].join('\n\n');
 }
 
-function buildCodexSecurityArgs(sessionId: string): string[] {
-  const harnessTempDirectory = resolveHarnessTempDirectory(sessionId);
+function buildCodexSecurityArgs(input: RunPromptInput, harnessEnvironment?: NodeJS.ProcessEnv): string[] {
+  const harnessTempDirectory = resolveHarnessTempDirectory(input.sessionId);
   const cacheDirectory = join(harnessTempDirectory, 'cache');
   const configDirectory = join(harnessTempDirectory, 'config');
   const dataDirectory = join(harnessTempDirectory, 'data');
+  const shellConfigDirectory = join(harnessTempDirectory, 'shell');
+  const filesystemPermissions = [
+    ...resolveManagedWorktreeAncestorPermissions(input.worktreePath),
+    ...resolveLinkedWorktreeGitPermissions(input.worktreePath),
+    ...resolveExecutablePathPermissions(harnessEnvironment),
+  ]
+    .map(({ access, path }) => `${JSON.stringify(path)}="${access}",`)
+    .join('');
 
   return [
     '--ignore-user-config',
@@ -271,12 +336,148 @@ function buildCodexSecurityArgs(sessionId: string): string[] {
     '--config',
     'default_permissions="pairdock-restricted"',
     '--config',
-    `permissions.pairdock-restricted.filesystem={":minimal"="read",${JSON.stringify(harnessTempDirectory)}="write","/System/Library/OpenSSL"="read","~/.agents/skills"="read","~/.codex/skills"="read",":workspace_roots"={"."="write","**/.env"="deny","**/.env.local"="deny","**/.env.*.local"="deny","**/.npmrc"="deny","**/.netrc"="deny","**/.pypirc"="deny","**/*.pem"="deny","**/*.key"="deny","**/*.p12"="deny","**/*.pfx"="deny"}}`,
+    `permissions.pairdock-restricted.filesystem={":minimal"="read",${JSON.stringify(harnessTempDirectory)}="write","/System/Library/OpenSSL"="read","~/.agents/skills"="read","~/.codex/skills"="read",${filesystemPermissions}":workspace_roots"={"."="write","**/.env"="deny","**/.env.local"="deny","**/.env.*.local"="deny","**/.npmrc"="deny","**/.netrc"="deny","**/.pypirc"="deny","**/*.pem"="deny","**/*.key"="deny","**/*.p12"="deny","**/*.pfx"="deny"}}`,
     '--config',
     'permissions.pairdock-restricted.network.enabled=false',
     '--config',
-    `shell_environment_policy.set={GIT_CONFIG_GLOBAL="/dev/null",GIT_CONFIG_NOSYSTEM="1",TMPDIR="${harnessTempDirectory}",XDG_CACHE_HOME="${cacheDirectory}",XDG_CONFIG_HOME="${configDirectory}",XDG_DATA_HOME="${dataDirectory}"}`,
+    `shell_environment_policy.set={GIT_CONFIG_GLOBAL="/dev/null",GIT_CONFIG_NOSYSTEM="1",TMPDIR="${harnessTempDirectory}",XDG_CACHE_HOME="${cacheDirectory}",XDG_CONFIG_HOME="${configDirectory}",XDG_DATA_HOME="${dataDirectory}",ZDOTDIR="${shellConfigDirectory}"}`,
   ];
+}
+
+type FilesystemPermission = { path: string; access: 'deny' | 'read' | 'write' };
+
+function resolveExecutablePathPermissions(harnessEnvironment: NodeJS.ProcessEnv | undefined): FilesystemPermission[] {
+  const pathValue = harnessEnvironment?.PATH;
+  if (!pathValue) {
+    return [];
+  }
+
+  const permissions = new Map<string, FilesystemPermission>();
+  const homeDirectory = resolveExistingDirectory(harnessEnvironment.HOME);
+
+  for (const pathEntry of pathValue.split(delimiter)) {
+    if (!isAbsolute(pathEntry)) {
+      continue;
+    }
+
+    const resolvedPathEntry = resolveExistingDirectory(pathEntry);
+    if (!resolvedPathEntry || resolvedPathEntry === homeDirectory) {
+      continue;
+    }
+
+    permissions.set(resolvedPathEntry, { path: resolvedPathEntry, access: 'read' });
+
+    if (pathEntry.endsWith(`${sep}codex-primary-runtime${sep}dependencies${sep}bin${sep}fallback`)) {
+      const runtimeDependenciesDirectory = resolveExistingDirectory(resolve(pathEntry, '../..'));
+      if (runtimeDependenciesDirectory) {
+        permissions.set(runtimeDependenciesDirectory, {
+          path: runtimeDependenciesDirectory,
+          access: 'read',
+        });
+      }
+    }
+  }
+
+  return [...permissions.values()];
+}
+
+function resolveExistingDirectory(path: string | undefined): string | null {
+  if (!path) {
+    return null;
+  }
+
+  try {
+    const resolvedPath = realpathSync(path);
+    return statSync(resolvedPath).isDirectory() ? resolvedPath : null;
+  } catch {
+    return null;
+  }
+}
+
+function resolveManagedWorktreeAncestorPermissions(worktreePath: string): FilesystemPermission[] {
+  try {
+    const resolvedWorktreePath = realpathSync(worktreePath);
+    const managedWorktreesRoot = dirname(resolvedWorktreePath);
+    const pairDockRoot = dirname(managedWorktreesRoot);
+    const homeDirectory = dirname(pairDockRoot);
+    const usersDirectory = dirname(homeDirectory);
+
+    if (
+      basename(managedWorktreesRoot) !== 'worktrees' ||
+      basename(pairDockRoot) !== '.pairdock' ||
+      usersDirectory === dirname(usersDirectory)
+    ) {
+      return [];
+    }
+
+    // libc realpath opens every cwd ancestor on macOS. Read each ancestor, then deny every
+    // existing sibling explicitly so Bun can resolve cwd without exposing other PairDock data.
+    const permissions: FilesystemPermission[] = [];
+    for (const { allowedChild, directory } of [
+      { directory: usersDirectory, allowedChild: homeDirectory },
+      { directory: homeDirectory, allowedChild: pairDockRoot },
+      { directory: pairDockRoot, allowedChild: managedWorktreesRoot },
+      { directory: managedWorktreesRoot, allowedChild: resolvedWorktreePath },
+    ]) {
+      permissions.push({ path: directory, access: 'read' });
+      permissions.push(...denySiblingPaths(directory, allowedChild));
+    }
+
+    permissions.push({ path: resolvedWorktreePath, access: 'write' });
+    return permissions;
+  } catch {
+    return [];
+  }
+}
+
+function denySiblingPaths(directory: string, allowedChild: string): FilesystemPermission[] {
+  return readdirSync(directory)
+    .map((entry) => join(directory, entry))
+    .filter((entryPath) => entryPath !== allowedChild)
+    .map((entryPath) => ({ path: entryPath, access: 'deny' as const }));
+}
+
+function resolveLinkedWorktreeGitPermissions(worktreePath: string): FilesystemPermission[] {
+  try {
+    const resolvedWorktreePath = realpathSync(worktreePath);
+    const dotGitPath = join(resolvedWorktreePath, '.git');
+
+    if (!statSync(dotGitPath).isFile()) {
+      return [];
+    }
+
+    const gitDirectoryMatch = /^gitdir:\s*(.+?)\s*$/i.exec(readFileSync(dotGitPath, 'utf8'));
+    if (!gitDirectoryMatch?.[1]) {
+      return [];
+    }
+
+    const gitDirectory = realpathSync(resolve(dirname(dotGitPath), gitDirectoryMatch[1]));
+    const commonDirectoryPath = readFileSync(join(gitDirectory, 'commondir'), 'utf8').trim();
+    if (!commonDirectoryPath) {
+      return [];
+    }
+
+    const commonGitDirectory = realpathSync(resolve(gitDirectory, commonDirectoryPath));
+    const linkedWorktreesDirectory = realpathSync(join(commonGitDirectory, 'worktrees'));
+    const relativeGitDirectory = relative(linkedWorktreesDirectory, gitDirectory);
+
+    if (
+      !relativeGitDirectory ||
+      isAbsolute(relativeGitDirectory) ||
+      relativeGitDirectory === '..' ||
+      relativeGitDirectory.startsWith(`..${sep}`) ||
+      relativeGitDirectory.includes(sep)
+    ) {
+      return [];
+    }
+
+    return [
+      { path: commonGitDirectory, access: 'read' },
+      { path: gitDirectory, access: 'write' },
+    ];
+  } catch {
+    return [];
+  }
 }
 
 function resolveHarnessTempDirectory(sessionId: string): string {

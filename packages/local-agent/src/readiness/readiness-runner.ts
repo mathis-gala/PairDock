@@ -5,6 +5,7 @@ import type { ProjectChecksConfig } from '../checks/checks-runner.js';
 import { compareVersions } from '../config/codex-model-catalog.js';
 import type { ProjectPreviewConfig } from '../docker/sandbox.port.js';
 import type { ProjectAgentHarnessConfig } from '../harness/agent-harness.port.js';
+import { previewUsesDockerTunnel } from '../tunnel/preview-tunnel.port.js';
 
 interface ReadinessRunnerConfig {
   authToken?: string;
@@ -175,7 +176,12 @@ export class ReadinessRunner {
   }
 
   private async checkDocker(projectKey: string): Promise<ToolReadinessCheck> {
-    void projectKey;
+    const previewConfig = this.config.previewConfigs?.[projectKey];
+    const requiresDocker = previewConfig?.runtime === 'docker' || previewUsesDockerTunnel(previewConfig);
+    if (!requiresDocker) {
+      return skipped('docker', false, 'Docker is not required by this project preview.');
+    }
+
     const result = await this.runDeveloperCommand('docker', ['info']);
 
     if (result.ok) {
@@ -251,6 +257,10 @@ function warning(
   remediation: string,
 ): ToolReadinessCheck {
   return { key, status: 'warning', required, message, remediation };
+}
+
+function skipped(key: ToolReadinessCheck['key'], required: boolean, message: string): ToolReadinessCheck {
+  return { key, status: 'skipped', required, message, remediation: null };
 }
 
 function failed(

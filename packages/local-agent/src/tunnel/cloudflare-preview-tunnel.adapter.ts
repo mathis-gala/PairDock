@@ -3,6 +3,7 @@ import { randomUUID } from 'node:crypto';
 import { Resolver } from 'node:dns/promises';
 import type { Readable } from 'node:stream';
 import { setTimeout as delay } from 'node:timers/promises';
+import { PAIRDOCK_DOCKER_OWNER_LABEL, PAIRDOCK_DOCKER_SESSION_LABEL } from '../docker/docker-orphan-reconciler.js';
 import type { ProjectPreviewConfig } from '../docker/sandbox.port.js';
 import type { PreviewTunnelOpenInput, PreviewTunnelPort, PreviewTunnelRef } from './preview-tunnel.port.js';
 
@@ -54,7 +55,13 @@ export class CloudflarePreviewTunnelAdapter implements PreviewTunnelPort {
     }
 
     const containerName = buildTunnelContainerName(input.sessionId);
-    const startArgs = buildCloudflareDockerArgs(input.localUrl, containerName, tunnelConfig?.image);
+    const startArgs = buildCloudflareDockerArgs(
+      input.localUrl,
+      containerName,
+      tunnelConfig?.image,
+      input.runtimeOwnerId,
+      input.sessionId,
+    );
 
     const { process, publicUrl } = await this.openTunnelProcess({
       args: startArgs,
@@ -252,6 +259,8 @@ function buildCloudflareDockerArgs(
   localUrl: string,
   containerName: string,
   image = DEFAULT_CLOUDFLARED_IMAGE,
+  ownerId?: string,
+  sessionId?: string,
 ): string[] {
   assertSafeContainerImage(image);
   return [
@@ -259,6 +268,14 @@ function buildCloudflareDockerArgs(
     '--rm',
     '--name',
     containerName,
+    ...(ownerId && sessionId
+      ? [
+          '--label',
+          `${PAIRDOCK_DOCKER_OWNER_LABEL}=${ownerId}`,
+          '--label',
+          `${PAIRDOCK_DOCKER_SESSION_LABEL}=${sessionId}`,
+        ]
+      : []),
     '--add-host',
     'host.docker.internal:host-gateway',
     image,

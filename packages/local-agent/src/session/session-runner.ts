@@ -4,15 +4,18 @@ import type {
   SessionCloseCommandEnvelope,
   SessionPrepareCommandEnvelope,
 } from '@pairdock/shared-contracts';
-import { DockerSandboxAdapter } from '../docker/docker-sandbox.adapter.js';
+import { HostCheckCommandExecutor, type HostCheckCommandRunner } from '../checks/host-check-command-executor.js';
+import { DockerOrphanReconciler } from '../docker/docker-orphan-reconciler.js';
 import { HealthcheckService } from '../docker/healthcheck.service.js';
 import type { ProjectPreviewConfig, SandboxPort } from '../docker/sandbox.port.js';
 import { WorktreeService } from '../git/worktree.service.js';
+import { PreviewRuntimeRouter } from '../preview/preview-runtime-router.js';
 import { CloudflarePreviewTunnelAdapter } from '../tunnel/cloudflare-preview-tunnel.adapter.js';
-import type { PreviewTunnelPort } from '../tunnel/preview-tunnel.port.js';
+import { type PreviewTunnelPort, previewUsesDockerTunnel } from '../tunnel/preview-tunnel.port.js';
 import { SessionRegistry, type SessionWorkspace } from './session-registry.js';
 
 export interface SessionRunnerConfig {
+  runtimeOwnerId?: string;
   projectPaths?: Record<string, string>;
   previewConfigs?: Record<string, ProjectPreviewConfig>;
   logger?: {
@@ -42,9 +45,12 @@ export class SessionRunner {
   private readonly worktreeService: WorktreeService;
   private readonly sandboxPort: SandboxPort;
   private readonly healthcheckService: HealthcheckService;
+  private readonly checkCommandExecutor: HostCheckCommandRunner;
   private readonly previewTunnelPort: PreviewTunnelPort;
   private readonly projectPaths: Record<string, string>;
   private readonly previewConfigs: Record<string, ProjectPreviewConfig>;
+  private readonly runtimeOwnerId: string | undefined;
+  private readonly orphanReconciler: DockerOrphanReconciler;
   private readonly logger: { info(message: string): void } | undefined;
 
   constructor(
@@ -54,16 +60,21 @@ export class SessionRunner {
       worktreeService?: WorktreeService;
       sandboxPort?: SandboxPort;
       healthcheckService?: HealthcheckService;
+      checkCommandExecutor?: HostCheckCommandRunner;
+      orphanReconciler?: DockerOrphanReconciler;
       previewTunnelPort?: PreviewTunnelPort;
     } = {},
   ) {
     this.projectPaths = config.projectPaths ?? {};
     this.previewConfigs = config.previewConfigs ?? {};
+    this.runtimeOwnerId = config.runtimeOwnerId;
     this.logger = config.logger;
     this.sessionRegistry = dependencies.sessionRegistry ?? new SessionRegistry();
     this.worktreeService = dependencies.worktreeService ?? new WorktreeService();
-    this.sandboxPort = dependencies.sandboxPort ?? new DockerSandboxAdapter();
+    this.sandboxPort = dependencies.sandboxPort ?? new PreviewRuntimeRouter();
     this.healthcheckService = dependencies.healthcheckService ?? new HealthcheckService();
+    this.checkCommandExecutor = dependencies.checkCommandExecutor ?? new HostCheckCommandExecutor();
+    this.orphanReconciler = dependencies.orphanReconciler ?? new DockerOrphanReconciler();
     this.previewTunnelPort = dependencies.previewTunnelPort ?? new CloudflarePreviewTunnelAdapter();
   }
 
@@ -109,14 +120,17 @@ export class SessionRunner {
       };
       await this.sessionRegistry.register(workspace);
 
+      await this.prepareHostWorkspace(workspace, previewConfig);
+
       await onProgress?.('DOCKER_STARTING');
-      this.logger?.info(`Starting Docker sandbox for session ${command.sessionId}.`);
+      this.logger?.info(`Starting preview runtime for session ${command.sessionId}.`);
       const sandboxRef = await this.sandboxPort.start({
         branchName: preparedWorktree.branchName,
         modelId: command.payload.modelId,
         previewConfig,
         projectKey: command.payload.projectKey,
         repositoryPath: preparedWorktree.repositoryPath,
+        ...(this.runtimeOwnerId ? { runtimeOwnerId: this.runtimeOwnerId } : {}),
         sessionId: command.sessionId,
         worktreePath: preparedWorktree.worktreePath,
       });
@@ -135,6 +149,7 @@ export class SessionRunner {
         localUrl: healthcheck.url,
         previewConfig: sandboxRef.previewConfig ?? previewConfig,
         projectKey: command.payload.projectKey,
+        ...(this.runtimeOwnerId ? { runtimeOwnerId: this.runtimeOwnerId } : {}),
         sessionId: command.sessionId,
         worktreePath: preparedWorktree.worktreePath,
       });
@@ -271,17 +286,56 @@ export class SessionRunner {
   async runCommand(sessionId: string, command: string) {
     const workspace = this.sessionRegistry.find(sessionId);
 
-    if (!workspace?.sandboxRef) {
-      throw new Error(`Session ${sessionId} has no running Docker sandbox.`);
+    if (!workspace) {
+      throw new Error(`Session ${sessionId} has no active worktree.`);
     }
 
-    return this.sandboxPort.runCommand(workspace.sandboxRef, command, workspace.worktreePath);
+    return this.checkCommandExecutor.run({
+      command,
+      sessionId,
+      worktreePath: workspace.worktreePath,
+    });
+  }
+
+  async shutdown(): Promise<void> {
+    const errors: unknown[] = [];
+
+    for (const workspace of this.sessionRegistry.listActive()) {
+      try {
+        await this.withSessionLock(workspace.sessionId, async () => {
+          const currentWorkspace = this.sessionRegistry.find(workspace.sessionId);
+          if (currentWorkspace) {
+            await this.removePreviewResources(currentWorkspace, this.previewConfigs[currentWorkspace.projectKey]);
+          }
+        });
+      } catch (error) {
+        errors.push(error);
+      }
+    }
+
+    if (errors.length > 0) {
+      throw new AggregateError(errors, errors.map(errorMessage).join('; '));
+    }
   }
 
   async restore(): Promise<SessionRecoveryResult> {
     const workspaces = await this.sessionRegistry.restore();
     const recoveredSessionIds: string[] = [];
     const failures: SessionRecoveryResult['failures'] = [];
+
+    if (this.runtimeOwnerId) {
+      try {
+        await this.orphanReconciler.reconcile({
+          ownerId: this.runtimeOwnerId,
+          activeSessionIds: new Set(),
+        });
+      } catch (error) {
+        if (this.requiresDockerResources()) {
+          throw error;
+        }
+        this.logger?.info(`Docker orphan cleanup skipped: ${errorMessage(error)}`);
+      }
+    }
 
     for (const workspace of workspaces) {
       try {
@@ -308,13 +362,15 @@ export class SessionRunner {
     let currentWorkspace = await this.removePreviewResources(workspace, previewConfig);
 
     try {
-      this.logger?.info(`Rebuilding Docker sandbox for recovered session ${workspace.sessionId}.`);
+      await this.prepareHostWorkspace(currentWorkspace, previewConfig);
+      this.logger?.info(`Rebuilding preview runtime for recovered session ${workspace.sessionId}.`);
       const sandboxRef = await this.sandboxPort.start({
         branchName: workspace.branchName,
         modelId: workspace.modelId ?? 'recovered-session',
         previewConfig,
         projectKey: workspace.projectKey,
         repositoryPath: workspace.repositoryPath,
+        ...(this.runtimeOwnerId ? { runtimeOwnerId: this.runtimeOwnerId } : {}),
         sessionId: workspace.sessionId,
         worktreePath: workspace.worktreePath,
       });
@@ -331,6 +387,7 @@ export class SessionRunner {
         localUrl: healthcheck.url,
         previewConfig: sandboxRef.previewConfig ?? previewConfig,
         projectKey: workspace.projectKey,
+        ...(this.runtimeOwnerId ? { runtimeOwnerId: this.runtimeOwnerId } : {}),
         sessionId: workspace.sessionId,
         worktreePath: workspace.worktreePath,
       });
@@ -356,17 +413,44 @@ export class SessionRunner {
     }
   }
 
+  private async prepareHostWorkspace(
+    workspace: SessionWorkspace,
+    previewConfig: ProjectPreviewConfig | undefined,
+  ): Promise<void> {
+    if (!previewConfig?.setupCommand) {
+      return;
+    }
+
+    this.logger?.info(`Preparing host dependencies for session ${workspace.sessionId}.`);
+    const setupResult = await this.checkCommandExecutor.run({
+      command: previewConfig.setupCommand,
+      sessionId: workspace.sessionId,
+      worktreePath: workspace.worktreePath,
+    });
+    if (setupResult.exitCode !== 0) {
+      throw new Error(
+        `Project setup failed for session ${workspace.sessionId}.${setupResult.logs ? ` ${setupResult.logs}` : ''}`,
+      );
+    }
+  }
+
   private async removePreviewResources(
     workspace: SessionWorkspace,
     previewConfig: ProjectPreviewConfig | undefined,
   ): Promise<SessionWorkspace> {
     let currentWorkspace = workspace;
+    const resolvedPreviewConfig = workspace.sandboxRef?.previewConfig ?? previewConfig;
+    const errors: unknown[] = [];
 
     if (currentWorkspace.tunnelRef) {
-      await this.previewTunnelPort.close(currentWorkspace.tunnelRef, previewConfig);
-      const { previewUrl: _previewUrl, tunnelRef: _tunnelRef, ...withoutTunnel } = currentWorkspace;
-      currentWorkspace = withoutTunnel;
-      await this.sessionRegistry.update(currentWorkspace);
+      try {
+        await this.previewTunnelPort.close(currentWorkspace.tunnelRef, resolvedPreviewConfig);
+        const { previewUrl: _previewUrl, tunnelRef: _tunnelRef, ...withoutTunnel } = currentWorkspace;
+        currentWorkspace = withoutTunnel;
+        await this.sessionRegistry.update(currentWorkspace);
+      } catch (error) {
+        errors.push(error);
+      }
     } else if (currentWorkspace.previewUrl) {
       const { previewUrl: _previewUrl, ...withoutPreviewUrl } = currentWorkspace;
       currentWorkspace = withoutPreviewUrl;
@@ -374,13 +458,27 @@ export class SessionRunner {
     }
 
     if (currentWorkspace.sandboxRef) {
-      await this.sandboxPort.stop(currentWorkspace.sandboxRef, previewConfig);
-      const { sandboxRef: _sandboxRef, ...withoutSandbox } = currentWorkspace;
-      currentWorkspace = withoutSandbox;
-      await this.sessionRegistry.update(currentWorkspace);
+      try {
+        await this.sandboxPort.stop(currentWorkspace.sandboxRef, resolvedPreviewConfig);
+        const { sandboxRef: _sandboxRef, ...withoutSandbox } = currentWorkspace;
+        currentWorkspace = withoutSandbox;
+        await this.sessionRegistry.update(currentWorkspace);
+      } catch (error) {
+        errors.push(error);
+      }
+    }
+
+    if (errors.length > 0) {
+      throw new AggregateError(errors, errors.map(errorMessage).join('; '));
     }
 
     return currentWorkspace;
+  }
+
+  private requiresDockerResources(): boolean {
+    return Object.values(this.previewConfigs).some(
+      (previewConfig) => previewConfig.runtime === 'docker' || previewUsesDockerTunnel(previewConfig),
+    );
   }
 }
 

@@ -1,12 +1,14 @@
 import { type ChildProcess, spawn } from 'node:child_process';
 import { randomUUID } from 'node:crypto';
+import { readdir } from 'node:fs/promises';
 import { createServer } from 'node:net';
+import { join, posix, relative, sep } from 'node:path';
 import { setTimeout as delay } from 'node:timers/promises';
-import { compactValidationLogs } from '../checks/validation-log.js';
+import { createDockerDependencyCacheKey } from './docker-dependency-prewarmer.js';
+import { PAIRDOCK_DOCKER_OWNER_LABEL, PAIRDOCK_DOCKER_SESSION_LABEL } from './docker-orphan-reconciler.js';
 import type {
   HealthcheckResult,
   ProjectPreviewConfig,
-  SandboxCommandResult,
   SandboxPort,
   SandboxRef,
   SandboxStartInput,
@@ -17,6 +19,7 @@ interface ManagedSandboxProcess {
   cwd: string;
   containerName: string;
   logs: string;
+  spawnError?: Error;
 }
 
 interface SandboxSpawnOptions {
@@ -34,7 +37,7 @@ interface DockerSandboxAdapterDependencies {
 }
 
 const MAX_STARTUP_LOG_CHARS = 4_000;
-const CHECK_TIMEOUT_MS = 10 * 60 * 1_000;
+const MAX_NODE_MODULES_SCAN_DEPTH = 12;
 const DEFAULT_SANDBOX_IMAGE =
   'node:22-bookworm-slim@sha256:6c74791e557ce11fc957704f6d4fe134a7bc8d6f5ca4403205b2966bd488f6b3';
 
@@ -44,11 +47,17 @@ export class DockerSandboxAdapter implements SandboxPort {
   constructor(private readonly dependencies: DockerSandboxAdapterDependencies = {}) {}
 
   async start(input: SandboxStartInput): Promise<SandboxRef> {
-    const previewConfig = await resolveSessionPreviewConfig(
+    const resolvedPreviewConfig = await resolveSessionPreviewConfig(
       input.previewConfig,
       input.sessionId,
       this.dependencies.allocateHostPort ?? allocateHostPort,
     );
+    const previewConfig = await discardStaleDependencyCache({
+      previewConfig: resolvedPreviewConfig,
+      projectKey: input.projectKey,
+      runtimeOwnerId: input.runtimeOwnerId,
+      worktreePath: input.worktreePath,
+    });
     const sandboxConfig = previewConfig?.sandbox;
 
     if (!sandboxConfig?.startCommand || !sandboxConfig.healthcheckUrl) {
@@ -56,11 +65,16 @@ export class DockerSandboxAdapter implements SandboxPort {
     }
 
     const containerName = `pairdock-${input.sessionId.replaceAll('-', '').slice(0, 24)}`;
-    const process = this.spawn('docker', buildDockerRunArgs({ ...input, previewConfig }, containerName), {
-      cwd: input.worktreePath,
-      shell: false,
-      stdio: ['ignore', 'pipe', 'pipe'],
-    });
+    const nodeModulesPaths = await findNodeModulesPaths(input.worktreePath);
+    const process = this.spawn(
+      'docker',
+      buildDockerRunArgs({ ...input, previewConfig }, containerName, nodeModulesPaths),
+      {
+        cwd: input.worktreePath,
+        shell: false,
+        stdio: ['ignore', 'pipe', 'pipe'],
+      },
+    );
 
     const sandboxRef: SandboxRef = {
       id: randomUUID(),
@@ -85,6 +99,9 @@ export class DockerSandboxAdapter implements SandboxPort {
     };
     process.stdout?.on('data', appendStartupLogs);
     process.stderr?.on('data', appendStartupLogs);
+    process.once('error', (error) => {
+      managedProcess.spawnError = error;
+    });
     this.processes.set(sandboxRef.id, managedProcess);
     return sandboxRef;
   }
@@ -165,43 +182,6 @@ export class DockerSandboxAdapter implements SandboxPort {
     }
   }
 
-  runCommand(ref: SandboxRef, command: string, worktreePath: string): Promise<SandboxCommandResult> {
-    if (!command.trim() || command.length > 8_192 || /[\0\r\n]/.test(command)) {
-      throw new Error('Sandbox validation command is invalid.');
-    }
-
-    return new Promise<SandboxCommandResult>((resolve, reject) => {
-      let logs = '';
-      let timedOut = false;
-      const process = this.spawn('docker', buildDockerCheckArgs(ref, worktreePath, command), {
-        cwd: worktreePath,
-        shell: false,
-        stdio: ['ignore', 'pipe', 'pipe'],
-      });
-      const appendCommandLogs = (chunk: Buffer | string) => {
-        logs = compactValidationLogs(`${logs}${chunk.toString()}`);
-      };
-
-      process.stdout?.on('data', appendCommandLogs);
-      process.stderr?.on('data', appendCommandLogs);
-      const timeout = setTimeout(() => {
-        timedOut = true;
-        process.kill('SIGTERM');
-      }, CHECK_TIMEOUT_MS);
-      timeout.unref();
-      process.once('error', (error) => {
-        clearTimeout(timeout);
-        reject(error);
-      });
-      process.once('close', (code: number | null, signal: NodeJS.Signals | null) => {
-        clearTimeout(timeout);
-        const exitCode = typeof code === 'number' ? code : signal ? 130 : 1;
-        const timeoutMessage = timedOut ? `Validation timed out after ${CHECK_TIMEOUT_MS}ms.` : '';
-        resolve({ exitCode, logs: [logs.trim(), timeoutMessage].filter(Boolean).join('\n') });
-      });
-    });
-  }
-
   private spawn(command: string, args: string[], options: SandboxSpawnOptions): ChildProcess {
     return this.dependencies.spawn?.(command, args, options) ?? spawn(command, args, options);
   }
@@ -219,6 +199,9 @@ export class DockerSandboxAdapter implements SandboxPort {
     const managedProcess = this.processes.get(ref.id);
 
     if (!managedProcess || managedProcess.process.exitCode === null) {
+      if (managedProcess?.spawnError) {
+        return `Docker preview failed to start: ${managedProcess.spawnError.message}.${this.getStartupLogSuffix(ref)}`;
+      }
       return null;
     }
 
@@ -258,6 +241,7 @@ async function resolveSessionPreviewConfig(
   const tunnel = previewConfig.tunnel;
 
   return {
+    ...previewConfig,
     ...(sandbox
       ? {
           sandbox: {
@@ -320,7 +304,7 @@ function appendLogs(current: string, next: string): string {
   return combined.length <= MAX_STARTUP_LOG_CHARS ? combined : combined.slice(-MAX_STARTUP_LOG_CHARS);
 }
 
-function buildDockerRunArgs(input: SandboxStartInput, containerName: string): string[] {
+function buildDockerRunArgs(input: SandboxStartInput, containerName: string, nodeModulesPaths: string[]): string[] {
   const sandboxConfig = input.previewConfig?.sandbox;
 
   if (!sandboxConfig) {
@@ -334,12 +318,24 @@ function buildDockerRunArgs(input: SandboxStartInput, containerName: string): st
     '--init',
     '--name',
     containerName,
+    ...buildManagedResourceLabels(input.runtimeOwnerId, input.sessionId),
     ...buildContainerHardeningArgs(),
     '--workdir',
     workdir,
     '--volume',
     `${input.worktreePath}:${workdir}`,
   ];
+
+  for (const nodeModulesPath of nodeModulesPaths) {
+    const target = posix.join(workdir, nodeModulesPath);
+    const dependencyVolume = sandboxDependencyVolumes(input.previewConfig).get(target);
+
+    if (dependencyVolume) {
+      args.push('--volume', `${dependencyVolume}:${target}`);
+    } else {
+      args.push('--tmpfs', buildNodeModulesTmpfsArg(workdir, nodeModulesPath));
+    }
+  }
 
   for (const port of sandboxConfig.ports ?? inferPortsFromHealthcheck(sandboxConfig.healthcheckUrl)) {
     args.push('--publish', port);
@@ -363,33 +359,98 @@ function buildDockerRunArgs(input: SandboxStartInput, containerName: string): st
   return args;
 }
 
-function buildDockerCheckArgs(ref: SandboxRef, worktreePath: string, command: string): string[] {
-  const sandboxConfig = ref.previewConfig?.sandbox;
+function sandboxDependencyVolumes(previewConfig: ProjectPreviewConfig | undefined): Map<string, string> {
+  return new Map(
+    (previewConfig?.dependencyCache?.mounts ?? []).map((mount) => {
+      if (!/^pairdock-deps-[a-f0-9]{40}$/.test(mount.volumeName)) {
+        throw new Error('Invalid PairDock Docker dependency volume name.');
+      }
 
-  if (!sandboxConfig) {
-    throw new Error(`Docker sandbox config is missing for session ${ref.sessionId}.`);
+      return [mount.target, mount.volumeName];
+    }),
+  );
+}
+
+async function discardStaleDependencyCache(input: {
+  previewConfig?: ProjectPreviewConfig;
+  projectKey: string;
+  runtimeOwnerId?: string;
+  worktreePath: string;
+}): Promise<ProjectPreviewConfig | undefined> {
+  const previewConfig = input.previewConfig;
+  const dependencyCache = previewConfig?.dependencyCache;
+  if (!dependencyCache) {
+    return previewConfig;
   }
 
-  const workdir = sandboxConfig.workdir ?? '/workspace';
-  const image = sandboxConfig.image ?? DEFAULT_SANDBOX_IMAGE;
-  assertSafeContainerImage(image);
-  const args = [
-    'run',
-    '--rm',
-    '--init',
-    ...buildContainerHardeningArgs(),
-    '--network',
-    'none',
-    '--workdir',
-    workdir,
-    '--volume',
-    `${worktreePath}:${workdir}`,
-    '--env',
-    'HOME=/tmp',
-  ];
+  if (!input.runtimeOwnerId || !previewConfig.prepareCommand) {
+    const { dependencyCache: _dependencyCache, ...coldPreviewConfig } = previewConfig;
+    return coldPreviewConfig;
+  }
 
-  args.push(image, 'sh', '-lc', command);
-  return args;
+  try {
+    const worktreeCacheKey = await createDockerDependencyCacheKey({
+      ownerId: input.runtimeOwnerId,
+      projectKey: input.projectKey,
+      repositoryPath: input.worktreePath,
+      previewConfig,
+    });
+    if (worktreeCacheKey === dependencyCache.cacheKey) {
+      return previewConfig;
+    }
+  } catch {
+    // A cache that cannot be verified must not be shared with this session.
+  }
+
+  const { dependencyCache: _dependencyCache, ...coldPreviewConfig } = previewConfig;
+  return coldPreviewConfig;
+}
+
+async function findNodeModulesPaths(worktreePath: string): Promise<string[]> {
+  const paths = new Set(['node_modules']);
+
+  const visit = async (directoryPath: string, depth: number): Promise<void> => {
+    if (depth > MAX_NODE_MODULES_SCAN_DEPTH) {
+      return;
+    }
+
+    const entries = await readdir(directoryPath, { withFileTypes: true });
+
+    await Promise.all(
+      entries.map(async (entry) => {
+        if (!entry.isDirectory() || entry.name === '.git') {
+          return;
+        }
+
+        const entryPath = join(directoryPath, entry.name);
+        if (entry.name === 'node_modules') {
+          paths.add(relative(worktreePath, entryPath).split(sep).join('/'));
+          return;
+        }
+
+        await visit(entryPath, depth + 1);
+      }),
+    );
+  };
+
+  await visit(worktreePath, 0);
+  return [...paths].sort();
+}
+
+function buildNodeModulesTmpfsArg(workdir: string, nodeModulesPath: string): string {
+  const target = posix.join(workdir, nodeModulesPath);
+  return `${target}:rw,exec,nosuid,nodev,uid=${process.getuid?.() ?? 1000},gid=${process.getgid?.() ?? 1000},mode=0700,size=2g`;
+}
+
+function buildManagedResourceLabels(ownerId: string | undefined, sessionId: string): string[] {
+  return ownerId
+    ? [
+        '--label',
+        `${PAIRDOCK_DOCKER_OWNER_LABEL}=${ownerId}`,
+        '--label',
+        `${PAIRDOCK_DOCKER_SESSION_LABEL}=${sessionId}`,
+      ]
+    : [];
 }
 
 function buildContainerHardeningArgs(): string[] {

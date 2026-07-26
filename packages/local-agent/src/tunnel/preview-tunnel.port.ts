@@ -1,6 +1,7 @@
 import type { ProjectPreviewConfig } from '../docker/sandbox.port.js';
 
 export interface PreviewTunnelOpenInput {
+  runtimeOwnerId?: string;
   sessionId: string;
   projectKey: string;
   localUrl: string;
@@ -18,4 +19,8 @@ export interface PreviewTunnelRef {
 export interface PreviewTunnelPort {
   open(input: PreviewTunnelOpenInput): Promise<PreviewTunnelRef>;
   close(ref: PreviewTunnelRef, previewConfig?: ProjectPreviewConfig): Promise<void>;
+}
+
+export function previewUsesDockerTunnel(previewConfig?: ProjectPreviewConfig): boolean {
+  return previewConfig !== undefined && !previewConfig.tunnel?.publicUrl;
 }

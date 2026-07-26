@@ -216,19 +216,20 @@ Constraints:
 Done criteria:
 - tests on a temporary repository OK
 
-## T08 — Local agent: Docker preview and Cloudflare Tunnel
+## T08 — Local agent: host/Docker preview runtime and Cloudflare Tunnel
 
 Owner: Software Engineer
 
 Purpose: make the target web app visible to the PM.
 
 Expected files/modules:
-- DockerSandboxAdapter / SandboxPort
+- HostPreviewRuntimeAdapter / DockerSandboxAdapter / SandboxPort
 - HealthcheckService
 - CloudflarePreviewTunnelAdapter / PreviewTunnelPort
 
 Public behavior:
-- the session starts the project inside Docker.
+- the session starts the project in its host worktree by default.
+- Docker preview is explicit per project and isolates container dependencies from host dependencies.
 - preview URL is sent to the backend.
 - preview failure state is explicit.
 
@@ -237,6 +238,7 @@ Related tests: BT-016, BT-017
 Constraints:
 - commands are resolved from config/AGENTS.md, not hardcoded.
 - session orchestration depends on ports, not directly on Docker or Cloudflare.
+- host execution is limited to locally configured trusted repositories and receives a filtered environment.
 
 Done criteria:
 - preview accessible on an example project
@@ -303,6 +305,7 @@ Expected files/modules:
 
 Public behavior:
 - build/tests/lint/preview produce statuses.
+- build/tests/lint run from the session worktree on the host.
 - review request cannot be created if any check fails.
 
 Related tests: BT-023, BT-024, BT-025

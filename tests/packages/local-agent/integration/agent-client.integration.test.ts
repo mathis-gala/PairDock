@@ -175,6 +175,52 @@ test('AgentClient waits for backend registration before publishing recovery fail
   }
 });
 
+test('AgentClient stays connected when the backend rejects a stale recovery failure', async () => {
+  const { io, httpServer, backendUrl } = await createAgentServer();
+  const rejectedRecoveryReceived = new Promise<void>((resolve) => {
+    io.of('/agent').on('connection', (socket) => {
+      socket.on(
+        agentProtocolMessageEventName,
+        (payload: { type: string }, acknowledge?: (response: { accepted: boolean }) => void) => {
+          if (payload.type === 'agent.connected') {
+            acknowledge?.({ accepted: true });
+            return;
+          }
+
+          if (payload.type === 'error') {
+            acknowledge?.({ accepted: false });
+            resolve();
+            return;
+          }
+
+          acknowledge?.({ accepted: true });
+        },
+      );
+    });
+  });
+  const warnings: string[] = [];
+  const client = new AgentClient(
+    {
+      agentId: 'agent-local-1',
+      backendUrl,
+      capabilities: ['session.prepare'],
+      projectPaths: {},
+    },
+    { error() {}, info() {}, warn: (message) => warnings.push(message) },
+    { sessionRunner: new SessionRunnerWithRecoveryFailure() },
+  );
+
+  try {
+    await client.start();
+    await rejectedRecoveryReceived;
+    assert.ok(warnings.some((message) => message.includes('session.recovery.failed')));
+  } finally {
+    await client.stop();
+    await new Promise<void>((resolve) => io.close(() => resolve()));
+    await new Promise<void>((resolve) => httpServer.close(() => resolve()));
+  }
+});
+
 test('AgentClient publishes the rebuilt preview URL after backend registration', async () => {
   const { io, httpServer, backendUrl } = await createAgentServer();
   const receivedEventTypes: string[] = [];

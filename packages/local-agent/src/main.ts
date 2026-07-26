@@ -4,6 +4,7 @@ import { parseArgs } from 'node:util';
 import { loadAgentConfig, saveAgentConfig, summarizeAgentConfig } from './config/agent-config.js';
 import { enrichConfigWithCodexModels } from './config/codex-model-catalog.js';
 import { enrichConfigWithProjectManifests } from './config/project-manifest.js';
+import { DockerDependencyPrewarmer } from './docker/docker-dependency-prewarmer.js';
 import { FileSessionWorkspaceStore } from './session/file-session-workspace.store.js';
 import { SessionRegistry } from './session/session-registry.js';
 import { SessionRunner } from './session/session-runner.js';
@@ -66,9 +67,18 @@ async function runLogin() {
 }
 
 async function runStart() {
-  const config = await enrichConfigWithProjectManifests(await enrichConfigWithCodexModels(await loadAgentConfig()));
+  const loadedConfig = await enrichConfigWithProjectManifests(
+    await enrichConfigWithCodexModels(await loadAgentConfig()),
+  );
+  const previewConfigs = await new DockerDependencyPrewarmer().prepareAll({
+    ownerId: loadedConfig.agentId,
+    projectPaths: loadedConfig.projectPaths,
+    previewConfigs: loadedConfig.previewConfigs,
+  });
+  const config = { ...loadedConfig, previewConfigs };
   const sessionRunner = new SessionRunner(
     {
+      runtimeOwnerId: config.agentId,
       projectPaths: config.projectPaths,
       previewConfigs: config.previewConfigs,
       logger: console,
