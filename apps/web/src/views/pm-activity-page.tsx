@@ -1,10 +1,10 @@
 import type { SharedSessionHistoryItem } from '@pairdock/shared-contracts';
-import { type ChangeEvent, useState } from 'react';
+import { useState } from 'react';
 import { Button } from '../components/button.js';
+import { DropdownMenuField, type DropdownMenuOption } from '../components/dropdown-menu-field.js';
 import { ProductShell } from '../components/product-shell.js';
 import { PullRequestStatusLink } from '../components/pull-request-status-link.js';
 import { SectionCard } from '../components/section-card.js';
-import { SelectInput } from '../components/select-input.js';
 import { StatusBadge } from '../components/status-badge.js';
 import { useAuthSession } from '../hooks/use-auth-session.js';
 import { useSharedSessionHistory } from '../hooks/use-shared-session-history.js';
@@ -16,6 +16,12 @@ interface PmActivityPageProps {
   onOpenSession: (sessionId: string) => void;
   onSignOut: () => void;
 }
+
+const SESSION_STATUS_FILTER_OPTIONS: readonly DropdownMenuOption[] = [
+  { label: 'Toutes les sessions', value: 'all' },
+  { label: 'Ouvertes', value: 'opened' },
+  { label: 'Fermées', value: 'closed' },
+];
 
 export function PmActivityPage({ accessToken, mode, onOpenSession, onSignOut }: PmActivityPageProps) {
   const authSession = useAuthSession();
@@ -33,6 +39,10 @@ export function PmActivityPage({ accessToken, mode, onOpenSession, onSignOut }: 
   const projectOptions = Array.from(
     new Map(sessionsForView.map((session) => [session.projectId, session.projectName])).entries(),
   );
+  const projectFilterOptions: DropdownMenuOption[] = [
+    { label: 'Tous les projets', value: 'all' },
+    ...projectOptions.map(([projectId, projectName]) => ({ label: projectName, value: projectId })),
+  ];
   const sessions =
     mode === 'sessions'
       ? filterSharedSessionHistory(sessionsForView, { projectId: projectFilter, status: statusFilter })
@@ -40,12 +50,12 @@ export function PmActivityPage({ accessToken, mode, onOpenSession, onSignOut }: 
   const isReviewRequestView = mode === 'review-requests';
   const title = isReviewRequestView ? 'Pull requests' : 'Sessions';
 
-  function handleProjectFilterChange(event: ChangeEvent<HTMLSelectElement>) {
-    setProjectFilter(event.target.value);
+  function handleProjectFilterChange(value: string) {
+    setProjectFilter(value);
   }
 
-  function handleStatusFilterChange(event: ChangeEvent<HTMLSelectElement>) {
-    setStatusFilter(event.target.value as SessionHistoryStatusFilter);
+  function handleStatusFilterChange(value: string) {
+    setStatusFilter(value as SessionHistoryStatusFilter);
   }
 
   return (
@@ -76,41 +86,20 @@ export function PmActivityPage({ accessToken, mode, onOpenSession, onSignOut }: 
 
         {mode === 'sessions' ? (
           <div className="mb-5 grid max-w-[980px] gap-3 rounded-xl border border-white/10 bg-[#171a20] p-4 sm:grid-cols-2">
-            <label
-              className="grid gap-2 text-xs font-semibold uppercase tracking-[0.12em] text-[#8b92a1]"
-              htmlFor="session-project-filter"
-            >
-              Projet
-              <SelectInput
-                aria-label="Filtrer par projet"
-                id="session-project-filter"
-                value={projectFilter}
-                onChange={handleProjectFilterChange}
-              >
-                <option value="all">Tous les projets</option>
-                {projectOptions.map(([projectId, projectName]) => (
-                  <option key={projectId} value={projectId}>
-                    {projectName}
-                  </option>
-                ))}
-              </SelectInput>
-            </label>
-            <label
-              className="grid gap-2 text-xs font-semibold uppercase tracking-[0.12em] text-[#8b92a1]"
-              htmlFor="session-status-filter"
-            >
-              Statut
-              <SelectInput
-                aria-label="Filtrer par statut"
-                id="session-status-filter"
-                value={statusFilter}
-                onChange={handleStatusFilterChange}
-              >
-                <option value="all">Toutes les sessions</option>
-                <option value="opened">Ouvertes</option>
-                <option value="closed">Fermées</option>
-              </SelectInput>
-            </label>
+            <DropdownMenuField
+              id="session-project-filter"
+              label="Projet"
+              onValueChange={handleProjectFilterChange}
+              options={projectFilterOptions}
+              value={projectFilter}
+            />
+            <DropdownMenuField
+              id="session-status-filter"
+              label="Statut"
+              onValueChange={handleStatusFilterChange}
+              options={SESSION_STATUS_FILTER_OPTIONS}
+              value={statusFilter}
+            />
             <p aria-live="polite" className="text-xs text-[#8b92a1] sm:col-span-2">
               {sessions.length} session{sessions.length === 1 ? '' : 's'} affichée{sessions.length === 1 ? '' : 's'}
             </p>
