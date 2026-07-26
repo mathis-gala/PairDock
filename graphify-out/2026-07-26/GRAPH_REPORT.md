@@ -1,7 +1,7 @@
 # Graph Report - PairDock  (2026-07-26)
 
 ## Corpus Check
-- 322 files · ~144,022 words
+- 322 files · ~144,357 words
 - Verdict: corpus is large enough that graph structure adds value.
 
 ## Summary

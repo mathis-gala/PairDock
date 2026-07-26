@@ -435,8 +435,8 @@
     "semantic_hash": ""
   },
   "apps/web/src/app/app-shell.tsx": {
-    "mtime": 1785077720.6173596,
-    "ast_hash": "fc7040f9788824d8d1400853c7c63bfb",
+    "mtime": 1785087969.2418644,
+    "ast_hash": "1ce262c0d8aad7fa570e72720ddd13c8",
     "semantic_hash": ""
   },
   "apps/web/src/app/query-client.ts": {
@@ -485,9 +485,9 @@
     "semantic_hash": "c559426eb227a26ad277cb1de85888d6"
   },
   "apps/web/src/components/developer/session-control-card.tsx": {
-    "mtime": 1783199430.1071186,
-    "ast_hash": "d7accca91787b0620fd13626a452ce5b",
-    "semantic_hash": "d7accca91787b0620fd13626a452ce5b"
+    "mtime": 1785087969.2418578,
+    "ast_hash": "6204c1ee4b415868e6acdb743699aa38",
+    "semantic_hash": ""
   },
   "apps/web/src/components/developer/tool-readiness-panel.tsx": {
     "mtime": 1783206153.2227197,
@@ -545,8 +545,8 @@
     "semantic_hash": "20a9fb187bdfa7b6c02d33bf7eff672e"
   },
   "apps/web/src/hooks/use-app-route.ts": {
-    "mtime": 1784473133.8339396,
-    "ast_hash": "eab0ffb0ef7c438726efcb3a4b7985f9",
+    "mtime": 1785087759.414841,
+    "ast_hash": "6f6c5c6071d4166cb7f8c21f9d27d744",
     "semantic_hash": ""
   },
   "apps/web/src/hooks/use-auth-session.ts": {
@@ -615,8 +615,8 @@
     "semantic_hash": "fcb79089fd826bec584a1b2e22510839"
   },
   "apps/web/src/routing/route-types.ts": {
-    "mtime": 1784473133.880284,
-    "ast_hash": "43e41cf231004f03fdc9753566626374",
+    "mtime": 1785087646.1705854,
+    "ast_hash": "375e2711481d823a7c0518ac41604439",
     "semantic_hash": ""
   },
   "apps/web/src/schemas/auth.ts": {
@@ -650,8 +650,8 @@
     "semantic_hash": ""
   },
   "apps/web/src/views/pm-session-page.tsx": {
-    "mtime": 1785081800.8959582,
-    "ast_hash": "b3c3f6c1e75e013f240f1af673b0dcac",
+    "mtime": 1785087751.8181677,
+    "ast_hash": "5aa3359db109a227e7c6b5b274140469",
     "semantic_hash": ""
   },
   "apps/web/src/vite-env.d.ts": {
@@ -830,8 +830,8 @@
     "semantic_hash": ""
   },
   "packages/shared-contracts/src/protocol/constants.ts": {
-    "mtime": 1784804848.2084522,
-    "ast_hash": "179bad65925ee8f772d1f631abd3ccda",
+    "mtime": 1785088664.9243038,
+    "ast_hash": "a7d50ebc38cb8ddad560102bb1863b11",
     "semantic_hash": ""
   },
   "packages/shared-contracts/src/protocol/events.ts": {
@@ -880,8 +880,8 @@
     "semantic_hash": ""
   },
   "tests/apps/api/integration/auth/auth.integration.test.ts": {
-    "mtime": 1784804848.2108274,
-    "ast_hash": "5a60d428e79cb0ae80b78e7ea5d75ba7",
+    "mtime": 1785087815.276743,
+    "ast_hash": "67601ed9b85083ac0bee24a271a1c8f5",
     "semantic_hash": ""
   },
   "tests/apps/api/integration/persistence/persistence.integration.test.ts": {
@@ -995,8 +995,8 @@
     "semantic_hash": "f2afde56d73a48bae96e785db7fcafe2"
   },
   "tests/apps/web/unit/developer-project-card.test.tsx": {
-    "mtime": 1784473134.0795157,
-    "ast_hash": "265be2cc703249868739f54aaaf31339",
+    "mtime": 1785087672.266255,
+    "ast_hash": "6850b4c5426e98c1d79cf7d182d7e2f4",
     "semantic_hash": ""
   },
   "tests/apps/web/unit/developer-project-form.test.tsx": {
@@ -1005,8 +1005,8 @@
     "semantic_hash": ""
   },
   "tests/apps/web/unit/external-store-snapshots.test.ts": {
-    "mtime": 1784473134.0911415,
-    "ast_hash": "d90825db88454a131d709064ba5afaec",
+    "mtime": 1785087634.2377172,
+    "ast_hash": "1d42f6d33f2682ad1717142b22707c2d",
     "semantic_hash": ""
   },
   "tests/apps/web/unit/login-page.test.tsx": {
@@ -1140,8 +1140,8 @@
     "semantic_hash": ""
   },
   "docs/architecture/pairdock-mvp/architecture.md": {
-    "mtime": 1785069504.3997226,
-    "ast_hash": "6bc86aad58945d2e557580efd2646470",
+    "mtime": 1785088664.9259012,
+    "ast_hash": "616badba29990fc41dc3bad1672ba02f",
     "semantic_hash": ""
   },
   "docs/architecture/pairdock-mvp/mvp-e2e.md": {
