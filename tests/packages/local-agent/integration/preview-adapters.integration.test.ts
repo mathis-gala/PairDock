@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { EventEmitter } from 'node:events';
-import { mkdtemp } from 'node:fs/promises';
+import { mkdir, mkdtemp } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import test from 'node:test';
@@ -85,7 +85,7 @@ test('V1: DockerSandboxAdapter runs preview inside docker with explicit host DB 
   assert.ok(startArgs.includes('127.0.0.1:4000:4000'));
   assert.ok(
     startArgs.includes(
-      `/workspace/node_modules:rw,nosuid,nodev,uid=${process.getuid?.() ?? 1000},gid=${process.getgid?.() ?? 1000},mode=0700,size=2g`,
+      `/workspace/node_modules:rw,exec,nosuid,nodev,uid=${process.getuid?.() ?? 1000},gid=${process.getgid?.() ?? 1000},mode=0700,size=2g`,
     ),
   );
   assert.ok(startArgs.includes('host.docker.internal:host-gateway'));
@@ -106,6 +106,45 @@ test('V1: DockerSandboxAdapter runs preview inside docker with explicit host DB 
   });
 
   assert.deepEqual(spawnCalls[1]?.args, ['stop', 'pairdock-888888888888488888888888']);
+});
+
+test('DockerSandboxAdapter masks host node_modules from every monorepo workspace', async () => {
+  const worktreePath = await createTempWorkspace();
+  await mkdir(join(worktreePath, 'apps', 'api', 'node_modules'), { recursive: true });
+  await mkdir(join(worktreePath, 'packages', 'shared', 'node_modules'), { recursive: true });
+  const spawnCalls: Array<{ command: string; args: string[] }> = [];
+  const adapter = new DockerSandboxAdapter({
+    spawn(command, args) {
+      spawnCalls.push({ command, args });
+      return createRunningProcess() as never;
+    },
+  });
+
+  await adapter.start({
+    sessionId: '89898989-8989-4989-8989-898989898989',
+    projectKey: 'pairdock',
+    repositoryPath: worktreePath,
+    worktreePath,
+    branchName: 'pairdock/session-8989',
+    modelId: 'agent/gpt-5',
+    previewConfig: {
+      runtime: 'docker',
+      sandbox: {
+        image: 'oven/bun:1',
+        startCommand: 'bun install --frozen-lockfile && bun dev',
+        healthcheckUrl: 'http://127.0.0.1:4000',
+      },
+    },
+  });
+
+  const startArgs = spawnCalls[0]?.args ?? [];
+  const tmpfsTargets = startArgs
+    .map((arg, index) => (startArgs[index - 1] === '--tmpfs' ? arg : null))
+    .filter((arg): arg is string => arg !== null);
+
+  assert.ok(tmpfsTargets.some((target) => target.startsWith('/workspace/node_modules:rw,exec,')));
+  assert.ok(tmpfsTargets.some((target) => target.startsWith('/workspace/apps/api/node_modules:rw,exec,')));
+  assert.ok(tmpfsTargets.some((target) => target.startsWith('/workspace/packages/shared/node_modules:rw,exec,')));
 });
 
 test('V1: DockerSandboxAdapter resolves a dedicated host preview port for each session', async () => {
