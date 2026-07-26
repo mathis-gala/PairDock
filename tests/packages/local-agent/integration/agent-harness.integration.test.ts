@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { chmod, mkdtemp, readFile, realpath, rm, writeFile } from 'node:fs/promises';
+import { chmod, mkdir, mkdtemp, readFile, realpath, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { basename, join, resolve } from 'node:path';
 import test from 'node:test';
@@ -107,7 +107,7 @@ test('default Codex harness starts and resumes one Codex thread per PairDock ses
     '--config',
     'permissions.pairdock-restricted.network.enabled=false',
     '--config',
-    'shell_environment_policy.set={GIT_CONFIG_GLOBAL="/dev/null",GIT_CONFIG_NOSYSTEM="1",TMPDIR="/tmp/pairdock/11111111-1111-4111-8111-111111111111",XDG_CACHE_HOME="/tmp/pairdock/11111111-1111-4111-8111-111111111111/cache",XDG_CONFIG_HOME="/tmp/pairdock/11111111-1111-4111-8111-111111111111/config",XDG_DATA_HOME="/tmp/pairdock/11111111-1111-4111-8111-111111111111/data"}',
+    'shell_environment_policy.set={GIT_CONFIG_GLOBAL="/dev/null",GIT_CONFIG_NOSYSTEM="1",TMPDIR="/tmp/pairdock/11111111-1111-4111-8111-111111111111",XDG_CACHE_HOME="/tmp/pairdock/11111111-1111-4111-8111-111111111111/cache",XDG_CONFIG_HOME="/tmp/pairdock/11111111-1111-4111-8111-111111111111/config",XDG_DATA_HOME="/tmp/pairdock/11111111-1111-4111-8111-111111111111/data",ZDOTDIR="/tmp/pairdock/11111111-1111-4111-8111-111111111111/shell"}',
     '--json',
     '--model',
     'gpt-5.6-luna',
@@ -128,7 +128,7 @@ test('default Codex harness starts and resumes one Codex thread per PairDock ses
     '--config',
     'permissions.pairdock-restricted.network.enabled=false',
     '--config',
-    'shell_environment_policy.set={GIT_CONFIG_GLOBAL="/dev/null",GIT_CONFIG_NOSYSTEM="1",TMPDIR="/tmp/pairdock/11111111-1111-4111-8111-111111111111",XDG_CACHE_HOME="/tmp/pairdock/11111111-1111-4111-8111-111111111111/cache",XDG_CONFIG_HOME="/tmp/pairdock/11111111-1111-4111-8111-111111111111/config",XDG_DATA_HOME="/tmp/pairdock/11111111-1111-4111-8111-111111111111/data"}',
+    'shell_environment_policy.set={GIT_CONFIG_GLOBAL="/dev/null",GIT_CONFIG_NOSYSTEM="1",TMPDIR="/tmp/pairdock/11111111-1111-4111-8111-111111111111",XDG_CACHE_HOME="/tmp/pairdock/11111111-1111-4111-8111-111111111111/cache",XDG_CONFIG_HOME="/tmp/pairdock/11111111-1111-4111-8111-111111111111/config",XDG_DATA_HOME="/tmp/pairdock/11111111-1111-4111-8111-111111111111/data",ZDOTDIR="/tmp/pairdock/11111111-1111-4111-8111-111111111111/shell"}',
     '--json',
     '--model',
     'gpt-5.6-luna',
@@ -165,6 +165,86 @@ test('default Codex harness lets the agent validate normally while PairDock inde
   assert.doesNotMatch(prompt, /inside Docker/i);
   assert.match(prompt, /independently reruns the configured checks/i);
   assert.match(prompt, /Implement the requested change\./);
+});
+
+test('default Codex harness can read linked worktree Git metadata without opening the source repository', async () => {
+  const fixtureRoot = await createTempWorkspace();
+  const sourceRepositoryPath = join(fixtureRoot, 'source');
+  const commonGitDirectory = join(sourceRepositoryPath, '.git');
+  const linkedGitDirectory = join(commonGitDirectory, 'worktrees', 'session-worktree');
+  const worktreePath = join(fixtureRoot, 'session-worktree');
+
+  await mkdir(linkedGitDirectory, { recursive: true });
+  await mkdir(worktreePath, { recursive: true });
+  await writeFile(join(linkedGitDirectory, 'commondir'), '../..\n', 'utf8');
+  await writeFile(join(worktreePath, '.git'), `gitdir: ${linkedGitDirectory}\n`, 'utf8');
+
+  try {
+    const args = buildCommandArgs(
+      {},
+      {
+        sessionId: '15151515-1515-4515-8515-151515151515',
+        projectKey: 'pairdock',
+        prompt: 'Inspect the changes.',
+        modelId: 'gpt-5.6-sol',
+        reasoningEffort: 'high',
+        worktreePath,
+      },
+    );
+    const filesystemConfig = args.find((arg) => arg.startsWith('permissions.pairdock-restricted.filesystem='));
+    const resolvedCommonGitDirectory = await realpath(commonGitDirectory);
+    const resolvedLinkedGitDirectory = await realpath(linkedGitDirectory);
+
+    assert.ok(filesystemConfig);
+    assert.ok(filesystemConfig.includes(`${JSON.stringify(resolvedCommonGitDirectory)}="read"`));
+    assert.ok(filesystemConfig.includes(`${JSON.stringify(resolvedLinkedGitDirectory)}="write"`));
+    assert.ok(!filesystemConfig.includes(`${JSON.stringify(sourceRepositoryPath)}="write"`));
+  } finally {
+    await rm(fixtureRoot, { recursive: true, force: true });
+  }
+});
+
+test('default Codex harness can traverse its managed root without exposing sibling PairDock data', async () => {
+  const fixtureRoot = await createTempWorkspace();
+  const pairDockRoot = join(fixtureRoot, '.pairdock');
+  const managedWorktreesRoot = join(pairDockRoot, 'worktrees');
+  const worktreePath = join(managedWorktreesRoot, 'session-worktree');
+  const siblingWorktreePath = join(managedWorktreesRoot, 'other-session');
+  const agentConfigPath = join(pairDockRoot, 'agent.json');
+
+  await mkdir(worktreePath, { recursive: true });
+  await mkdir(siblingWorktreePath, { recursive: true });
+  await writeFile(agentConfigPath, '{"authToken":"secret"}', 'utf8');
+
+  try {
+    const args = buildCommandArgs(
+      {},
+      {
+        sessionId: '18181818-1818-4818-8818-181818181818',
+        projectKey: 'pairdock',
+        prompt: 'Run the build.',
+        modelId: 'gpt-5.6-sol',
+        reasoningEffort: 'high',
+        worktreePath,
+      },
+    );
+    const filesystemConfig = args.find((arg) => arg.startsWith('permissions.pairdock-restricted.filesystem='));
+    const resolvedPairDockRoot = await realpath(pairDockRoot);
+    const resolvedManagedWorktreesRoot = await realpath(managedWorktreesRoot);
+    const resolvedWorktreePath = await realpath(worktreePath);
+    const resolvedFixtureRoot = await realpath(fixtureRoot);
+    const resolvedSiblingWorktreePath = await realpath(siblingWorktreePath);
+
+    assert.ok(filesystemConfig);
+    assert.ok(filesystemConfig.includes(`${JSON.stringify(resolvedFixtureRoot)}="read"`));
+    assert.ok(filesystemConfig.includes(`${JSON.stringify(resolvedPairDockRoot)}="read"`));
+    assert.ok(filesystemConfig.includes(`${JSON.stringify(join(resolvedPairDockRoot, 'agent.json'))}="deny"`));
+    assert.ok(filesystemConfig.includes(`${JSON.stringify(resolvedManagedWorktreesRoot)}="read"`));
+    assert.ok(filesystemConfig.includes(`${JSON.stringify(resolvedSiblingWorktreePath)}="deny"`));
+    assert.ok(filesystemConfig.includes(`${JSON.stringify(resolvedWorktreePath)}="write"`));
+  } finally {
+    await rm(fixtureRoot, { recursive: true, force: true });
+  }
 });
 
 test('default Codex harness tells the agent to edit preview sources instead of reference prototypes', () => {
@@ -277,7 +357,10 @@ test('Codex harness does not expose unrelated developer secrets to the agent pro
   );
 
   assert.equal(environment.HOME, '/Users/developer');
-  assert.equal(environment.PATH, '/usr/bin');
+  assert.equal(
+    environment.PATH,
+    process.platform === 'darwin' ? '/Library/Developer/CommandLineTools/usr/bin:/usr/bin' : '/usr/bin',
+  );
   assert.equal(environment.TMPDIR, '/tmp/pairdock/11111111-1111-4111-8111-111111111111');
   assert.equal(environment.XDG_CACHE_HOME, `${environment.TMPDIR}/cache`);
   assert.equal(environment.XDG_CONFIG_HOME, `${environment.TMPDIR}/config`);
@@ -289,6 +372,116 @@ test('Codex harness does not expose unrelated developer secrets to the agent pro
   assert.equal(environment.DATABASE_URL, undefined);
   assert.equal(environment.GITHUB_TOKEN, undefined);
   assert.equal(environment.OPENAI_API_KEY, undefined);
+});
+
+test('Codex harness prioritizes a sandbox-compatible Git binary when Codex provides one', async () => {
+  const fixtureRoot = await createTempWorkspace();
+  const fallbackDirectory = join(fixtureRoot, 'codex-primary-runtime', 'dependencies', 'bin', 'fallback');
+  const fallbackGitPath = join(fallbackDirectory, 'git');
+
+  await mkdir(fallbackDirectory, { recursive: true });
+  await writeFile(fallbackGitPath, '#!/bin/sh\nexit 0\n', 'utf8');
+  await chmod(fallbackGitPath, 0o755);
+
+  try {
+    const environment = buildHarnessEnvironment(
+      {
+        HOME: '/Users/developer',
+        PATH: `/usr/bin:${fallbackDirectory}:/bin`,
+      },
+      {
+        sessionId: '16161616-1616-4616-8616-161616161616',
+        projectKey: 'pairdock',
+        prompt: 'Inspect the changes.',
+        modelId: 'gpt-5.6-sol',
+        reasoningEffort: 'high',
+        worktreePath: '/tmp/worktree',
+      },
+    );
+
+    assert.equal(environment.PATH, `${fallbackDirectory}:/usr/bin:/bin`);
+  } finally {
+    await rm(fixtureRoot, { recursive: true, force: true });
+  }
+});
+
+test('default Codex harness can read user toolchains already exposed through PATH', async () => {
+  const fixtureRoot = await createTempWorkspace();
+  const bunDirectory = join(fixtureRoot, '.bun', 'bin');
+  const fallbackDirectory = join(fixtureRoot, 'codex-primary-runtime', 'dependencies', 'bin', 'fallback');
+  const runtimeDependenciesDirectory = resolve(fallbackDirectory, '../..');
+
+  await mkdir(bunDirectory, { recursive: true });
+  await mkdir(fallbackDirectory, { recursive: true });
+  await writeFile(join(bunDirectory, 'bun'), '#!/bin/sh\nexit 0\n', 'utf8');
+  await writeFile(join(fallbackDirectory, 'git'), '#!/bin/sh\nexit 0\n', 'utf8');
+  await chmod(join(bunDirectory, 'bun'), 0o755);
+  await chmod(join(fallbackDirectory, 'git'), 0o755);
+
+  try {
+    const input = {
+      sessionId: '19191919-1919-4919-8919-191919191919',
+      projectKey: 'pairdock',
+      prompt: 'Run the build.',
+      modelId: 'gpt-5.6-sol',
+      reasoningEffort: 'high',
+      worktreePath: '/tmp/worktree',
+    };
+    const environment = buildHarnessEnvironment(
+      { HOME: fixtureRoot, PATH: `${bunDirectory}:${fallbackDirectory}:/usr/bin` },
+      input,
+    );
+    const args = buildCommandArgs({}, input, undefined, environment);
+    const filesystemConfig = args.find((arg) => arg.startsWith('permissions.pairdock-restricted.filesystem='));
+
+    assert.ok(filesystemConfig);
+    assert.ok(filesystemConfig.includes(`${JSON.stringify(await realpath(bunDirectory))}="read"`));
+    assert.ok(filesystemConfig.includes(`${JSON.stringify(await realpath(runtimeDependenciesDirectory))}="read"`));
+    assert.ok(!filesystemConfig.includes(`${JSON.stringify(await realpath(fixtureRoot))}="read"`));
+  } finally {
+    await rm(fixtureRoot, { recursive: true, force: true });
+  }
+});
+
+test('CodexHarnessAdapter preserves sandbox-compatible Git through a macOS login shell', async () => {
+  const worktreePath = await createTempWorkspace();
+  const fallbackDirectory = join(worktreePath, 'codex-primary-runtime', 'dependencies', 'bin', 'fallback');
+  const fallbackGitPath = join(fallbackDirectory, 'git');
+  const markerPath = join(worktreePath, 'selected-git.txt');
+  const originalPath = process.env.PATH;
+
+  await mkdir(fallbackDirectory, { recursive: true });
+  await writeFile(fallbackGitPath, '#!/bin/sh\nexit 0\n', 'utf8');
+  await chmod(fallbackGitPath, 0o755);
+  process.env.PATH = `/usr/bin:${fallbackDirectory}:/bin`;
+
+  try {
+    const events = await collectEvents(
+      new CodexHarnessAdapter({
+        pairdock: {
+          command: '/bin/zsh',
+          args: ['-lc', `command -v git > ${basename(markerPath)}`],
+        },
+      }).runPrompt({
+        sessionId: '17171717-1717-4717-8717-171717171717',
+        projectKey: 'pairdock',
+        prompt: 'Inspect the changes.',
+        modelId: 'gpt-5.6-sol',
+        reasoningEffort: 'high',
+        worktreePath,
+      }),
+    );
+
+    assert.deepEqual(events.at(-1), { type: 'done', exitCode: 0 });
+    assert.equal((await readFile(markerPath, 'utf8')).trim(), fallbackGitPath);
+  } finally {
+    if (originalPath === undefined) {
+      delete process.env.PATH;
+    } else {
+      process.env.PATH = originalPath;
+    }
+    await rm(worktreePath, { recursive: true, force: true });
+  }
 });
 
 test('BT-019: CodexHarnessAdapter streams stdout and stderr before the process completes', async () => {
