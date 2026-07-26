@@ -69,6 +69,7 @@ async function runStart() {
   const config = await enrichConfigWithProjectManifests(await enrichConfigWithCodexModels(await loadAgentConfig()));
   const sessionRunner = new SessionRunner(
     {
+      runtimeOwnerId: config.agentId,
       projectPaths: config.projectPaths,
       previewConfigs: config.previewConfigs,
       logger: console,

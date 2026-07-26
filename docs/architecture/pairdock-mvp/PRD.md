@@ -58,7 +58,7 @@ The product/UI reference prototype is stored in `prototype/`, with notes in `doc
 - The draft review request is created through `SourceControlPort` after PM validation; GitHub App creates a draft PR in the MVP.
 - After a draft review request is created, its URL and status are visible in the shared session.
 - The developer can close a session and trigger local cleanup.
-- A session cannot start while required developer-side checks are failing: local agent online, Git repository available, GitHub App/repository access, agent harness configured, Docker available, preview tunnel available or explicitly marked optional, and project commands discoverable.
+- A session cannot start while required developer-side checks are failing: local agent online, Git repository available, GitHub App/repository access, agent harness configured, Docker available only when the selected preview/tunnel runtime requires it, preview tunnel available or explicitly marked optional, and project commands discoverable.
 - PairDock repository pull requests run CI gates before merge: install, typecheck, lint, tests, build, Prisma generate, and Prisma migration status/checks.
 
 ### P1
@@ -97,7 +97,7 @@ The product/UI reference prototype is stored in `prototype/`, with notes in `doc
 - Local agent: Node.js/TypeScript CLI.
 - AI: Codex CLI local for MVP.
 - Repository isolation: Git worktree per session.
-- Execution: Docker sandbox.
+- Execution: host worktree by default; Docker remains an explicit preview runtime for trusted projects that need it.
 - Preview: Cloudflare Tunnel + responsive iframe.
 - Developer login: GitHub App.
 - PM login: Slack OAuth/App.

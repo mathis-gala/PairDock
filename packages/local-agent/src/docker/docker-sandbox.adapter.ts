@@ -2,11 +2,10 @@ import { type ChildProcess, spawn } from 'node:child_process';
 import { randomUUID } from 'node:crypto';
 import { createServer } from 'node:net';
 import { setTimeout as delay } from 'node:timers/promises';
-import { compactValidationLogs } from '../checks/validation-log.js';
+import { PAIRDOCK_DOCKER_OWNER_LABEL, PAIRDOCK_DOCKER_SESSION_LABEL } from './docker-orphan-reconciler.js';
 import type {
   HealthcheckResult,
   ProjectPreviewConfig,
-  SandboxCommandResult,
   SandboxPort,
   SandboxRef,
   SandboxStartInput,
@@ -17,6 +16,7 @@ interface ManagedSandboxProcess {
   cwd: string;
   containerName: string;
   logs: string;
+  spawnError?: Error;
 }
 
 interface SandboxSpawnOptions {
@@ -34,7 +34,6 @@ interface DockerSandboxAdapterDependencies {
 }
 
 const MAX_STARTUP_LOG_CHARS = 4_000;
-const CHECK_TIMEOUT_MS = 10 * 60 * 1_000;
 const DEFAULT_SANDBOX_IMAGE =
   'node:22-bookworm-slim@sha256:6c74791e557ce11fc957704f6d4fe134a7bc8d6f5ca4403205b2966bd488f6b3';
 
@@ -85,6 +84,9 @@ export class DockerSandboxAdapter implements SandboxPort {
     };
     process.stdout?.on('data', appendStartupLogs);
     process.stderr?.on('data', appendStartupLogs);
+    process.once('error', (error) => {
+      managedProcess.spawnError = error;
+    });
     this.processes.set(sandboxRef.id, managedProcess);
     return sandboxRef;
   }
@@ -165,43 +167,6 @@ export class DockerSandboxAdapter implements SandboxPort {
     }
   }
 
-  runCommand(ref: SandboxRef, command: string, worktreePath: string): Promise<SandboxCommandResult> {
-    if (!command.trim() || command.length > 8_192 || /[\0\r\n]/.test(command)) {
-      throw new Error('Sandbox validation command is invalid.');
-    }
-
-    return new Promise<SandboxCommandResult>((resolve, reject) => {
-      let logs = '';
-      let timedOut = false;
-      const process = this.spawn('docker', buildDockerCheckArgs(ref, worktreePath, command), {
-        cwd: worktreePath,
-        shell: false,
-        stdio: ['ignore', 'pipe', 'pipe'],
-      });
-      const appendCommandLogs = (chunk: Buffer | string) => {
-        logs = compactValidationLogs(`${logs}${chunk.toString()}`);
-      };
-
-      process.stdout?.on('data', appendCommandLogs);
-      process.stderr?.on('data', appendCommandLogs);
-      const timeout = setTimeout(() => {
-        timedOut = true;
-        process.kill('SIGTERM');
-      }, CHECK_TIMEOUT_MS);
-      timeout.unref();
-      process.once('error', (error) => {
-        clearTimeout(timeout);
-        reject(error);
-      });
-      process.once('close', (code: number | null, signal: NodeJS.Signals | null) => {
-        clearTimeout(timeout);
-        const exitCode = typeof code === 'number' ? code : signal ? 130 : 1;
-        const timeoutMessage = timedOut ? `Validation timed out after ${CHECK_TIMEOUT_MS}ms.` : '';
-        resolve({ exitCode, logs: [logs.trim(), timeoutMessage].filter(Boolean).join('\n') });
-      });
-    });
-  }
-
   private spawn(command: string, args: string[], options: SandboxSpawnOptions): ChildProcess {
     return this.dependencies.spawn?.(command, args, options) ?? spawn(command, args, options);
   }
@@ -219,6 +184,9 @@ export class DockerSandboxAdapter implements SandboxPort {
     const managedProcess = this.processes.get(ref.id);
 
     if (!managedProcess || managedProcess.process.exitCode === null) {
+      if (managedProcess?.spawnError) {
+        return `Docker preview failed to start: ${managedProcess.spawnError.message}.${this.getStartupLogSuffix(ref)}`;
+      }
       return null;
     }
 
@@ -334,11 +302,14 @@ function buildDockerRunArgs(input: SandboxStartInput, containerName: string): st
     '--init',
     '--name',
     containerName,
+    ...buildManagedResourceLabels(input.runtimeOwnerId, input.sessionId),
     ...buildContainerHardeningArgs(),
     '--workdir',
     workdir,
     '--volume',
     `${input.worktreePath}:${workdir}`,
+    '--tmpfs',
+    `${workdir}/node_modules:rw,nosuid,nodev,uid=${process.getuid?.() ?? 1000},gid=${process.getgid?.() ?? 1000},mode=0700,size=2g`,
   ];
 
   for (const port of sandboxConfig.ports ?? inferPortsFromHealthcheck(sandboxConfig.healthcheckUrl)) {
@@ -363,33 +334,15 @@ function buildDockerRunArgs(input: SandboxStartInput, containerName: string): st
   return args;
 }
 
-function buildDockerCheckArgs(ref: SandboxRef, worktreePath: string, command: string): string[] {
-  const sandboxConfig = ref.previewConfig?.sandbox;
-
-  if (!sandboxConfig) {
-    throw new Error(`Docker sandbox config is missing for session ${ref.sessionId}.`);
-  }
-
-  const workdir = sandboxConfig.workdir ?? '/workspace';
-  const image = sandboxConfig.image ?? DEFAULT_SANDBOX_IMAGE;
-  assertSafeContainerImage(image);
-  const args = [
-    'run',
-    '--rm',
-    '--init',
-    ...buildContainerHardeningArgs(),
-    '--network',
-    'none',
-    '--workdir',
-    workdir,
-    '--volume',
-    `${worktreePath}:${workdir}`,
-    '--env',
-    'HOME=/tmp',
-  ];
-
-  args.push(image, 'sh', '-lc', command);
-  return args;
+function buildManagedResourceLabels(ownerId: string | undefined, sessionId: string): string[] {
+  return ownerId
+    ? [
+        '--label',
+        `${PAIRDOCK_DOCKER_OWNER_LABEL}=${ownerId}`,
+        '--label',
+        `${PAIRDOCK_DOCKER_SESSION_LABEL}=${sessionId}`,
+      ]
+    : [];
 }
 
 function buildContainerHardeningArgs(): string[] {

@@ -46,6 +46,7 @@ test('V1: DockerSandboxAdapter runs preview inside docker with explicit host DB 
   });
 
   const sandboxRef = await adapter.start({
+    runtimeOwnerId: 'developer-mac',
     sessionId: '88888888-8888-4888-8888-888888888888',
     projectKey: 'pairdock',
     repositoryPath: worktreePath,
@@ -79,7 +80,14 @@ test('V1: DockerSandboxAdapter runs preview inside docker with explicit host DB 
   assert.ok(startArgs.includes('--tmpfs'));
   assert.ok(startArgs.includes('/tmp:rw,nosuid,nodev'));
   assert.ok(startArgs.includes('HOME=/tmp'));
+  assert.ok(startArgs.includes('com.pairdock.owner=developer-mac'));
+  assert.ok(startArgs.includes('com.pairdock.session=88888888-8888-4888-8888-888888888888'));
   assert.ok(startArgs.includes('127.0.0.1:4000:4000'));
+  assert.ok(
+    startArgs.includes(
+      `/workspace/node_modules:rw,nosuid,nodev,uid=${process.getuid?.() ?? 1000},gid=${process.getgid?.() ?? 1000},mode=0700,size=2g`,
+    ),
+  );
   assert.ok(startArgs.includes('host.docker.internal:host-gateway'));
   assert.ok(startArgs.includes('DATABASE_URL=postgresql://postgres:pairdockdev@host.docker.internal:55432/pairdock'));
   assert.deepEqual(startArgs.slice(-4), [
@@ -175,6 +183,37 @@ test('V1: DockerSandboxAdapter never accepts a stale healthcheck after its conta
   assert.match(result.message ?? '', /exited with code 125/i);
 });
 
+test('DockerSandboxAdapter reports preview spawn errors without crashing the agent', async () => {
+  const worktreePath = await createTempWorkspace();
+  const process = createRunningProcess();
+  const adapter = new DockerSandboxAdapter({
+    spawn() {
+      return process as never;
+    },
+  });
+  const sandboxRef = await adapter.start({
+    sessionId: 'abababab-abab-4bab-8bab-abababababab',
+    projectKey: 'pairdock',
+    repositoryPath: worktreePath,
+    worktreePath,
+    branchName: 'pairdock/session-abab',
+    modelId: 'agent/gpt-5',
+    previewConfig: {
+      runtime: 'docker',
+      sandbox: {
+        startCommand: 'bun dev --port 4000',
+        healthcheckUrl: 'http://127.0.0.1:4000',
+      },
+    },
+  });
+
+  process.emit('error', new Error('docker unavailable'));
+  const result = await adapter.check(sandboxRef);
+
+  assert.equal(result.ready, false);
+  assert.match(result.message ?? '', /docker unavailable/);
+});
+
 test('DockerSandboxAdapter reports startup logs while a preview is still unavailable', async () => {
   const worktreePath = await createTempWorkspace();
   const process = createRunningProcess();
@@ -242,81 +281,6 @@ test('DockerSandboxAdapter stops a restored container without its original child
   ]);
 });
 
-test('DockerSandboxAdapter executes validation commands in an ephemeral networkless container', async () => {
-  const spawnCalls: Array<{ command: string; args: string[]; shell?: boolean }> = [];
-  const adapter = new DockerSandboxAdapter({
-    spawn(command, args, options) {
-      spawnCalls.push({ command, args, shell: options.shell });
-      const process = createRunningProcess();
-      queueMicrotask(() => {
-        process.stdout.emit('data', 'checks stayed in the sandbox');
-        process.exitCode = 0;
-        process.emit('close', 0, null);
-      });
-      return process as never;
-    },
-  });
-
-  const result = await adapter.runCommand(
-    {
-      id: 'sandbox-for-checks',
-      sessionId: 'acacacac-acac-4cac-8cac-acacacacacac',
-      healthcheckUrl: 'http://127.0.0.1:4100',
-      previewConfig: {
-        sandbox: {
-          image: 'oven/bun:1',
-          workdir: '/workspace',
-          startCommand: 'bun run dev',
-          healthcheckUrl: 'http://127.0.0.1:4100',
-        },
-      },
-      metadata: {
-        type: 'docker',
-        containerName: 'pairdock-acacacacacac4cac8cacacac',
-      },
-    },
-    'bun test',
-    '/tmp/pairdock-check-worktree',
-  );
-
-  assert.deepEqual(spawnCalls, [
-    {
-      command: 'docker',
-      args: [
-        'run',
-        '--rm',
-        '--init',
-        '--read-only',
-        '--cap-drop',
-        'ALL',
-        '--security-opt',
-        'no-new-privileges',
-        '--pids-limit',
-        '512',
-        '--user',
-        `${process.getuid?.() ?? 1000}:${process.getgid?.() ?? 1000}`,
-        '--tmpfs',
-        '/tmp:rw,nosuid,nodev',
-        '--network',
-        'none',
-        '--workdir',
-        '/workspace',
-        '--volume',
-        '/tmp/pairdock-check-worktree:/workspace',
-        '--env',
-        'HOME=/tmp',
-        'oven/bun:1',
-        'sh',
-        '-lc',
-        'bun test',
-      ],
-      shell: false,
-    },
-  ]);
-  assert.equal(result.exitCode, 0);
-  assert.match(result.logs, /stayed in the sandbox/);
-});
-
 test('Task 8: CloudflarePreviewTunnelAdapter uses Docker cloudflared for the local URL', async () => {
   const worktreePath = await createTempWorkspace();
   const spawnCalls: Array<{ command: string; args: string[]; shell?: boolean }> = [];
@@ -344,6 +308,7 @@ test('Task 8: CloudflarePreviewTunnelAdapter uses Docker cloudflared for the loc
   });
 
   const tunnelRef = await adapter.open({
+    runtimeOwnerId: 'developer-mac',
     sessionId: 'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb',
     projectKey: 'pairdock',
     localUrl: 'http://127.0.0.1:3100',
@@ -359,6 +324,10 @@ test('Task 8: CloudflarePreviewTunnelAdapter uses Docker cloudflared for the loc
         '--rm',
         '--name',
         'pairdock-tunnel-bbbbbbbbbbbb4bbb8bbbbbbb',
+        '--label',
+        'com.pairdock.owner=developer-mac',
+        '--label',
+        'com.pairdock.session=bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb',
         '--add-host',
         'host.docker.internal:host-gateway',
         'cloudflare/cloudflared@sha256:4f6655284ab3d252b7f28fedb19fe6c8fc82ee5b1295c20ac74d475e5398a52d',

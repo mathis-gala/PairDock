@@ -1,6 +1,7 @@
 import type { ProjectPreviewConfig } from '../docker/sandbox.port.js';
 
 export interface PreviewTunnelOpenInput {
+  runtimeOwnerId?: string;
   sessionId: string;
   projectKey: string;
   localUrl: string;

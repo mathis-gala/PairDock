@@ -4,11 +4,13 @@
 
 This review covers the PairDock API, browser app, local agent, Docker sandboxes, release workflow, deployment Compose stack, authentication boundaries, WebSocket protocol, dependencies, and secret handling. Testing used only the local repository and disposable local containers/databases; no public or production target was scanned.
 
+Architecture update, 2026-07-26: project checks and the default preview runtime now execute from host worktrees to match local development. Their environments use an explicit allowlist and omit agent/provider tokens, but this is not an OS sandbox: configured repositories must be trusted because their scripts retain the developer user's filesystem permissions. Docker remains an explicit preview runtime, and Cloudflare quick tunnels still use Docker.
+
 ## Resolved findings
 
 | Severity | Finding | Resolution |
 | --- | --- | --- |
-| Critical | Project-defined checks executed on the developer host with a shell and inherited environment. | Checks now run in fresh, networkless, read-only-capable Docker sandboxes with bounded output and a hard timeout. |
+| Critical | Project-defined checks executed on the developer host with a shell and inherited environment. | The inherited-secret exposure remains fixed through an environment allowlist, bounded output, and timeouts. Docker isolation was intentionally superseded on 2026-07-26 by a trusted-local-repository model; host filesystem access is now an explicit residual risk. |
 | Critical | The Codex child process inherited unrelated workstation secrets, while legacy `workspace-write` still allowed broad read access outside the worktree. | The harness now builds an explicit environment allowlist and uses a restricted Codex permission profile: only minimal platform paths and the worktree are readable, common credential files are denied, network access is disabled, and API/cloud/database credentials are never forwarded. |
 | High | Docker/tunnel command construction could interpret project-controlled values as shell syntax or Docker options. | Host commands use argument arrays with `shell: false`; container images, URLs, ports, and commands are validated before execution. |
 | High | A single server-wide agent token allowed identity spoofing and cross-project session handling. | Unique per-agent credentials now bind an agent id to an exact project-key allowlist; registration and every session/readiness event are authorization-checked. |
@@ -33,6 +35,7 @@ This review covers the PairDock API, browser app, local agent, Docker sandboxes,
 - Production must provide `AGENT_AUTH_CREDENTIALS_JSON`; the legacy shared `AGENT_AUTH_TOKEN` is intentionally unsupported.
 - Local agents require Codex CLI 0.138.0 or newer so restricted filesystem permission profiles can be enforced; readiness fails closed on older or unparseable versions.
 - Each local agent remains a trusted execution component. Docker-daemon membership is effectively host-level privilege; isolate the agent OS account and never expose the Docker socket.
+- Every configured project is trusted code. Host setup, preview, build, test, and lint commands can read files available to the developer OS account even though sensitive environment variables are filtered.
 - `host-services` preview networking is an explicit usability/security trade-off. Prefer the default networkless mode. If required, expose only disposable test services with least-privilege credentials.
 - Browser bearer tokens remain JavaScript-accessible in the MVP. The strict CSP, no third-party scripts, short redirect fragment lifetime, and input/output controls reduce exposure. Moving authentication to server-managed `HttpOnly` cookies is recommended before adding third-party browser scripts or relaxing CSP.
 - Cloudflare/Caddy policy, host firewalling, SSH hardening, backups, alerting, rate limiting, and TLS must be configured and monitored on the deployment host. They cannot be proven from this repository alone.

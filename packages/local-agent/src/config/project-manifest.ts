@@ -27,6 +27,7 @@ const pairdockManifestSchema = z.object({
   repoFullName: z.string().min(1).optional(),
   defaultBranch: z.string().min(1).optional(),
   models: z.array(z.string().min(1)).optional(),
+  setup: z.string().min(1).optional(),
   sandbox: z
     .object({
       image: containerImageSchema.optional(),
@@ -37,6 +38,7 @@ const pairdockManifestSchema = z.object({
     })
     .optional(),
   preview: z.object({
+    runtime: z.enum(['host', 'docker']).optional(),
     start: z.string().min(1),
     healthcheck: healthcheckUrlTemplateSchema,
     healthcheckTimeoutMs: z
@@ -175,6 +177,8 @@ async function loadProjectManifest(projectKey: string, projectPath: string): Pro
       ...(manifest.models ? { models: manifest.models } : {}),
     },
     previewConfig: {
+      runtime: manifest.preview.runtime ?? (manifest.sandbox ? 'docker' : 'host'),
+      ...(manifest.setup ? { setupCommand: manifest.setup } : {}),
       sandbox: {
         startCommand: manifest.preview.start,
         healthcheckUrl: manifest.preview.healthcheck,

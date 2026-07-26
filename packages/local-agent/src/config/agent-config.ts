@@ -68,6 +68,8 @@ const tunnelConfigSchema = z.object({
 });
 
 const previewConfigSchema = z.object({
+  runtime: z.enum(['host', 'docker']).optional(),
+  setupCommand: z.string().min(1).optional(),
   sandbox: sandboxConfigSchema.optional(),
   tunnel: tunnelConfigSchema.optional(),
   healthcheckTimeoutMs: z.number().int().positive().optional(),
@@ -327,6 +329,22 @@ function normalizeChecksConfigs(
 
 function normalizePreviewConfig(previewConfig: ProjectPreviewConfig, projectKey: string): ProjectPreviewConfig {
   const normalizedPreviewConfig: ProjectPreviewConfig = {};
+
+  if (previewConfig.runtime !== undefined) {
+    normalizedPreviewConfig.runtime = previewConfig.runtime;
+  } else if (
+    previewConfig.sandbox?.image ||
+    previewConfig.sandbox?.workdir ||
+    previewConfig.sandbox?.network ||
+    previewConfig.sandbox?.ports
+  ) {
+    normalizedPreviewConfig.runtime = 'docker';
+  }
+
+  const setupCommand = normalizeOptionalConfigString(previewConfig.setupCommand, `setupCommand for ${projectKey}`);
+  if (setupCommand !== undefined) {
+    normalizedPreviewConfig.setupCommand = setupCommand;
+  }
 
   const sandbox = normalizeSandboxConfig(previewConfig, projectKey);
   if (sandbox) {

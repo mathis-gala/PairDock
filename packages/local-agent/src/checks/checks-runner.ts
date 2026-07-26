@@ -80,7 +80,7 @@ export class ChecksRunner {
 
   private async runCommandAttempt(command: string, sessionId: string): Promise<CheckResult> {
     if (!this.commandExecutor) {
-      throw new Error('Validation command executor is not configured. Refusing to run checks on the host.');
+      throw new Error('Host validation command executor is not configured.');
     }
 
     const result = await this.commandExecutor({ command, sessionId });

@@ -175,7 +175,14 @@ export class ReadinessRunner {
   }
 
   private async checkDocker(projectKey: string): Promise<ToolReadinessCheck> {
-    void projectKey;
+    const previewConfig = this.config.previewConfigs?.[projectKey];
+    const requiresDocker =
+      previewConfig?.runtime === 'docker' ||
+      (previewConfig?.tunnel?.provider === 'cloudflare' && !previewConfig.tunnel.publicUrl);
+    if (!requiresDocker) {
+      return skipped('docker', false, 'Docker is not required by this project preview.');
+    }
+
     const result = await this.runDeveloperCommand('docker', ['info']);
 
     if (result.ok) {
@@ -251,6 +258,10 @@ function warning(
   remediation: string,
 ): ToolReadinessCheck {
   return { key, status: 'warning', required, message, remediation };
+}
+
+function skipped(key: ToolReadinessCheck['key'], required: boolean, message: string): ToolReadinessCheck {
+  return { key, status: 'skipped', required, message, remediation: null };
 }
 
 function failed(

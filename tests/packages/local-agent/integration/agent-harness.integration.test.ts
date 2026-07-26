@@ -89,11 +89,9 @@ test('default Codex harness starts and resumes one Codex thread per PairDock ses
     worktreePath: '/tmp/worktree',
   };
   const expectedPrompt = [
-    'PairDock runtime: the project preview and configured validation commands run inside Docker.',
-    'Do not install dependencies or run build, test, or lint commands on the host worktree. Host and container operating systems may differ.',
     'Read the project manifest before editing. Use its preview start command to identify the source files that power the live preview. Treat prototypes, design references, generated files, and documentation as non-runtime references unless the user explicitly asks to change them.',
     'Your progress updates are visible to a product manager in real time. Keep them concise and user-facing. Explain what you are locating, changing, and verifying without exposing secrets or unrelated environment details.',
-    'Inspect and edit the worktree normally. PairDock runs the configured build, test, and lint checks inside Docker after this turn and automatically returns failures for repair.',
+    'PairDock independently reruns the configured checks after this turn and automatically returns failures for repair.',
     'User request:\nContinue le correctif.',
   ].join('\n\n');
 
@@ -149,7 +147,7 @@ test('default Codex harness starts and resumes one Codex thread per PairDock ses
   );
 });
 
-test('default Codex harness delegates dependency installation and validation to the Docker sandbox', () => {
+test('default Codex harness lets the agent validate normally while PairDock independently reruns checks', () => {
   const args = buildCommandArgs(
     {},
     {
@@ -163,8 +161,9 @@ test('default Codex harness delegates dependency installation and validation to 
   );
   const prompt = args.at(-1) ?? '';
 
-  assert.match(prompt, /Do not install dependencies/i);
-  assert.match(prompt, /PairDock runs the configured build, test, and lint checks inside Docker/i);
+  assert.doesNotMatch(prompt, /Do not install dependencies/i);
+  assert.doesNotMatch(prompt, /inside Docker/i);
+  assert.match(prompt, /independently reruns the configured checks/i);
   assert.match(prompt, /Implement the requested change\./);
 });
 

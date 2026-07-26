@@ -292,7 +292,7 @@ test('Task 11: successful checks move the session into AWAITING_PM_VALIDATION', 
   }
 });
 
-test('automatic Docker validation repair can resume the same session before publishing the final result', async () => {
+test('automatic validation repair can resume the same session before publishing the final result', async () => {
   const developerLogin = await authenticateDeveloper();
   const project = await createOwnedProject(developerLogin.body.user.id);
   const session = await createSession(project.id, developerLogin.body.accessToken);
@@ -312,7 +312,7 @@ test('automatic Docker validation repair can resume the same session before publ
       buildSessionEvent(session.id, 'agent.done', { exitCode: 0, changesDetected: true }),
       buildSessionEvent(session.id, 'session.progress', {
         status: 'AGENT_RUNNING',
-        message: 'Repairing failed Docker validation (1/2).',
+        message: 'Repairing failed validation (1/2).',
       }),
       buildSessionEvent(session.id, 'agent.done', { exitCode: 0, changesDetected: true }),
       buildSessionEvent(session.id, 'checks.result', {

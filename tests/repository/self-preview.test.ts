@@ -9,13 +9,16 @@ test('PairDock self-preview runs its API and web app inside one sandbox without 
     name?: unknown;
     repoFullName?: unknown;
     sandbox?: { env?: Record<string, unknown>; image?: unknown; network?: unknown };
-    preview?: { start?: unknown };
+    setup?: unknown;
+    preview?: { runtime?: unknown; start?: unknown };
     version?: unknown;
   };
 
   assert.equal(manifest.version, 1);
   assert.equal(manifest.name, 'PairDock');
   assert.equal(manifest.repoFullName, undefined);
+  assert.equal(manifest.setup, 'bun install --frozen-lockfile && bun run prisma:generate');
+  assert.equal(manifest.preview?.runtime, 'docker');
   assert.equal(manifest.sandbox?.image, 'pairdock/self-preview-sandbox:node22-bun1.3.14');
   assert.equal(manifest.sandbox?.network, 'host-services');
   assert.deepEqual(manifest.sandbox?.env, {
