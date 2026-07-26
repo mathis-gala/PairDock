@@ -277,6 +277,7 @@ export function buildCommandArgs(
   }
 
   const codexSecurityArgs = buildCodexSecurityArgs(input, harnessEnvironment);
+  const imageArgs = input.imagePaths?.flatMap((imagePath) => ['--image', imagePath]) ?? [];
   const prompt = buildCodexPrompt(input.prompt);
 
   if (codexThreadId) {
@@ -284,6 +285,7 @@ export function buildCommandArgs(
       'exec',
       'resume',
       ...codexSecurityArgs,
+      ...imageArgs,
       '--json',
       '--model',
       input.modelId,
@@ -297,6 +299,7 @@ export function buildCommandArgs(
   return [
     'exec',
     ...codexSecurityArgs,
+    ...imageArgs,
     '--json',
     '--model',
     input.modelId,
@@ -480,7 +483,7 @@ function resolveLinkedWorktreeGitPermissions(worktreePath: string): FilesystemPe
   }
 }
 
-function resolveHarnessTempDirectory(sessionId: string): string {
+export function resolveHarnessTempDirectory(sessionId: string): string {
   return join('/tmp', 'pairdock', sessionId);
 }
 

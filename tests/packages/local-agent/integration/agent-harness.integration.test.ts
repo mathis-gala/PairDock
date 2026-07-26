@@ -147,6 +147,34 @@ test('default Codex harness starts and resumes one Codex thread per PairDock ses
   );
 });
 
+test('default Codex harness attaches every downloaded screenshot to initial and resumed prompts', () => {
+  const input = {
+    sessionId: '19191919-1919-4919-8919-191919191919',
+    projectKey: 'pairdock',
+    prompt: 'Compare ces deux captures.',
+    modelId: 'gpt-5.6-sol',
+    reasoningEffort: 'high',
+    worktreePath: '/tmp/worktree',
+    imagePaths: ['/tmp/pairdock/first.png', '/tmp/pairdock/second.webp'],
+  };
+
+  const initialArgs = buildCommandArgs({}, input);
+  const resumedArgs = buildCommandArgs({}, input, 'codex-thread-id');
+
+  assert.deepEqual(initialArgs.slice(initialArgs.indexOf('--image'), initialArgs.indexOf('--json')), [
+    '--image',
+    '/tmp/pairdock/first.png',
+    '--image',
+    '/tmp/pairdock/second.webp',
+  ]);
+  assert.deepEqual(resumedArgs.slice(resumedArgs.indexOf('--image'), resumedArgs.indexOf('--json')), [
+    '--image',
+    '/tmp/pairdock/first.png',
+    '--image',
+    '/tmp/pairdock/second.webp',
+  ]);
+});
+
 test('default Codex harness lets the agent validate normally while PairDock independently reruns checks', () => {
   const args = buildCommandArgs(
     {},

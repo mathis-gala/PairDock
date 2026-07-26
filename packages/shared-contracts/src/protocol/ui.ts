@@ -148,6 +148,13 @@ export const createDraftReviewRequestInputSchema = z
   })
   .strict();
 
+export const sessionAttachmentViewSchema = z.object({
+  id: uuidSchema,
+  fileName: z.string().min(1),
+  mimeType: z.enum(['image/png', 'image/jpeg', 'image/webp']),
+  byteSize: z.number().int().positive(),
+});
+
 export const updateProjectExecutionDefaultsInputSchema = z
   .object({
     modelId: z.string().trim().min(1),
@@ -169,4 +176,5 @@ export type DeveloperProjectSetup = z.infer<typeof developerProjectSetupSchema>;
 export type CreateDeveloperProjectInput = z.infer<typeof createDeveloperProjectInputSchema>;
 export type ShareDeveloperProjectInput = z.infer<typeof shareDeveloperProjectInputSchema>;
 export type CreateDraftReviewRequestInput = z.infer<typeof createDraftReviewRequestInputSchema>;
+export type SessionAttachmentView = z.infer<typeof sessionAttachmentViewSchema>;
 export type UpdateProjectExecutionDefaultsInput = z.infer<typeof updateProjectExecutionDefaultsInputSchema>;

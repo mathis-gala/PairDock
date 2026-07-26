@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 import { AgentEventsRepositoryAdapter } from './adapters/agent-events.repository.js';
 import { AgentRegistrationsRepositoryAdapter } from './adapters/agent-registrations.repository.js';
+import { AttachmentsRepositoryAdapter } from './adapters/attachments.repository.js';
 import { ExternalIdentitiesRepositoryAdapter } from './adapters/external-identities.repository.js';
 import { MessagesRepositoryAdapter } from './adapters/messages.repository.js';
 import { ProjectMembersRepositoryAdapter } from './adapters/project-members.repository.js';
@@ -17,6 +18,7 @@ import { DatabaseClient } from './client.js';
 import {
   AGENT_EVENTS_REPOSITORY,
   AGENT_REGISTRATIONS_REPOSITORY,
+  ATTACHMENTS_REPOSITORY,
   EXTERNAL_IDENTITIES_REPOSITORY,
   MESSAGES_REPOSITORY,
   PERSISTENCE_UNIT_OF_WORK,
@@ -43,6 +45,7 @@ import {
     SessionsRepositoryAdapter,
     SessionMembersRepositoryAdapter,
     MessagesRepositoryAdapter,
+    AttachmentsRepositoryAdapter,
     AgentEventsRepositoryAdapter,
     AgentRegistrationsRepositoryAdapter,
     ValidationRunsRepositoryAdapter,
@@ -57,6 +60,7 @@ import {
     { provide: SESSIONS_REPOSITORY, useExisting: SessionsRepositoryAdapter },
     { provide: SESSION_MEMBERS_REPOSITORY, useExisting: SessionMembersRepositoryAdapter },
     { provide: MESSAGES_REPOSITORY, useExisting: MessagesRepositoryAdapter },
+    { provide: ATTACHMENTS_REPOSITORY, useExisting: AttachmentsRepositoryAdapter },
     { provide: AGENT_EVENTS_REPOSITORY, useExisting: AgentEventsRepositoryAdapter },
     { provide: AGENT_REGISTRATIONS_REPOSITORY, useExisting: AgentRegistrationsRepositoryAdapter },
     { provide: VALIDATION_RUNS_REPOSITORY, useExisting: ValidationRunsRepositoryAdapter },
@@ -74,6 +78,7 @@ import {
     SESSIONS_REPOSITORY,
     SESSION_MEMBERS_REPOSITORY,
     MESSAGES_REPOSITORY,
+    ATTACHMENTS_REPOSITORY,
     AGENT_EVENTS_REPOSITORY,
     AGENT_REGISTRATIONS_REPOSITORY,
     VALIDATION_RUNS_REPOSITORY,

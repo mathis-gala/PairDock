@@ -41,6 +41,15 @@ test('PM history and pull request hashes resolve to implemented routes', () => {
   });
 });
 
+test('developer session hashes resolve to the read-only session route', () => {
+  withWindow({ location: { hash: '#/developer/sessions/123e4567-e89b-12d3-a456-426614174000' } }, () => {
+    assert.deepEqual(getAppRouteSnapshot(), {
+      kind: 'developer-session',
+      sessionId: '123e4567-e89b-12d3-a456-426614174000',
+    });
+  });
+});
+
 test('useAuthSession snapshot returns a stable object while local storage is unchanged', () => {
   const serializedSession = JSON.stringify({
     accessToken: 'local-token',

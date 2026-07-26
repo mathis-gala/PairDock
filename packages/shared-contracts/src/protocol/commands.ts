@@ -31,6 +31,21 @@ export const agentPromptCommandEnvelopeSchema = sessionEnvelope(
   z.object({
     sessionId: uuidSchema,
     prompt: z.string().min(1).max(MAX_AGENT_PROMPT_LENGTH),
+    attachments: z
+      .array(
+        z.object({
+          id: uuidSchema,
+          fileName: z.string().min(1).max(255),
+          mimeType: z.enum(['image/png', 'image/jpeg', 'image/webp']),
+          byteSize: z
+            .number()
+            .int()
+            .positive()
+            .max(5 * 1024 * 1024),
+        }),
+      )
+      .max(4)
+      .optional(),
     modelId: z.string().min(1).max(128),
     reasoningEffort: z.string().min(1).max(64).optional(),
   }),

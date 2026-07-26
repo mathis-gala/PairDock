@@ -1,5 +1,7 @@
 import type {
   AgentEventRecord,
+  AttachmentPurpose,
+  AttachmentVisibility,
   ExternalIdentity,
   ExternalIdentityProvider,
   PairDockUser,
@@ -9,6 +11,7 @@ import type {
   ProjectReadinessSnapshot,
   ReviewRequestRecord,
   Session,
+  SessionAttachment,
   SessionMember,
   SessionMessage,
   SourceControlConnection,
@@ -16,6 +19,7 @@ import type {
 } from '@pairdock/domain';
 import type {
   AgentEvent,
+  Attachment as PrismaAttachment,
   ExternalIdentity as PrismaExternalIdentity,
   Message as PrismaMessage,
   Project as PrismaProject,
@@ -138,6 +142,22 @@ export function mapMessage(record: PrismaMessage): SessionMessage {
   };
 }
 
+export function mapAttachment(record: PrismaAttachment): SessionAttachment {
+  return {
+    id: record.id,
+    sessionId: record.sessionId,
+    messageId: record.messageId,
+    createdByUserId: record.createdByUserId,
+    purpose: parseAttachmentPurpose(record.purpose),
+    visibility: parseAttachmentVisibility(record.visibility),
+    objectKey: record.objectKey,
+    originalName: record.originalName,
+    mimeType: record.mimeType,
+    byteSize: record.byteSize,
+    createdAt: record.createdAt,
+  };
+}
+
 export function mapAgentEvent(record: AgentEvent): AgentEventRecord {
   return {
     id: record.id,
@@ -180,6 +200,22 @@ function parseExternalIdentityProvider(value: string): ExternalIdentityProvider 
   }
 
   throw new Error(`Unsupported external identity provider "${value}" read from the database.`);
+}
+
+function parseAttachmentPurpose(value: string): AttachmentPurpose {
+  if (value === 'prompt' || value === 'review_request') {
+    return value;
+  }
+
+  throw new Error(`Unsupported attachment purpose: ${value}`);
+}
+
+function parseAttachmentVisibility(value: string): AttachmentVisibility {
+  if (value === 'private' || value === 'public') {
+    return value;
+  }
+
+  throw new Error(`Unsupported attachment visibility: ${value}`);
 }
 
 function isExternalIdentityProvider(value: string): value is ExternalIdentityProvider {

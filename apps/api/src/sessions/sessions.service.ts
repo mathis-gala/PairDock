@@ -16,6 +16,7 @@ import { AgentProjectBindingService } from '../agent-gateway/agent-project-bindi
 import { DiffService } from '../diff/diff.service.js';
 import {
   AGENT_EVENTS_REPOSITORY,
+  ATTACHMENTS_REPOSITORY,
   MESSAGES_REPOSITORY,
   PERSISTENCE_UNIT_OF_WORK,
   PROJECT_MEMBERS_REPOSITORY,
@@ -26,6 +27,7 @@ import {
   USERS_REPOSITORY,
 } from '../persistence/persistence.tokens.js';
 import type { AgentEventsRepository } from '../persistence/ports/agent-events.repository.js';
+import type { AttachmentsRepository } from '../persistence/ports/attachments.repository.js';
 import type { MessagesRepository } from '../persistence/ports/messages.repository.js';
 import type { PersistenceUnitOfWork } from '../persistence/ports/persistence-unit-of-work.js';
 import type { ProjectMembersRepository } from '../persistence/ports/project-members.repository.js';
@@ -60,6 +62,8 @@ export class SessionsService {
     private readonly sessionsRepository: SessionsRepository,
     @Inject(MESSAGES_REPOSITORY)
     private readonly messagesRepository: MessagesRepository,
+    @Inject(ATTACHMENTS_REPOSITORY)
+    private readonly attachmentsRepository: AttachmentsRepository,
     @Inject(AGENT_EVENTS_REPOSITORY)
     private readonly agentEventsRepository: AgentEventsRepository,
     @Inject(SESSION_MEMBERS_REPOSITORY)
@@ -104,10 +108,19 @@ export class SessionsService {
 
   async listMessages(sessionId: string) {
     const messages = await this.messagesRepository.listBySessionId(sessionId);
+    const attachments = await this.attachmentsRepository.listByMessageIds(messages.map((message) => message.id));
 
     return messages.map((message) => ({
       ...message,
       createdAt: message.createdAt.toISOString(),
+      attachments: attachments
+        .filter((attachment) => attachment.messageId === message.id)
+        .map((attachment) => ({
+          id: attachment.id,
+          fileName: attachment.originalName,
+          mimeType: attachment.mimeType,
+          byteSize: attachment.byteSize,
+        })),
     }));
   }
 

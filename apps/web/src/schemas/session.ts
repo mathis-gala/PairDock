@@ -1,3 +1,4 @@
+import { sessionAttachmentViewSchema } from '@pairdock/shared-contracts';
 import { z } from 'zod';
 
 export const validationSummarySchema = z
@@ -63,6 +64,7 @@ export const sessionMessageSchema = z.object({
   userId: z.string().uuid().nullable(),
   role: z.string(),
   content: z.string(),
+  attachments: sessionAttachmentViewSchema.array().default([]),
   createdAt: z.string(),
 });
 

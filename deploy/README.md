@@ -23,6 +23,8 @@ The public configuration is environment-driven:
 - `PAIRDOCK_WEB_DOMAIN` and `PAIRDOCK_API_DOMAIN`: hostnames used by Caddy, without scheme or path.
 - `PAIRDOCK_WEB_URL` and `PAIRDOCK_API_URL`: complete HTTPS origins used by API CORS and the browser.
 - `GITHUB_REDIRECT_URI` and `SLACK_REDIRECT_URI`: exact OAuth callback URLs configured with the providers.
+- `R2_PRIVATE_BUCKET`: private Cloudflare R2 bucket used for authenticated chat screenshots.
+- `R2_PUBLIC_BUCKET` and `R2_PUBLIC_BASE_URL`: public R2 bucket and its custom HTTPS domain used for durable GitHub PR screenshots.
 - `IMAGE_TAG`: optional release tag; defaults to `latest` when omitted.
 
 `PAIRDOCK_API_URL` is injected into `/config.js` when the web container starts. The same published web image can therefore be deployed under any domain without rebuilding it.
@@ -40,6 +42,8 @@ AGENT_AUTH_CREDENTIALS_JSON='{"agent-local-1":{"token":"<first-generated-token>"
 ```
 
 Every project key published by a workstation must be present in that agent's `projectKeys`, and a key may appear under only one credential. Keep credentials stable across normal updates. Give each workstation only its own token; never share the full JSON map with agent operators. In particular, changing `POSTGRES_PASSWORD` does not update the password already stored by PostgreSQL. `DEV_PM_AUTH_ENABLED` is hard-disabled by Compose.
+
+Create separate private and public R2 buckets. Generate an R2 API token with object read/write/delete access to both, expose only the public bucket through the `R2_PUBLIC_BASE_URL` custom domain, and fill all six `R2_*` variables from `pairdock.env.example`. Production API startup fails when this durable storage configuration is incomplete.
 
 ## Security before exposing PairDock
 

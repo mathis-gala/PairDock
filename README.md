@@ -116,13 +116,43 @@ bun run dev:api
 bun run dev:web
 ```
 
-### 4. Cloudflare Tunnel
+### 4. Screenshot storage
+
+PairDock accepts up to four PNG, JPEG, or WebP screenshots per chat message or draft PR, with a 5 MB limit per file. PostgreSQL stores metadata only.
+
+Local development needs no cloud configuration. Files default to `~/.pairdock/attachments`. Override this path with `PAIRDOCK_ATTACHMENT_STORAGE_PATH`; set `PAIRDOCK_PUBLIC_API_URL` when the API's externally reachable base URL is not `http://localhost:3000`. Production fails to start without complete R2 configuration so durable PR images cannot silently fall back to an ephemeral container filesystem.
+
+For deployment, create two Cloudflare R2 buckets:
+
+- a private bucket for chat screenshots, downloaded only through authenticated PairDock API routes;
+- a public bucket for durable screenshots embedded in GitHub PR descriptions.
+
+Expose only the public bucket through a custom HTTPS domain, then configure the API:
+
+```env
+R2_ACCOUNT_ID=<cloudflare-account-id>
+R2_ACCESS_KEY_ID=<r2-api-token-access-key>
+R2_SECRET_ACCESS_KEY=<r2-api-token-secret>
+R2_PRIVATE_BUCKET=pairdock-private
+R2_PUBLIC_BUCKET=pairdock-public
+R2_PUBLIC_BASE_URL=https://assets.example.com
+```
+
+The R2 token needs object read/write/delete access to both buckets. Keep both credentials on the API process only; never forward them to the local agent or preview containers. Configuration is fail-closed: if any R2 variable is present, all six are required and the public base URL must use HTTPS.
+
+Apply the attachment metadata migration before starting the updated API:
+
+```bash
+bun run db:migrate:dev
+```
+
+### 5. Cloudflare Tunnel
 
 PairDock previews are meant to be public HTTPS URLs for PM browsers. The local agent starts the project preview, waits for the local healthcheck, then opens a Cloudflare Tunnel.
 
 Cloudflare runs through Docker by default. You do not need to install `cloudflared` locally. Add `preview.tunnel: cloudflare` to `pairdock.yml`; the local agent starts `cloudflare/cloudflared` in Docker and publishes the generated HTTPS URL.
 
-### 5. Add `pairdock.yml`
+### 6. Add `pairdock.yml`
 
 Add `pairdock.yml` at each repository root:
 
@@ -180,7 +210,7 @@ preview:
     publicUrl: "https://pairdock-preview.example.com"
 ```
 
-### 6. Configure the local agent
+### 7. Configure the local agent
 
 Declare the local project path. The MVP Codex adapter discovers the visible models and their supported reasoning levels from the authenticated local Codex CLI cache:
 
@@ -258,7 +288,7 @@ Explicit `--model <id>=<label>=<provider>` options remain supported for non-Code
 
 Agent console logs prefix execution failures with the PairDock session ID. Agent outputs and final validation results are persisted as session events. Codex works normally inside the host worktree and may install dependencies or run project checks. PairDock independently runs the configured build, test, and lint commands on the host after each turn. When one fails, PairDock returns bounded, redacted diagnostics to the same Codex thread and reruns validation after at most two automatic repair attempts. Explicit backend rejection stops the workflow before further local work. PM users receive the final concise failed-check summary and recovery instruction in the conversation; final redacted check logs remain available in persisted events for diagnosis. Docker preview and tunnel containers are labeled by agent and session. On startup, the agent removes all of its own labeled containers, then rebuilds previews for valid persisted worktrees.
 
-### 7. Create a PairDock project
+### 8. Create a PairDock project
 
 In the developer UI:
 

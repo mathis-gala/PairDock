@@ -21,6 +21,7 @@ import { ConnectedAgentsRegistry } from './connected-agents.registry.js';
   ],
   exports: [
     AgentGateway,
+    AgentAuthenticationService,
     AgentCommandRouterService,
     AgentExecutionCapabilitiesService,
     AgentProjectBindingService,

@@ -38,6 +38,24 @@ test('server compose defaults to latest, runs migrations, and keeps services beh
   assert.doesNotMatch(compose, /^\s+ports:/m, 'PairDock services must not bypass the existing Caddy proxy');
 });
 
+test('production API receives complete durable R2 attachment configuration', () => {
+  const compose = readFileSync(path.join(repositoryRoot, 'deploy', 'docker-compose.yml'), 'utf8');
+  const environmentExample = readFileSync(path.join(repositoryRoot, 'deploy', 'pairdock.env.example'), 'utf8');
+  const requiredVariables = [
+    'R2_ACCOUNT_ID',
+    'R2_ACCESS_KEY_ID',
+    'R2_SECRET_ACCESS_KEY',
+    'R2_PRIVATE_BUCKET',
+    'R2_PUBLIC_BUCKET',
+    'R2_PUBLIC_BASE_URL',
+  ];
+
+  for (const variable of requiredVariables) {
+    assert.ok(compose.includes(`${variable}: \${${variable}:?`));
+    assert.match(environmentExample, new RegExp(`^${variable}=`, 'm'));
+  }
+});
+
 test('Caddy routes PairDock domains and permits authenticated sockets and preview iframes', () => {
   const caddy = readFileSync(path.join(repositoryRoot, 'deploy', 'Caddyfile.pairdock'), 'utf8');
 

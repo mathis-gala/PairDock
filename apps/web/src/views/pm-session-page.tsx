@@ -14,11 +14,12 @@ import { buildSessionConversation } from '../lib/session-conversation.js';
 
 interface PmSessionPageProps {
   accessToken: string;
+  isReadOnly?: boolean;
   onBack: () => void;
   sessionId: string;
 }
 
-export function PmSessionPage({ accessToken, onBack, sessionId }: PmSessionPageProps) {
+export function PmSessionPage({ accessToken, isReadOnly = false, onBack, sessionId }: PmSessionPageProps) {
   const [presetId, setPresetId] = useState<PreviewPresetId>('desktop');
   const [isReviewDialogOpen, setIsReviewDialogOpen] = useState(false);
   useSessionEventFeed(accessToken, sessionId);
@@ -64,7 +65,7 @@ export function PmSessionPage({ accessToken, onBack, sessionId }: PmSessionPageP
   }
 
   const session = sessionQuery.data;
-  const canCancel = session.status === 'AGENT_RUNNING';
+  const canCancel = !isReadOnly && session.status === 'AGENT_RUNNING';
   const isAgentWriting = sendPromptMutation.isPending || session.status === 'AGENT_RUNNING';
   const branchLabel = session.branchName ?? session.project.defaultBranch;
   const participantAvatars = session.participants.slice(0, 2).map((participant) => ({
@@ -72,13 +73,14 @@ export function PmSessionPage({ accessToken, onBack, sessionId }: PmSessionPageP
     userId: participant.userId,
   }));
   const isOnline = session.project.agentAvailability === 'online';
-  const canSubmitPrompt = isOnline && isPromptableSessionStatus(session.status);
+  const canSubmitPrompt = !isReadOnly && isOnline && isPromptableSessionStatus(session.status);
   const promptBlockedReason = getPromptBlockedReason(session.status, isOnline);
   const hasFailed = session.status === 'FAILED';
   const failureRecoveryMessage = session.previewUrl
     ? 'Tu peux envoyer un nouveau message pour réessayer.'
     : 'La session n’a pas pu être préparée. Ferme-la puis crée une nouvelle session après correction.';
-  const canCreateReviewRequest = session.status === 'AWAITING_PM_VALIDATION' && !session.reviewRequest?.url;
+  const canCreateReviewRequest =
+    !isReadOnly && session.status === 'AWAITING_PM_VALIDATION' && !session.reviewRequest?.url;
   const reviewRequestError =
     createReviewRequestMutation.error instanceof Error ? createReviewRequestMutation.error.message : null;
   const conversation = buildSessionConversation(messagesQuery.data ?? [], eventsQuery.data ?? []);
@@ -87,8 +89,8 @@ export function PmSessionPage({ accessToken, onBack, sessionId }: PmSessionPageP
     await cancelPromptMutation.mutateAsync();
   }
 
-  async function handleSendPrompt(content: string) {
-    await sendPromptMutation.mutateAsync(content);
+  async function handleSendPrompt(content: string, screenshots: File[]) {
+    await sendPromptMutation.mutateAsync({ content, screenshots });
   }
 
   function handleOpenReviewDialog() {
@@ -102,17 +104,17 @@ export function PmSessionPage({ accessToken, onBack, sessionId }: PmSessionPageP
     }
   }
 
-  function handleCreateReviewRequest(input: CreateDraftReviewRequestInput) {
+  async function handleCreateReviewRequest(input: CreateDraftReviewRequestInput, screenshots: File[]) {
     createReviewRequestMutation.reset();
-    createReviewRequestMutation.mutate(input, {
-      onSuccess: () => setIsReviewDialogOpen(false),
-    });
+    await createReviewRequestMutation.mutateAsync({ input, screenshots });
+    setIsReviewDialogOpen(false);
   }
 
   return (
     <div className="flex h-full flex-col overflow-hidden bg-[#0f1115]">
       <header className="flex h-14 flex-none items-center gap-4 border-b border-white/10 bg-[#16181e] px-4">
         <button
+          aria-label={isReadOnly ? 'Retour aux projets' : 'Retour au tableau de bord'}
           className="flex size-8 items-center justify-center rounded-[8px] border border-white/10 bg-[#0f1115] text-[#8b92a1] transition hover:text-[#eef0f4]"
           onClick={onBack}
           type="button"
@@ -136,6 +138,11 @@ export function PmSessionPage({ accessToken, onBack, sessionId }: PmSessionPageP
           <span className="truncate text-[#5fdf9b]">{branchLabel}</span>
         </div>
         <div className="ml-auto flex items-center gap-4">
+          {isReadOnly ? (
+            <span className="hidden rounded-full border border-[#5fdf9b]/30 bg-[#5fdf9b]/10 px-2.5 py-1 font-mono text-[11px] text-[#a9efc9] sm:inline-flex">
+              Lecture seule
+            </span>
+          ) : null}
           <div className="hidden items-center gap-2 text-[12.5px] text-[#8b92a1] sm:flex">
             <span className="flex">
               {participantAvatars.map((participant, index) => (
@@ -166,23 +173,41 @@ export function PmSessionPage({ accessToken, onBack, sessionId }: PmSessionPageP
           <div className="border-b border-white/10 px-5 py-4">
             <h1 className="font-['Space_Grotesk'] text-sm font-semibold">Discussion</h1>
             <p className="mt-1 text-xs leading-5 text-[#7d8493]">
-              Une demande = une session isolée. Tu peux échanger avec l’agent jusqu’à validation.
+              {isReadOnly
+                ? 'Conversation, captures et progression visibles pour faciliter le diagnostic.'
+                : 'Une demande = une session isolée. Tu peux échanger avec l’agent jusqu’à validation.'}
             </p>
           </div>
           <div className="min-h-0 flex-1 overflow-auto">
-            <ConversationThread isTyping={isAgentWriting} items={conversation} />
-          </div>
-          <div className="border-t border-white/10 p-4">
-            <PromptComposer
-              blockedReason={promptBlockedReason}
-              canCancel={canCancel}
-              canSubmit={canSubmitPrompt}
-              isCancelling={cancelPromptMutation.isPending}
-              isSubmitting={sendPromptMutation.isPending}
-              onCancel={handleCancelPrompt}
-              onSubmit={handleSendPrompt}
+            <ConversationThread
+              accessToken={accessToken}
+              isTyping={isAgentWriting}
+              items={conversation}
+              sessionId={sessionId}
             />
           </div>
+          {isReadOnly ? (
+            <div className="border-t border-white/10 p-4">
+              <div
+                className="rounded-[11px] border border-[#5fdf9b]/20 bg-[#5fdf9b]/8 px-3.5 py-3 text-xs leading-5 text-[#a9efc9]"
+                role="status"
+              >
+                Vue développeur en lecture seule. Reviens aux projets pour fermer ou nettoyer cette session.
+              </div>
+            </div>
+          ) : (
+            <div className="border-t border-white/10 p-4">
+              <PromptComposer
+                blockedReason={promptBlockedReason}
+                canCancel={canCancel}
+                canSubmit={canSubmitPrompt}
+                isCancelling={cancelPromptMutation.isPending}
+                isSubmitting={sendPromptMutation.isPending}
+                onCancel={handleCancelPrompt}
+                onSubmit={handleSendPrompt}
+              />
+            </div>
+          )}
         </section>
 
         <section className="hidden min-w-0 flex-1 flex-col bg-[#0f1115] lg:flex">
@@ -234,6 +259,10 @@ export function PmSessionPage({ accessToken, onBack, sessionId }: PmSessionPageP
               >
                 Voir sur GitHub
               </a>
+            ) : isReadOnly ? (
+              <span className="rounded-[9px] border border-white/10 bg-[#20232a] px-3 py-2 font-mono text-[11px] text-[#7d8493]">
+                Observation uniquement
+              </span>
             ) : (
               <Button
                 disabled={!canCreateReviewRequest || createReviewRequestMutation.isPending}
@@ -245,7 +274,7 @@ export function PmSessionPage({ accessToken, onBack, sessionId }: PmSessionPageP
           </div>
         </section>
       </div>
-      {isReviewDialogOpen ? (
+      {isReviewDialogOpen && !isReadOnly ? (
         <ReviewRequestDialog
           error={reviewRequestError}
           isSubmitting={createReviewRequestMutation.isPending}

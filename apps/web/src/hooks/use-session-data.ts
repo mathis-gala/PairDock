@@ -1,6 +1,7 @@
 import type { CreateDraftReviewRequestInput } from '@pairdock/shared-contracts';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { createApiClient } from '../api/client.js';
+import { sessionQueryKeys } from '../lib/session-query-keys.js';
 import type { SessionMessageView } from '../schemas/session.js';
 
 export function useSessionData(accessToken: string, sessionId: string) {
@@ -8,25 +9,26 @@ export function useSessionData(accessToken: string, sessionId: string) {
   const queryClient = useQueryClient();
 
   const sessionQuery = useQuery({
-    queryKey: ['session', sessionId],
+    queryKey: sessionQueryKeys.detail(accessToken, sessionId),
     queryFn: () => api.sessions.get(sessionId),
   });
 
   const messagesQuery = useQuery({
-    queryKey: ['session-messages', sessionId],
+    queryKey: sessionQueryKeys.messages(accessToken, sessionId),
     queryFn: () => api.sessions.listMessages(sessionId),
   });
 
   const eventsQuery = useQuery({
-    queryKey: ['session-events', sessionId],
+    queryKey: sessionQueryKeys.events(accessToken, sessionId),
     queryFn: () => api.sessions.listEvents(sessionId),
   });
 
   const sendPromptMutation = useMutation({
-    mutationFn: (content: string) => api.sessions.sendPrompt(sessionId, content),
+    mutationFn: (input: { content: string; screenshots: File[] }) => api.sessions.sendPrompt(sessionId, input),
     onSuccess: (message) => {
-      queryClient.setQueryData<SessionMessageView[]>(['session-messages', sessionId], (currentMessages) =>
-        currentMessages ? [...currentMessages, message] : [message],
+      queryClient.setQueryData<SessionMessageView[]>(
+        sessionQueryKeys.messages(accessToken, sessionId),
+        (currentMessages) => (currentMessages ? [...currentMessages, message] : [message]),
       );
     },
   });
@@ -34,16 +36,17 @@ export function useSessionData(accessToken: string, sessionId: string) {
   const cancelPromptMutation = useMutation({
     mutationFn: () => api.sessions.cancelPrompt(sessionId),
     onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: ['session', sessionId] });
-      void queryClient.invalidateQueries({ queryKey: ['session-events', sessionId] });
+      void queryClient.invalidateQueries({ queryKey: sessionQueryKeys.detail(accessToken, sessionId) });
+      void queryClient.invalidateQueries({ queryKey: sessionQueryKeys.events(accessToken, sessionId) });
     },
   });
 
   const createReviewRequestMutation = useMutation({
-    mutationFn: (input: CreateDraftReviewRequestInput) => api.sessions.createDraftReviewRequest(sessionId, input),
+    mutationFn: (request: { input: CreateDraftReviewRequestInput; screenshots: File[] }) =>
+      api.sessions.createDraftReviewRequest(sessionId, request.input, request.screenshots),
     onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: ['session', sessionId] });
-      void queryClient.invalidateQueries({ queryKey: ['session-events', sessionId] });
+      void queryClient.invalidateQueries({ queryKey: sessionQueryKeys.detail(accessToken, sessionId) });
+      void queryClient.invalidateQueries({ queryKey: sessionQueryKeys.events(accessToken, sessionId) });
     },
   });
 

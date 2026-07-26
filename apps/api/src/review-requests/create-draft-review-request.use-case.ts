@@ -7,6 +7,8 @@ import {
   type GitPushBranchCommandEnvelope,
 } from '@pairdock/shared-contracts';
 import { AgentCommandRouterService } from '../agent-gateway/agent-command-router.service.js';
+import type { UploadedScreenshot } from '../attachments/screenshot-validation.js';
+import { SessionAttachmentsService } from '../attachments/session-attachments.service.js';
 import {
   PERSISTENCE_UNIT_OF_WORK,
   PROJECTS_REPOSITORY,
@@ -53,12 +55,15 @@ export class CreateDraftReviewRequestUseCase {
     private readonly sourceControl: SourceControlPort,
     @Inject(ValidationPolicy)
     private readonly validationPolicy: ValidationPolicy,
+    @Inject(SessionAttachmentsService)
+    private readonly sessionAttachments: SessionAttachmentsService,
   ) {}
 
   async create(
     sessionId: string,
     actor: PairDockIdentity,
     input: CreateDraftReviewRequestInput,
+    screenshots?: UploadedScreenshot[],
   ): Promise<DraftReviewRequestResult> {
     const session = await this.requireSession(sessionId);
     const project = await this.requireProject(session.projectId);
@@ -74,22 +79,43 @@ export class CreateDraftReviewRequestUseCase {
 
     const branchName = session.branchName ?? buildSessionBranchName(session.id);
     const commitMessage = buildConventionalCommitMessage(input.type, input.title);
-    await this.agentCommandRouter.routeToOwningAgent(sessionId, buildGitPushBranchCommand(sessionId, commitMessage), {
-      waitForCompletion: true,
+    const attachments = await this.sessionAttachments.create({
+      sessionId,
+      createdByUserId: actor.id,
+      purpose: 'review_request',
+      visibility: 'public',
+      files: screenshots,
     });
 
-    const reviewRequest = await this.sourceControl.createDraftReviewRequest({
-      projectId: project.id,
-      sessionId: session.id,
-      repoFullName: project.repoFullName,
-      sourceControlConnectionId: connection.id,
-      providerConnectionId: connection.providerConnectionId,
-      sourceControlAccountLogin: connection.accountLogin,
-      title: input.title,
-      body: input.description,
-      branchName,
-      baseBranch: project.defaultBranch,
-    });
+    let reviewRequest: Awaited<ReturnType<SourceControlPort['createDraftReviewRequest']>>;
+
+    try {
+      await this.agentCommandRouter.routeToOwningAgent(sessionId, buildGitPushBranchCommand(sessionId, commitMessage), {
+        waitForCompletion: true,
+      });
+
+      reviewRequest = await this.sourceControl.createDraftReviewRequest({
+        projectId: project.id,
+        sessionId: session.id,
+        repoFullName: project.repoFullName,
+        sourceControlConnectionId: connection.id,
+        providerConnectionId: connection.providerConnectionId,
+        sourceControlAccountLogin: connection.accountLogin,
+        title: input.title,
+        body: appendScreenshotsToReviewDescription(
+          input.description,
+          attachments.map((attachment) => ({
+            fileName: attachment.originalName,
+            url: this.sessionAttachments.publicUrl(attachment),
+          })),
+        ),
+        branchName,
+        baseBranch: project.defaultBranch,
+      });
+    } catch (error) {
+      await this.sessionAttachments.remove(attachments);
+      throw error;
+    }
 
     await this.persistenceUnitOfWork.execute(async (repositories) => {
       await repositories.reviewRequests.create({
@@ -199,4 +225,22 @@ export function buildConventionalCommitMessage(type: CreateDraftReviewRequestInp
   }
 
   return `${prefix}${normalizedTitle}`;
+}
+
+export function appendScreenshotsToReviewDescription(
+  description: string,
+  screenshots: Array<{ fileName: string; url: string }>,
+): string {
+  if (screenshots.length === 0) {
+    return description;
+  }
+
+  const markdown = screenshots
+    .map(({ fileName, url }, index) => `![${escapeMarkdownLabel(fileName || `Capture ${index + 1}`)}](${url})`)
+    .join('\n\n');
+  return `${description}\n\n## Captures\n\n${markdown}`;
+}
+
+function escapeMarkdownLabel(value: string): string {
+  return value.replaceAll('\\', '\\\\').replaceAll('[', '\\[').replaceAll(']', '\\]');
 }

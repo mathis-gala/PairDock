@@ -128,6 +128,23 @@ export interface SessionMessage {
   createdAt: Date;
 }
 
+export type AttachmentPurpose = 'prompt' | 'review_request';
+export type AttachmentVisibility = 'private' | 'public';
+
+export interface SessionAttachment {
+  id: string;
+  sessionId: string;
+  messageId: string | null;
+  createdByUserId: string;
+  purpose: AttachmentPurpose;
+  visibility: AttachmentVisibility;
+  objectKey: string;
+  originalName: string;
+  mimeType: string;
+  byteSize: number;
+  createdAt: Date;
+}
+
 export interface AgentEventRecord {
   id: string;
   sessionId: string | null;

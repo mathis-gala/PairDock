@@ -138,12 +138,38 @@ export const developerProjectResponseSchema = z.object({
 export const developerProjectListResponseSchema = z.array(developerProjectResponseSchema);
 
 export const sessionPromptResponseSchema = z.object({
+  id: z.string().uuid(),
   sessionId: z.string(),
   role: z.string(),
   content: z.string(),
+  attachments: z
+    .array(
+      z.object({
+        id: z.string().uuid(),
+        fileName: z.string(),
+        mimeType: z.string(),
+        byteSize: z.number(),
+      }),
+    )
+    .default([]),
 });
 
-export const sessionMessageListResponseSchema = z.array(z.object({ role: z.string(), content: z.string() }));
+export const sessionMessageListResponseSchema = z.array(
+  z.object({
+    role: z.string(),
+    content: z.string(),
+    attachments: z
+      .array(
+        z.object({
+          id: z.string().uuid(),
+          fileName: z.string(),
+          mimeType: z.string(),
+          byteSize: z.number(),
+        }),
+      )
+      .default([]),
+  }),
+);
 export const sessionEventListResponseSchema = z.array(z.object({ type: z.string() }));
 
 export async function parseJsonResponse<T>(response: Response, schema: z.ZodType<T>): Promise<T> {

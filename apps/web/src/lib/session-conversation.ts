@@ -8,6 +8,7 @@ export interface SessionConversationItem {
   text: string;
   tone: 'default' | 'error';
   createdAt: string;
+  attachments?: SessionMessageView['attachments'];
 }
 
 export function buildSessionConversation(
@@ -21,11 +22,12 @@ export function buildSessionConversation(
     text: message.content.trim(),
     tone: 'default' as const,
     createdAt: message.createdAt,
+    attachments: message.attachments,
   }));
   const eventItems = events.flatMap(toConversationEvent);
 
   const sortedItems = [...messageItems, ...eventItems]
-    .filter((item) => item.text.length > 0)
+    .filter((item) => item.text.length > 0 || Boolean(item.attachments?.length))
     .sort((left, right) => left.createdAt.localeCompare(right.createdAt));
 
   return mergeAdjacentAgentOutput(promoteFinalAgentMessages(sortedItems));
@@ -175,7 +177,9 @@ function mergeAdjacentAgentOutput(items: SessionConversationItem[]): SessionConv
       previous?.kind === 'message' &&
       previous.role === 'assistant' &&
       item.role === 'assistant' &&
-      previous.tone === item.tone
+      previous.tone === item.tone &&
+      !previous.attachments?.length &&
+      !item.attachments?.length
     ) {
       previous.text = `${previous.text}\n${item.text}`;
       continue;

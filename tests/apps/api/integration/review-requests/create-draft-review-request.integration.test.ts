@@ -4,6 +4,7 @@ import test from 'node:test';
 import type { PairDockIdentity, Project, ReviewRequestRecord, Session, ValidationRun } from '@pairdock/domain';
 import type { AgentCommandEnvelope } from '@pairdock/shared-contracts';
 import type { AgentCommandRouterService } from '../../../../../apps/api/src/agent-gateway/agent-command-router.service.js';
+import type { SessionAttachmentsService } from '../../../../../apps/api/src/attachments/session-attachments.service.js';
 import type {
   PersistenceRepositories,
   PersistenceUnitOfWork,
@@ -14,7 +15,10 @@ import type { SessionMembersRepository } from '../../../../../apps/api/src/persi
 import type { SessionsRepository } from '../../../../../apps/api/src/persistence/ports/sessions.repository.js';
 import type { SourceControlConnectionsRepository } from '../../../../../apps/api/src/persistence/ports/source-control-connections.repository.js';
 import type { ValidationRunsRepository } from '../../../../../apps/api/src/persistence/ports/validation-runs.repository.js';
-import { CreateDraftReviewRequestUseCase } from '../../../../../apps/api/src/review-requests/create-draft-review-request.use-case.js';
+import {
+  appendScreenshotsToReviewDescription,
+  CreateDraftReviewRequestUseCase,
+} from '../../../../../apps/api/src/review-requests/create-draft-review-request.use-case.js';
 import type { SourceControlPort } from '../../../../../apps/api/src/source-control/source-control.port.js';
 import { ValidationPolicy } from '../../../../../apps/api/src/validation/validation.policy.js';
 
@@ -32,7 +36,13 @@ const pm: PairDockIdentity = {
   kind: 'pm',
 };
 
-function buildFixture(overrides: { validation?: Partial<ValidationRun>; session?: Partial<Session> } = {}) {
+function buildFixture(
+  overrides: {
+    validation?: Partial<ValidationRun>;
+    session?: Partial<Session>;
+    attachmentService?: EmptySessionAttachmentsService;
+  } = {},
+) {
   const projectId = '20000000-0000-4000-8000-000000000001';
   const sessionId = '30000000-0000-4000-8000-000000000001';
   const connectionId = '40000000-0000-4000-8000-000000000001';
@@ -87,6 +97,7 @@ function buildFixture(overrides: { validation?: Partial<ValidationRun>; session?
   });
   const router = new RecordingAgentCommandRouter(repositories.callOrder);
   const sourceControl = new RecordingSourceControlPort(repositories.callOrder);
+  const attachmentService = overrides.attachmentService ?? new EmptySessionAttachmentsService();
   const useCase = new CreateDraftReviewRequestUseCase(
     repositories.sessions,
     repositories.projects,
@@ -97,9 +108,10 @@ function buildFixture(overrides: { validation?: Partial<ValidationRun>; session?
     router as unknown as AgentCommandRouterService,
     sourceControl,
     new ValidationPolicy(),
+    attachmentService as unknown as SessionAttachmentsService,
   );
 
-  return { repositories, router, sessionId, sourceControl, useCase };
+  return { attachmentService, repositories, router, sessionId, sourceControl, useCase };
 }
 
 test('BT-030: failed validation blocks draft review request creation before push or source-control calls', async () => {
@@ -190,6 +202,52 @@ test('style review requests use the style conventional commit prefix', async () 
   });
 });
 
+test('review request descriptions append durable screenshot markdown', () => {
+  assert.equal(
+    appendScreenshotsToReviewDescription('Résumé du changement.', [
+      { fileName: 'avant [mobile].png', url: 'https://assets.pairdock.test/session/avant.png' },
+      { fileName: 'apres.png', url: 'https://assets.pairdock.test/session/apres.png' },
+    ]),
+    [
+      'Résumé du changement.',
+      '',
+      '## Captures',
+      '',
+      '![avant \\[mobile\\].png](https://assets.pairdock.test/session/avant.png)',
+      '',
+      '![apres.png](https://assets.pairdock.test/session/apres.png)',
+    ].join('\n'),
+  );
+});
+
+test('invalid conventional title is rejected before public screenshots are uploaded', async () => {
+  const attachmentService = new EmptySessionAttachmentsService();
+  const { sessionId, useCase } = buildFixture({ attachmentService });
+
+  await assert.rejects(
+    useCase.create(
+      sessionId,
+      pm,
+      {
+        type: 'feat',
+        title: '!!!',
+        description: 'Description valide.',
+      },
+      [
+        {
+          buffer: Buffer.from('screenshot'),
+          mimetype: 'image/png',
+          originalname: 'capture.png',
+          size: 10,
+        },
+      ],
+    ),
+    /must contain at least one letter or number/,
+  );
+
+  assert.equal(attachmentService.createCalls, 0);
+});
+
 class RecordingAgentCommandRouter {
   readonly commands: AgentCommandEnvelope[] = [];
 
@@ -199,6 +257,21 @@ class RecordingAgentCommandRouter {
     this.commands.push(command);
     this.callOrder?.push('push');
   }
+}
+
+class EmptySessionAttachmentsService {
+  createCalls = 0;
+
+  async create() {
+    this.createCalls += 1;
+    return [];
+  }
+
+  publicUrl(): string {
+    throw new Error('No attachment URL should be requested without screenshots.');
+  }
+
+  async remove(): Promise<void> {}
 }
 
 class RecordingSourceControlPort implements SourceControlPort {

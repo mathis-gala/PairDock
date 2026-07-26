@@ -71,14 +71,16 @@ async function authenticatePm(tokenSeed = randomUUID(), teamId = 'pairdock-teste
   };
 }
 
-async function createSessionFixture(pmUserId: string) {
-  const developer = await prisma.user.create({
-    data: {
-      email: `owner-${randomUUID()}@pairdock.test`,
-      displayName: 'Owner',
-      kind: 'developer',
-    },
-  });
+async function createSessionFixture(pmUserId: string, developerUserId?: string) {
+  const developer = developerUserId
+    ? await prisma.user.findUniqueOrThrow({ where: { id: developerUserId } })
+    : await prisma.user.create({
+        data: {
+          email: `owner-${randomUUID()}@pairdock.test`,
+          displayName: 'Owner',
+          kind: 'developer',
+        },
+      });
 
   const connection = await prisma.sourceControlConnection.create({
     data: {
@@ -361,6 +363,25 @@ test('BT-004: SessionAccessGuard allows an invited PM to read a session and send
   } finally {
     agentSocket.close();
   }
+});
+
+test('owning developer can read a PM session for diagnosis', async () => {
+  const developerLogin = await authenticateDeveloper();
+  const pmLogin = await authenticatePm();
+  const fixture = await createSessionFixture(pmLogin.body.user.id, developerLogin.body.user.id);
+
+  const responses = await Promise.all(
+    ['', '/messages', '/events'].map((suffix) =>
+      fetch(`${baseUrl}/sessions/${fixture.session.id}${suffix}`, {
+        headers: { authorization: `Bearer ${developerLogin.body.accessToken}` },
+      }),
+    ),
+  );
+
+  assert.deepEqual(
+    responses.map((response) => response.status),
+    [200, 200, 200],
+  );
 });
 
 test('BT-005: SessionAccessGuard denies non-members for session reads and prompts', async () => {
