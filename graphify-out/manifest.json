@@ -750,8 +750,8 @@
     "semantic_hash": ""
   },
   "packages/local-agent/src/harness/codex-harness.adapter.ts": {
-    "mtime": 1785063443.52334,
-    "ast_hash": "a30854d73f729f56a48e22e6b9a212e5",
+    "mtime": 1785075034.8948433,
+    "ast_hash": "b29970bdc290232add3f64c9de84c9fd",
     "semantic_hash": ""
   },
   "packages/local-agent/src/harness/index.ts": {
@@ -1060,8 +1060,8 @@
     "semantic_hash": ""
   },
   "tests/packages/local-agent/integration/agent-harness.integration.test.ts": {
-    "mtime": 1785063981.934907,
-    "ast_hash": "b41c77f9e6c3381ce7d47a58779ad46e",
+    "mtime": 1785074979.609956,
+    "ast_hash": "97c6bde72f210940d2856f160634179f",
     "semantic_hash": ""
   },
   "tests/packages/local-agent/integration/agent-prompt-command.integration.test.ts": {
