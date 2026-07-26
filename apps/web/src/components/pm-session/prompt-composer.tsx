@@ -1,6 +1,13 @@
 import { useForm } from '@tanstack/react-form';
-import { type ChangeEvent, type FormEvent, type KeyboardEvent, useState } from 'react';
+import { type ChangeEvent, type ClipboardEvent, type FormEvent, type KeyboardEvent, useState } from 'react';
 import { Button } from '../button.js';
+import {
+  appendScreenshotFiles,
+  getPastedImageFiles,
+  releaseScreenshotPreviews,
+  ScreenshotPicker,
+  type SelectedScreenshot,
+} from '../screenshot-picker.js';
 import { TextArea } from '../text-area.js';
 
 interface PromptComposerProps {
@@ -10,7 +17,7 @@ interface PromptComposerProps {
   isCancelling: boolean;
   isSubmitting: boolean;
   onCancel: () => Promise<void>;
-  onSubmit: (content: string) => Promise<void>;
+  onSubmit: (content: string, screenshots: File[]) => Promise<void>;
 }
 
 export function PromptComposer({
@@ -23,6 +30,7 @@ export function PromptComposer({
   onSubmit,
 }: PromptComposerProps) {
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [screenshots, setScreenshots] = useState<SelectedScreenshot[]>([]);
   const form = useForm({
     defaultValues: {
       content: '',
@@ -32,8 +40,18 @@ export function PromptComposer({
         return;
       }
 
+      if (!value.content.trim() && screenshots.length === 0) {
+        setErrorMessage('Ajoute un message ou au moins une capture.');
+        return;
+      }
+
       setErrorMessage(null);
-      await onSubmit(value.content);
+      await onSubmit(
+        value.content,
+        screenshots.map((screenshot) => screenshot.file),
+      );
+      releaseScreenshotPreviews(screenshots);
+      setScreenshots([]);
       form.reset();
     },
   });
@@ -45,6 +63,28 @@ export function PromptComposer({
 
   function handleCancel() {
     void onCancel().catch((error: Error) => setErrorMessage(error.message));
+  }
+
+  function handleScreenshotsChange(nextScreenshots: SelectedScreenshot[]) {
+    setErrorMessage(null);
+    setScreenshots(nextScreenshots);
+  }
+
+  function handleScreenshotError(message: string | null) {
+    setErrorMessage(message);
+  }
+
+  function handleContentPaste(event: ClipboardEvent<HTMLTextAreaElement>) {
+    if (isSubmitting) {
+      return;
+    }
+
+    appendScreenshotFiles({
+      files: getPastedImageFiles(event.clipboardData),
+      onChange: handleScreenshotsChange,
+      onError: handleScreenshotError,
+      screenshots,
+    });
   }
 
   return (
@@ -79,6 +119,7 @@ export function PromptComposer({
                   onBlur={field.handleBlur}
                   onChange={handleContentChange}
                   onKeyDown={handleContentKeyDown}
+                  onPaste={handleContentPaste}
                   placeholder="Écris un message à l’agent…"
                   value={field.state.value}
                 />
@@ -86,6 +127,12 @@ export function PromptComposer({
             );
           }}
         </form.Field>
+        <ScreenshotPicker
+          disabled={isSubmitting}
+          onChange={handleScreenshotsChange}
+          onError={handleScreenshotError}
+          screenshots={screenshots}
+        />
         {blockedReason ? (
           <p aria-live="polite" className="text-xs leading-5 text-[#8b92a1]" id="pm-session-prompt-status">
             {blockedReason}

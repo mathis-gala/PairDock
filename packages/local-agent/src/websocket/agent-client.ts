@@ -13,6 +13,7 @@ import {
   summarizeChecksFailure,
 } from '@pairdock/shared-contracts';
 import { io, type Socket } from 'socket.io-client';
+import { PromptAttachmentDownloader } from '../attachments/prompt-attachment-downloader.js';
 import { type CheckResult, ChecksRunner, type ProjectChecksConfig } from '../checks/checks-runner.js';
 import type { AgentModelConfig, AgentProjectDescriptor } from '../config/agent-config.js';
 import { DiffService } from '../git/diff.service.js';
@@ -76,6 +77,7 @@ export class AgentClient {
   private readonly checksRunner: ChecksRunner;
   private readonly readinessRunner: ReadinessRunner;
   private readonly logRedactor: LogRedactor;
+  private readonly promptAttachmentDownloader: PromptAttachmentDownloader;
 
   constructor(
     private readonly config: AgentClientConfig,
@@ -87,6 +89,7 @@ export class AgentClient {
       checksRunner?: ChecksRunner;
       readinessRunner?: ReadinessRunner;
       logRedactor?: LogRedactor;
+      promptAttachmentDownloader?: PromptAttachmentDownloader;
     } = {},
   ) {
     this.sessionRunner =
@@ -113,6 +116,8 @@ export class AgentClient {
         agentHarnessConfigs: config.agentHarnessConfigs,
       });
     this.logRedactor = dependencies.logRedactor ?? new LogRedactor();
+    this.promptAttachmentDownloader =
+      dependencies.promptAttachmentDownloader ?? new PromptAttachmentDownloader(config.backendUrl, config.authToken);
   }
 
   async start(): Promise<void> {
@@ -408,15 +413,27 @@ export class AgentClient {
       );
 
       const initialDiff = await this.diffService.snapshot(workspace.worktreePath);
+      const imagePaths = await this.promptAttachmentDownloader.download(command.sessionId, command.payload.attachments);
       const harnessInput = {
         sessionId: command.sessionId,
         projectKey: workspace.projectKey,
         prompt: command.payload.prompt,
+        ...(imagePaths.length ? { imagePaths } : {}),
         modelId: command.payload.modelId,
         reasoningEffort: command.payload.reasoningEffort ?? 'medium',
         worktreePath: workspace.worktreePath,
       } as const;
-      let exitCode = await this.runHarness(harnessInput);
+      let exitCode: number;
+      try {
+        exitCode = await this.runHarness(harnessInput);
+      } finally {
+        try {
+          await this.promptAttachmentDownloader.cleanup(command.sessionId);
+        } catch (error) {
+          const message = error instanceof Error ? error.message : String(error);
+          this.logger.warn(`[session:${command.sessionId}] Could not remove temporary prompt screenshots: ${message}`);
+        }
+      }
 
       if (exitCode !== 0) {
         await this.emitEvent(

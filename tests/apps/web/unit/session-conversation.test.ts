@@ -13,6 +13,7 @@ test('PM conversation contains human messages and agent replies, not technical e
         userId: '33333333-3333-4333-8333-333333333333',
         role: 'pm',
         content: 'Corrige le bouton panier.',
+        attachments: [],
         createdAt: '2026-07-18T10:00:00.000Z',
       },
     ],
@@ -51,6 +52,33 @@ test('PM conversation contains human messages and agent replies, not technical e
       { role: 'assistant', text: 'Je corrige le panier.' },
     ],
   );
+});
+
+test('PM conversation keeps screenshot-only prompts visible', () => {
+  const [item] = buildSessionConversation(
+    [
+      {
+        id: '77777777-7777-4777-8777-777777777777',
+        sessionId,
+        userId: '33333333-3333-4333-8333-333333333333',
+        role: 'pm',
+        content: '',
+        attachments: [
+          {
+            id: '88888888-8888-4888-8888-888888888888',
+            fileName: 'reference.png',
+            mimeType: 'image/png',
+            byteSize: 1024,
+          },
+        ],
+        createdAt: '2026-07-18T10:00:00.000Z',
+      },
+    ],
+    [],
+  );
+
+  assert.equal(item?.text, '');
+  assert.equal(item?.attachments?.[0]?.fileName, 'reference.png');
 });
 
 test('PM conversation keeps real-time agent progress separate from the final answer', () => {

@@ -27,10 +27,12 @@ export function AppShell() {
     );
   }
 
-  const isFullscreenSession = authSession.user.kind === 'pm' && route.kind === 'pm-session';
+  const isFullscreenSession =
+    (authSession.user.kind === 'pm' && route.kind === 'pm-session') ||
+    (authSession.user.kind === 'developer' && route.kind === 'developer-session');
 
   return (
-    <main className={isFullscreenSession ? 'h-dvh overflow-hidden text-[#eef0f4]' : 'min-h-dvh text-[#eef0f4]'}>
+    <main className={isFullscreenSession ? 'fixed inset-0 overflow-hidden text-[#eef0f4]' : 'min-h-dvh text-[#eef0f4]'}>
       {authSession.user.kind === 'pm' ? (
         route.kind === 'pm-session' ? (
           <PmSessionPage accessToken={authSession.accessToken} onBack={openPmDashboard} sessionId={route.sessionId} />
@@ -48,6 +50,13 @@ export function AppShell() {
             onOpenSession={(sessionId) => openPmSession(sessionId)}
           />
         )
+      ) : route.kind === 'developer-session' ? (
+        <PmSessionPage
+          accessToken={authSession.accessToken}
+          isReadOnly
+          onBack={openDeveloperHome}
+          sessionId={route.sessionId}
+        />
       ) : (
         <DeveloperHomePage onSignOut={clearAuthSession} session={authSession} />
       )}

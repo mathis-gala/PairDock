@@ -7,6 +7,7 @@ export interface RunPromptInput {
   sessionId: string;
   projectKey: string;
   prompt: string;
+  imagePaths?: string[];
   modelId: string;
   reasoningEffort?: string;
   worktreePath: string;

@@ -21,6 +21,14 @@ test('BT-009: shared Zod command codecs parse a valid agent.prompt payload', () 
     payload: {
       sessionId,
       prompt: 'Refactor the preview route',
+      attachments: [
+        {
+          id: randomUUID(),
+          fileName: 'bug.png',
+          mimeType: 'image/png',
+          byteSize: 2048,
+        },
+      ],
       modelId: 'codex-cli/gpt-5.4',
     },
     sentAt: new Date().toISOString(),
@@ -32,6 +40,7 @@ test('BT-009: shared Zod command codecs parse a valid agent.prompt payload', () 
 
   assert.equal(parsed.type, 'agent.prompt');
   assert.equal(parsed.payload.prompt, 'Refactor the preview route');
+  assert.equal(parsed.payload.attachments?.[0]?.fileName, 'bug.png');
   assert.equal(parsed.payload.modelId, 'codex-cli/gpt-5.4');
 });
 
@@ -146,6 +155,30 @@ test('shared Zod codecs reject oversized prompt and agent output payloads', () =
 
   assert.equal(prompt.success, false);
   assert.equal(output.success, false);
+});
+
+test('agent prompt codec rejects more than four screenshots', () => {
+  const sessionId = randomUUID();
+  const result = agentCommandEnvelopeSchema.safeParse({
+    protocolVersion: AGENT_PROTOCOL_VERSION,
+    messageId: randomUUID(),
+    sessionId,
+    sentAt: new Date().toISOString(),
+    type: 'agent.prompt',
+    payload: {
+      sessionId,
+      prompt: 'Compare les captures.',
+      attachments: Array.from({ length: 5 }, (_, index) => ({
+        id: randomUUID(),
+        fileName: `capture-${index}.png`,
+        mimeType: 'image/png',
+        byteSize: 2048,
+      })),
+      modelId: 'gpt-5.6-sol',
+    },
+  });
+
+  assert.equal(result.success, false);
 });
 
 test('BT-042: shared Zod codecs reject mismatched envelope and payload session ids', () => {

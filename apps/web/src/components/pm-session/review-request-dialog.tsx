@@ -1,12 +1,27 @@
 import type { CreateDraftReviewRequestInput } from '@pairdock/shared-contracts';
-import { type ChangeEvent, type FormEvent, type KeyboardEvent, useCallback, useId, useState } from 'react';
+import {
+  type ChangeEvent,
+  type ClipboardEvent,
+  type FormEvent,
+  type KeyboardEvent,
+  useCallback,
+  useId,
+  useState,
+} from 'react';
 import { Button } from '../button.js';
+import {
+  appendScreenshotFiles,
+  getPastedImageFiles,
+  releaseScreenshotPreviews,
+  ScreenshotPicker,
+  type SelectedScreenshot,
+} from '../screenshot-picker.js';
 
 interface ReviewRequestDialogProps {
   error: string | null;
   isSubmitting: boolean;
   onClose: () => void;
-  onSubmit: (input: CreateDraftReviewRequestInput) => void;
+  onSubmit: (input: CreateDraftReviewRequestInput, screenshots: File[]) => Promise<void>;
 }
 
 export function ReviewRequestDialog({ error, isSubmitting, onClose, onSubmit }: ReviewRequestDialogProps) {
@@ -16,6 +31,7 @@ export function ReviewRequestDialog({ error, isSubmitting, onClose, onSubmit }: 
   const [type, setType] = useState<CreateDraftReviewRequestInput['type']>('feat');
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
+  const [screenshots, setScreenshots] = useState<SelectedScreenshot[]>([]);
   const [validationError, setValidationError] = useState<string | null>(null);
   const displayedError = validationError ?? error;
 
@@ -35,8 +51,27 @@ export function ReviewRequestDialog({ error, isSubmitting, onClose, onSubmit }: 
     setValidationError(null);
   }
 
+  function handleScreenshotsChange(nextScreenshots: SelectedScreenshot[]) {
+    setScreenshots(nextScreenshots);
+    setValidationError(null);
+  }
+
+  function handleScreenshotError(message: string | null) {
+    setValidationError(message);
+  }
+
+  function handleScreenshotPaste(event: ClipboardEvent<HTMLInputElement | HTMLTextAreaElement>) {
+    appendScreenshotFiles({
+      files: getPastedImageFiles(event.clipboardData),
+      onChange: handleScreenshotsChange,
+      onError: handleScreenshotError,
+      screenshots,
+    });
+  }
+
   function handleClose() {
     if (!isSubmitting) {
+      releaseScreenshotPreviews(screenshots);
       onClose();
     }
   }
@@ -79,7 +114,15 @@ export function ReviewRequestDialog({ error, isSubmitting, onClose, onSubmit }: 
     }
 
     setValidationError(null);
-    onSubmit({ type, title: normalizedTitle, description: normalizedDescription });
+    void onSubmit(
+      { type, title: normalizedTitle, description: normalizedDescription },
+      screenshots.map((screenshot) => screenshot.file),
+    )
+      .then(() => {
+        releaseScreenshotPreviews(screenshots);
+        setScreenshots([]);
+      })
+      .catch(() => undefined);
   }
 
   return (
@@ -95,7 +138,7 @@ export function ReviewRequestDialog({ error, isSubmitting, onClose, onSubmit }: 
         aria-describedby={displayedError ? errorId : undefined}
         aria-labelledby={`${titleId}-heading`}
         aria-modal="true"
-        className="relative w-full max-w-lg rounded-[16px] border border-white/10 bg-[#191c23] p-5 shadow-[0_24px_80px_rgba(0,0,0,0.55)] sm:p-6"
+        className="relative w-full max-w-2xl rounded-[16px] border border-white/10 bg-[#191c23] p-5 shadow-[0_24px_80px_rgba(0,0,0,0.55)] sm:p-6"
         onKeyDown={handleDialogKeyDown}
         role="dialog"
       >
@@ -177,6 +220,7 @@ export function ReviewRequestDialog({ error, isSubmitting, onClose, onSubmit }: 
               id={titleId}
               maxLength={120}
               onChange={handleTitleChange}
+              onPaste={handleScreenshotPaste}
               placeholder="Ex. Ajouter le filtre par collection"
               ref={handleInitialFocus}
               required
@@ -187,6 +231,19 @@ export function ReviewRequestDialog({ error, isSubmitting, onClose, onSubmit }: 
             </span>
           </label>
 
+          <div>
+            <span className="mb-2 block text-sm font-medium text-[#cdd2dc]">Captures pour GitHub</span>
+            <ScreenshotPicker
+              disabled={isSubmitting}
+              onChange={handleScreenshotsChange}
+              onError={handleScreenshotError}
+              screenshots={screenshots}
+            />
+            <p className="mt-1.5 text-xs leading-5 text-[#6f7686]">
+              Ajoutées à la description et hébergées durablement sur PairDock.
+            </p>
+          </div>
+
           <label className="block" htmlFor={descriptionId}>
             <span className="mb-2 block text-sm font-medium text-[#cdd2dc]">Description de la PR</span>
             <textarea
@@ -195,6 +252,7 @@ export function ReviewRequestDialog({ error, isSubmitting, onClose, onSubmit }: 
               id={descriptionId}
               maxLength={10_000}
               onChange={handleDescriptionChange}
+              onPaste={handleScreenshotPaste}
               placeholder="Explique le besoin, le résultat attendu et les points importants à vérifier."
               required
               value={description}

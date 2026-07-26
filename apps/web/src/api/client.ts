@@ -49,11 +49,13 @@ export interface ApiClient {
     get(sessionId: string): Promise<SessionView>;
     listMessages(sessionId: string): Promise<SessionMessageView[]>;
     listEvents(sessionId: string): Promise<SessionEventRecordView[]>;
-    sendPrompt(sessionId: string, content: string): Promise<SessionMessageView>;
+    sendPrompt(sessionId: string, input: { content: string; screenshots: File[] }): Promise<SessionMessageView>;
+    readAttachment(sessionId: string, attachmentId: string): Promise<string>;
     cancelPrompt(sessionId: string): Promise<void>;
     createDraftReviewRequest(
       sessionId: string,
       input: CreateDraftReviewRequestInput,
+      screenshots: File[],
     ): Promise<{ reviewRequestUrl: string }>;
     close(sessionId: string): Promise<SessionView>;
   };
@@ -154,13 +156,26 @@ export function createApiClient(accessToken: string): ApiClient {
         });
         return sessionEventRecordSchema.array().parse(value);
       },
-      async sendPrompt(sessionId: string, content: string): Promise<SessionMessageView> {
+      async sendPrompt(
+        sessionId: string,
+        input: { content: string; screenshots: File[] },
+      ): Promise<SessionMessageView> {
+        const form = createScreenshotFormData({ content: input.content }, input.screenshots);
         const value = await requestJson(`/sessions/${sessionId}/prompts`, {
           method: 'POST',
-          headers: jsonHeaders(accessToken),
-          body: JSON.stringify({ content }),
+          headers: authHeaders(accessToken),
+          body: form,
         });
         return sessionMessageSchema.parse(value);
+      },
+      async readAttachment(sessionId: string, attachmentId: string): Promise<string> {
+        const response = await fetch(`${getBackendUrl()}/sessions/${sessionId}/attachments/${attachmentId}`, {
+          headers: authHeaders(accessToken),
+        });
+        if (!response.ok) {
+          throw await responseError(response);
+        }
+        return readBlobAsDataUrl(await response.blob());
       },
       async cancelPrompt(sessionId: string): Promise<void> {
         await requestJson(`/sessions/${sessionId}/prompts/cancel`, {
@@ -171,11 +186,13 @@ export function createApiClient(accessToken: string): ApiClient {
       async createDraftReviewRequest(
         sessionId: string,
         input: CreateDraftReviewRequestInput,
+        screenshots: File[],
       ): Promise<{ reviewRequestUrl: string }> {
+        const form = createScreenshotFormData(input, screenshots);
         const value = await requestJson(`/sessions/${sessionId}/review-request`, {
           method: 'POST',
-          headers: jsonHeaders(accessToken),
-          body: JSON.stringify(input),
+          headers: authHeaders(accessToken),
+          body: form,
         });
         return z.object({ reviewRequestUrl: z.string() }).parse(value);
       },
@@ -188,6 +205,26 @@ export function createApiClient(accessToken: string): ApiClient {
       },
     },
   };
+}
+
+function createScreenshotFormData(fields: Record<string, string>, screenshots: File[]): FormData {
+  const form = new FormData();
+  for (const [key, value] of Object.entries(fields)) {
+    form.set(key, value);
+  }
+  for (const screenshot of screenshots) {
+    form.append('screenshots', screenshot, screenshot.name);
+  }
+  return form;
+}
+
+function readBlobAsDataUrl(blob: Blob): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.addEventListener('load', () => resolve(String(reader.result)));
+    reader.addEventListener('error', () => reject(reader.error ?? new Error('Screenshot loading failed.')));
+    reader.readAsDataURL(blob);
+  });
 }
 
 export const authApi: {
@@ -246,7 +283,7 @@ const authProvidersSchema = z.object({ developmentPmAuthEnabled: z.boolean() });
 interface RequestOptions {
   method: string;
   headers: Record<string, string>;
-  body?: string;
+  body?: BodyInit;
 }
 
 async function requestJson(path: string, options: RequestOptions): Promise<unknown> {
@@ -263,6 +300,12 @@ async function requestJson(path: string, options: RequestOptions): Promise<unkno
 }
 
 const responseErrorSchema = z.object({ message: z.string().optional() }).nullable();
+
+async function responseError(response: Response): Promise<Error> {
+  const body = await response.json().catch(() => null);
+  const parsed = responseErrorSchema.safeParse(body);
+  return new Error(parsed.success && parsed.data?.message ? parsed.data.message : 'Request failed.');
+}
 
 function authHeaders(accessToken: string): Record<string, string> {
   return { authorization: `Bearer ${accessToken}` };

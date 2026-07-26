@@ -23,4 +23,10 @@ test('PM prompt composer explains why sending is temporarily unavailable', () =>
   assert.match(html, /<button[^>]*disabled[^>]*type="submit"/);
   assert.match(html, /<textarea/);
   assert.doesNotMatch(html, /<textarea[^>]*disabled/);
+  assert.match(html, /Ajouter une capture/);
+  assert.match(html, /⌘V \/ Ctrl\+V pour coller/);
+  assert.match(html, /accept="image\/png,image\/jpeg,image\/webp"/);
+  assert.match(html, /multiple=""[^>]*type="file"/);
+  const screenshotInput = html.match(/<input[^>]*type="file"[^>]*>/)?.[0] ?? '';
+  assert.doesNotMatch(screenshotInput, /disabled/);
 });

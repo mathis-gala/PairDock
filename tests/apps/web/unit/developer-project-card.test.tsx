@@ -1,9 +1,11 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import type { DeveloperProjectSummary } from '@pairdock/shared-contracts';
-import { createElement } from 'react';
+import React, { createElement } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { DeveloperProjectCard } from '../../../../apps/web/src/components/developer/developer-project-card.js';
+
+Object.assign(globalThis, { React });
 
 const project: DeveloperProjectSummary = {
   id: '33333333-3333-4333-8333-333333333333',
@@ -95,6 +97,8 @@ test('BT-028/BT-029/BT-049: developer project card exposes agent defaults, shari
   assert.match(html, /pm@pairdock\.test/);
   assert.match(html, /Open draft review request/);
   assert.match(html, /https:\/\/github\.com\/mathis\/developer-project\/pull\/14/);
+  assert.match(html, /href="#\/developer\/sessions\/44444444-4444-4444-8444-444444444444"/);
+  assert.match(html, /Inspecter la session/);
   assert.match(html, /Close session/);
   assert.doesNotMatch(html, /codex-cli/);
 });

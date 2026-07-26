@@ -1,16 +1,16 @@
 # Graph Report - PairDock  (2026-07-26)
 
 ## Corpus Check
-- 299 files · ~137,092 words
+- 322 files · ~144,357 words
 - Verdict: corpus is large enough that graph structure adds value.
 
 ## Summary
-- 2782 nodes · 6088 edges · 166 communities (145 shown, 21 thin omitted)
-- Extraction: 98% EXTRACTED · 2% INFERRED · 0% AMBIGUOUS · INFERRED: 111 edges (avg confidence: 0.72)
+- 2938 nodes · 6513 edges · 179 communities (154 shown, 25 thin omitted)
+- Extraction: 98% EXTRACTED · 2% INFERRED · 0% AMBIGUOUS · INFERRED: 118 edges (avg confidence: 0.72)
 - Token cost: 0 input · 0 output
 
 ## Graph Freshness
-- Built from commit: `daa8e5f6`
+- Built from commit: `4500699c`
 - Run `git rev-parse HEAD` and compare to check if the graph is stale.
 - Run `graphify update .` after code changes (no API cost).
 
@@ -156,41 +156,52 @@
 - Automated Full MVP Flow
 - validation.integration.test.ts
 - pm-activity-page.tsx
+- SessionsRepositoryAdapter
 - @nestjs/common
 - Get
-- package.json
+- tool-readiness-panel.tsx
+- SessionRegistry
 - SharedProjectSummary
 - Deployment security audit — 2026-07-19
 - development-pm-auth.ts
 - .constructor
-- ui.ts
+- pm-session-page.tsx
 - @pairdock/shared-contracts
 - MVP E2E scenario
 - Q: Trace all suggested graph questions using documentation only
+- authenticated-request.ts
 - PairDock collaborative developer/PM prototype
 - Frontend product surfaces
-- @nestjs/platform-socket.io
+- session-state-machine.ts
+- ChecksResult
 - Containers
 - tool-readiness-panel.tsx
-- getReact
+- .create
 - ReadyPreviewTunnelPort
+- session-attachments.service.ts
+- ChecksResult
+- .register
+- EmptySessionAttachmentsService
 - Prototype Reference Package
+- @nestjs/core
+- @nestjs/websockets
+- @prisma/adapter-pg
+- socket.io
+- migration.sql
 
 ## God Nodes (most connected - your core abstractions)
 1. `PairDockIdentity` - 51 edges
 2. `Behavior test plan — PairDock MVP` - 51 edges
 3. `parseJsonResponse()` - 46 edges
 4. `SandboxRef` - 45 edges
-5. `DatabaseClient` - 41 edges
+5. `DatabaseClient` - 42 edges
 6. `SessionRunner` - 40 edges
 7. `Session` - 39 edges
-8. `AgentClient` - 37 edges
+8. `AgentClient` - 38 edges
 9. `AppModule` - 36 edges
 10. `Project` - 34 edges
 
 ## Surprising Connections (you probably didn't know these)
-- `startApplication()` --indirect_call--> `AppModule`  [INFERRED]
-  tests/apps/api/integration/agent-gateway/agent-command-routing.integration.test.ts → apps/api/src/app.module.ts
 - `startApplication()` --indirect_call--> `AppModule`  [INFERRED]
   tests/apps/api/integration/agent-gateway/agent-gateway.integration.test.ts → apps/api/src/app.module.ts
 - `startApplication()` --indirect_call--> `AppModule`  [INFERRED]
@@ -199,6 +210,8 @@
   tests/apps/api/integration/auth/auth.integration.test.ts → apps/api/src/app.module.ts
 - `startApplication()` --indirect_call--> `AppModule`  [INFERRED]
   tests/apps/api/integration/projects/shared-projects.integration.test.ts → apps/api/src/app.module.ts
+- `startApplication()` --indirect_call--> `AppModule`  [INFERRED]
+  tests/apps/api/integration/sessions/pm-session-start.integration.test.ts → apps/api/src/app.module.ts
 
 ## Import Cycles
 - None detected.
@@ -208,15 +221,15 @@
 - **Responsive Fix Session Workspace States** — prototype_screenshots_01_sess2_responsive_session_workspace, prototype_screenshots_01_sess3_responsive_session_workspace, prototype_screenshots_02_dev_responsive_session_workspace, prototype_screenshots_02_sess2_responsive_session_workspace, prototype_screenshots_02_sess3_responsive_session_workspace [INFERRED 0.85]
 - **Correction Workflow Screenshots** — prototype_screenshots_03_clean_clean_correction_prompt_state, prototype_screenshots_03_dev_developer_correction_request_state, prototype_screenshots_03_flow_correction_workflow_state, prototype_screenshots_sess4_session_correction_request_state [INFERRED 0.85]
 
-## Communities (166 total, 21 thin omitted)
+## Communities (179 total, 25 thin omitted)
 
 ### Community 0 - "agent-config.ts"
-Cohesion: 0.14
+Cohesion: 0.13
 Nodes (32): agentConfigFileSchema, agentHarnessConfigSchema, agentModelConfigSchema, agentProjectDescriptorSchema, assertHttpUrlTemplate(), assertLoopbackPortMapping(), assertLoopbackUrlTemplate(), assertSafeContainerImage() (+24 more)
 
 ### Community 1 - "create-draft-review-request.use-case.ts"
-Cohesion: 0.06
-Nodes (19): DockerSandboxAdapter, DockerSandboxAdapterDependencies, HealthcheckWaitInput, HealthcheckResult, SandboxPort, SandboxRef, SandboxStartInput, HostPreviewRuntimeAdapter (+11 more)
+Cohesion: 0.07
+Nodes (13): SandboxPort, SandboxRef, SandboxStartInput, PreviewRuntimeRouter, PreviewRuntimeRouterDependencies, ReadySandboxPort, ReadySandboxPort, ReadySandboxPort (+5 more)
 
 ### Community 2 - "Button"
 Cohesion: 0.04
@@ -227,44 +240,44 @@ Cohesion: 0.15
 Nodes (9): AGENT_AUTHENTICATION_OPTIONS, AgentAuthenticationOptions, AgentCredentialInput, AuthenticatedAgentPrincipal, extractBearerToken(), isRecord(), parseCredentials(), Inject (+1 more)
 
 ### Community 4 - "index.ts"
-Cohesion: 0.08
-Nodes (27): agentCommandEnvelopeSchema, checkResultSchema, envelopeBaseSchema, isoDateTimeSchema, promptableSessionStatuses, sessionEnvelope(), SessionStatus, sessionStatusSchema (+19 more)
+Cohesion: 0.05
+Nodes (41): AgentCancelCommandEnvelope, agentCancelCommandEnvelopeSchema, agentCommandEnvelopeSchema, agentPromptCommandEnvelopeSchema, ChecksRunCommandEnvelope, checksRunCommandEnvelopeSchema, GitGetDiffCommandEnvelope, gitGetDiffCommandEnvelopeSchema (+33 more)
 
 ### Community 5 - "index.ts"
-Cohesion: 0.17
-Nodes (15): allocateHostPort(), assertSafeContainerImage(), buildContainerHardeningArgs(), buildDockerRunArgs(), buildManagedResourceLabels(), buildNodeModulesTmpfsArg(), findNodeModulesPaths(), inferPortsFromHealthcheck() (+7 more)
+Cohesion: 0.14
+Nodes (17): allocateHostPort(), assertSafeContainerImage(), buildContainerHardeningArgs(), buildDockerRunArgs(), buildManagedResourceLabels(), buildNodeModulesTmpfsArg(), DockerSandboxAdapter, DockerSandboxAdapterDependencies (+9 more)
 
 ### Community 6 - "developer-home-page.tsx"
-Cohesion: 0.07
-Nodes (26): authApi, DeveloperLoginCard(), PmLoginCard(), PmLoginCardProps, GitHubIcon(), SlackIcon(), Button(), PromptComposer() (+18 more)
+Cohesion: 0.11
+Nodes (15): authApi, DeveloperLoginCard(), PmLoginCard(), PmLoginCardProps, GitHubIcon(), ProductShell(), ProductShellProps, normalizeSeed() (+7 more)
 
 ### Community 7 - "app-shell.tsx"
 Cohesion: 0.13
-Nodes (20): buildCodexPrompt(), buildCodexSecurityArgs(), buildCommandArgs(), buildHarnessEnvironment(), CodexHarnessAdapter, denySiblingPaths(), FilesystemPermission, isExecutableFile() (+12 more)
+Nodes (19): buildCodexPrompt(), buildCodexSecurityArgs(), buildCommandArgs(), buildHarnessEnvironment(), CodexHarnessAdapter, denySiblingPaths(), FilesystemPermission, isExecutableFile() (+11 more)
 
 ### Community 8 - "SandboxRef"
 Cohesion: 0.10
 Nodes (20): Architecture style, Current repository context, Dependency rules, Diagram links, External ports/adapters, Frontend styling, Local agent structure, Login interface (+12 more)
 
 ### Community 9 - "persistence.module.ts"
-Cohesion: 0.15
-Nodes (24): AgentGatewayModule, Module, AuthModule, Module, InvitationsModule, Module, PersistenceModule, Module (+16 more)
+Cohesion: 0.13
+Nodes (26): AgentGatewayModule, Module, AttachmentsModule, Module, AuthModule, Module, InvitationsModule, Module (+18 more)
 
 ### Community 10 - "PairDockUser"
-Cohesion: 0.21
-Nodes (8): mapUser(), Inject, Injectable, UsersRepositoryAdapter, CreateUserInput, UsersRepository, PairDockUser, seedSessionFixture()
+Cohesion: 0.22
+Nodes (7): mapUser(), Inject, Injectable, UsersRepositoryAdapter, CreateUserInput, UsersRepository, PairDockUser
 
 ### Community 11 - "client.ts"
-Cohesion: 0.20
-Nodes (9): createApiClient(), useSharedSessionHistory(), filterSharedSessionHistory(), SessionHistoryFilters, SessionHistoryStatusFilter, PmActivityPage(), PmActivityPageProps, SESSION_STATUS_FILTER_OPTIONS (+1 more)
+Cohesion: 0.21
+Nodes (8): useSharedSessionHistory(), filterSharedSessionHistory(), SessionHistoryFilters, SessionHistoryStatusFilter, PmActivityPage(), PmActivityPageProps, SESSION_STATUS_FILTER_OPTIONS, sessions
 
 ### Community 12 - "sessions.service.ts"
-Cohesion: 0.11
-Nodes (9): Inject, AuthService, buildFrontendAuthRedirectUrl(), hasAccessibleGithubInstallation(), Inject, Injectable, Inject, Injectable (+1 more)
+Cohesion: 0.29
+Nodes (3): Inject, DatabaseClient, Injectable
 
 ### Community 13 - "session.ts"
-Cohesion: 0.07
-Nodes (18): authHeaders(), AuthProviders, authProvidersSchema, CreateSessionInput, jsonHeaders(), RequestOptions, responseErrorSchema, ReviewRequestDialog() (+10 more)
+Cohesion: 0.06
+Nodes (21): ApiClient, authHeaders(), AuthProviders, authProvidersSchema, CreateSessionInput, jsonHeaders(), RequestOptions, responseErrorSchema (+13 more)
 
 ### Community 14 - "scripts"
 Cohesion: 0.05
@@ -275,24 +288,24 @@ Cohesion: 0.20
 Nodes (11): PreviewAreaSize, PreviewFrame(), PreviewFrameProps, PreviewToolbar(), PreviewToolbarProps, getFittedPreviewScale(), getPreviewFrameStyle(), isPreviewPresetId() (+3 more)
 
 ### Community 16 - "PairDockIdentity"
-Cohesion: 0.14
-Nodes (11): isRecord(), ProjectsService, resolveUnavailableReason(), Injectable, ApiClient, DeveloperProjectFormProps, PairDockIdentity, CreateDeveloperProjectInput (+3 more)
+Cohesion: 0.16
+Nodes (8): isRecord(), ProjectsService, resolveUnavailableReason(), Injectable, PairDockIdentity, CreateDeveloperProjectInput, DeveloperProjectSummary, SharedSessionHistoryItem
 
 ### Community 17 - "AuthService"
 Cohesion: 0.25
 Nodes (15): assertStateCookie(), AuthCallbackBody, AuthController, clearStateCookie(), HeaderResponse, readCookie(), readStateFromRedirectUrl(), secureCookieSuffix() (+7 more)
 
 ### Community 18 - "ProjectPreviewConfig"
-Cohesion: 0.08
-Nodes (12): PreviewTunnelPort, createTempRepository(), execFileAsync, execGit(), prisma, ReadyPreviewTunnelPort, startApplication(), createTempRepository() (+4 more)
+Cohesion: 0.10
+Nodes (14): Inject, AttachmentsRepositoryAdapter, Inject, Injectable, isExternalIdentityProvider(), isProjectMembershipRole(), mapAttachment(), parseAttachmentPurpose() (+6 more)
 
 ### Community 19 - "support.js"
 Cohesion: 0.12
 Nodes (9): compileTemplate(), dcNameFromPath(), encodeCase(), isElementClass(), isRenderableType(), loadReactUmd(), loadScript(), rootNameForDocument() (+1 more)
 
 ### Community 20 - "json-parsers.ts"
-Cohesion: 0.18
-Nodes (9): AgentProjectOption, DeveloperProjectForm(), ProjectFormState, ProjectSetupStateProps, resolveModelOptions(), ExecutionSelection, ExecutionSelectionProps, DeveloperSetupAgentModel (+1 more)
+Cohesion: 0.10
+Nodes (17): AgentAuthenticationService, Injectable, AgentExecutionCapabilitiesService, SessionExecutionSelection, Inject, Injectable, Inject, AgentProjectBindingService (+9 more)
 
 ### Community 21 - "pm-session-page.tsx"
 Cohesion: 0.11
@@ -307,16 +320,16 @@ Cohesion: 0.08
 Nodes (24): bin, pairdock-agent, dependencies, @pairdock/shared-contracts, socket.io-client, yaml, zod, devDependencies (+16 more)
 
 ### Community 24 - "readiness-runner.ts"
-Cohesion: 0.21
-Nodes (13): CommandResult, CommandRunner, failed(), failureMessage(), isCodexExecutable(), passed(), ReadinessResult, ReadinessRunner (+5 more)
+Cohesion: 0.20
+Nodes (14): CommandResult, CommandRunner, failed(), failureMessage(), isCodexExecutable(), passed(), ReadinessResult, ReadinessRunner (+6 more)
 
 ### Community 25 - "agent-client.ts"
-Cohesion: 0.13
-Nodes (14): mapSourceControlConnection(), SourceControlConnectionsRepositoryAdapter, Injectable, VALIDATION_RUNS_REPOSITORY, CreateSourceControlConnectionInput, SourceControlConnectionsRepository, buildConventionalCommitMessage(), buildGitPushBranchCommand() (+6 more)
+Cohesion: 0.17
+Nodes (10): mapValidationRun(), Injectable, ValidationRunsRepositoryAdapter, CreateValidationRunInput, ValidationRunsRepository, Injectable, ValidationPolicy, SessionValidationView (+2 more)
 
 ### Community 26 - "github-source-control.adapter.ts"
-Cohesion: 0.32
-Nodes (5): deterministicReviewRequestNumber(), githubHeaders(), GithubSourceControlAdapter, isTestConnection(), Injectable
+Cohesion: 0.42
+Nodes (4): githubHeaders(), GithubSourceControlAdapter, isTestConnection(), Injectable
 
 ### Community 27 - "package.json"
 Cohesion: 0.08
@@ -327,64 +340,64 @@ Cohesion: 0.13
 Nodes (16): authenticateDeveloper(), authenticatePm(), closeSession(), createDeveloperProject(), createReviewRequest(), createSession(), createTestRepository(), EXAMPLE_REPOSITORY_FIXTURE (+8 more)
 
 ### Community 29 - "AuthTokenService"
-Cohesion: 0.07
-Nodes (22): AuthTokenOptions, AuthTokenService, hasValidSignature(), isRecord(), isUserKind(), parseTokenPayload(), resolveSecret(), TokenPayload (+14 more)
+Cohesion: 0.13
+Nodes (13): AuthTokenOptions, AuthTokenService, hasValidSignature(), isRecord(), isUserKind(), parseTokenPayload(), resolveSecret(), TokenPayload (+5 more)
 
 ### Community 30 - "github-developer-identity.adapter.ts"
 Cohesion: 0.25
 Nodes (8): findTopLevelEquality(), parensWrapWhole(), resolve(), resolvePath(), waitFor(), waitForReadiness(), waitForReadiness(), emitCommandWithAcknowledgement()
 
 ### Community 31 - "agent-events.repository.ts"
-Cohesion: 0.14
-Nodes (10): CheckCommandExecutor, CheckResult, ChecksResult, ChecksRunner, isTransientPackageExtractionFailure(), RunChecksInput, compactValidationLogs(), RecordingChecksRunner (+2 more)
+Cohesion: 0.13
+Nodes (8): CheckCommandExecutor, CheckResult, ChecksRunner, isTransientPackageExtractionFailure(), RunChecksInput, compactValidationLogs(), LogRedactor, RecordingChecksRunner
 
 ### Community 32 - "external-identities.repository.ts"
-Cohesion: 0.26
-Nodes (6): GithubDeveloperIdentityAdapter, githubHeaders(), isRecord(), parseCodeCallback(), parseFixtureIdentity(), Injectable
+Cohesion: 0.14
+Nodes (14): Fetcher, GithubDeveloperIdentityAdapter, GithubDeveloperIdentityConfig, GithubEmailResponse, githubHeaders(), GithubInstallationMetadata, GithubInstallationsResponse, GithubOAuthResponse (+6 more)
 
 ### Community 33 - "slack-pm-identity.adapter.ts"
-Cohesion: 0.27
-Nodes (10): SessionsController, Body, Controller, Get, HttpCode, Param, Post, Req (+2 more)
+Cohesion: 0.24
+Nodes (12): SessionsController, Body, Controller, Get, HttpCode, Param, Post, Req (+4 more)
 
 ### Community 34 - "WorktreeService"
 Cohesion: 0.08
-Nodes (17): Inject, mapMessage(), MessagesRepositoryAdapter, Inject, Injectable, Inject, Inject, Inject (+9 more)
+Nodes (24): createDeveloperProjectInputSchema, createDraftReviewRequestInputSchema, developerProjectReadinessSchema, developerProjectSessionSummarySchema, developerProjectSetupSchema, developerProjectSummaryListSchema, developerProjectSummarySchema, DeveloperSetupAgent (+16 more)
 
 ### Community 35 - "sessions.controller.ts"
 Cohesion: 0.08
-Nodes (26): buildPrepareRunArgs(), createDockerDependencyCacheKey(), createMissingMountpoints(), DockerCommandResult, DockerDependencyPrewarmer, DockerDependencyPrewarmerDependencies, DockerDependencyPrewarmerLogger, errorMessage() (+18 more)
+Nodes (24): buildPrepareRunArgs(), createDockerDependencyCacheKey(), createMissingMountpoints(), DockerCommandResult, DockerDependencyPrewarmer, DockerDependencyPrewarmerDependencies, DockerDependencyPrewarmerLogger, errorMessage() (+16 more)
 
 ### Community 36 - "DatabaseExecutor"
-Cohesion: 0.07
-Nodes (28): AgentAuthenticationService, Injectable, Inject, DiffService, isSessionDiffPayload(), SessionDiffView, AgentEventsRepositoryAdapter, Injectable (+20 more)
+Cohesion: 0.05
+Nodes (41): DiffService, isSessionDiffPayload(), SessionDiffView, AgentEventsRepositoryAdapter, Inject, Injectable, AgentRegistrationsRepositoryAdapter, isRecord() (+33 more)
 
 ### Community 37 - "ReviewRequestsRepository"
-Cohesion: 0.11
-Nodes (12): PreparedWorktree, DEFAULT_SESSION_STATE_PATH, FileSessionWorkspaceStore, isMissingFileError(), metadataSchema, stateSchema, toPersistedWorkspace(), workspaceSchema (+4 more)
+Cohesion: 0.10
+Nodes (15): PreparedWorktree, DEFAULT_SESSION_STATE_PATH, FileSessionWorkspaceStore, isMissingFileError(), metadataSchema, stateSchema, toPersistedWorkspace(), workspaceSchema (+7 more)
 
 ### Community 38 - "SessionsController"
-Cohesion: 0.14
-Nodes (16): CommandResult, containerImageSchema, enrichConfigWithProjectManifests(), healthcheckUrlTemplateSchema, isLoopbackPortMappingTemplate(), isValidPort(), loadProjectManifest(), loopbackPortMappingSchema (+8 more)
+Cohesion: 0.10
+Nodes (26): ProjectChecksConfig, AgentConfig, AgentModelConfig, AgentProjectDescriptor, SaveAgentConfigInput, CommandResult, containerImageSchema, enrichConfigWithProjectManifests() (+18 more)
 
 ### Community 39 - "ToolReadinessService"
-Cohesion: 0.13
-Nodes (27): buildValidationRepairPrompt(), hasRepairableCheckFailure(), isRetryableError(), AgentEventEnvelopeInput, buildAgentConnectedEvent(), buildAgentDoneEvent(), buildAgentOutputEvent(), buildChecksResultEvent() (+19 more)
+Cohesion: 0.12
+Nodes (29): buildValidationRepairPrompt(), hasRepairableCheckFailure(), isRetryableError(), AgentEventEnvelopeInput, buildAgentConnectedEvent(), buildAgentDoneEvent(), buildAgentOutputEvent(), buildChecksResultEvent() (+21 more)
 
 ### Community 40 - "Implementation handoff — PairDock MVP"
 Cohesion: 0.21
-Nodes (4): buildSessionPrepareCommand(), formatUserDisplayName(), SessionsService, Injectable
+Nodes (9): mapProjectMembership(), ProjectMembersRepositoryAdapter, Injectable, AddProjectMemberInput, ProjectMembersRepository, ProjectMembership, ProjectMembershipRole, SourceControlProvider (+1 more)
 
 ### Community 41 - "docker-sandbox.adapter.ts"
 Cohesion: 0.16
 Nodes (15): assertSafeContainerImage(), buildCloudflareDockerArgs(), buildTunnelContainerName(), CloudflarePreviewTunnelAdapter, CloudflarePreviewTunnelDependencies, ManagedTunnelProcess, onceExit(), resolveRestoredTunnelContainerName() (+7 more)
 
 ### Community 42 - "session-runner.ts"
-Cohesion: 0.10
-Nodes (19): buildHostCommandEnvironment(), HostCheckCommandExecutor, HostCheckCommandExecutorDependencies, HostCheckCommandInput, HostCommandSpawnOptions, SAFE_HOST_COMMAND_ENVIRONMENT_KEYS, appendLogs(), allocateHostPort() (+11 more)
+Cohesion: 0.13
+Nodes (12): allocateHostPort(), execFileAsync, HostPreviewRuntimeAdapter, HostPreviewRuntimeDependencies, HostSpawnOptions, isProcessGroupOwned(), ManagedHostPreviewProcess, signalProcessGroup() (+4 more)
 
 ### Community 43 - "ui.ts"
 Cohesion: 0.11
-Nodes (16): AgentCancelCommandEnvelope, agentCancelCommandEnvelopeSchema, AgentCommandEnvelope, AgentPromptCommandEnvelope, agentPromptCommandEnvelopeSchema, ChecksRunCommandEnvelope, checksRunCommandEnvelopeSchema, GitGetDiffCommandEnvelope (+8 more)
+Nodes (14): buildHostCommandEnvironment(), HostCheckCommandExecutor, HostCheckCommandExecutorDependencies, HostCheckCommandInput, HostCheckCommandRunner, HostCommandSpawnOptions, SAFE_HOST_COMMAND_ENVIRONMENT_KEYS, appendLogs() (+6 more)
 
 ### Community 44 - "tool-readiness.integration.test.ts"
 Cohesion: 0.52
@@ -395,48 +408,48 @@ Cohesion: 0.12
 Nodes (15): Actors, Assumptions, Fixed constraints, Functional requirements, Goals, Handoff summary, Non-functional requirements, Non-goals for MVP (+7 more)
 
 ### Community 46 - "session-details.integration.test.ts"
-Cohesion: 0.21
-Nodes (7): branchExists(), execFileAsync, execGit(), pathExists(), remoteExists(), WorktreeService, BlockingPushWorktreeService
+Cohesion: 0.20
+Nodes (8): branchExists(), execFileAsync, execGit(), pathExists(), remoteExists(), WorktreeService, SessionPrepareCommandEnvelope, BlockingPushWorktreeService
 
 ### Community 47 - "diff.service.ts"
-Cohesion: 0.10
-Nodes (17): DeveloperProjectCard(), DeveloperProjectCardProps, ProjectFactProps, ProjectShareForm(), ProjectShareFormProps, SessionControlCard(), SessionControlCardProps, checkLabels (+9 more)
+Cohesion: 0.13
+Nodes (16): Button(), DeveloperProjectCardProps, ProjectFactProps, ProjectShareForm(), ProjectShareFormProps, SessionControlCard(), SessionControlCardProps, checkLabels (+8 more)
 
 ### Community 48 - "command-handling.integration.test.ts"
-Cohesion: 0.10
-Nodes (7): HealthcheckTimeoutError, createTempRepository(), execFileAsync, execGit(), FailOnceClosePreviewTunnelPort, ImmediateTimeoutHealthcheckService, ReadyPreviewTunnelPort
+Cohesion: 0.08
+Nodes (12): HealthcheckService, HealthcheckTimeoutError, HealthcheckWaitInput, HealthcheckResult, createTempRepository(), execFileAsync, execGit(), FailOnceClosePreviewTunnelPort (+4 more)
 
 ### Community 49 - "codex-model-catalog.ts"
-Cohesion: 0.19
-Nodes (12): applyCodexCommandToProjects(), CodexCatalogOptions, CodexInstallation, codexModelCacheSchema, codexModelSchema, codexReasoningLevelSchema, compareVersions(), enrichConfigWithCodexModels() (+4 more)
+Cohesion: 0.16
+Nodes (7): Inject, buildSessionPrepareCommand(), compareSessionMembers(), formatUserDisplayName(), sessionMemberOrder(), SessionsService, Injectable
 
 ### Community 50 - "DatabaseClient"
-Cohesion: 0.29
-Nodes (6): AgentHarnessEvent, AgentHarnessEventQueue, isCodexCommand(), normalizeExitCode(), prepareHarnessShell(), quoteShellValue()
+Cohesion: 0.26
+Nodes (7): mapMessage(), MessagesRepositoryAdapter, Inject, Injectable, CreateMessageInput, MessagesRepository, SessionMessage
 
 ### Community 51 - "example-project.integration.test.ts"
 Cohesion: 0.11
 Nodes (9): AgentHarnessPort, RunPromptInput, SimulatedAgentHarness, AlwaysChangingHarnessPort, CancellableHarnessPort, InitialChangeOnlyHarnessPort, MutatingHarnessPort, RecordingHarnessPort (+1 more)
 
 ### Community 53 - "test-json.ts"
-Cohesion: 0.20
-Nodes (5): authenticateDeveloper(), authenticatePm(), createDeveloperProject(), prisma, startApplication()
+Cohesion: 0.11
+Nodes (11): authenticateDeveloper(), authenticatePm(), prisma, startApplication(), developerProjectResponseSchema, sharedProjectListResponseSchema, authenticateDeveloper(), authenticatePm() (+3 more)
 
 ### Community 54 - "SessionsService"
 Cohesion: 0.12
 Nodes (14): authenticatePm(), prisma, authenticatePm(), prisma, startApplication(), authenticatePm(), prisma, startApplication() (+6 more)
 
 ### Community 55 - "AuthenticatedRequest"
-Cohesion: 0.12
-Nodes (20): parseJsonObject(), isProjectMembershipRole(), mapProjectMembership(), mapProjectReadinessSnapshot(), parseProjectMembershipRole(), ProjectMembersRepositoryAdapter, Injectable, ProjectReadinessRepositoryAdapter (+12 more)
+Cohesion: 0.19
+Nodes (9): mapProjectReadinessSnapshot(), ProjectReadinessRepositoryAdapter, Injectable, ProjectReadinessRepository, UpsertProjectReadinessInput, Inject, Inject, ProjectReadinessSnapshot (+1 more)
 
 ### Community 56 - "SessionsService"
 Cohesion: 0.16
 Nodes (9): requestJson(), FeedIdentity, feedRegistry, getFeed(), SessionEventFeed, useSessionEventFeed(), getBackendUrl(), FeedConnectionState (+1 more)
 
 ### Community 57 - "PRD — PairDock MVP"
-Cohesion: 0.12
-Nodes (16): scripts, build, db:migrate, db:migrate:dev, db:migrate:test, db:reset, db:seed:pm-demo, db:status (+8 more)
+Cohesion: 0.18
+Nodes (9): createAttachmentStorage(), normalizePublicBaseUrl(), R2_ENVIRONMENT_KEYS, AttachmentObject, AttachmentStoragePort, PutAttachmentObjectInput, LocalAttachmentStorageAdapter, R2AttachmentStorageAdapter (+1 more)
 
 ### Community 58 - "slack-pm-identity.adapter.ts"
 Cohesion: 0.15
@@ -444,11 +457,11 @@ Nodes (11): Fetcher, parseFixtureIdentity(), SlackAuthTestResponse, slackHeaders
 
 ### Community 59 - "dependencies"
 Cohesion: 0.13
-Nodes (15): @pairdock/shared-contracts, socket.io, dotenv, @nestjs/core, @nestjs/websockets, @prisma/adapter-pg, @prisma/client, dependencies (+7 more)
+Nodes (15): dependencies, @aws-sdk/client-s3, dotenv, @nestjs/platform-socket.io, @pairdock/domain, @pairdock/shared-contracts, @prisma/client, reflect-metadata (+7 more)
 
 ### Community 60 - "Backend NestJS modules"
-Cohesion: 0.15
-Nodes (10): InvitationsService, Inject, Injectable, mapSessionMember(), SessionMembersRepositoryAdapter, Injectable, AddSessionMemberInput, SessionMembersRepository (+2 more)
+Cohesion: 0.10
+Nodes (19): InvitationsService, Inject, Injectable, mapSessionMember(), SessionMembersRepositoryAdapter, Injectable, AddSessionMemberInput, SessionMembersRepository (+11 more)
 
 ### Community 61 - "include"
 Cohesion: 0.13
@@ -459,16 +472,16 @@ Cohesion: 0.12
 Nodes (17): AgentGatewayModule, AuditLogModule, AuthModule, Backend NestJS modules, DiffModule, GithubModule, InvitationsModule, PersistenceModule (+9 more)
 
 ### Community 63 - "AgentAuthenticationService"
-Cohesion: 0.16
-Nodes (12): boundRenderedDiff(), ChangedFile, CollectedDiff, DiffService, DiffSnapshot, execGitText(), GitOutput, normalizeStatusPath() (+4 more)
+Cohesion: 0.14
+Nodes (13): boundRenderedDiff(), ChangedFile, CollectedDiff, DiffService, DiffSnapshot, execGitText(), GitOutput, normalizeStatusPath() (+5 more)
 
 ### Community 64 - "source-control-connections.repository.ts"
-Cohesion: 0.15
-Nodes (12): Fetcher, GithubDeveloperIdentityConfig, GithubEmailResponse, GithubInstallationMetadata, GithubInstallationsResponse, GithubOAuthResponse, GithubUserResponse, readGithubConfig() (+4 more)
+Cohesion: 0.22
+Nodes (7): AuthProvider, AuthProviders, OAuthStartUrlConfig, DEVELOPER_IDENTITY_PORT, PM_IDENTITY_PORT, AuthEnvironment, isDevelopmentPmAuthEnabled()
 
 ### Community 65 - "use-app-route.ts"
-Cohesion: 0.14
-Nodes (21): AppShell(), getAppRouteSnapshot(), loginRoute, openDeveloperHome(), openLogin(), openPmDashboard(), openPmReviewRequests(), openPmSession() (+13 more)
+Cohesion: 0.17
+Nodes (15): AppShell(), getAppRouteSnapshot(), loginRoute, openDeveloperHome(), openLogin(), openPmDashboard(), openPmReviewRequests(), openPmSession() (+7 more)
 
 ### Community 66 - "compilerOptions"
 Cohesion: 0.14
@@ -479,44 +492,44 @@ Cohesion: 0.33
 Nodes (13): "agent_events", "agent_registrations", "external_identities", "github_installations", "messages", "project_members", "project_readiness_snapshots", "projects" (+5 more)
 
 ### Community 68 - "json-parsers.ts"
-Cohesion: 0.13
-Nodes (7): isCommandAcknowledgement(), repositoriesMatch(), resolveDeveloperReadinessFailure(), port, server, createAgentServer(), createAgentServer()
+Cohesion: 0.19
+Nodes (7): isCommandAcknowledgement(), AgentCommandEnvelope, RecordingAgentCommandRouter, port, server, createAgentServer(), createAgentServer()
 
 ### Community 69 - "Product"
-Cohesion: 0.23
-Nodes (9): BrandIconProps, GitMergeIcon(), GitPullRequestClosedIcon(), GitPullRequestIcon(), PullRequestStatusLink(), resolvePullRequestLabel(), resolvePullRequestState(), ReviewRequest (+1 more)
+Cohesion: 0.21
+Nodes (10): BrandIconProps, GitMergeIcon(), GitPullRequestClosedIcon(), GitPullRequestIcon(), SlackIcon(), PullRequestStatusLink(), resolvePullRequestLabel(), resolvePullRequestState() (+2 more)
 
 ### Community 70 - "dependencies"
-Cohesion: 0.17
+Cohesion: 0.15
 Nodes (6): authenticateDeveloper(), authenticatePm(), createSession(), prisma, startApplication(), sessionPromptResponseSchema
 
 ### Community 71 - "developer-project-form.tsx"
-Cohesion: 0.12
-Nodes (11): HostCheckCommandRunner, DockerOrphanReconciler, errorMessage(), SessionCloseResult, SessionPrepareHooks, SessionRecoveryResult, SessionRunner, previewUsesDockerTunnel() (+3 more)
+Cohesion: 0.25
+Nodes (11): AuthenticatedRequest, ProjectsController, Body, Controller, Get, Inject, Param, Post (+3 more)
 
 ### Community 72 - "V1 developer setup"
-Cohesion: 0.14
-Nodes (13): 1. GitHub App, 2. Slack App, 3. Start PairDock, 4. Cloudflare Tunnel, 5. Add `pairdock.yml`, 6. Configure the local agent, 7. Create a PairDock project, Commands (+5 more)
+Cohesion: 0.09
+Nodes (21): Deploy, update, or roll back, Deployment environment, Local developer agent and previews, One-time server setup, PairDock production deployment, Release images, Security before exposing PairDock, 1. GitHub App (+13 more)
 
 ### Community 73 - "ui-gateway.browser-auth.integration.test.ts"
 Cohesion: 0.15
 Nodes (6): sessionIdResponseSchema, authenticateDeveloper(), authenticatePm(), createSession(), prisma, startApplication()
 
 ### Community 74 - "external-identities.repository.ts"
-Cohesion: 0.11
-Nodes (20): ExternalIdentitiesRepositoryAdapter, Inject, Injectable, isToolReadinessKey(), isToolReadinessStatus(), parseToolReadinessCheck(), parseToolReadinessChecks(), serializeChecks() (+12 more)
-
-### Community 75 - "ToolReadinessService"
 Cohesion: 0.16
 Nodes (12): ToolReadinessController, Controller, Get, HttpCode, Inject, Param, Post, Req (+4 more)
 
+### Community 75 - "ToolReadinessService"
+Cohesion: 0.18
+Nodes (8): mapProject(), ProjectsRepositoryAdapter, Injectable, CreateProjectInput, DeveloperProjectRecord, ProjectsRepository, SharedProjectRecord, Project
+
 ### Community 76 - "pm-activity-page.tsx"
-Cohesion: 0.09
-Nodes (19): ButtonProps, ButtonVariant, variantClasses, ConnectionActivityRail(), ConnectionActivityRailProps, RailMetricProps, DropdownMenuField(), DropdownMenuFieldProps (+11 more)
+Cohesion: 0.12
+Nodes (15): ButtonProps, ButtonVariant, variantClasses, DropdownMenuField(), DropdownMenuFieldProps, DropdownMenuItem(), DropdownMenuOption, SectionCard() (+7 more)
 
 ### Community 77 - "commands.ts"
-Cohesion: 0.13
-Nodes (10): isLifecycleProgressStatus(), toSessionAgentEvent(), ConnectedSocket, MessageBody, SubscribeMessage, BackendEventRejectedError, AgentEventEnvelope, ChecksResultEventEnvelope (+2 more)
+Cohesion: 0.14
+Nodes (10): AgentGateway, ConnectedSocket, Injectable, MessageBody, SubscribeMessage, WebSocketGateway, WebSocketServer, cloneSnapshot() (+2 more)
 
 ### Community 78 - "package.json"
 Cohesion: 0.17
@@ -527,28 +540,28 @@ Cohesion: 0.21
 Nodes (8): announceAgent(), authenticatePm(), prisma, publishReadiness(), sendAgentEvent(), startApplication(), waitForConnect(), sessionCreateResponseSchema
 
 ### Community 80 - "shared-projects.integration.test.ts"
-Cohesion: 0.21
-Nodes (8): announceAgent(), authenticatePm(), prisma, publishReadiness(), sendAgentEvent(), startApplication(), waitForConnect(), sharedProjectListResponseSchema
+Cohesion: 0.24
+Nodes (7): announceAgent(), authenticatePm(), prisma, publishReadiness(), sendAgentEvent(), startApplication(), waitForConnect()
 
 ### Community 81 - "mappers.ts"
-Cohesion: 0.10
-Nodes (11): mapReviewRequest(), ReviewRequestsRepositoryAdapter, Injectable, CreateReviewRequestInput, ReviewRequestsRepository, ReviewRequestRecord, SourceControlPort, developer (+3 more)
+Cohesion: 0.12
+Nodes (9): Inject, Inject, Inject, Inject, Inject, Inject, Inject, Inject (+1 more)
 
 ### Community 82 - "session-prompt.service.ts"
 Cohesion: 0.24
 Nodes (11): DEVELOPMENT_PM, main(), assertLocalDevelopmentSeedTarget(), buildPmDemoSessions(), demoDiff(), deterministicUuid(), passingValidation(), PmDemoMessage (+3 more)
 
 ### Community 83 - "auth.service.ts"
-Cohesion: 0.21
-Nodes (11): AgentRegistrationsRepositoryAdapter, isRecord(), mapAgentRegistration(), parseModels(), parseProjects(), parseStringArray(), Inject, Injectable (+3 more)
+Cohesion: 0.14
+Nodes (12): createApiClient(), ImageLightbox(), ImageLightboxProps, ConversationScreenshot(), ConversationThread(), ConversationThreadProps, SessionStarted, StartPmSessionInput (+4 more)
 
 ### Community 84 - "AgentCommandEnvelope"
-Cohesion: 0.25
-Nodes (14): loadAgentConfig(), resolveAgentConfigPath(), saveAgentConfig(), summarizeAgentConfig(), main(), parseModelMapping(), parseModelMappings(), parseProjectMapping() (+6 more)
+Cohesion: 0.12
+Nodes (26): loadAgentConfig(), resolveAgentConfigPath(), saveAgentConfig(), summarizeAgentConfig(), applyCodexCommandToProjects(), CodexCatalogOptions, CodexInstallation, codexModelCacheSchema (+18 more)
 
 ### Community 85 - "BT-050 — Same-email cross-role accounts remain independent"
-Cohesion: 0.25
-Nodes (11): AuthenticatedRequest, ProjectsController, Body, Controller, Get, Inject, Param, Post (+3 more)
+Cohesion: 0.17
+Nodes (13): PromptComposer(), PromptComposerProps, ReviewRequestDialog(), ACCEPTED_IMAGE_TYPES, appendScreenshotFiles(), AppendScreenshotFilesOptions, ClipboardDataWithItems, getPastedImageFiles() (+5 more)
 
 ### Community 86 - "Screens represented"
 Cohesion: 0.18
@@ -559,12 +572,12 @@ Cohesion: 0.22
 Nodes (8): exports, name, private, scripts, build, typecheck, type, version
 
 ### Community 88 - ".authenticateDeveloper"
-Cohesion: 0.16
-Nodes (19): ConversationThread(), ConversationThreadProps, useSessionData(), asRecord(), buildSessionConversation(), extractErrorMessage(), humanizeAgentError(), mergeAdjacentAgentOutput() (+11 more)
+Cohesion: 0.30
+Nodes (10): asRecord(), buildSessionConversation(), extractErrorMessage(), humanizeAgentError(), mergeAdjacentAgentOutput(), promoteFinalAgentMessages(), toConversationEvent(), checksResultPayloadSchema (+2 more)
 
 ### Community 89 - "agent-command-routing.integration.test.ts"
-Cohesion: 0.06
-Nodes (48): AgentExecutionCapabilitiesService, SessionExecutionSelection, Inject, Injectable, AgentGateway, Injectable, WebSocketGateway, WebSocketServer (+40 more)
+Cohesion: 0.12
+Nodes (31): RequireSessionAccess(), AGENT_EVENTS_REPOSITORY, AGENT_REGISTRATIONS_REPOSITORY, ATTACHMENTS_REPOSITORY, EXTERNAL_IDENTITIES_REPOSITORY, MESSAGES_REPOSITORY, PERSISTENCE_UNIT_OF_WORK, PROJECT_MEMBERS_REPOSITORY (+23 more)
 
 ### Community 90 - "agent-gateway.integration.test.ts"
 Cohesion: 0.17
@@ -576,11 +589,11 @@ Nodes (8): boot(), getReactDOM(), init(), parseDataProps(), parseDcDocument(), p
 
 ### Community 92 - "package.json"
 Cohesion: 0.20
-Nodes (9): socket.io-client, prisma, devDependencies, prisma, socket.io-client, name, private, type (+1 more)
+Nodes (9): devDependencies, prisma, socket.io-client, socket.io-client, name, private, type, version (+1 more)
 
 ### Community 94 - "createRuntime"
-Cohesion: 0.09
-Nodes (12): HealthcheckService, isInsideSensitiveDirectory(), normalizeRelativePath(), SensitiveFilesPolicy, createTempRepository(), execFileAsync, execGit(), FailingClosePreviewTunnelPort (+4 more)
+Cohesion: 0.08
+Nodes (13): DockerOrphanReconcileInput, DockerOrphanReconciler, DockerOrphanReconcilerDependencies, execFileAsync, listManagedContainers(), ManagedDockerContainer, stopContainers(), createTempRepository() (+5 more)
 
 ### Community 95 - "PairDock Interactive Prototype"
 Cohesion: 0.12
@@ -600,7 +613,7 @@ Nodes (8): compilerOptions, emitDecoratorMetadata, experimentalDecorators, exten
 
 ### Community 99 - "SessionRegistry"
 Cohesion: 0.07
-Nodes (24): AgentCommandRouterService, Inject, Injectable, mapSession(), SessionsRepositoryAdapter, Injectable, CreateSessionInput, SessionsRepository (+16 more)
+Nodes (28): AgentCommandRouterService, Inject, Injectable, AttachmentsController, Controller, Inject, SessionAttachmentsService, Injectable (+20 more)
 
 ### Community 100 - "package.json"
 Cohesion: 0.22
@@ -619,40 +632,36 @@ Cohesion: 0.14
 Nodes (6): AgentConnectedEventEnvelope, RecordedHandshake, RecordingRestoreSessionRunner, SessionRunnerWithRecoveredWorkspace, SessionRunnerWithRecoveryFailure, waitFor()
 
 ### Community 104 - "package.json"
-Cohesion: 0.25
-Nodes (5): authenticateDeveloper(), authenticatePm(), prisma, startApplication(), developerProjectResponseSchema
+Cohesion: 0.19
+Nodes (8): ConnectedSocket, Inject, Injectable, MessageBody, SubscribeMessage, WebSocketGateway, WebSocketServer, UiGateway
 
 ### Community 105 - "HealthController"
 Cohesion: 0.13
-Nodes (14): mapValidationRun(), Injectable, ValidationRunsRepositoryAdapter, CreateValidationRunInput, ValidationRunsRepository, Injectable, ValidationPolicy, SessionValidationView (+6 more)
+Nodes (14): mapReviewRequest(), ReviewRequestsRepositoryAdapter, Injectable, createPersistenceRepositories(), PersistenceUnitOfWorkAdapter, Injectable, PersistenceRepositories, PersistenceUnitOfWork (+6 more)
 
 ### Community 106 - "developer-project-form.tsx"
-Cohesion: 0.24
-Nodes (5): buildAgentCancelCommand(), buildAgentPromptCommand(), SessionPromptService, Injectable, Inject
+Cohesion: 0.21
+Nodes (5): buildAgentCancelCommand(), buildAgentPromptCommand(), SessionPromptService, toAttachmentView(), Injectable
 
 ### Community 107 - "tsconfig.json"
 Cohesion: 0.33
 Nodes (5): extends, include, src/**/*.ts, ../../tsconfig.base.json, ../../tests/packages/local-agent/**/*.ts
 
-### Community 108 - "persistence.integration.test.ts"
-Cohesion: 0.29
-Nodes (3): Inject, DatabaseClient, Injectable
-
 ### Community 109 - "auth.service.ts"
-Cohesion: 0.22
-Nodes (7): AuthProvider, AuthProviders, OAuthStartUrlConfig, DEVELOPER_IDENTITY_PORT, PM_IDENTITY_PORT, AuthEnvironment, isDevelopmentPmAuthEnabled()
+Cohesion: 0.11
+Nodes (9): Inject, AuthService, buildFrontendAuthRedirectUrl(), hasAccessibleGithubInstallation(), Inject, Injectable, Inject, Injectable (+1 more)
 
 ### Community 110 - "AgentEventEnvelope"
-Cohesion: 0.22
-Nodes (10): base64UrlEncode(), createGithubAppJwt(), Fetcher, GithubBranchResponse, GithubInstallationRepositoriesResponse, GithubInstallationTokenResponse, GithubPullResponse, GithubRepositoryResponse (+2 more)
+Cohesion: 0.14
+Nodes (15): readGithubConfig(), readSlackConfig(), areIdentityFixturesEnabled(), base64UrlEncode(), createGithubAppJwt(), deterministicReviewRequestNumber(), Fetcher, GithubBranchResponse (+7 more)
 
 ### Community 112 - "tsconfig.json"
 Cohesion: 0.40
 Nodes (4): extends, include, src/**/*.ts, ../../tsconfig.base.json
 
 ### Community 113 - "GithubSourceControlAdapter"
-Cohesion: 0.36
-Nodes (3): AuthenticatedUserGuard, Injectable, RequireAuth()
+Cohesion: 0.15
+Nodes (12): AgentProjectOption, DeveloperProjectForm(), DeveloperProjectFormProps, ProjectFormState, ProjectSetupStateProps, resolveModelOptions(), ExecutionSelection, ExecutionSelectionControls() (+4 more)
 
 ### Community 114 - "tsconfig.json"
 Cohesion: 0.40
@@ -661,10 +670,6 @@ Nodes (4): extends, include, src/**/*.ts, ../../tsconfig.base.json
 ### Community 115 - "PairDock collaborative developer/PM prototype"
 Cohesion: 0.25
 Nodes (7): name, private, scripts, build, lint, test, type
-
-### Community 116 - "SourceControlPort"
-Cohesion: 0.25
-Nodes (7): Deploy, update, or roll back, Deployment environment, Local developer agent and previews, One-time server setup, PairDock production deployment, Release images, Security before exposing PairDock
 
 ### Community 117 - "ci-gates.test.ts"
 Cohesion: 0.40
@@ -677,6 +682,10 @@ Nodes (4): queryClient, rootElement, LoginPage(), renderLoginPage()
 ### Community 119 - "01 Fixed — Nimbus Trial Button Fix Preview"
 Cohesion: 0.50
 Nodes (4): 01 Clean — Blank Nimbus Landing Preview, 01 Fixed — Nimbus Trial Button Fix Preview, 02 Clean — Blank Nimbus Landing Preview, 02 Fixed — Nimbus Trial Button Fix Preview
+
+### Community 120 - "SourceControlPort"
+Cohesion: 0.24
+Nodes (7): BinaryResponse, sendAttachment(), Get, Param, Req, RequireSessionAccess, Res
 
 ### Community 121 - "walk"
 Cohesion: 0.38
@@ -695,16 +704,16 @@ Cohesion: 0.29
 Nodes (7): get(), createExternalModules(), createHelmetManager(), createPseudoSheet(), createRegistry(), createRuntime(), Placeholder()
 
 ### Community 125 - "agent-prompt-command.integration.test.ts"
-Cohesion: 0.11
-Nodes (9): buildPrepareCommand(), createManagedWorktreeRoot(), createPreparedValidationFeedbackClient(), createTempRepository(), execFileAsync, execGit(), ReadyPreviewTunnelPort, ReadySandboxPort (+1 more)
+Cohesion: 0.13
+Nodes (8): buildPrepareCommand(), createManagedWorktreeRoot(), createPreparedValidationFeedbackClient(), createTempRepository(), execFileAsync, execGit(), ReadySandboxPort, waitForAgentEvents()
 
 ### Community 126 - "dependencies"
 Cohesion: 0.18
 Nodes (11): @pairdock/shared-contracts, socket.io-client, zod, @tanstack/react-form, @tanstack/react-query, dependencies, @pairdock/shared-contracts, socket.io-client (+3 more)
 
 ### Community 127 - "@nestjs/websockets"
-Cohesion: 0.18
-Nodes (7): AppModule, Module, bootstrap(), startApplication(), prisma, startApplication(), waitFor()
+Cohesion: 0.16
+Nodes (8): AppModule, Module, bootstrap(), startApplication(), prisma, startApplication(), waitFor(), startApplication()
 
 ### Community 128 - "AGENTS.md"
 Cohesion: 0.40
@@ -713,6 +722,10 @@ Nodes (4): Fixtures, MVP E2E scenario, Reproduce locally, What it proves
 ### Community 129 - "migration.sql"
 Cohesion: 0.40
 Nodes (4): Answer, Outcome, Q: Trace all suggested graph questions using documentation only, Source Nodes
+
+### Community 130 - "review-requests.repository.ts"
+Cohesion: 0.07
+Nodes (13): PreviewTunnelPort, ReadyPreviewTunnelPort, createTempRepository(), execFileAsync, execGit(), prisma, ReadyPreviewTunnelPort, ReadyPreviewTunnelPort (+5 more)
 
 ### Community 131 - "prisma.config.ts"
 Cohesion: 0.29
@@ -734,17 +747,37 @@ Nodes (9): authenticateDeveloper(), createSession(), prisma, startApplication(),
 Cohesion: 0.47
 Nodes (3): HealthController, Controller, Get
 
+### Community 145 - "SessionsRepositoryAdapter"
+Cohesion: 0.14
+Nodes (10): ConnectionActivityRail(), ConnectionActivityRailProps, RailMetricProps, DeveloperProjectCard(), useDeveloperProjects(), DeveloperHomePage(), DeveloperHomePageProps, ErrorCardProps (+2 more)
+
 ### Community 147 - "Get"
-Cohesion: 0.13
-Nodes (11): mapProject(), ProjectsRepositoryAdapter, Injectable, CreateProjectInput, DeveloperProjectRecord, ProjectsRepository, SharedProjectRecord, Project (+3 more)
+Cohesion: 0.23
+Nodes (10): detectImageType(), isJpeg(), isPng(), isWebp(), safeOriginalName(), UploadedScreenshot, ValidatedScreenshot, validateScreenshot() (+2 more)
+
+### Community 148 - "tool-readiness-panel.tsx"
+Cohesion: 0.26
+Nodes (7): mapSourceControlConnection(), SourceControlConnectionsRepositoryAdapter, Injectable, CreateSourceControlConnectionInput, SourceControlConnectionsRepository, SourceControlConnection, InMemoryRepositories
 
 ### Community 150 - "SharedProjectSummary"
 Cohesion: 0.20
-Nodes (11): SharedProjectCard(), SharedProjectCardProps, SessionStarted, StartPmSessionInput, useSharedProjects(), UseSharedProjectsResult, PmDashboardPage(), PmDashboardPageProps (+3 more)
+Nodes (12): SharedProjectCard(), cleanCallbackHash(), clearAuthSession(), getAuthSessionSnapshot(), readCallbackSession(), subscribe(), useAuthSession(), useSharedProjects() (+4 more)
 
-### Community 154 - "ui.ts"
-Cohesion: 0.08
-Nodes (24): createDeveloperProjectInputSchema, createDraftReviewRequestInputSchema, developerProjectReadinessSchema, developerProjectSessionSummarySchema, developerProjectSetupSchema, developerProjectSummaryListSchema, developerProjectSummarySchema, DeveloperSetupAgent (+16 more)
+### Community 151 - "Deployment security audit — 2026-07-19"
+Cohesion: 0.12
+Nodes (16): scripts, build, db:migrate, db:migrate:dev, db:migrate:test, db:reset, db:seed:pm-demo, db:status (+8 more)
+
+### Community 153 - ".constructor"
+Cohesion: 0.33
+Nodes (5): extensionFor(), PromptAttachment, PromptAttachmentDownloader, resolveHarnessTempDirectory(), AgentPromptCommandEnvelope
+
+### Community 154 - "pm-session-page.tsx"
+Cohesion: 0.26
+Nodes (9): ReviewRequestDialogProps, useSessionData(), sessionQueryKeys, formatSessionStatus(), getPromptBlockedReason(), PmSessionPage(), PmSessionPageProps, isPromptableSessionStatus() (+1 more)
+
+### Community 158 - "authenticated-request.ts"
+Cohesion: 0.27
+Nodes (4): AuthenticatedUserGuard, Inject, Injectable, RequireAuth()
 
 ### Community 159 - "PairDock collaborative developer/PM prototype"
 Cohesion: 0.40
@@ -754,37 +787,53 @@ Nodes (5): Agent → backend events, Backend → agent commands, Backend ↔ age
 Cohesion: 0.40
 Nodes (5): Developer dashboard, Frontend product surfaces, Login, PM dashboard, Session workspace
 
-### Community 164 - "tool-readiness-panel.tsx"
-Cohesion: 0.24
-Nodes (6): DockerOrphanReconcileInput, DockerOrphanReconcilerDependencies, execFileAsync, listManagedContainers(), ManagedDockerContainer, stopContainers()
+### Community 161 - "session-state-machine.ts"
+Cohesion: 0.20
+Nodes (7): allowedProgressTransitions, interruptedOperationStatuses, interruptedPreparationStatuses, InvalidSessionTransitionError, NoChangesResumeStatus, ProgressStatus, SessionAgentEvent
 
-### Community 165 - "getReact"
-Cohesion: 0.31
-Nodes (9): ProjectChecksConfig, AgentConfig, AgentModelConfig, AgentProjectDescriptor, SaveAgentConfigInput, ProjectManifestLoadResult, ProjectAgentHarnessConfig, ReadinessRunnerConfig (+1 more)
+### Community 162 - "ChecksResult"
+Cohesion: 0.22
+Nodes (7): isLifecycleProgressStatus(), toSessionAgentEvent(), toValidationView(), Inject, Injectable, ValidationService, ChecksResultEventEnvelope
+
+### Community 164 - "tool-readiness-panel.tsx"
+Cohesion: 0.29
+Nodes (6): AgentHarnessEvent, AgentHarnessEventQueue, isCodexCommand(), normalizeExitCode(), prepareHarnessShell(), quoteShellValue()
+
+### Community 165 - ".create"
+Cohesion: 0.29
+Nodes (5): buildConventionalCommitMessage(), buildGitPushBranchCommand(), buildSessionBranchName(), CreateDraftReviewRequestUseCase, Injectable
 
 ### Community 166 - "ReadyPreviewTunnelPort"
 Cohesion: 0.24
 Nodes (8): currentDirectory, databaseTargetEnvironment, buildAdapter(), currentDirectory, DatabaseEnvironment, DatabaseTarget, parseDatabaseTarget(), resolveDatabaseConnectionString()
 
+### Community 167 - "session-attachments.service.ts"
+Cohesion: 0.42
+Nodes (5): ATTACHMENT_STORAGE, CreateSessionAttachmentsInput, CreateAttachmentInput, AttachmentPurpose, AttachmentVisibility
+
+### Community 168 - "ChecksResult"
+Cohesion: 0.47
+Nodes (3): ChecksResult, SequencedChecksRunner, WorktreeMutatingChecksRunner
+
 ## Knowledge Gaps
-- **618 isolated node(s):** `name`, `private`, `version`, `type`, `dev` (+613 more)
+- **630 isolated node(s):** `name`, `private`, `version`, `type`, `dev` (+625 more)
   These have ≤1 connection - possible missing edges or undocumented components.
-- **21 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
+- **25 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
 
 ## Suggested Questions
 _Questions this graph is uniquely positioned to answer:_
 
-- **Why does `dependencies` connect `dependencies` to `package.json`, `AgentCommandEnvelope`, `prisma.config.ts`?**
-  _High betweenness centrality (0.043) - this node is a cross-community bridge._
-- **Why does `resolve()` connect `github-developer-identity.adapter.ts` to `prisma.config.ts`, `resolve`, `DatabaseClient`, `support.js`, `AgentCommandEnvelope`, `example-project.integration.test.ts`, `walk`, `GithubSourceControlAdapter`, `createRuntime`, `@nestjs/websockets`?**
-  _High betweenness centrality (0.042) - this node is a cross-community bridge._
-- **Why does `createComponentFactory()` connect `prisma.config.ts` to `support.js`, `GithubSourceControlAdapter`?**
-  _High betweenness centrality (0.028) - this node is a cross-community bridge._
+- **Why does `PairDockIdentity` connect `PairDockIdentity` to `source-control-connections.repository.ts`, `SessionRegistry`, `.create`, `developer-project-form.tsx`, `Implementation handoff — PairDock MVP`, `HealthController`, `external-identities.repository.ts`, `tool-readiness.integration.test.ts`, `codex-model-catalog.ts`, `json-parsers.ts`, `agent-command-routing.integration.test.ts`, `AuthTokenService`, `authenticated-request.ts`?**
+  _High betweenness centrality (0.024) - this node is a cross-community bridge._
+- **Why does `resolve()` connect `github-developer-identity.adapter.ts` to `prisma.config.ts`, `tool-readiness-panel.tsx`, `resolve`, `command-handling.integration.test.ts`, `support.js`, `AgentCommandEnvelope`, `example-project.integration.test.ts`, `walk`, `GithubSourceControlAdapter`, `@nestjs/websockets`?**
+  _High betweenness centrality (0.020) - this node is a cross-community bridge._
+- **Why does `SandboxRef` connect `create-draft-review-request.use-case.ts` to `review-requests.repository.ts`, `ReviewRequestsRepository`, `index.ts`, `session-runner.ts`, `command-handling.integration.test.ts`, `mvp-flow.e2e.test.ts`, `createRuntime`?**
+  _High betweenness centrality (0.018) - this node is a cross-community bridge._
 - **What connects `name`, `private`, `version` to the rest of the system?**
-  _618 weakly-connected nodes found - possible documentation gaps or missing edges._
+  _630 weakly-connected nodes found - possible documentation gaps or missing edges._
 - **Should `agent-config.ts` be split into smaller, more focused modules?**
-  _Cohesion score 0.13825757575757575 - nodes in this community are weakly interconnected._
+  _Cohesion score 0.12773109243697478 - nodes in this community are weakly interconnected._
 - **Should `create-draft-review-request.use-case.ts` be split into smaller, more focused modules?**
-  _Cohesion score 0.05711849957374254 - nodes in this community are weakly interconnected._
+  _Cohesion score 0.07482993197278912 - nodes in this community are weakly interconnected._
 - **Should `Button` be split into smaller, more focused modules?**
   _Cohesion score 0.038461538461538464 - nodes in this community are weakly interconnected._

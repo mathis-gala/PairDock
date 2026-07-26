@@ -1,5 +1,6 @@
 import { Module } from '@nestjs/common';
 import { AgentGatewayModule } from '../agent-gateway/agent-gateway.module.js';
+import { AttachmentsModule } from '../attachments/attachments.module.js';
 import { AuthModule } from '../auth/auth.module.js';
 import { AuthenticatedUserGuard } from '../auth/authenticated-user.guard.js';
 import { SessionAccessGuard } from '../auth/session-access.guard.js';
@@ -18,6 +19,7 @@ import { SessionsService } from './sessions.service.js';
 @Module({
   imports: [
     AuthModule,
+    AttachmentsModule,
     InvitationsModule,
     PersistenceModule,
     AgentGatewayModule,

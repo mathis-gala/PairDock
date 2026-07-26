@@ -9,8 +9,16 @@ import {
   Param,
   Post,
   Req,
+  UploadedFiles,
+  UseInterceptors,
 } from '@nestjs/common';
+import { FilesInterceptor } from '@nestjs/platform-express';
 import { createDraftReviewRequestInputSchema } from '@pairdock/shared-contracts';
+import {
+  MAX_SCREENSHOT_BYTES,
+  MAX_SCREENSHOT_COUNT,
+  type UploadedScreenshot,
+} from '../attachments/screenshot-validation.js';
 import type { AuthenticatedRequest } from '../auth/authenticated-request.js';
 import { RequireAuth } from '../auth/require-auth.decorator.js';
 import { RequireSessionAccess } from '../auth/require-session-access.decorator.js';
@@ -77,15 +85,22 @@ export class SessionsController {
 
   @Post(':sessionId/prompts')
   @RequireSessionAccess()
+  @UseInterceptors(
+    FilesInterceptor('screenshots', MAX_SCREENSHOT_COUNT, {
+      limits: { fileSize: MAX_SCREENSHOT_BYTES },
+    }),
+  )
   createPrompt(
     @Param('sessionId') sessionId: string,
     @Body() body: CreatePromptBody | undefined,
     @Req() request: AuthenticatedRequest,
+    @UploadedFiles() screenshots: UploadedScreenshot[] | undefined,
   ) {
     return this.sessionPromptService.createPromptResponse(sessionId, {
       content: body?.content,
       sessionMember: request.sessionMember,
       user: request.user,
+      screenshots,
     });
   }
 
@@ -98,10 +113,16 @@ export class SessionsController {
 
   @Post(':sessionId/review-request')
   @RequireSessionAccess()
+  @UseInterceptors(
+    FilesInterceptor('screenshots', MAX_SCREENSHOT_COUNT, {
+      limits: { fileSize: MAX_SCREENSHOT_BYTES },
+    }),
+  )
   createDraftReviewRequest(
     @Param('sessionId') sessionId: string,
     @Body() body: unknown,
     @Req() request: AuthenticatedRequest,
+    @UploadedFiles() screenshots: UploadedScreenshot[] | undefined,
   ) {
     if (!request.user) {
       throw new InternalServerErrorException('Authenticated user was not resolved.');
@@ -113,6 +134,6 @@ export class SessionsController {
       throw new BadRequestException('PR type, title, and description are required.');
     }
 
-    return this.createDraftReviewRequestUseCase.create(sessionId, request.user, input.data);
+    return this.createDraftReviewRequestUseCase.create(sessionId, request.user, input.data, screenshots);
   }
 }

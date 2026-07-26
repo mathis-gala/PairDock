@@ -64,6 +64,11 @@ function parseHash(hashValue: string): AppRoute {
     return { kind: 'developer-home' };
   }
 
+  const developerSessionRouteMatch = normalizedHash.match(/^\/developer\/sessions\/([0-9a-f-]{36})$/i);
+  if (developerSessionRouteMatch?.[1]) {
+    return { kind: 'developer-session', sessionId: developerSessionRouteMatch[1] };
+  }
+
   if (normalizedHash === '/pm') {
     return { kind: 'pm-dashboard' };
   }

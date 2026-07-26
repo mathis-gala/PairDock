@@ -2,7 +2,9 @@ import { Inject, Injectable } from '@nestjs/common';
 import { DatabaseClient, type DatabaseExecutor } from '../client.js';
 import type { PersistenceRepositories, PersistenceUnitOfWork } from '../ports/persistence-unit-of-work.js';
 import { AgentEventsRepositoryAdapter } from './agent-events.repository.js';
+import { AttachmentsRepositoryAdapter } from './attachments.repository.js';
 import { ExternalIdentitiesRepositoryAdapter } from './external-identities.repository.js';
+import { MessagesRepositoryAdapter } from './messages.repository.js';
 
 import { ProjectMembersRepositoryAdapter } from './project-members.repository.js';
 import { ProjectReadinessRepositoryAdapter } from './project-readiness.repository.js';
@@ -25,6 +27,8 @@ function createPersistenceRepositories(prisma: DatabaseExecutor): PersistenceRep
     sessions: new SessionsRepositoryAdapter(prisma),
     sessionMembers: new SessionMembersRepositoryAdapter(prisma),
     agentEvents: new AgentEventsRepositoryAdapter(prisma),
+    attachments: new AttachmentsRepositoryAdapter(prisma),
+    messages: new MessagesRepositoryAdapter(prisma),
     validationRuns: new ValidationRunsRepositoryAdapter(prisma),
     reviewRequests: new ReviewRequestsRepositoryAdapter(prisma),
   };

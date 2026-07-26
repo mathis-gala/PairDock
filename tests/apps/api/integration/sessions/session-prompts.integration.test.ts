@@ -1,5 +1,8 @@
 import assert from 'node:assert/strict';
 import { randomUUID } from 'node:crypto';
+import { mkdtemp, rm } from 'node:fs/promises';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
 import test from 'node:test';
 import { setTimeout as delay } from 'node:timers/promises';
 import type { INestApplication } from '@nestjs/common';
@@ -20,6 +23,7 @@ const prisma = new DatabaseClient();
 
 let app: INestApplication;
 let baseUrl: string;
+let attachmentStoragePath: string;
 
 async function resetDatabase() {
   await prisma.pullRequest.deleteMany();
@@ -151,6 +155,8 @@ function waitForCommand(socket: Socket, expectedType: AgentCommandEnvelope['type
 }
 
 test.before(async () => {
+  attachmentStoragePath = await mkdtemp(join(tmpdir(), 'pairdock-api-attachments-'));
+  process.env.PAIRDOCK_ATTACHMENT_STORAGE_PATH = attachmentStoragePath;
   await prisma.$connect();
   await startApplication();
 });
@@ -158,6 +164,8 @@ test.before(async () => {
 test.after(async () => {
   await app.close();
   await prisma.$disconnect();
+  await rm(attachmentStoragePath, { recursive: true, force: true });
+  delete process.env.PAIRDOCK_ATTACHMENT_STORAGE_PATH;
 });
 
 test.beforeEach(async () => {
@@ -245,6 +253,91 @@ test('Task 9: PM follow-up prompt after validation routes to the same session an
     agentSocket.close();
   }
 });
+
+test('PM can attach a screenshot to a prompt and the owning agent receives its metadata', async () => {
+  const developerLogin = await authenticateDeveloper();
+  const pmLogin = await authenticatePm();
+  const project = await createOwnedProject(developerLogin.body.user.id);
+  const session = await createSession(project.id, developerLogin.body.accessToken);
+
+  await prisma.sessionMember.create({
+    data: {
+      sessionId: session.id,
+      userId: pmLogin.body.user.id,
+      role: 'pm',
+    },
+  });
+  await prisma.session.update({
+    where: { id: session.id },
+    data: { status: 'READY' },
+  });
+
+  const agentSocket = connectAgentSocket();
+
+  try {
+    await waitForConnect(agentSocket);
+    const commandPromise = waitForCommand(agentSocket, 'agent.prompt');
+
+    agentSocket.emit(agentProtocolMessageEventName, {
+      protocolVersion: AGENT_PROTOCOL_VERSION,
+      messageId: randomUUID(),
+      type: 'agent.connected',
+      payload: {
+        agentId: 'agent-local-1',
+        capabilities: ['session.prepare', 'agent.prompt'],
+        models: [],
+        projects: [
+          {
+            key: project.agentProjectKey,
+            name: project.name,
+            repoFullName: project.repoFullName,
+            pathAlias: project.name,
+            defaultBranch: project.defaultBranch,
+          },
+        ],
+      },
+      sentAt: new Date().toISOString(),
+    } satisfies AgentEventEnvelope);
+    await delay(20);
+
+    const form = new FormData();
+    form.set('content', 'Reproduis cette interface.');
+    form.append('screenshots', new Blob([Uint8Array.from(validPng())], { type: 'image/png' }), 'reference.png');
+    const response = await fetch(`${baseUrl}/sessions/${session.id}/prompts`, {
+      method: 'POST',
+      headers: { authorization: `Bearer ${pmLogin.body.accessToken}` },
+      body: form,
+    });
+
+    assert.equal(response.status, 201);
+    const body = await parseJsonResponse(response, sessionPromptResponseSchema);
+    assert.equal(body.attachments.length, 1);
+    assert.deepEqual(body.attachments[0], {
+      id: body.attachments[0]?.id,
+      fileName: 'reference.png',
+      mimeType: 'image/png',
+      byteSize: validPng().byteLength,
+    });
+
+    const command = await commandPromise;
+    assert.deepEqual(command.payload.attachments, body.attachments);
+
+    const persistedAttachment = await prisma.attachment.findUnique({
+      where: { id: body.attachments[0]?.id },
+    });
+    assert.equal(persistedAttachment?.messageId, body.id);
+    assert.equal(persistedAttachment?.visibility, 'private');
+  } finally {
+    agentSocket.close();
+  }
+});
+
+function validPng(): Buffer {
+  return Buffer.from(
+    'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII=',
+    'base64',
+  );
+}
 
 test('Task 9: POST /sessions/:sessionId/prompts/cancel routes agent.cancel to the owning agent', async () => {
   const developerLogin = await authenticateDeveloper();

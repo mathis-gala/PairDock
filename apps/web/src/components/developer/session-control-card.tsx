@@ -13,6 +13,19 @@ export function SessionControlCard({ closePending, onClose, session }: SessionCo
   const [confirmingClose, setConfirmingClose] = useState(false);
   const canClose = session.status !== 'CLOSED';
 
+  function handleStartClose() {
+    setConfirmingClose(true);
+  }
+
+  function handleCancelClose() {
+    setConfirmingClose(false);
+  }
+
+  async function handleConfirmClose() {
+    await onClose(session.id);
+    setConfirmingClose(false);
+  }
+
   return (
     <div className="rounded-xl border border-slate-800 bg-slate-950/70 p-3 text-sm text-slate-300">
       <div className="flex flex-wrap items-start justify-between gap-2">
@@ -36,27 +49,35 @@ export function SessionControlCard({ closePending, onClose, session }: SessionCo
           Open draft review request
         </a>
       ) : null}
+      <a
+        className="mt-3 inline-flex min-h-10 items-center justify-center gap-2 rounded-[10px] border border-white/10 bg-[#23272f] px-3 py-2 text-xs font-semibold text-[#eef0f4] transition hover:border-white/20 hover:bg-[#2a2f38] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#5fdf9b]/40"
+        href={`#/developer/sessions/${session.id}`}
+      >
+        <svg aria-hidden="true" className="size-4" fill="none" viewBox="0 0 24 24">
+          <path
+            d="M3.5 12s3.2-5 8.5-5 8.5 5 8.5 5-3.2 5-8.5 5-8.5-5-8.5-5Z"
+            stroke="currentColor"
+            strokeLinejoin="round"
+            strokeWidth="1.7"
+          />
+          <circle cx="12" cy="12" r="2.25" stroke="currentColor" strokeWidth="1.7" />
+        </svg>
+        Inspecter la session
+      </a>
       {canClose ? (
         <div className="mt-3 flex flex-wrap items-center gap-2">
           {confirmingClose ? (
             <>
               <span className="text-xs text-amber-300">Confirm cleanup close?</span>
-              <Button
-                disabled={closePending}
-                onClick={async () => {
-                  await onClose(session.id);
-                  setConfirmingClose(false);
-                }}
-                variant="danger"
-              >
+              <Button disabled={closePending} onClick={handleConfirmClose} variant="danger">
                 {closePending ? 'Closing…' : 'Confirm close'}
               </Button>
-              <Button disabled={closePending} onClick={() => setConfirmingClose(false)} variant="ghost">
+              <Button disabled={closePending} onClick={handleCancelClose} variant="ghost">
                 Cancel
               </Button>
             </>
           ) : (
-            <Button disabled={closePending} onClick={() => setConfirmingClose(true)} variant="danger">
+            <Button disabled={closePending} onClick={handleStartClose} variant="danger">
               Close session
             </Button>
           )}

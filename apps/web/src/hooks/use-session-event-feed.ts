@@ -7,6 +7,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import { useMemo, useSyncExternalStore } from 'react';
 import { io, type Socket } from 'socket.io-client';
 import { getBackendUrl } from '../lib/backend-url.js';
+import { sessionQueryKeys } from '../lib/session-query-keys.js';
 import type { SessionEventFeedSnapshot } from '../schemas/session-feed.js';
 
 interface FeedIdentity {
@@ -116,9 +117,9 @@ export function useSessionEventFeed(accessToken: string, sessionId: string): Ses
           sessionId,
         },
         () => {
-          void queryClient.invalidateQueries({ queryKey: ['session', sessionId] });
-          void queryClient.invalidateQueries({ queryKey: ['session-messages', sessionId] });
-          void queryClient.invalidateQueries({ queryKey: ['session-events', sessionId] });
+          void queryClient.invalidateQueries({ queryKey: sessionQueryKeys.detail(accessToken, sessionId) });
+          void queryClient.invalidateQueries({ queryKey: sessionQueryKeys.messages(accessToken, sessionId) });
+          void queryClient.invalidateQueries({ queryKey: sessionQueryKeys.events(accessToken, sessionId) });
         },
       ),
     [accessToken, queryClient, sessionId],
