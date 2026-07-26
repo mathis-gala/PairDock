@@ -19,7 +19,7 @@ ENV DATABASE_URL=postgresql://pairdock:pairdock@127.0.0.1:5432/pairdock
 RUN bun run prisma:generate \
   && bun run --filter @pairdock/api typecheck
 
-FROM node:25-bookworm-slim@sha256:81db02c4b671288a03915da9534dbd54f96d0e7c24d80ccc54f5b36b2e684370 AS runtime
+FROM node:26-bookworm-slim@sha256:2d49d876e96237d76de412761cf05dbfe5aee325cc4406a4d41d5824c5bb8beb AS runtime
 
 ENV NODE_ENV=production \
     PORT=3000 \
