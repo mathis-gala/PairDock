@@ -109,10 +109,20 @@ Configure the external providers with these exact environment-derived URLs:
 
 ## Deploy, update, or roll back
 
+Before an update, copy the release's current `deploy/docker-compose.yml` to `/opt/pairdock/docker-compose.yml`; pulling images alone does not add new services, environment variables, or healthchecks. Back up the server-only environment and database first:
+
+```bash
+cd /opt/pairdock
+cp pairdock.env pairdock.env.before-update
+docker compose --env-file pairdock.env exec -T database \
+  pg_dump -U pairdock -d pairdock -Fc > pairdock-before-update.dump
+```
+
 Default `latest` deployment:
 
 ```bash
 cd /opt/pairdock
+docker compose --env-file pairdock.env config --quiet
 docker compose --env-file pairdock.env pull
 docker compose --env-file pairdock.env up -d --wait
 docker compose --env-file pairdock.env ps
@@ -126,7 +136,7 @@ IMAGE_TAG=v1.2.3 docker compose --env-file pairdock.env pull
 IMAGE_TAG=v1.2.3 docker compose --env-file pairdock.env up -d --wait
 ```
 
-To persist a selected release, add `IMAGE_TAG=v1.2.3` to `pairdock.env`. The PostgreSQL data remains in the named volume `pairdock_pairdock_database`; normal `pull` and `up -d` do not erase it.
+To persist a selected release, add `IMAGE_TAG=v1.2.3` to `pairdock.env`. The PostgreSQL data remains in the named volume `pairdock_pairdock_database`; normal `pull` and `up -d` do not erase it. The one-shot `migrate` service applies pending Prisma migrations before the API starts and blocks the deployment if a migration fails.
 
 Inspect failures with:
 
@@ -140,12 +150,23 @@ docker compose --env-file pairdock.env logs --tail=200 migrate api web database
 The agent stays on the developer workstation because it needs the source repository, Codex CLI, Git credentials, and Docker. It connects outbound to the public API with the token mapped to its exact agent id in `AGENT_AUTH_CREDENTIALS_JSON`:
 
 ```bash
+PAIRDOCK_AGENT_CONFIG_PATH="$HOME/.pairdock/agent-<agent-id>.json" \
 pairdock-agent login \
   --backend-url "$PAIRDOCK_API_URL" \
   --agent-id <agent-id> \
   --token <token-for-this-agent-id> \
+  --capability session.prepare \
+  --capability readiness.check \
+  --capability agent.prompt \
+  --capability git.pushBranch \
   --project <project-key>=<absolute-repository-path>
+
+PAIRDOCK_AGENT_CONFIG_PATH="$HOME/.pairdock/agent-<agent-id>.json" \
+PAIRDOCK_AGENT_SESSION_STATE_PATH="$HOME/.pairdock/sessions-<agent-id>.json" \
+pairdock-agent start
 ```
+
+Every concurrently running agent needs a unique agent id, config path, and session-state path, even when agents connect to different PairDock backends. The agent id also scopes local Docker previews and dependency caches, so reusing it can make one process clean up another process's resources. Keep each production token stable across normal upgrades; updating the local-agent code does not require another `login`.
 
 Use Codex CLI 0.138.0 or newer. PairDock's readiness check rejects older versions because they cannot enforce the restricted filesystem permission profile used for PM-triggered work.
 
