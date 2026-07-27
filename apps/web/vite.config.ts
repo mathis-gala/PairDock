@@ -9,6 +9,7 @@ export default defineConfig({
   plugins: [react(), tailwindcss()],
   server: {
     proxy: {
+      '/agent': apiProxy,
       '/auth': apiProxy,
       '/health': apiProxy,
       '/projects': apiProxy,

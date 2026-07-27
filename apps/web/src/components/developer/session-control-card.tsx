@@ -46,7 +46,7 @@ export function SessionControlCard({ closePending, onClose, session }: SessionCo
           rel="noreferrer"
           target="_blank"
         >
-          Open draft review request
+          Open review request
         </a>
       ) : null}
       <div className="mt-3 flex flex-col items-end gap-3">

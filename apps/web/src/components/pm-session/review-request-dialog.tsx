@@ -1,4 +1,4 @@
-import type { CreateDraftReviewRequestInput } from '@pairdock/shared-contracts';
+import type { CreateReviewRequestInput } from '@pairdock/shared-contracts';
 import {
   type ChangeEvent,
   type ClipboardEvent,
@@ -21,14 +21,14 @@ interface ReviewRequestDialogProps {
   error: string | null;
   isSubmitting: boolean;
   onClose: () => void;
-  onSubmit: (input: CreateDraftReviewRequestInput, screenshots: File[]) => Promise<void>;
+  onSubmit: (input: CreateReviewRequestInput, screenshots: File[]) => Promise<void>;
 }
 
 export function ReviewRequestDialog({ error, isSubmitting, onClose, onSubmit }: ReviewRequestDialogProps) {
   const titleId = useId();
   const descriptionId = useId();
   const errorId = useId();
-  const [type, setType] = useState<CreateDraftReviewRequestInput['type']>('feat');
+  const [type, setType] = useState<CreateReviewRequestInput['type']>('feat');
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [screenshots, setScreenshots] = useState<SelectedScreenshot[]>([]);
@@ -145,7 +145,7 @@ export function ReviewRequestDialog({ error, isSubmitting, onClose, onSubmit }: 
         <div className="flex items-start justify-between gap-4">
           <div>
             <h2 className="font-['Space_Grotesk'] text-lg font-semibold text-[#eef0f4]" id={`${titleId}-heading`}>
-              Soumettre une draft PR
+              Soumettre une PR
             </h2>
             <p className="mt-1 text-sm leading-6 text-[#8b92a1]">
               Ces informations seront visibles par le développeur sur GitHub.
@@ -285,7 +285,7 @@ export function ReviewRequestDialog({ error, isSubmitting, onClose, onSubmit }: 
                   <path d="M21 12a9 9 0 0 0-9-9" stroke="currentColor" strokeLinecap="round" strokeWidth="2.5" />
                 </svg>
               ) : null}
-              {isSubmitting ? 'Création…' : 'Créer la draft PR'}
+              {isSubmitting ? 'Création…' : 'Créer la PR'}
             </Button>
           </div>
         </form>

@@ -99,7 +99,7 @@ test('BT-028/BT-029/BT-049: developer project card exposes agent defaults, shari
   assert.match(html, /PM access/);
   assert.match(html, /PM Reviewer/);
   assert.match(html, /pm@pairdock\.test/);
-  assert.match(html, /Open draft review request/);
+  assert.match(html, /Open review request/);
   assert.match(html, /https:\/\/github\.com\/mathis\/developer-project\/pull\/14/);
   assert.match(html, /href="#\/developer\/sessions\/44444444-4444-4444-8444-444444444444"/);
   assert.match(html, /Inspecter la session/);

@@ -104,7 +104,12 @@ Configure the external providers with these exact environment-derived URLs:
 
 - GitHub callback: value of `GITHUB_REDIRECT_URI`.
 - GitHub setup URL: `${PAIRDOCK_API_URL}/auth/developer/setup`.
-- GitHub webhook URL: `${PAIRDOCK_API_URL}/webhooks/github`; set the same secret as `GITHUB_WEBHOOK_SECRET`, activate webhooks, and subscribe only to **Pull requests**.
+- GitHub App webhook: open the app settings, enable the webhook, set its URL to
+  `${PAIRDOCK_API_URL}/webhooks/github`, use the same secret as
+  `GITHUB_WEBHOOK_SECRET`, and subscribe only to **Pull requests**. Under
+  **Advanced → Recent deliveries**, a `pull_request` delivery must receive HTTP
+  `202`. PairDock persists that event; browser refreshes read the persisted
+  status and no GitHub polling or cron is required.
 - Slack redirect: value of `SLACK_REDIRECT_URI`.
 
 ## Deploy, update, or roll back

@@ -150,7 +150,7 @@ export const updateDeveloperProjectInputSchema = z
     message: 'At least one project field is required.',
   });
 
-export const createDraftReviewRequestInputSchema = z
+export const createReviewRequestInputSchema = z
   .object({
     type: z.enum(['feat', 'fix', 'style']),
     title: z.string().trim().min(1).max(120),
@@ -186,6 +186,6 @@ export type DeveloperProjectSetup = z.infer<typeof developerProjectSetupSchema>;
 export type CreateDeveloperProjectInput = z.infer<typeof createDeveloperProjectInputSchema>;
 export type ShareDeveloperProjectInput = z.infer<typeof shareDeveloperProjectInputSchema>;
 export type UpdateDeveloperProjectInput = z.infer<typeof updateDeveloperProjectInputSchema>;
-export type CreateDraftReviewRequestInput = z.infer<typeof createDraftReviewRequestInputSchema>;
+export type CreateReviewRequestInput = z.infer<typeof createReviewRequestInputSchema>;
 export type SessionAttachmentView = z.infer<typeof sessionAttachmentViewSchema>;
 export type UpdateProjectExecutionDefaultsInput = z.infer<typeof updateProjectExecutionDefaultsInputSchema>;

@@ -163,9 +163,9 @@ export class GithubSourceControlAdapter implements SourceControlPort {
     });
   }
 
-  async createDraftReviewRequest(
-    input: Parameters<SourceControlPort['createDraftReviewRequest']>[0],
-  ): Promise<Awaited<ReturnType<SourceControlPort['createDraftReviewRequest']>>> {
+  async createReviewRequest(
+    input: Parameters<SourceControlPort['createReviewRequest']>[0],
+  ): Promise<Awaited<ReturnType<SourceControlPort['createReviewRequest']>>> {
     if (isTestConnection(input.providerConnectionId)) {
       this.assertFixturesEnabled();
       return {
@@ -182,7 +182,7 @@ export class GithubSourceControlAdapter implements SourceControlPort {
       body: JSON.stringify({
         base: input.baseBranch,
         body: input.body,
-        draft: true,
+        draft: false,
         head: input.branchName,
         title: input.title,
       }),
@@ -190,13 +190,13 @@ export class GithubSourceControlAdapter implements SourceControlPort {
 
     if (!response.ok) {
       const message = await response.text().catch(() => '');
-      throw new Error(`GitHub draft review request creation failed with ${response.status}: ${message}`.trim());
+      throw new Error(`GitHub review request creation failed with ${response.status}: ${message}`.trim());
     }
 
     const payload = (await response.json()) as GithubPullResponse;
 
     if (typeof payload.html_url !== 'string') {
-      throw new Error('GitHub draft review request response did not include html_url.');
+      throw new Error('GitHub review request response did not include html_url.');
     }
 
     return {
