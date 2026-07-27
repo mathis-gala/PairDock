@@ -1105,8 +1105,8 @@
     "semantic_hash": ""
   },
   "tests/packages/local-agent/integration/session-runner.integration.test.ts": {
-    "mtime": 1785143883.3715465,
-    "ast_hash": "07e77b9d051ad71fff1af45e524d4247",
+    "mtime": 1785144287.7838247,
+    "ast_hash": "1725dd4a890ce905ee51766a74ff6394",
     "semantic_hash": ""
   },
   "tests/repository/ci-gates.test.ts": {
@@ -1125,8 +1125,8 @@
     "semantic_hash": ""
   },
   "README.md": {
-    "mtime": 1785143943.2521513,
-    "ast_hash": "bdae40d86fcb762b4af5ba24a9ba102b",
+    "mtime": 1785144942.7608275,
+    "ast_hash": "3897608699d05eb43d88688d9b08112b",
     "semantic_hash": ""
   },
   "apps/web/index.html": {
@@ -1810,18 +1810,18 @@
     "semantic_hash": ""
   },
   "packages/local-agent/src/preview/preview-companion-manager.ts": {
-    "mtime": 1785143595.422423,
-    "ast_hash": "a8801d749bec4466645358a115f1a660",
+    "mtime": 1785144287.7802489,
+    "ast_hash": "2b235b6db7e8d83c582465120b36b86f",
     "semantic_hash": ""
   },
   "packages/local-agent/src/runtime/agent-runtime.ts": {
-    "mtime": 1785143710.1406448,
-    "ast_hash": "0edcbda0d053674b2084346078598a1e",
+    "mtime": 1785144287.7800267,
+    "ast_hash": "a4f45664748d2d630fcdfbbec322803b",
     "semantic_hash": ""
   },
   "tests/packages/local-agent/integration/preview-companion-manager.integration.test.ts": {
-    "mtime": 1785143866.638832,
-    "ast_hash": "5f200c767350770ebf265aee619cba48",
+    "mtime": 1785144287.7801259,
+    "ast_hash": "4e0b7115bbceddce65f22ae9e4446284",
     "semantic_hash": ""
   }
 }
