@@ -10,7 +10,7 @@
 - Token cost: 0 input · 0 output
 
 ## Graph Freshness
-- Built from commit: `d1d47fc6`
+- Built from commit: `75dc38a0`
 - Run `git rev-parse HEAD` and compare to check if the graph is stale.
 - Run `graphify update .` after code changes (no API cost).
 
@@ -403,8 +403,8 @@ Cohesion: 0.16
 Nodes (12): ToolReadinessController, Controller, Get, HttpCode, Inject, Param, Post, Req (+4 more)
 
 ### Community 45 - "tool-readiness-panel.tsx"
-Cohesion: 0.17
-Nodes (4): authenticateDeveloper(), createSession(), prisma, startApplication()
+Cohesion: 0.08
+Nodes (19): authenticateDeveloper(), createSession(), prisma, startApplication(), authenticatePm(), prisma, authenticatePm(), prisma (+11 more)
 
 ### Community 46 - "session-details.integration.test.ts"
 Cohesion: 0.21
@@ -439,8 +439,8 @@ Cohesion: 0.10
 Nodes (21): isToolReadinessKey(), isToolReadinessStatus(), parseToolReadinessCheck(), parseToolReadinessChecks(), serializeChecks(), serializeJsonValue(), serializeToolReadinessCheck(), toInputJsonObject() (+13 more)
 
 ### Community 54 - "SessionsService"
-Cohesion: 0.09
-Nodes (19): authenticatePm(), prisma, authenticatePm(), prisma, startApplication(), authenticatePm(), prisma, startApplication() (+11 more)
+Cohesion: 0.15
+Nodes (6): sessionIdResponseSchema, authenticateDeveloper(), authenticatePm(), createSession(), prisma, startApplication()
 
 ### Community 55 - "AuthenticatedRequest"
 Cohesion: 0.12
@@ -471,8 +471,8 @@ Cohesion: 0.13
 Nodes (14): compilerOptions, jsx, lib, extends, include, src/**/*.ts, ../../tsconfig.base.json, DOM (+6 more)
 
 ### Community 62 - "scripts"
-Cohesion: 0.08
-Nodes (14): AppModule, Module, bootstrap(), startApplication(), prisma, startApplication(), waitFor(), startApplication() (+6 more)
+Cohesion: 0.11
+Nodes (12): AppModule, Module, bootstrap(), startApplication(), prisma, startApplication(), waitFor(), authenticatePm() (+4 more)
 
 ### Community 63 - "AgentAuthenticationService"
 Cohesion: 0.15
@@ -639,8 +639,8 @@ Cohesion: 0.23
 Nodes (6): DiffService, isSessionDiffPayload(), SessionDiffView, AgentEventsRepository, CreateAgentEventInput, AgentEventRecord
 
 ### Community 105 - "HealthController"
-Cohesion: 0.29
-Nodes (6): readGithubConfig(), readSlackConfig(), areIdentityFixturesEnabled(), AuthEnvironment, isDevelopmentPmAuthEnabled(), readGithubConfig()
+Cohesion: 0.22
+Nodes (10): base64UrlEncode(), createGithubAppJwt(), Fetcher, GithubBranchResponse, GithubInstallationRepositoriesResponse, GithubInstallationTokenResponse, GithubPullResponse, GithubRepositoryResponse (+2 more)
 
 ### Community 106 - "developer-project-form.tsx"
 Cohesion: 0.06
@@ -659,8 +659,8 @@ Cohesion: 0.18
 Nodes (10): Architecture documents reconciled, Developer dashboard, Implementation guidance, Login, PM shared-project dashboard, Prototype notes — PairDock collaborative developer/PM, Purpose, Running/fixed/review states (+2 more)
 
 ### Community 110 - "AgentEventEnvelope"
-Cohesion: 0.22
-Nodes (10): base64UrlEncode(), createGithubAppJwt(), Fetcher, GithubBranchResponse, GithubInstallationRepositoriesResponse, GithubInstallationTokenResponse, GithubPullResponse, GithubRepositoryResponse (+2 more)
+Cohesion: 0.29
+Nodes (6): readGithubConfig(), readSlackConfig(), areIdentityFixturesEnabled(), AuthEnvironment, isDevelopmentPmAuthEnabled(), readGithubConfig()
 
 ### Community 112 - "tsconfig.json"
 Cohesion: 0.40

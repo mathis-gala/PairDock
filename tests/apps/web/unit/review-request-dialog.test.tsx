@@ -24,5 +24,5 @@ test('review request dialog collects type, title, and description accessibly', (
   assert.match(html, /Captures pour GitHub/);
   assert.match(html, /⌘V \/ Ctrl\+V pour coller/);
   assert.match(html, /accept="image\/png,image\/jpeg,image\/webp"/);
-  assert.match(html, /Créer la draft PR/);
+  assert.match(html, /Créer la PR/);
 });

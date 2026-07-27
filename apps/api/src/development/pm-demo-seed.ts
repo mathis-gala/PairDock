@@ -116,7 +116,7 @@ export function buildPmDemoSessions(project: { id: string; repoFullName: string 
       ageInDays: 5,
       status: 'REVIEW_REQUEST_CREATED',
       pmMessage: 'Démo UI : ajoute une aide sous le formulaire.',
-      assistantMessage: 'Travail validé. Une draft pull request de démonstration a été créée.',
+      assistantMessage: 'Travail validé. Une pull request de démonstration a été créée.',
       validation: passingValidation(),
       withDiff: true,
       reviewRequestStatus: 'open',

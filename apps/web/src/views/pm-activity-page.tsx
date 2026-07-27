@@ -127,7 +127,7 @@ export function PmActivityPage({ accessToken, mode, onOpenSession, onSignOut }: 
             }
             description={
               isReviewRequestView
-                ? 'Une draft pull request apparaîtra ici après validation des checks et soumission par le PM.'
+                ? 'Une pull request apparaîtra ici après validation des checks et soumission par le PM.'
                 : allSessions.length === 0
                   ? 'Démarre une session depuis un projet partagé pour la retrouver ici.'
                   : 'Aucune session ne correspond à ces filtres.'

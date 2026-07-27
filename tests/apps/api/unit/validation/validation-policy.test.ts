@@ -18,23 +18,23 @@ function buildValidationRun(overrides: Partial<ValidationRun> = {}): ValidationR
   };
 }
 
-test('BT-023: ValidationPolicy allows draft review request creation when every check passed and the session awaits PM validation', () => {
+test('BT-023: ValidationPolicy allows review request creation when every check passed and the session awaits PM validation', () => {
   const policy = new ValidationPolicy();
   const validationRun = buildValidationRun();
 
-  assert.equal(policy.canCreateDraftReviewRequest(validationRun, 'AWAITING_PM_VALIDATION'), true);
+  assert.equal(policy.canCreateReviewRequest(validationRun, 'AWAITING_PM_VALIDATION'), true);
   assert.deepEqual(policy.failureReasons(validationRun, 'AWAITING_PM_VALIDATION'), []);
 });
 
-test('BT-024: ValidationPolicy blocks draft review request creation with a readable reason when a check failed', () => {
+test('BT-024: ValidationPolicy blocks review request creation with a readable reason when a check failed', () => {
   const policy = new ValidationPolicy();
   const validationRun = buildValidationRun({
     status: 'failed',
     lintStatus: 'failed',
   });
 
-  assert.equal(policy.canCreateDraftReviewRequest(validationRun, 'AWAITING_PM_VALIDATION'), false);
+  assert.equal(policy.canCreateReviewRequest(validationRun, 'AWAITING_PM_VALIDATION'), false);
   assert.deepEqual(policy.failureReasons(validationRun, 'AWAITING_PM_VALIDATION' satisfies SessionStatus), [
-    'Lint validation must pass before creating a draft review request.',
+    'Lint validation must pass before creating a review request.',
   ]);
 });

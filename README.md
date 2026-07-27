@@ -44,7 +44,11 @@ Create a GitHub App and configure these exact URLs:
 - Leave **Request user authorization (OAuth) during installation** disabled. PairDock performs the OAuth authorization itself after the setup redirect.
 - Repository permissions: **Contents: Read-only**, **Metadata: Read-only**, and **Pull requests: Read and write**.
 - **Webhook URL**: the publicly reachable API URL followed by `/webhooks/github`.
-- Set a webhook secret generated with `openssl rand -hex 32`, copy the same value to `GITHUB_WEBHOOK_SECRET`, and subscribe to the **Pull request** event.
+- In the GitHub App settings, enable the webhook, set its URL to
+  `${PAIRDOCK_API_URL}/webhooks/github`, copy the same secret to
+  `GITHUB_WEBHOOK_SECRET`, and subscribe to the **Pull request** event. Confirm
+  from **Advanced → Recent deliveries** that a `pull_request` delivery receives
+  HTTP `202`; PairDock does not poll GitHub for PR status.
 
 Install the App only on the repositories PairDock may use. For the TCG Collection test, grant access to `mathis-gala/Booster-Break`.
 PairDock authorizes the GitHub user first and discovers every installation accessible to that user. Existing installations therefore do not reopen `/settings/installations/<id>`. When no installation exists yet, PairDock automatically continues through GitHub App installation and the setup URL.

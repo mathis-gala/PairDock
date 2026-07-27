@@ -2596,7 +2596,7 @@
       "source_location": "L231",
       "_origin": "ast",
       "id": "apps_api_src_auth_adapters_github_github_developer_identity_adapter_readgithubconfig",
-      "community": 105,
+      "community": 110,
       "norm_label": "readgithubconfig()"
     },
     {
@@ -2766,7 +2766,7 @@
       "source_location": "L163",
       "_origin": "ast",
       "id": "apps_api_src_auth_adapters_slack_slack_pm_identity_adapter_readslackconfig",
-      "community": 105,
+      "community": 110,
       "norm_label": "readslackconfig()"
     },
     {
@@ -3646,7 +3646,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "apps_api_src_auth_development_pm_auth",
-      "community": 105,
+      "community": 110,
       "norm_label": "development-pm-auth.ts"
     },
     {
@@ -3656,7 +3656,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "apps_api_src_auth_development_pm_auth_authenvironment",
-      "community": 105,
+      "community": 110,
       "norm_label": "authenvironment"
     },
     {
@@ -3666,7 +3666,7 @@
       "source_location": "L6",
       "_origin": "ast",
       "id": "apps_api_src_auth_development_pm_auth_isdevelopmentpmauthenabled",
-      "community": 105,
+      "community": 110,
       "norm_label": "isdevelopmentpmauthenabled()"
     },
     {
@@ -3676,7 +3676,7 @@
       "source_location": "L10",
       "_origin": "ast",
       "id": "apps_api_src_auth_development_pm_auth_areidentityfixturesenabled",
-      "community": 105,
+      "community": 110,
       "norm_label": "areidentityfixturesenabled()"
     },
     {
@@ -9586,7 +9586,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "apps_api_src_source_control_adapters_github_github_source_control_adapter",
-      "community": 110,
+      "community": 105,
       "norm_label": "github-source-control.adapter.ts"
     },
     {
@@ -9596,7 +9596,7 @@
       "source_location": "L6",
       "_origin": "ast",
       "id": "apps_api_src_source_control_adapters_github_github_source_control_adapter_githubpullresponse",
-      "community": 110,
+      "community": 105,
       "norm_label": "githubpullresponse"
     },
     {
@@ -9606,7 +9606,7 @@
       "source_location": "L11",
       "_origin": "ast",
       "id": "apps_api_src_source_control_adapters_github_github_source_control_adapter_githubrepositoryresponse",
-      "community": 110,
+      "community": 105,
       "norm_label": "githubrepositoryresponse"
     },
     {
@@ -9616,7 +9616,7 @@
       "source_location": "L17",
       "_origin": "ast",
       "id": "apps_api_src_source_control_adapters_github_github_source_control_adapter_githubinstallationrepositoriesresponse",
-      "community": 110,
+      "community": 105,
       "norm_label": "githubinstallationrepositoriesresponse"
     },
     {
@@ -9626,7 +9626,7 @@
       "source_location": "L21",
       "_origin": "ast",
       "id": "apps_api_src_source_control_adapters_github_github_source_control_adapter_githubbranchresponse",
-      "community": 110,
+      "community": 105,
       "norm_label": "githubbranchresponse"
     },
     {
@@ -9636,7 +9636,7 @@
       "source_location": "L25",
       "_origin": "ast",
       "id": "apps_api_src_source_control_adapters_github_github_source_control_adapter_githubsourcecontrolconfig",
-      "community": 110,
+      "community": 105,
       "norm_label": "githubsourcecontrolconfig"
     },
     {
@@ -9646,7 +9646,7 @@
       "source_location": "L33",
       "_origin": "ast",
       "id": "apps_api_src_source_control_adapters_github_github_source_control_adapter_githubinstallationtokenresponse",
-      "community": 110,
+      "community": 105,
       "norm_label": "githubinstallationtokenresponse"
     },
     {
@@ -9656,7 +9656,7 @@
       "source_location": "L37",
       "_origin": "ast",
       "id": "apps_api_src_source_control_adapters_github_github_source_control_adapter_fetcher",
-      "community": 110,
+      "community": 105,
       "norm_label": "fetcher"
     },
     {
@@ -9756,7 +9756,7 @@
       "source_location": "L251",
       "_origin": "ast",
       "id": "apps_api_src_source_control_adapters_github_github_source_control_adapter_readgithubconfig",
-      "community": 105,
+      "community": 110,
       "norm_label": "readgithubconfig()"
     },
     {
@@ -9786,7 +9786,7 @@
       "source_location": "L273",
       "_origin": "ast",
       "id": "apps_api_src_source_control_adapters_github_github_source_control_adapter_creategithubappjwt",
-      "community": 110,
+      "community": 105,
       "norm_label": "creategithubappjwt()"
     },
     {
@@ -9796,7 +9796,7 @@
       "source_location": "L286",
       "_origin": "ast",
       "id": "apps_api_src_source_control_adapters_github_github_source_control_adapter_base64urlencode",
-      "community": 110,
+      "community": 105,
       "norm_label": "base64urlencode()"
     },
     {
@@ -9806,7 +9806,7 @@
       "source_location": "L290",
       "_origin": "ast",
       "id": "apps_api_src_source_control_adapters_github_github_source_control_adapter_normalizeprivatekey",
-      "community": 110,
+      "community": 105,
       "norm_label": "normalizeprivatekey()"
     },
     {
@@ -23954,7 +23954,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "tests_apps_api_integration_projects_shared_session_history_integration_test",
-      "community": 54,
+      "community": 45,
       "norm_label": "shared-session-history.integration.test.ts"
     },
     {
@@ -23964,7 +23964,7 @@
       "source_location": "L16",
       "_origin": "ast",
       "id": "tests_apps_api_integration_projects_shared_session_history_integration_test_prisma",
-      "community": 54,
+      "community": 45,
       "norm_label": "prisma"
     },
     {
@@ -23974,7 +23974,7 @@
       "source_location": "L21",
       "_origin": "ast",
       "id": "tests_apps_api_integration_projects_shared_session_history_integration_test_resetdatabase",
-      "community": 54,
+      "community": 45,
       "norm_label": "resetdatabase()"
     },
     {
@@ -23984,7 +23984,7 @@
       "source_location": "L36",
       "_origin": "ast",
       "id": "tests_apps_api_integration_projects_shared_session_history_integration_test_authenticatepm",
-      "community": 54,
+      "community": 45,
       "norm_label": "authenticatepm()"
     },
     {
@@ -24364,7 +24364,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "tests_apps_api_integration_sessions_session_details_integration_test",
-      "community": 54,
+      "community": 62,
       "norm_label": "session-details.integration.test.ts"
     },
     {
@@ -24374,7 +24374,7 @@
       "source_location": "L10",
       "_origin": "ast",
       "id": "tests_apps_api_integration_sessions_session_details_integration_test_prisma",
-      "community": 54,
+      "community": 62,
       "norm_label": "prisma"
     },
     {
@@ -24384,7 +24384,7 @@
       "source_location": "L15",
       "_origin": "ast",
       "id": "tests_apps_api_integration_sessions_session_details_integration_test_resetdatabase",
-      "community": 54,
+      "community": 62,
       "norm_label": "resetdatabase()"
     },
     {
@@ -24394,7 +24394,7 @@
       "source_location": "L30",
       "_origin": "ast",
       "id": "tests_apps_api_integration_sessions_session_details_integration_test_startapplication",
-      "community": 54,
+      "community": 62,
       "norm_label": "startapplication()"
     },
     {
@@ -24404,7 +24404,7 @@
       "source_location": "L42",
       "_origin": "ast",
       "id": "tests_apps_api_integration_sessions_session_details_integration_test_authenticatepm",
-      "community": 54,
+      "community": 62,
       "norm_label": "authenticatepm()"
     },
     {
@@ -24414,7 +24414,7 @@
       "source_location": "L55",
       "_origin": "ast",
       "id": "tests_apps_api_integration_sessions_session_details_integration_test_createsessionfixture",
-      "community": 54,
+      "community": 62,
       "norm_label": "createsessionfixture()"
     },
     {
@@ -24424,7 +24424,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "tests_apps_api_integration_sessions_session_history_integration_test",
-      "community": 54,
+      "community": 45,
       "norm_label": "session-history.integration.test.ts"
     },
     {
@@ -24434,7 +24434,7 @@
       "source_location": "L15",
       "_origin": "ast",
       "id": "tests_apps_api_integration_sessions_session_history_integration_test_prisma",
-      "community": 54,
+      "community": 45,
       "norm_label": "prisma"
     },
     {
@@ -24444,7 +24444,7 @@
       "source_location": "L20",
       "_origin": "ast",
       "id": "tests_apps_api_integration_sessions_session_history_integration_test_resetdatabase",
-      "community": 54,
+      "community": 45,
       "norm_label": "resetdatabase()"
     },
     {
@@ -24454,7 +24454,7 @@
       "source_location": "L35",
       "_origin": "ast",
       "id": "tests_apps_api_integration_sessions_session_history_integration_test_startapplication",
-      "community": 54,
+      "community": 45,
       "norm_label": "startapplication()"
     },
     {
@@ -24464,7 +24464,7 @@
       "source_location": "L47",
       "_origin": "ast",
       "id": "tests_apps_api_integration_sessions_session_history_integration_test_authenticatepm",
-      "community": 54,
+      "community": 45,
       "norm_label": "authenticatepm()"
     },
     {
@@ -24474,7 +24474,7 @@
       "source_location": "L60",
       "_origin": "ast",
       "id": "tests_apps_api_integration_sessions_session_history_integration_test_createsessionfixture",
-      "community": 54,
+      "community": 45,
       "norm_label": "createsessionfixture()"
     },
     {
@@ -24484,7 +24484,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "tests_apps_api_integration_sessions_session_lifecycle_integration_test",
-      "community": 54,
+      "community": 45,
       "norm_label": "session-lifecycle.integration.test.ts"
     },
     {
@@ -24494,7 +24494,7 @@
       "source_location": "L16",
       "_origin": "ast",
       "id": "tests_apps_api_integration_sessions_session_lifecycle_integration_test_prisma",
-      "community": 54,
+      "community": 45,
       "norm_label": "prisma"
     },
     {
@@ -24504,7 +24504,7 @@
       "source_location": "L21",
       "_origin": "ast",
       "id": "tests_apps_api_integration_sessions_session_lifecycle_integration_test_resetdatabase",
-      "community": 54,
+      "community": 45,
       "norm_label": "resetdatabase()"
     },
     {
@@ -24524,7 +24524,7 @@
       "source_location": "L48",
       "_origin": "ast",
       "id": "tests_apps_api_integration_sessions_session_lifecycle_integration_test_authenticatedeveloper",
-      "community": 54,
+      "community": 45,
       "norm_label": "authenticatedeveloper()"
     },
     {
@@ -24534,7 +24534,7 @@
       "source_location": "L61",
       "_origin": "ast",
       "id": "tests_apps_api_integration_sessions_session_lifecycle_integration_test_createownedproject",
-      "community": 54,
+      "community": 45,
       "norm_label": "createownedproject()"
     },
     {
@@ -24664,7 +24664,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "tests_apps_api_integration_test_json",
-      "community": 54,
+      "community": 45,
       "norm_label": "test-json.ts"
     },
     {
@@ -24674,7 +24674,7 @@
       "source_location": "L3",
       "_origin": "ast",
       "id": "tests_apps_api_integration_test_json_authresponseschema",
-      "community": 54,
+      "community": 45,
       "norm_label": "authresponseschema"
     },
     {
@@ -24684,7 +24684,7 @@
       "source_location": "L14",
       "_origin": "ast",
       "id": "tests_apps_api_integration_test_json_idresponseschema",
-      "community": 54,
+      "community": 45,
       "norm_label": "idresponseschema"
     },
     {
@@ -24694,7 +24694,7 @@
       "source_location": "L15",
       "_origin": "ast",
       "id": "tests_apps_api_integration_test_json_sessionidresponseschema",
-      "community": 62,
+      "community": 54,
       "norm_label": "sessionidresponseschema"
     },
     {
@@ -24704,7 +24704,7 @@
       "source_location": "L17",
       "_origin": "ast",
       "id": "tests_apps_api_integration_test_json_sessioncreateresponseschema",
-      "community": 54,
+      "community": 45,
       "norm_label": "sessioncreateresponseschema"
     },
     {
@@ -24714,7 +24714,7 @@
       "source_location": "L28",
       "_origin": "ast",
       "id": "tests_apps_api_integration_test_json_sessionstateresponseschema",
-      "community": 54,
+      "community": 45,
       "norm_label": "sessionstateresponseschema"
     },
     {
@@ -24724,7 +24724,7 @@
       "source_location": "L47",
       "_origin": "ast",
       "id": "tests_apps_api_integration_test_json_sessiondetailsresponseschema",
-      "community": 54,
+      "community": 62,
       "norm_label": "sessiondetailsresponseschema"
     },
     {
@@ -24744,7 +24744,7 @@
       "source_location": "L75",
       "_origin": "ast",
       "id": "tests_apps_api_integration_test_json_sharedsessionhistoryresponseschema",
-      "community": 54,
+      "community": 45,
       "norm_label": "sharedsessionhistoryresponseschema"
     },
     {
@@ -24764,7 +24764,7 @@
       "source_location": "L138",
       "_origin": "ast",
       "id": "tests_apps_api_integration_test_json_developerprojectlistresponseschema",
-      "community": 54,
+      "community": 45,
       "norm_label": "developerprojectlistresponseschema"
     },
     {
@@ -24784,7 +24784,7 @@
       "source_location": "L157",
       "_origin": "ast",
       "id": "tests_apps_api_integration_test_json_sessionmessagelistresponseschema",
-      "community": 54,
+      "community": 45,
       "norm_label": "sessionmessagelistresponseschema"
     },
     {
@@ -24794,7 +24794,7 @@
       "source_location": "L173",
       "_origin": "ast",
       "id": "tests_apps_api_integration_test_json_sessioneventlistresponseschema",
-      "community": 54,
+      "community": 45,
       "norm_label": "sessioneventlistresponseschema"
     },
     {
@@ -24914,7 +24914,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "tests_apps_api_integration_ui_gateway_ui_gateway_browser_auth_integration_test",
-      "community": 62,
+      "community": 54,
       "norm_label": "ui-gateway.browser-auth.integration.test.ts"
     },
     {
@@ -24924,7 +24924,7 @@
       "source_location": "L18",
       "_origin": "ast",
       "id": "tests_apps_api_integration_ui_gateway_ui_gateway_browser_auth_integration_test_prisma",
-      "community": 62,
+      "community": 54,
       "norm_label": "prisma"
     },
     {
@@ -24934,7 +24934,7 @@
       "source_location": "L23",
       "_origin": "ast",
       "id": "tests_apps_api_integration_ui_gateway_ui_gateway_browser_auth_integration_test_resetdatabase",
-      "community": 62,
+      "community": 54,
       "norm_label": "resetdatabase()"
     },
     {
@@ -24944,7 +24944,7 @@
       "source_location": "L38",
       "_origin": "ast",
       "id": "tests_apps_api_integration_ui_gateway_ui_gateway_browser_auth_integration_test_startapplication",
-      "community": 62,
+      "community": 54,
       "norm_label": "startapplication()"
     },
     {
@@ -24954,7 +24954,7 @@
       "source_location": "L50",
       "_origin": "ast",
       "id": "tests_apps_api_integration_ui_gateway_ui_gateway_browser_auth_integration_test_authenticatedeveloper",
-      "community": 62,
+      "community": 54,
       "norm_label": "authenticatedeveloper()"
     },
     {
@@ -24964,7 +24964,7 @@
       "source_location": "L63",
       "_origin": "ast",
       "id": "tests_apps_api_integration_ui_gateway_ui_gateway_browser_auth_integration_test_authenticatepm",
-      "community": 62,
+      "community": 54,
       "norm_label": "authenticatepm()"
     },
     {
@@ -24974,7 +24974,7 @@
       "source_location": "L78",
       "_origin": "ast",
       "id": "tests_apps_api_integration_ui_gateway_ui_gateway_browser_auth_integration_test_createownedproject",
-      "community": 62,
+      "community": 54,
       "norm_label": "createownedproject()"
     },
     {
@@ -24984,7 +24984,7 @@
       "source_location": "L99",
       "_origin": "ast",
       "id": "tests_apps_api_integration_ui_gateway_ui_gateway_browser_auth_integration_test_createsession",
-      "community": 62,
+      "community": 54,
       "norm_label": "createsession()"
     },
     {
@@ -24994,7 +24994,7 @@
       "source_location": "L113",
       "_origin": "ast",
       "id": "tests_apps_api_integration_ui_gateway_ui_gateway_browser_auth_integration_test_connectagentsocket",
-      "community": 62,
+      "community": 54,
       "norm_label": "connectagentsocket()"
     },
     {
@@ -25004,7 +25004,7 @@
       "source_location": "L119",
       "_origin": "ast",
       "id": "tests_apps_api_integration_ui_gateway_ui_gateway_browser_auth_integration_test_connectbrowseruisocket",
-      "community": 62,
+      "community": 54,
       "norm_label": "connectbrowseruisocket()"
     },
     {
@@ -25014,7 +25014,7 @@
       "source_location": "L128",
       "_origin": "ast",
       "id": "tests_apps_api_integration_ui_gateway_ui_gateway_browser_auth_integration_test_waitforconnect",
-      "community": 62,
+      "community": 54,
       "norm_label": "waitforconnect()"
     },
     {
@@ -25024,7 +25024,7 @@
       "source_location": "L139",
       "_origin": "ast",
       "id": "tests_apps_api_integration_ui_gateway_ui_gateway_browser_auth_integration_test_waitforevent",
-      "community": 62,
+      "community": 54,
       "norm_label": "waitforevent()"
     },
     {
@@ -25294,7 +25294,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "tests_apps_api_unit_auth_development_pm_auth_test",
-      "community": 105,
+      "community": 110,
       "norm_label": "development-pm-auth.test.ts"
     },
     {
@@ -102427,5 +102427,5 @@
       "source_file": "prototype/screenshots/03-flow.png"
     }
   ],
-  "built_at_commit": "d1d47fc621c50396803a151b9b9febd152d1a4f0"
+  "built_at_commit": "75dc38a0b8ec1ef7cd24ff905a3aa7bf7e021bb9"
 }

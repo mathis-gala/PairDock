@@ -1,6 +1,6 @@
 import {
   type CreateDeveloperProjectInput,
-  type CreateDraftReviewRequestInput,
+  type CreateReviewRequestInput,
   type DeveloperProjectSetup,
   type DeveloperProjectSummary,
   developerProjectSetupSchema,
@@ -54,9 +54,9 @@ export interface ApiClient {
     sendPrompt(sessionId: string, input: { content: string; screenshots: File[] }): Promise<SessionMessageView>;
     readAttachment(sessionId: string, attachmentId: string): Promise<string>;
     cancelPrompt(sessionId: string): Promise<void>;
-    createDraftReviewRequest(
+    createReviewRequest(
       sessionId: string,
-      input: CreateDraftReviewRequestInput,
+      input: CreateReviewRequestInput,
       screenshots: File[],
     ): Promise<{ reviewRequestUrl: string }>;
     close(sessionId: string): Promise<SessionView>;
@@ -193,9 +193,9 @@ export function createApiClient(accessToken: string): ApiClient {
           headers: authHeaders(accessToken),
         });
       },
-      async createDraftReviewRequest(
+      async createReviewRequest(
         sessionId: string,
-        input: CreateDraftReviewRequestInput,
+        input: CreateReviewRequestInput,
         screenshots: File[],
       ): Promise<{ reviewRequestUrl: string }> {
         const form = createScreenshotFormData(input, screenshots);

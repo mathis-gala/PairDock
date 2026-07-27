@@ -13,7 +13,7 @@ import {
   UseInterceptors,
 } from '@nestjs/common';
 import { FilesInterceptor } from '@nestjs/platform-express';
-import { createDraftReviewRequestInputSchema } from '@pairdock/shared-contracts';
+import { createReviewRequestInputSchema } from '@pairdock/shared-contracts';
 import {
   MAX_SCREENSHOT_BYTES,
   MAX_SCREENSHOT_COUNT,
@@ -22,7 +22,7 @@ import {
 import type { AuthenticatedRequest } from '../auth/authenticated-request.js';
 import { RequireAuth } from '../auth/require-auth.decorator.js';
 import { RequireSessionAccess } from '../auth/require-session-access.decorator.js';
-import { CreateDraftReviewRequestUseCase } from '../review-requests/create-draft-review-request.use-case.js';
+import { CreateReviewRequestUseCase } from '../review-requests/create-review-request.use-case.js';
 import { SessionPromptService } from './session-prompt.service.js';
 import type { SessionStartSource } from './session-start-policy.js';
 import { SessionsService } from './sessions.service.js';
@@ -43,8 +43,8 @@ export class SessionsController {
     private readonly sessionsService: SessionsService,
     @Inject(SessionPromptService)
     private readonly sessionPromptService: SessionPromptService,
-    @Inject(CreateDraftReviewRequestUseCase)
-    private readonly createDraftReviewRequestUseCase: CreateDraftReviewRequestUseCase,
+    @Inject(CreateReviewRequestUseCase)
+    private readonly createReviewRequestUseCase: CreateReviewRequestUseCase,
   ) {}
 
   @Get(':sessionId')
@@ -118,7 +118,7 @@ export class SessionsController {
       limits: { fileSize: MAX_SCREENSHOT_BYTES },
     }),
   )
-  createDraftReviewRequest(
+  createReviewRequest(
     @Param('sessionId') sessionId: string,
     @Body() body: unknown,
     @Req() request: AuthenticatedRequest,
@@ -128,12 +128,12 @@ export class SessionsController {
       throw new InternalServerErrorException('Authenticated user was not resolved.');
     }
 
-    const input = createDraftReviewRequestInputSchema.safeParse(body);
+    const input = createReviewRequestInputSchema.safeParse(body);
 
     if (!input.success) {
       throw new BadRequestException('PR type, title, and description are required.');
     }
 
-    return this.createDraftReviewRequestUseCase.create(sessionId, request.user, input.data, screenshots);
+    return this.createReviewRequestUseCase.create(sessionId, request.user, input.data, screenshots);
   }
 }

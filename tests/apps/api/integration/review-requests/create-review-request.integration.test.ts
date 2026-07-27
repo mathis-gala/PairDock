@@ -17,8 +17,8 @@ import type { SourceControlConnectionsRepository } from '../../../../../apps/api
 import type { ValidationRunsRepository } from '../../../../../apps/api/src/persistence/ports/validation-runs.repository.js';
 import {
   appendScreenshotsToReviewDescription,
-  CreateDraftReviewRequestUseCase,
-} from '../../../../../apps/api/src/review-requests/create-draft-review-request.use-case.js';
+  CreateReviewRequestUseCase,
+} from '../../../../../apps/api/src/review-requests/create-review-request.use-case.js';
 import type { SourceControlPort } from '../../../../../apps/api/src/source-control/source-control.port.js';
 import { ValidationPolicy } from '../../../../../apps/api/src/validation/validation.policy.js';
 
@@ -98,7 +98,7 @@ function buildFixture(
   const router = new RecordingAgentCommandRouter(repositories.callOrder);
   const sourceControl = new RecordingSourceControlPort(repositories.callOrder);
   const attachmentService = overrides.attachmentService ?? new EmptySessionAttachmentsService();
-  const useCase = new CreateDraftReviewRequestUseCase(
+  const useCase = new CreateReviewRequestUseCase(
     repositories.sessions,
     repositories.projects,
     repositories.validationRuns,
@@ -114,7 +114,7 @@ function buildFixture(
   return { attachmentService, repositories, router, sessionId, sourceControl, useCase };
 }
 
-test('BT-030: failed validation blocks draft review request creation before push or source-control calls', async () => {
+test('BT-030: failed validation blocks review request creation before push or source-control calls', async () => {
   const { repositories, router, sessionId, sourceControl, useCase } = buildFixture({
     validation: {
       status: 'failed',
@@ -137,13 +137,13 @@ test('BT-030: failed validation blocks draft review request creation before push
   assert.equal(repositories.reviewRequests.records.length, 0);
 });
 
-test('BT-031 and BT-032: branch push is requested before draft review request creation and persisted', async () => {
+test('BT-031 and BT-032: branch push is requested before open review request creation and persisted', async () => {
   const { repositories, router, sessionId, sourceControl, useCase } = buildFixture();
 
   const response = await useCase.create(sessionId, pm, {
     type: 'feat',
     title: 'Create the review request',
-    description: 'Creates the requested draft review request.',
+    description: 'Creates the requested review request.',
   });
 
   assert.deepEqual(
@@ -165,10 +165,12 @@ test('BT-031 and BT-032: branch push is requested before draft review request cr
     repositories.reviewRequests.records[0]?.reviewRequestUrl,
     'https://github.test/mathis/pairdock-test/pull/42',
   );
+  assert.equal(repositories.reviewRequests.records[0]?.status, 'open');
+  assert.equal(response.status, 'open');
   assert.equal(repositories.currentSession.status, 'REVIEW_REQUEST_CREATED');
 });
 
-test('PM review metadata controls the draft PR and produces a safe conventional commit message', async () => {
+test('PM review metadata controls the PR and produces a safe conventional commit message', async () => {
   const { router, sessionId, sourceControl, useCase } = buildFixture();
 
   await useCase.create(sessionId, pm, {
@@ -275,7 +277,7 @@ class EmptySessionAttachmentsService {
 }
 
 class RecordingSourceControlPort implements SourceControlPort {
-  readonly requests: Parameters<SourceControlPort['createDraftReviewRequest']>[0][] = [];
+  readonly requests: Parameters<SourceControlPort['createReviewRequest']>[0][] = [];
 
   constructor(private readonly callOrder?: string[]) {}
 
@@ -289,7 +291,7 @@ class RecordingSourceControlPort implements SourceControlPort {
     return ['main'];
   }
 
-  async createDraftReviewRequest(input: Parameters<SourceControlPort['createDraftReviewRequest']>[0]) {
+  async createReviewRequest(input: Parameters<SourceControlPort['createReviewRequest']>[0]) {
     this.requests.push(input);
     this.callOrder?.push('source-control');
     return {

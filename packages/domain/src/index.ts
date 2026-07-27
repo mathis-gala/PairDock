@@ -241,7 +241,7 @@ export interface SourceControlPort {
     providerConnectionId: string;
     repoFullName: string;
   }): Promise<string[]>;
-  createDraftReviewRequest(input: {
+  createReviewRequest(input: {
     projectId: string;
     sessionId: string;
     repoFullName: string;

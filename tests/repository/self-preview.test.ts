@@ -60,6 +60,7 @@ test('the self-preview web server proxies browser API and WebSocket traffic to t
     ?.proxy;
 
   assert.equal(proxy?.['/auth']?.target, 'http://127.0.0.1:3000');
+  assert.equal(proxy?.['/agent']?.target, 'http://127.0.0.1:3000');
   assert.equal(proxy?.['/projects']?.target, 'http://127.0.0.1:3000');
   assert.equal(proxy?.['/sessions']?.target, 'http://127.0.0.1:3000');
   assert.equal(proxy?.['/tool-readiness']?.target, 'http://127.0.0.1:3000');

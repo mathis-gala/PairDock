@@ -35,7 +35,7 @@ export function DeveloperLoginCard() {
         </Button>
         <p className="mt-4 flex items-center gap-2 font-mono text-[11.5px] text-[#6f7686]">
           <span className="size-1.5 rounded-full bg-[#5fdf9b]" />
-          installation dépôt · PR draft via GitHub App
+          installation dépôt · PR via GitHub App
         </p>
       </div>
     </section>

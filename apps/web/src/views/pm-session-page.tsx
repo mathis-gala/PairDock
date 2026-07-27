@@ -1,4 +1,4 @@
-import { type CreateDraftReviewRequestInput, isPromptableSessionStatus } from '@pairdock/shared-contracts';
+import { type CreateReviewRequestInput, isPromptableSessionStatus } from '@pairdock/shared-contracts';
 import { useState } from 'react';
 import { Button } from '../components/button.js';
 import { ConversationThread } from '../components/pm-session/conversation-thread.js';
@@ -104,7 +104,7 @@ export function PmSessionPage({ accessToken, isReadOnly = false, onBack, session
     }
   }
 
-  async function handleCreateReviewRequest(input: CreateDraftReviewRequestInput, screenshots: File[]) {
+  async function handleCreateReviewRequest(input: CreateReviewRequestInput, screenshots: File[]) {
     createReviewRequestMutation.reset();
     await createReviewRequestMutation.mutateAsync({ input, screenshots });
     setIsReviewDialogOpen(false);

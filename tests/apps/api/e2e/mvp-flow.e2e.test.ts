@@ -35,9 +35,7 @@ import {
 const execFileAsync = promisify(execFile);
 const prisma = new DatabaseClient();
 const EXAMPLE_REPOSITORY_FIXTURE = resolve(__dirname, '../../../fixtures/mvp-e2e/example-repository');
-const reviewRequestResponseSchema = z
-  .object({ reviewRequestUrl: z.string(), status: z.literal('draft') })
-  .passthrough();
+const reviewRequestResponseSchema = z.object({ reviewRequestUrl: z.string(), status: z.literal('open') }).passthrough();
 
 let app: INestApplication;
 let baseUrl: string;
@@ -184,7 +182,7 @@ async function createReviewRequest(accessToken: string, sessionId: string) {
     body: JSON.stringify({
       type: 'feat',
       title: 'Complete the PairDock MVP flow',
-      description: 'Creates the tested PairDock MVP draft review request.',
+      description: 'Creates the tested PairDock MVP review request.',
     }),
   });
 
@@ -281,7 +279,7 @@ test.beforeEach(async () => {
   await resetDatabase();
 });
 
-test('BT-033: full MVP flow starts a session, runs a PM prompt, creates a draft review request, and closes with local cleanup', async () => {
+test('BT-033: full MVP flow starts a session, runs a PM prompt, creates an open review request, and closes with local cleanup', async () => {
   const developerLogin = await authenticateDeveloper();
   const pmEmail = `pm-${randomUUID()}@pairdock.test`;
   const agentProjectKey = `agent-${randomUUID()}`;

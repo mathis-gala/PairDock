@@ -3,7 +3,7 @@ import { BadRequestException, ConflictException, Inject, Injectable, NotFoundExc
 import type { PairDockIdentity, Project, Session, SourceControlConnection } from '@pairdock/domain';
 import {
   AGENT_PROTOCOL_VERSION,
-  type CreateDraftReviewRequestInput,
+  type CreateReviewRequestInput,
   type GitPushBranchCommandEnvelope,
 } from '@pairdock/shared-contracts';
 import { AgentCommandRouterService } from '../agent-gateway/agent-command-router.service.js';
@@ -27,7 +27,7 @@ import type { SourceControlPort } from '../source-control/source-control.port.js
 import { SOURCE_CONTROL_PORT } from '../source-control/source-control.tokens.js';
 import { ValidationPolicy } from '../validation/validation.policy.js';
 
-export interface DraftReviewRequestResult {
+export interface ReviewRequestResult {
   sessionId: string;
   reviewRequestNumber: number | null;
   reviewRequestUrl: string;
@@ -35,7 +35,7 @@ export interface DraftReviewRequestResult {
 }
 
 @Injectable()
-export class CreateDraftReviewRequestUseCase {
+export class CreateReviewRequestUseCase {
   constructor(
     @Inject(SESSIONS_REPOSITORY)
     private readonly sessionsRepository: SessionsRepository,
@@ -62,9 +62,9 @@ export class CreateDraftReviewRequestUseCase {
   async create(
     sessionId: string,
     actor: PairDockIdentity,
-    input: CreateDraftReviewRequestInput,
+    input: CreateReviewRequestInput,
     screenshots?: UploadedScreenshot[],
-  ): Promise<DraftReviewRequestResult> {
+  ): Promise<ReviewRequestResult> {
     const session = await this.requireSession(sessionId);
     const project = await this.requireProject(session.projectId);
     const connection = await this.requireSourceControlConnection(project.sourceControlConnectionId);
@@ -87,14 +87,14 @@ export class CreateDraftReviewRequestUseCase {
       files: screenshots,
     });
 
-    let reviewRequest: Awaited<ReturnType<SourceControlPort['createDraftReviewRequest']>>;
+    let reviewRequest: Awaited<ReturnType<SourceControlPort['createReviewRequest']>>;
 
     try {
       await this.agentCommandRouter.routeToOwningAgent(sessionId, buildGitPushBranchCommand(sessionId, commitMessage), {
         waitForCompletion: true,
       });
 
-      reviewRequest = await this.sourceControl.createDraftReviewRequest({
+      reviewRequest = await this.sourceControl.createReviewRequest({
         projectId: project.id,
         sessionId: session.id,
         repoFullName: project.repoFullName,
@@ -122,7 +122,7 @@ export class CreateDraftReviewRequestUseCase {
         sessionId,
         reviewRequestNumber: reviewRequest.reviewRequestNumber,
         reviewRequestUrl: reviewRequest.reviewRequestUrl,
-        status: 'draft',
+        status: 'open',
       });
       await repositories.sessions.updateStatus({
         id: sessionId,
@@ -137,7 +137,7 @@ export class CreateDraftReviewRequestUseCase {
       sessionId,
       reviewRequestNumber: reviewRequest.reviewRequestNumber,
       reviewRequestUrl: reviewRequest.reviewRequestUrl,
-      status: 'draft',
+      status: 'open',
     };
   }
 
@@ -186,7 +186,7 @@ export class CreateDraftReviewRequestUseCase {
       return;
     }
 
-    throw new ConflictException('Only the developer owner or a PM session member can create a draft review request.');
+    throw new ConflictException('Only the developer owner or a PM session member can create a review request.');
   }
 }
 
@@ -208,7 +208,7 @@ function buildSessionBranchName(sessionId: string): string {
   return `pairdock/session-${sessionId.slice(0, 8)}`;
 }
 
-export function buildConventionalCommitMessage(type: CreateDraftReviewRequestInput['type'], title: string): string {
+export function buildConventionalCommitMessage(type: CreateReviewRequestInput['type'], title: string): string {
   const prefix = `${type}: `;
   const normalizedTitle = title
     .normalize('NFKD')
