@@ -1810,8 +1810,8 @@
     "semantic_hash": ""
   },
   "packages/local-agent/src/preview/preview-companion-manager.ts": {
-    "mtime": 1785145492.1332302,
-    "ast_hash": "2b235b6db7e8d83c582465120b36b86f",
+    "mtime": 1785145980.975571,
+    "ast_hash": "3ed8a412680829ba99454dca3166be43",
     "semantic_hash": ""
   },
   "packages/local-agent/src/runtime/agent-runtime.ts": {
@@ -1820,8 +1820,8 @@
     "semantic_hash": ""
   },
   "tests/packages/local-agent/integration/preview-companion-manager.integration.test.ts": {
-    "mtime": 1785145492.1379597,
-    "ast_hash": "4e0b7115bbceddce65f22ae9e4446284",
+    "mtime": 1785145865.7035944,
+    "ast_hash": "17b2f5ae9715fbfbb49582a76be65d20",
     "semantic_hash": ""
   }
 }
