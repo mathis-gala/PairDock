@@ -97,6 +97,10 @@ export class SessionRegistry {
     return [...this.workspaces.values()];
   }
 
+  listPersisted(): SessionWorkspace[] {
+    return [...this.persistedWorkspaces.values()];
+  }
+
   suspend(sessionId: string): void {
     this.workspaces.delete(sessionId);
   }

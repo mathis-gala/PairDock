@@ -9,6 +9,7 @@ import { DockerOrphanReconciler } from '../docker/docker-orphan-reconciler.js';
 import { HealthcheckService } from '../docker/healthcheck.service.js';
 import type { ProjectPreviewConfig, SandboxPort } from '../docker/sandbox.port.js';
 import { WorktreeService } from '../git/worktree.service.js';
+import type { PreviewCompanionPort } from '../preview/preview-companion-manager.js';
 import { PreviewRuntimeRouter } from '../preview/preview-runtime-router.js';
 import { CloudflarePreviewTunnelAdapter } from '../tunnel/cloudflare-preview-tunnel.adapter.js';
 import { type PreviewTunnelPort, previewUsesDockerTunnel } from '../tunnel/preview-tunnel.port.js';
@@ -47,6 +48,7 @@ export class SessionRunner {
   private readonly healthcheckService: HealthcheckService;
   private readonly checkCommandExecutor: HostCheckCommandRunner;
   private readonly previewTunnelPort: PreviewTunnelPort;
+  private readonly previewCompanionPort: PreviewCompanionPort | undefined;
   private readonly projectPaths: Record<string, string>;
   private readonly previewConfigs: Record<string, ProjectPreviewConfig>;
   private readonly runtimeOwnerId: string | undefined;
@@ -62,6 +64,7 @@ export class SessionRunner {
       healthcheckService?: HealthcheckService;
       checkCommandExecutor?: HostCheckCommandRunner;
       orphanReconciler?: DockerOrphanReconciler;
+      previewCompanionPort?: PreviewCompanionPort;
       previewTunnelPort?: PreviewTunnelPort;
     } = {},
   ) {
@@ -75,6 +78,7 @@ export class SessionRunner {
     this.healthcheckService = dependencies.healthcheckService ?? new HealthcheckService();
     this.checkCommandExecutor = dependencies.checkCommandExecutor ?? new HostCheckCommandExecutor();
     this.orphanReconciler = dependencies.orphanReconciler ?? new DockerOrphanReconciler();
+    this.previewCompanionPort = dependencies.previewCompanionPort;
     this.previewTunnelPort = dependencies.previewTunnelPort ?? new CloudflarePreviewTunnelAdapter();
   }
 
@@ -121,13 +125,18 @@ export class SessionRunner {
       await this.sessionRegistry.register(workspace);
 
       await this.prepareHostWorkspace(workspace, previewConfig);
+      const sessionPreviewConfig = await this.previewCompanionPort?.prepare({
+        previewConfig,
+        projectKey: command.payload.projectKey,
+        sessionId: command.sessionId,
+      });
 
       await onProgress?.('DOCKER_STARTING');
       this.logger?.info(`Starting preview runtime for session ${command.sessionId}.`);
       const sandboxRef = await this.sandboxPort.start({
         branchName: preparedWorktree.branchName,
         modelId: command.payload.modelId,
-        previewConfig,
+        previewConfig: sessionPreviewConfig ?? previewConfig,
         projectKey: command.payload.projectKey,
         repositoryPath: preparedWorktree.repositoryPath,
         ...(this.runtimeOwnerId ? { runtimeOwnerId: this.runtimeOwnerId } : {}),
@@ -144,6 +153,10 @@ export class SessionRunner {
         sandboxPort: this.sandboxPort,
         sandboxRef,
         timeoutMs: previewConfig?.healthcheckTimeoutMs,
+      });
+      await this.previewCompanionPort?.start({
+        localUrl: healthcheck.url,
+        sessionId: command.sessionId,
       });
       const tunnelRef = await this.previewTunnelPort.open({
         localUrl: healthcheck.url,
@@ -210,6 +223,15 @@ export class SessionRunner {
     const resolvedPreviewConfig = workspace.sandboxRef?.previewConfig ?? previewConfig;
     const errors: unknown[] = [];
     let remainingWorkspace = workspace;
+
+    try {
+      await this.previewCompanionPort?.stop({
+        cleanupSessions: true,
+        sessionId: workspace.sessionId,
+      });
+    } catch (error) {
+      errors.push(error);
+    }
 
     if (remainingWorkspace.tunnelRef) {
       try {
@@ -318,6 +340,34 @@ export class SessionRunner {
     }
   }
 
+  async cleanupAll(mode: SessionCloseCommandEnvelope['payload']['mode'] = 'delete-local'): Promise<void> {
+    const errors: unknown[] = [];
+
+    for (const workspace of this.sessionRegistry.listPersisted()) {
+      try {
+        await this.withSessionLock(workspace.sessionId, async () => {
+          const currentWorkspace = this.sessionRegistry.findPersisted(workspace.sessionId);
+          if (!currentWorkspace) {
+            return;
+          }
+
+          const cleanupErrors = await this.cleanupWorkspace(currentWorkspace, mode);
+          if (cleanupErrors.length > 0) {
+            throw new AggregateError(cleanupErrors, cleanupErrors.map(errorMessage).join('; '));
+          }
+
+          await this.sessionRegistry.unregister(workspace.sessionId);
+        });
+      } catch (error) {
+        errors.push(error);
+      }
+    }
+
+    if (errors.length > 0) {
+      throw new AggregateError(errors, errors.map(errorMessage).join('; '));
+    }
+  }
+
   async restore(): Promise<SessionRecoveryResult> {
     const workspaces = await this.sessionRegistry.restore();
     const recoveredSessionIds: string[] = [];
@@ -363,11 +413,16 @@ export class SessionRunner {
 
     try {
       await this.prepareHostWorkspace(currentWorkspace, previewConfig);
+      const sessionPreviewConfig = await this.previewCompanionPort?.prepare({
+        previewConfig,
+        projectKey: workspace.projectKey,
+        sessionId: workspace.sessionId,
+      });
       this.logger?.info(`Rebuilding preview runtime for recovered session ${workspace.sessionId}.`);
       const sandboxRef = await this.sandboxPort.start({
         branchName: workspace.branchName,
         modelId: workspace.modelId ?? 'recovered-session',
-        previewConfig,
+        previewConfig: sessionPreviewConfig ?? previewConfig,
         projectKey: workspace.projectKey,
         repositoryPath: workspace.repositoryPath,
         ...(this.runtimeOwnerId ? { runtimeOwnerId: this.runtimeOwnerId } : {}),
@@ -382,6 +437,10 @@ export class SessionRunner {
         sandboxPort: this.sandboxPort,
         sandboxRef,
         timeoutMs: previewConfig?.healthcheckTimeoutMs,
+      });
+      await this.previewCompanionPort?.start({
+        localUrl: healthcheck.url,
+        sessionId: workspace.sessionId,
       });
       const tunnelRef = await this.previewTunnelPort.open({
         localUrl: healthcheck.url,
@@ -441,6 +500,15 @@ export class SessionRunner {
     let currentWorkspace = workspace;
     const resolvedPreviewConfig = workspace.sandboxRef?.previewConfig ?? previewConfig;
     const errors: unknown[] = [];
+
+    try {
+      await this.previewCompanionPort?.stop({
+        cleanupSessions: false,
+        sessionId: workspace.sessionId,
+      });
+    } catch (error) {
+      errors.push(error);
+    }
 
     if (currentWorkspace.tunnelRef) {
       try {

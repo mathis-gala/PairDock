@@ -118,6 +118,11 @@ test('BT-020: normalizeAgentConfig trims and preserves preview config fields', (
         healthcheckIntervalMs: 500,
       },
     },
+    previewCompanions: {
+      ' pairdock ': {
+        agentConfigPath: ' /tmp/agent-tcg-preview.json ',
+      },
+    },
   });
 
   assert.deepEqual(config, {
@@ -149,7 +154,28 @@ test('BT-020: normalizeAgentConfig trims and preserves preview config fields', (
         healthcheckIntervalMs: 500,
       },
     },
+    previewCompanions: {
+      pairdock: {
+        agentConfigPath: '/tmp/agent-tcg-preview.json',
+      },
+    },
   });
+});
+
+test('normalizeAgentConfig requires absolute companion agent config paths', () => {
+  assert.throws(
+    () =>
+      normalizeAgentConfig({
+        backendUrl: 'https://pairdock.test',
+        agentId: 'local-agent-1',
+        previewCompanions: {
+          pairdock: {
+            agentConfigPath: './agent-tcg-preview.json',
+          },
+        },
+      }),
+    /absolute path/,
+  );
 });
 
 test('normalizeAgentConfig refuses to send agent credentials over remote plaintext HTTP', () => {

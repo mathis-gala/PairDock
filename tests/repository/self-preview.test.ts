@@ -10,15 +10,21 @@ test('PairDock self-preview runs its API and web app inside one sandbox without 
     repoFullName?: unknown;
     sandbox?: { env?: Record<string, unknown>; image?: unknown; network?: unknown };
     setup?: unknown;
-    preview?: { runtime?: unknown; start?: unknown };
+    preview?: { healthcheck?: unknown; prepare?: unknown; runtime?: unknown; start?: unknown };
     version?: unknown;
   };
 
   assert.equal(manifest.version, 1);
   assert.equal(manifest.name, 'PairDock');
   assert.equal(manifest.repoFullName, undefined);
-  assert.equal(manifest.setup, 'bun install --frozen-lockfile && bun run prisma:generate');
+  assert.equal(
+    manifest.setup,
+    'bun install --frozen-lockfile && DATABASE_URL=postgresql://postgres:pairdockdev@127.0.0.1:55432/pairdock bun run prisma:generate',
+  );
   assert.equal(manifest.preview?.runtime, 'docker');
+  assert.equal(manifest.preview?.healthcheck, 'http://127.0.0.1:{{hostPort}}/health');
+  assert.equal(manifest.preview?.prepare, 'bun install --frozen-lockfile');
+  assert.doesNotMatch(String(manifest.preview?.prepare), /prisma:generate/);
   assert.equal(manifest.sandbox?.image, 'pairdock/self-preview-sandbox:node22-bun1.3.14');
   assert.equal(manifest.sandbox?.network, 'host-services');
   assert.deepEqual(manifest.sandbox?.env, {
@@ -31,6 +37,7 @@ test('PairDock self-preview runs its API and web app inside one sandbox without 
   assert.equal('AUTH_STATE_SECRET' in (manifest.sandbox?.env ?? {}), false);
   assert.equal('AUTH_TOKEN_SECRET' in (manifest.sandbox?.env ?? {}), false);
   assert.match(String(manifest.preview?.start), /AGENT_AUTH_CREDENTIALS_JSON/);
+  assert.match(String(manifest.preview?.start), /\$\{AGENT_AUTH_CREDENTIALS_JSON:-/);
   assert.match(String(manifest.preview?.start), /AUTH_STATE_SECRET/);
   assert.match(String(manifest.preview?.start), /AUTH_TOKEN_SECRET/);
   assert.match(String(manifest.preview?.start), /randomBytes/);
