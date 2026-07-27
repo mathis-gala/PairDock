@@ -13,9 +13,14 @@ import {
 } from '@pairdock/shared-contracts';
 import { DockerOrphanReconciler } from '../../../../packages/local-agent/src/docker/docker-orphan-reconciler.js';
 import { HealthcheckService } from '../../../../packages/local-agent/src/docker/healthcheck.service.js';
-import type { SandboxPort, SandboxRef } from '../../../../packages/local-agent/src/docker/sandbox.port.js';
+import type {
+  SandboxPort,
+  SandboxRef,
+  SandboxStartInput,
+} from '../../../../packages/local-agent/src/docker/sandbox.port.js';
 import { SensitiveFilesPolicy } from '../../../../packages/local-agent/src/git/sensitive-files.policy.js';
 import { WorktreeService } from '../../../../packages/local-agent/src/git/worktree.service.js';
+import type { PreviewCompanionPort } from '../../../../packages/local-agent/src/preview/preview-companion-manager.js';
 import { FileSessionWorkspaceStore } from '../../../../packages/local-agent/src/session/file-session-workspace.store.js';
 import { SessionRegistry } from '../../../../packages/local-agent/src/session/session-registry.js';
 import { SessionRunner } from '../../../../packages/local-agent/src/session/session-runner.js';
@@ -138,6 +143,80 @@ test('SessionRunner prepares host dependencies before starting the preview and r
     },
   ]);
   assert.equal(sandboxPort.startCalls.length, 1);
+});
+
+test('SessionRunner starts and cleans up a configured preview companion with the outer preview', async () => {
+  const repositoryPath = await createTempRepository();
+  const managedRoot = await createManagedWorktreeRoot();
+  const sandboxPort = new FakeSandboxPort();
+  const previewCompanionPort = new FakePreviewCompanionPort();
+  const runner = new SessionRunner(
+    {
+      projectPaths: { pairdock: repositoryPath },
+      previewConfigs: {
+        pairdock: {
+          runtime: 'docker',
+          sandbox: {
+            startCommand: 'bun run dev',
+            healthcheckUrl: 'http://127.0.0.1:3100/health',
+          },
+        },
+      },
+    },
+    {
+      previewCompanionPort,
+      worktreeService: new WorktreeService(managedRoot),
+      sandboxPort,
+      previewTunnelPort: new FakePreviewTunnelPort(),
+    },
+  );
+
+  const workspace = await runner.prepare(buildPrepareCommand());
+
+  assert.deepEqual(previewCompanionPort.prepareCalls, [
+    {
+      projectKey: 'pairdock',
+      sessionId: workspace.sessionId,
+    },
+  ]);
+  assert.equal(
+    sandboxPort.startCalls[0]?.previewConfig?.sandbox?.env?.AGENT_AUTH_CREDENTIALS_JSON,
+    'ephemeral-credential',
+  );
+  assert.deepEqual(previewCompanionPort.startCalls, [
+    {
+      localUrl: 'http://127.0.0.1:3100/health',
+      sessionId: workspace.sessionId,
+    },
+  ]);
+
+  await runner.close(buildCloseCommand(workspace.sessionId));
+
+  const recoverableSessionId = '77777777-7777-4777-8777-777777777777';
+  await runner.prepare(
+    buildPrepareCommand({
+      sessionId: recoverableSessionId,
+      payload: {
+        sessionId: recoverableSessionId,
+        projectKey: 'pairdock',
+        branchName: 'pairdock/session-companion-recovery',
+        baseBranch: 'main',
+        modelId: 'codex-cli/gpt-5.4',
+      },
+    }),
+  );
+  await runner.shutdown();
+
+  assert.deepEqual(previewCompanionPort.stopCalls, [
+    {
+      cleanupSessions: true,
+      sessionId: workspace.sessionId,
+    },
+    {
+      cleanupSessions: false,
+      sessionId: recoverableSessionId,
+    },
+  ]);
 });
 
 test('V1: WorktreeService creates the session branch from the selected base branch instead of current HEAD', async () => {
@@ -840,12 +919,12 @@ class BlockingPushWorktreeService extends WorktreeService {
 }
 
 class FakeSandboxPort implements SandboxPort {
-  readonly startCalls: Array<{ sessionId: string; worktreePath: string }> = [];
+  readonly startCalls: SandboxStartInput[] = [];
   readonly checkCalls: SandboxRef[] = [];
   readonly stopCalls: SandboxRef[] = [];
 
-  async start(input: { sessionId: string; worktreePath: string }): Promise<SandboxRef> {
-    this.startCalls.push({ sessionId: input.sessionId, worktreePath: input.worktreePath });
+  async start(input: SandboxStartInput): Promise<SandboxRef> {
+    this.startCalls.push(input);
     return {
       id: `sandbox-${input.sessionId}`,
       sessionId: input.sessionId,
@@ -863,6 +942,37 @@ class FakeSandboxPort implements SandboxPort {
       ready: true,
       url: ref.healthcheckUrl,
     };
+  }
+}
+
+class FakePreviewCompanionPort implements PreviewCompanionPort {
+  readonly prepareCalls: Array<{ projectKey: string; sessionId: string }> = [];
+  readonly startCalls: Array<{ localUrl: string; sessionId: string }> = [];
+  readonly stopCalls: Array<{ cleanupSessions: boolean; sessionId: string }> = [];
+
+  async prepare(input: { previewConfig?: SandboxStartInput['previewConfig']; projectKey: string; sessionId: string }) {
+    this.prepareCalls.push({ projectKey: input.projectKey, sessionId: input.sessionId });
+    const sandbox = input.previewConfig?.sandbox;
+    return sandbox
+      ? {
+          ...input.previewConfig,
+          sandbox: {
+            ...sandbox,
+            env: {
+              ...sandbox.env,
+              AGENT_AUTH_CREDENTIALS_JSON: 'ephemeral-credential',
+            },
+          },
+        }
+      : input.previewConfig;
+  }
+
+  async start(input: { localUrl: string; sessionId: string }): Promise<void> {
+    this.startCalls.push(input);
+  }
+
+  async stop(input: { cleanupSessions: boolean; sessionId: string }): Promise<void> {
+    this.stopCalls.push(input);
   }
 }
 

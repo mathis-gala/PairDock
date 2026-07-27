@@ -251,32 +251,31 @@ node --import tsx packages/local-agent/src/main.ts start
 The agent reads local paths and commands from the developer machine, then publishes only safe metadata to PairDock:
 project key, display name, GitHub repository full name, path alias, optional default branch, and supported model/reasoning IDs. Local paths never leave the machine. Restart `pairdock-agent start` after changing its configuration or a project manifest so the backend receives the new catalog.
 
-### PairDock self-preview with the temporary TCG agent
+### PairDock self-preview with a TCG companion agent
 
-Until the production agent is available, the existing TCG agent identity and its authorized project key can temporarily publish the PairDock repository. Use a separate temporary config file so the existing agent configuration is not overwritten; keep the existing agent id, token, and project key, but point that key to the PairDock checkout:
+PairDock can exercise its complete PM-to-agent flow while it edits itself. Keep the PairDock production agent connected to the deployed API, and reference the existing TCG development-agent profile from that outer agent's JSON config:
+
+```json
+{
+  "previewCompanions": {
+    "pairdock": {
+      "agentConfigPath": "/absolute/path/to/agent-tcg-local.json"
+    }
+  }
+}
+```
+
+The `pairdock` key identifies the outer project whose preview receives the companion. The referenced profile keeps its TCG project paths, capabilities, models, and commands. PairDock ignores that profile's backend URL and token, generates a new 32-byte credential for each outer preview, injects it only into the preview API, and connects the companion through the dynamically allocated loopback port. No production, GitHub, Slack, OpenAI, or existing local-agent token enters the container.
+
+The companion remains a host process, so Codex, Git, repositories, and Docker stay on the developer workstation. Its session state is isolated under `~/.pairdock/companion-sessions/`. Closing the outer session cleans companion previews and worktrees; restarting the outer agent preserves and rebuilds them. Companion runtimes cannot start another companion, which limits this self-preview flow to one nested level.
+
+Build the pinned self-preview image before starting the PairDock agent:
 
 ```bash
 docker build --file deploy/Dockerfile.sandbox --tag pairdock/self-preview-sandbox:node22-bun1.3.14 .
-
-PAIRDOCK_AGENT_CONFIG_PATH=/absolute/path/to/agent-pairdock-local.json \
-node --import tsx packages/local-agent/src/main.ts login \
-  --backend-url <pairdock-api-url> \
-  --agent-id <existing-tcg-agent-id> \
-  --token <existing-tcg-agent-token> \
-  --capability session.prepare \
-  --capability readiness.check \
-  --capability agent.prompt \
-  --capability git.pushBranch \
-  --project tcg=/absolute/path/to/PairDock
-
-PAIRDOCK_AGENT_CONFIG_PATH=/absolute/path/to/agent-pairdock-local.json \
-PAIRDOCK_AGENT_SESSION_STATE_PATH=/absolute/path/to/sessions-pairdock-local.json \
-node --import tsx packages/local-agent/src/main.ts start
 ```
 
-The tracked `pairdock.yml` explicitly keeps PairDock's own multi-service preview in Docker while running setup and final checks on macOS. The Docker-only `node_modules` tmpfs prevents Linux artifacts from contaminating host validation. Only the web app is published on a dynamically allocated host port; the internal API remains on the container's private port `3000`, so no host process or reserved API port is required. The preview API connects to the local development PostgreSQL service through `host.docker.internal:55432`, enables only the local PM identity, and receives a random throwaway agent credential at startup. It does not receive GitHub, Slack, or production secrets, and no agent connects to this inner API. Run the local database migrations and optional PM demo seed before starting the preview. Complete developer OAuth in the top-level PairDock window, not inside the sandboxed PM preview iframe; external identity providers intentionally cannot navigate the parent window.
-
-This temporary mapping replaces the repository path associated with the TCG project key; it does not modify or delete either repository. In the developer UI, create a PairDock project by selecting the PairDock GitHub repository, the published PairDock agent project, and `main` as its base branch. A previously persisted project for another repository is deliberately marked unavailable when the same agent project key is repointed: PairDock rejects commands instead of risking changes or a pull request in the wrong repository.
+The tracked `pairdock.yml` keeps PairDock's multi-service preview in Docker while setup and final checks run on macOS. Only the web app is published on a dynamic loopback port; it proxies API and WebSocket traffic to the private API port `3000`. The preview API uses the local development PostgreSQL service through `host.docker.internal:55432` and enables only local PM identity. Run local migrations and optional PM demo seeds before testing, and make sure that database contains a TCG project whose agent project key matches the companion profile. Complete developer OAuth in the top-level PairDock window, not inside the sandboxed PM preview iframe.
 
 When agents run at the same time, give every process its own config file, session-state file, and agent id:
 

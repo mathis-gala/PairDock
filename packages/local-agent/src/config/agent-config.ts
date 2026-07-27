@@ -1,6 +1,6 @@
 import { chmod, mkdir, readFile, writeFile } from 'node:fs/promises';
 import { homedir } from 'node:os';
-import { dirname, resolve } from 'node:path';
+import { dirname, isAbsolute, resolve } from 'node:path';
 import { z } from 'zod';
 import type { ProjectChecksConfig } from '../checks/checks-runner.js';
 import type { ProjectPreviewConfig } from '../docker/sandbox.port.js';
@@ -23,6 +23,10 @@ export interface AgentProjectDescriptor {
   models?: string[];
 }
 
+export interface PreviewCompanionConfig {
+  agentConfigPath: string;
+}
+
 export interface AgentConfig {
   backendUrl: string;
   agentId: string;
@@ -32,6 +36,7 @@ export interface AgentConfig {
   projects: AgentProjectDescriptor[];
   projectPaths: Record<string, string>;
   previewConfigs: Record<string, ProjectPreviewConfig>;
+  previewCompanions?: Record<string, PreviewCompanionConfig>;
   checksConfigs?: Record<string, ProjectChecksConfig>;
   agentHarnessConfigs?: Record<string, ProjectAgentHarnessConfig>;
 }
@@ -45,6 +50,7 @@ export interface SaveAgentConfigInput {
   projects?: AgentProjectDescriptor[];
   projectPaths?: Record<string, string>;
   previewConfigs?: Record<string, ProjectPreviewConfig>;
+  previewCompanions?: Record<string, PreviewCompanionConfig>;
   checksConfigs?: Record<string, ProjectChecksConfig>;
   agentHarnessConfigs?: Record<string, ProjectAgentHarnessConfig>;
 }
@@ -81,6 +87,10 @@ const checksConfigSchema = z.object({
   build: z.string().min(1).optional(),
   test: z.string().min(1).optional(),
   lint: z.string().min(1).optional(),
+});
+
+const previewCompanionConfigSchema = z.object({
+  agentConfigPath: z.string().min(1),
 });
 
 const agentHarnessConfigSchema = z.object({
@@ -122,6 +132,7 @@ const agentConfigFileSchema = z.object({
   projects: z.array(agentProjectDescriptorSchema).optional(),
   projectPaths: z.record(z.string().min(1), z.string().min(1)).optional(),
   previewConfigs: z.record(z.string().min(1), previewConfigSchema).optional(),
+  previewCompanions: z.record(z.string().min(1), previewCompanionConfigSchema).optional(),
   checksConfigs: z.record(z.string().min(1), checksConfigSchema).optional(),
   agentHarnessConfigs: z.record(z.string().min(1), agentHarnessConfigSchema).optional(),
 });
@@ -142,6 +153,7 @@ export function normalizeAgentConfig(input: SaveAgentConfigInput): AgentConfig {
   const projects = normalizeProjectDescriptors(input.projects ?? []);
   const projectPaths = normalizeProjectPaths(input.projectPaths ?? {});
   const previewConfigs = normalizePreviewConfigs(input.previewConfigs ?? {});
+  const previewCompanions = normalizePreviewCompanions(input.previewCompanions ?? {});
   const checksConfigs = normalizeChecksConfigs(input.checksConfigs ?? {});
   const agentHarnessConfigs = normalizeAgentHarnessConfigs(input.agentHarnessConfigs ?? {});
 
@@ -154,6 +166,7 @@ export function normalizeAgentConfig(input: SaveAgentConfigInput): AgentConfig {
     projects,
     projectPaths,
     previewConfigs,
+    ...(Object.keys(previewCompanions).length > 0 ? { previewCompanions } : {}),
     ...(Object.keys(checksConfigs).length > 0 ? { checksConfigs } : {}),
     ...(Object.keys(agentHarnessConfigs).length > 0 ? { agentHarnessConfigs } : {}),
   };
@@ -170,8 +183,7 @@ export async function saveAgentConfig(input: SaveAgentConfigInput): Promise<{ co
   return { config, path };
 }
 
-export async function loadAgentConfig(): Promise<AgentConfig> {
-  const path = resolveAgentConfigPath();
+export async function loadAgentConfig(path = resolveAgentConfigPath()): Promise<AgentConfig> {
   const rawConfig = await readFile(path, 'utf8');
   const parsed = agentConfigFileSchema.parse(JSON.parse(rawConfig));
 
@@ -188,6 +200,7 @@ export function summarizeAgentConfig(config: AgentConfig) {
     publishedProjectCount: config.projects.length,
     tokenConfigured: Boolean(config.authToken),
     previewConfigCount: Object.keys(config.previewConfigs).length,
+    previewCompanionCount: Object.keys(config.previewCompanions ?? {}).length,
     checksConfigCount: Object.keys(config.checksConfigs ?? {}).length,
     agentHarnessConfigCount: Object.keys(config.agentHarnessConfigs ?? {}).length,
   };
@@ -302,6 +315,26 @@ function normalizePreviewConfigs(
     Object.entries(previewConfigs).map(([projectKey, previewConfig]) => {
       const normalizedProjectKey = normalizeRequiredValue(projectKey, 'preview projectKey');
       return [normalizedProjectKey, normalizePreviewConfig(previewConfig, normalizedProjectKey)];
+    }),
+  );
+}
+
+function normalizePreviewCompanions(
+  previewCompanions: Record<string, PreviewCompanionConfig>,
+): Record<string, PreviewCompanionConfig> {
+  return Object.fromEntries(
+    Object.entries(previewCompanions).map(([projectKey, companionConfig]) => {
+      const normalizedProjectKey = normalizeRequiredValue(projectKey, 'preview companion projectKey');
+      const agentConfigPath = normalizeRequiredValue(
+        companionConfig.agentConfigPath,
+        `preview companion agentConfigPath for ${normalizedProjectKey}`,
+      );
+
+      if (!isAbsolute(agentConfigPath)) {
+        throw new Error(`preview companion agentConfigPath for ${normalizedProjectKey} must be an absolute path.`);
+      }
+
+      return [normalizedProjectKey, { agentConfigPath }];
     }),
   );
 }

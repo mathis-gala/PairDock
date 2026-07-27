@@ -4,11 +4,8 @@ import { parseArgs } from 'node:util';
 import { loadAgentConfig, saveAgentConfig, summarizeAgentConfig } from './config/agent-config.js';
 import { enrichConfigWithCodexModels } from './config/codex-model-catalog.js';
 import { enrichConfigWithProjectManifests } from './config/project-manifest.js';
-import { DockerDependencyPrewarmer } from './docker/docker-dependency-prewarmer.js';
-import { FileSessionWorkspaceStore } from './session/file-session-workspace.store.js';
-import { SessionRegistry } from './session/session-registry.js';
-import { SessionRunner } from './session/session-runner.js';
-import { AgentClient } from './websocket/agent-client.js';
+import { PreviewCompanionManager } from './preview/preview-companion-manager.js';
+import { startAgentRuntime } from './runtime/agent-runtime.js';
 
 async function main() {
   const command = process.argv[2] ?? 'start';
@@ -67,36 +64,28 @@ async function runLogin() {
 }
 
 async function runStart() {
-  const loadedConfig = await enrichConfigWithProjectManifests(
-    await enrichConfigWithCodexModels(await loadAgentConfig()),
-  );
-  const previewConfigs = await new DockerDependencyPrewarmer().prepareAll({
-    ownerId: loadedConfig.agentId,
-    projectPaths: loadedConfig.projectPaths,
-    previewConfigs: loadedConfig.previewConfigs,
+  const config = await loadEnrichedAgentConfig();
+  const previewCompanionPort = new PreviewCompanionManager(config.previewCompanions ?? {}, {
+    loadAgentConfig: loadEnrichedAgentConfig,
+    startRuntime: (input) =>
+      startAgentRuntime({
+        ...input,
+        logger: console,
+      }),
   });
-  const config = { ...loadedConfig, previewConfigs };
-  const sessionRunner = new SessionRunner(
-    {
-      runtimeOwnerId: config.agentId,
-      projectPaths: config.projectPaths,
-      previewConfigs: config.previewConfigs,
-      logger: console,
-    },
-    {
-      sessionRegistry: new SessionRegistry(new FileSessionWorkspaceStore()),
-    },
-  );
-  const client = new AgentClient(config, console, { sessionRunner });
+  const runtime = await startAgentRuntime({
+    config,
+    logger: console,
+    previewCompanionPort,
+  });
 
-  await client.start();
   await waitForShutdownSignal(async () => {
-    await client.stop();
+    await runtime.stop({ cleanupSessions: false });
   });
 }
 
 async function runStatus() {
-  const config = await enrichConfigWithProjectManifests(await enrichConfigWithCodexModels(await loadAgentConfig()));
+  const config = await loadEnrichedAgentConfig();
   const summary = summarizeAgentConfig(config);
 
   console.log(`Backend URL: ${summary.backendUrl}`);
@@ -105,7 +94,12 @@ async function runStatus() {
   console.log(`Projects configured: ${summary.projectCount}`);
   console.log(`Projects published: ${summary.publishedProjectCount}`);
   console.log(`Models published: ${summary.modelCount}`);
+  console.log(`Preview companions configured: ${summary.previewCompanionCount}`);
   console.log(`Token configured: ${summary.tokenConfigured ? 'yes' : 'no'}`);
+}
+
+async function loadEnrichedAgentConfig(path?: string) {
+  return enrichConfigWithProjectManifests(await enrichConfigWithCodexModels(await loadAgentConfig(path)));
 }
 
 function runStop() {

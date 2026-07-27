@@ -168,6 +168,8 @@ pairdock-agent start
 
 Every concurrently running agent needs a unique agent id, config path, and session-state path, even when agents connect to different PairDock backends. The agent id also scopes local Docker previews and dependency caches, so reusing it can make one process clean up another process's resources. Keep each production token stable across normal upgrades; updating the local-agent code does not require another `login`.
 
+For PairDock self-preview testing, the production PairDock agent may start a host-side companion agent connected only to the preview API. Add `previewCompanions.<outer-project-key>.agentConfigPath` to the outer agent JSON and point it to a separate local development-agent profile. PairDock replaces that profile's backend URL and token with per-preview loopback credentials, keeps its state separate, and limits nesting to one level. Do not add credentials to `pairdock.yml` or commit local agent config files.
+
 Use Codex CLI 0.138.0 or newer. PairDock's readiness check rejects older versions because they cannot enforce the restricted filesystem permission profile used for PM-triggered work.
 
 Preview containers and Cloudflare quick tunnels still run on the developer workstation. The Caddy policy permits `https://*.trycloudflare.com` preview iframes. If the workstation sleeps or the agent stops, deployed PairDock remains online, but previews and new agent work are unavailable until the agent reconnects.

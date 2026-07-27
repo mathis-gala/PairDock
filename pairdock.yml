@@ -1,7 +1,10 @@
 version: 1
 name: PairDock
 defaultBranch: main
-setup: 'bun install --frozen-lockfile && bun run prisma:generate'
+setup: >-
+  bun install --frozen-lockfile &&
+  DATABASE_URL=postgresql://postgres:pairdockdev@127.0.0.1:55432/pairdock
+  bun run prisma:generate
 sandbox:
   image: pairdock/self-preview-sandbox:node22-bun1.3.14
   workdir: /workspace
@@ -15,7 +18,7 @@ sandbox:
     - '127.0.0.1:{{hostPort}}:4000'
 preview:
   runtime: docker
-  prepare: 'bun install --frozen-lockfile && bun run prisma:generate'
+  prepare: 'bun install --frozen-lockfile'
   start: >-
     bun install --frozen-lockfile &&
     bun run prisma:generate &&
@@ -23,10 +26,10 @@ preview:
     "const { randomBytes } = require('node:crypto'); process.stdout.write(randomBytes(32).toString('hex'))")" &&
     export AUTH_TOKEN_SECRET="$(node -e
     "const { randomBytes } = require('node:crypto'); process.stdout.write(randomBytes(32).toString('hex'))")" &&
-    export AGENT_AUTH_CREDENTIALS_JSON="$(node -e
-    "const { randomBytes } = require('node:crypto'); process.stdout.write(JSON.stringify({ 'preview-disabled': { token: randomBytes(32).toString('hex'), projectKeys: ['preview-disabled'] } }))")" &&
+    export AGENT_AUTH_CREDENTIALS_JSON="${AGENT_AUTH_CREDENTIALS_JSON:-$(node -e
+    "const { randomBytes } = require('node:crypto'); process.stdout.write(JSON.stringify({ 'preview-disabled': { token: randomBytes(32).toString('hex'), projectKeys: ['preview-disabled'] } }))")}" &&
     { bun --cwd apps/api dev & bun --cwd apps/web dev --host 0.0.0.0 --port 4000 & wait; }
-  healthcheck: 'http://127.0.0.1:{{hostPort}}'
+  healthcheck: 'http://127.0.0.1:{{hostPort}}/health'
   healthcheckTimeoutMs: 120000
   tunnel: cloudflare
 checks:
