@@ -169,7 +169,7 @@ test('V1: local agent does not publish projects without pairdock.yml', async () 
   assert.equal(config.checksConfigs, undefined);
 });
 
-test('V1: local agent accepts per-session host port templates in preview URLs', async () => {
+test('remote PairDock backend replaces loopback public preview URLs with a Cloudflare tunnel', async () => {
   const projectPath = await mkdtemp(join(tmpdir(), 'pairdock-manifest-port-template-'));
   await writeFile(
     join(projectPath, 'pairdock.yml'),
@@ -204,6 +204,44 @@ test('V1: local agent accepts per-session host port templates in preview URLs', 
 
   assert.equal(config.projects.length, 1);
   assert.equal(config.previewConfigs.pairdock?.sandbox?.healthcheckUrl, 'http://127.0.0.1:{{hostPort}}');
+  assert.deepEqual(config.previewConfigs.pairdock?.tunnel, {
+    provider: 'cloudflare',
+  });
+});
+
+test('local PairDock backend keeps loopback public preview URLs', async () => {
+  const projectPath = await mkdtemp(join(tmpdir(), 'pairdock-local-preview-template-'));
+  await writeFile(
+    join(projectPath, 'pairdock.yml'),
+    [
+      'version: 1',
+      'repoFullName: mathis-gala/PairDock',
+      'sandbox:',
+      '  ports:',
+      '    - "127.0.0.1:{{hostPort}}:4000"',
+      'preview:',
+      '  start: "pnpm dev --port 4000"',
+      '  healthcheck: "http://127.0.0.1:{{hostPort}}"',
+      '  tunnel:',
+      '    publicUrl: "http://127.0.0.1:{{hostPort}}"',
+      'checks:',
+      '  build: "pnpm build"',
+      '  test: "pnpm test"',
+      '  lint: "pnpm lint"',
+      '',
+    ].join('\n'),
+  );
+
+  const config = await enrichConfigWithProjectManifests({
+    backendUrl: 'http://127.0.0.1:3000',
+    agentId: 'local-agent-1',
+    capabilities: ['session.prepare'],
+    models: [],
+    projects: [],
+    projectPaths: { pairdock: projectPath },
+    previewConfigs: {},
+  });
+
   assert.equal(config.previewConfigs.pairdock?.tunnel?.publicUrl, 'http://127.0.0.1:{{hostPort}}');
 });
 
