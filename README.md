@@ -160,6 +160,7 @@ bun run db:migrate:dev
 PairDock previews are meant to be public HTTPS URLs for PM browsers. The local agent starts the project preview, waits for the local healthcheck, then opens a Cloudflare Tunnel.
 
 Cloudflare runs through Docker by default. You do not need to install `cloudflared` locally. Add `preview.tunnel: cloudflare` to `pairdock.yml`; the local agent starts `cloudflare/cloudflared` in Docker and publishes the generated HTTPS URL.
+When an agent connects to a non-loopback PairDock backend, PairDock also replaces any loopback-only `preview.tunnel.publicUrl` with a Cloudflare Quick Tunnel. This keeps fast `127.0.0.1` previews for local development without publishing an unusable local URL to remote PM browsers.
 
 ### 6. Add `pairdock.yml`
 

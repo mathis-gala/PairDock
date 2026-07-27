@@ -5,6 +5,7 @@ import { parse } from 'yaml';
 import { z } from 'zod';
 import type { ProjectChecksConfig } from '../checks/checks-runner.js';
 import type { ProjectPreviewConfig } from '../docker/sandbox.port.js';
+import { backendRequiresPublicPreviews, requirePublicPreviews } from '../preview/public-preview-policy.js';
 import type { AgentConfig, AgentProjectDescriptor } from './agent-config.js';
 
 const manifestFileName = 'pairdock.yml';
@@ -162,7 +163,9 @@ export async function enrichConfigWithProjectManifests(config: AgentConfig): Pro
   return {
     ...config,
     projects: mergeProjects(config.projects, projects),
-    previewConfigs,
+    previewConfigs: backendRequiresPublicPreviews(config.backendUrl)
+      ? requirePublicPreviews(previewConfigs)
+      : previewConfigs,
     ...(Object.keys(checksConfigs).length > 0 ? { checksConfigs } : {}),
   };
 }
