@@ -5,7 +5,7 @@
 :root {
   color-scheme: dark;
   font-family: "Hanken Grotesk", -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
-  background: oklch(0.18 0.015 260);
+  background: oklch(0.62 0.2 145);
   color: oklch(0.94 0.008 260);
 }
 
@@ -21,8 +21,13 @@ body,
 
 body {
   margin: 0;
-  background:
-    radial-gradient(120% 90% at 50% -10%, oklch(0.22 0.018 260) 0%, oklch(0.18 0.015 260) 60%), oklch(0.18 0.015 260);
+  background-color: oklch(0.62 0.2 145);
+  background-image:
+    linear-gradient(oklch(0.12 0.025 150 / 58%), oklch(0.12 0.025 150 / 58%)), url("/green-texture-background.png");
+  background-position: center;
+  background-repeat: no-repeat;
+  background-size: cover;
+  background-attachment: fixed;
   -webkit-font-smoothing: antialiased;
 }
 
