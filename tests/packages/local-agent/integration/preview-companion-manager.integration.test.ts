@@ -21,7 +21,19 @@ function companionAgentConfig(): AgentConfig {
     projectPaths: {
       tcg: '/tmp/tcg-collection',
     },
-    previewConfigs: {},
+    previewConfigs: {
+      tcg: {
+        runtime: 'docker',
+        sandbox: {
+          startCommand: 'bun run dev',
+          healthcheckUrl: 'http://127.0.0.1:4000',
+        },
+        tunnel: {
+          provider: 'cloudflare',
+          publicUrl: 'http://127.0.0.1:{{hostPort}}',
+        },
+      },
+    },
   };
 }
 
@@ -87,6 +99,9 @@ test('PreviewCompanionManager injects an ephemeral credential and connects the c
   assert.equal(runtimeStarts[0]?.config.authToken === companionAgentConfig().authToken, false);
   assert.equal(runtimeStarts[0]?.statePath, `/tmp/companions/${outerSessionId}.json`);
   assert.equal(runtimeStarts[0]?.runtimeOwnerId, `tcg-dev-agent-companion-${outerSessionId}`);
+  assert.deepEqual(runtimeStarts[0]?.config.previewConfigs.tcg?.tunnel, {
+    provider: 'cloudflare',
+  });
 
   await manager.stop({ cleanupSessions: true, sessionId: outerSessionId });
   assert.deepEqual(runtimeStops, [{ cleanupSessions: true }]);
