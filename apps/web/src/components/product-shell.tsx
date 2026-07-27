@@ -24,7 +24,7 @@ export function ProductShell({
   const initial = (user.displayName ?? user.email).slice(0, 1).toUpperCase();
 
   return (
-    <div className="min-h-dvh bg-[#14161b] md:flex">
+    <div className="min-h-dvh bg-[var(--app-background)] md:flex">
       <header className="sticky top-0 z-20 flex min-h-14 items-center justify-between border-b border-white/10 bg-[#16181e]/95 px-4 backdrop-blur md:hidden">
         <div className="flex min-w-0 items-center gap-2">
           <PairDockMark color={color} size="mobile" />
