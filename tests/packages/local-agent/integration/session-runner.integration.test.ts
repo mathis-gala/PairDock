@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import { execFile } from 'node:child_process';
 import { access, mkdtemp, writeFile } from 'node:fs/promises';
+import { createServer } from 'node:http';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import test from 'node:test';
@@ -24,6 +25,7 @@ import type { PreviewCompanionPort } from '../../../../packages/local-agent/src/
 import { FileSessionWorkspaceStore } from '../../../../packages/local-agent/src/session/file-session-workspace.store.js';
 import { SessionRegistry } from '../../../../packages/local-agent/src/session/session-registry.js';
 import { SessionRunner } from '../../../../packages/local-agent/src/session/session-runner.js';
+import { InstrumentedPreviewTunnelAdapter } from '../../../../packages/local-agent/src/tunnel/instrumented-preview-tunnel.adapter.js';
 import type { PreviewTunnelPort } from '../../../../packages/local-agent/src/tunnel/preview-tunnel.port.js';
 
 const execFileAsync = promisify(execFile);
@@ -382,7 +384,24 @@ test('BT-016: SessionRunner.prepare returns a preview URL after the sandbox pass
   assert.equal(runner.findWorkspace(sessionId)?.previewUrl, 'https://preview.pairdock.test');
 });
 
-test('SessionRunner rebuilds a prepared preview from its persisted worktree after an agent restart', async () => {
+test('SessionRunner rebuilds an instrumented preview from its persisted worktree after an agent restart', async (t) => {
+  const upstream = createServer((_request, response) => {
+    response.writeHead(200, { 'content-type': 'text/html' });
+    response.end('<html><head></head><body>Preview</body></html>');
+  });
+  await new Promise<void>((resolve) => upstream.listen(0, '127.0.0.1', resolve));
+  t.after(() => {
+    upstream.closeAllConnections();
+    return new Promise<void>((resolve) => upstream.close(() => resolve()));
+  });
+  const address = upstream.address();
+  assert.ok(address && typeof address !== 'string');
+  const localUrl = `http://127.0.0.1:${address.port}`;
+  class LocalPreviewSandbox extends FakeSandboxPort {
+    override async start(input: SandboxStartInput): Promise<SandboxRef> {
+      return { ...(await super.start(input)), healthcheckUrl: localUrl };
+    }
+  }
   const repositoryPath = await createTempRepository();
   const managedRoot = await createManagedWorktreeRoot();
   const stateRoot = await mkdtemp(join(tmpdir(), 'pairdock-session-state-'));
@@ -399,19 +418,29 @@ test('SessionRunner rebuilds a prepared preview from its persisted worktree afte
       modelId: 'codex-cli/gpt-5.4',
     },
   });
-  const firstSandbox = new FakeSandboxPort();
+  const firstSandbox = new LocalPreviewSandbox();
+  const firstTunnel = new FakePreviewTunnelPort();
+  const firstInstrumentedTunnel = new InstrumentedPreviewTunnelAdapter(firstTunnel);
   const firstRunner = new SessionRunner(
     { projectPaths: { pairdock: repositoryPath } },
     {
       sessionRegistry: new SessionRegistry(store),
       worktreeService: new WorktreeService(managedRoot),
       sandboxPort: firstSandbox,
-      previewTunnelPort: new FakePreviewTunnelPort(),
+      previewTunnelPort: firstInstrumentedTunnel,
     },
   );
   const preparedWorkspace = await firstRunner.prepare(command);
+  const firstTunnelRef = preparedWorkspace.tunnelRef;
+  assert.ok(firstTunnelRef);
+  t.after(() => firstInstrumentedTunnel.close(firstTunnelRef));
+  const originalProxyUrl = firstTunnel.openCalls[0]?.localUrl;
+  assert.ok(originalProxyUrl);
+  assert.match(await (await fetch(originalProxyUrl)).text(), /data-pairdock-preview-picker/);
+  // A process restart loses the in-memory listener while its tunnel reference remains persisted.
+  await firstInstrumentedTunnel.close(firstTunnelRef);
 
-  const restoredSandbox = new FakeSandboxPort();
+  const restoredSandbox = new LocalPreviewSandbox();
   const restoredTunnel = new FakePreviewTunnelPort();
   const restoredCommandExecutor = new FakeHostCommandExecutor();
   const restartedRunner = new SessionRunner(
@@ -432,9 +461,10 @@ test('SessionRunner rebuilds a prepared preview from its persisted worktree afte
       sessionRegistry: new SessionRegistry(new FileSessionWorkspaceStore(statePath)),
       worktreeService: new WorktreeService(managedRoot),
       sandboxPort: restoredSandbox,
-      previewTunnelPort: restoredTunnel,
+      previewTunnelPort: new InstrumentedPreviewTunnelAdapter(restoredTunnel),
     },
   );
+  t.after(() => restartedRunner.shutdown());
 
   const recovery = await restartedRunner.restore();
 
@@ -447,6 +477,10 @@ test('SessionRunner rebuilds a prepared preview from its persisted worktree afte
   assert.equal(restoredSandbox.checkCalls.length, 1);
   assert.equal(restoredTunnel.closeCalls.length, 1);
   assert.equal(restoredTunnel.openCalls.length, 1);
+  const restoredProxyUrl = restoredTunnel.openCalls[0]?.localUrl;
+  assert.ok(restoredProxyUrl);
+  assert.notEqual(restoredProxyUrl, originalProxyUrl);
+  assert.match(await (await fetch(restoredProxyUrl)).text(), /data-pairdock-preview-picker/);
   assert.deepEqual(restoredCommandExecutor.commands, [
     {
       command: 'bun install --frozen-lockfile',
@@ -454,6 +488,8 @@ test('SessionRunner rebuilds a prepared preview from its persisted worktree afte
       worktreePath: preparedWorkspace.worktreePath,
     },
   ]);
+  await restartedRunner.shutdown();
+  await assert.rejects(fetch(restoredProxyUrl, { signal: AbortSignal.timeout(500) }));
 });
 
 test('SessionRunner reconciles old Docker resources after every restart, including host-only configurations', async () => {

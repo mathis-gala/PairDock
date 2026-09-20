@@ -16,6 +16,8 @@ test('PM prompt composer explains why sending is temporarily unavailable', () =>
       isSubmitting={false}
       onCancel={async () => undefined}
       onSubmit={async () => undefined}
+      onSelectionsChange={() => undefined}
+      selections={[]}
     />,
   );
 

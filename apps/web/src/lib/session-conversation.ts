@@ -1,5 +1,10 @@
-import { checksResultPayloadSchema, summarizeChecksFailure } from '@pairdock/shared-contracts';
+import {
+  checksResultPayloadSchema,
+  type PreviewElementSelection,
+  summarizeChecksFailure,
+} from '@pairdock/shared-contracts';
 import type { SessionEventRecordView, SessionMessageView } from '../schemas/session.js';
+import { parsePreviewSelectionPrompt } from './preview-selection-prompt.js';
 
 export interface SessionConversationItem {
   id: string;
@@ -9,25 +14,31 @@ export interface SessionConversationItem {
   tone: 'default' | 'error';
   createdAt: string;
   attachments?: SessionMessageView['attachments'];
+  selections?: PreviewElementSelection[];
 }
 
 export function buildSessionConversation(
   messages: SessionMessageView[],
   events: SessionEventRecordView[],
 ): SessionConversationItem[] {
-  const messageItems = messages.map((message) => ({
-    id: `message:${message.id}`,
-    role: message.role === 'agent' || message.role === 'assistant' ? ('assistant' as const) : ('user' as const),
-    kind: 'message' as const,
-    text: message.content.trim(),
-    tone: 'default' as const,
-    createdAt: message.createdAt,
-    attachments: message.attachments,
-  }));
+  const messageItems: SessionConversationItem[] = messages.map((message) => {
+    const role = message.role === 'agent' || message.role === 'assistant' ? 'assistant' : 'user';
+    const previewContext = role === 'user' ? parsePreviewSelectionPrompt(message.content) : null;
+    return {
+      id: `message:${message.id}`,
+      role,
+      kind: 'message',
+      text: (previewContext?.content ?? message.content).trim(),
+      tone: 'default',
+      createdAt: message.createdAt,
+      attachments: message.attachments,
+      selections: previewContext?.selections,
+    };
+  });
   const eventItems = events.flatMap(toConversationEvent);
 
   const sortedItems = [...messageItems, ...eventItems]
-    .filter((item) => item.text.length > 0 || Boolean(item.attachments?.length))
+    .filter((item) => item.text.length > 0 || Boolean(item.attachments?.length) || Boolean(item.selections?.length))
     .sort((left, right) => left.createdAt.localeCompare(right.createdAt));
 
   return mergeAdjacentAgentOutput(promoteFinalAgentMessages(sortedItems));

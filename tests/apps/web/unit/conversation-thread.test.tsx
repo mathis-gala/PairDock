@@ -3,7 +3,11 @@ import test from 'node:test';
 import { createElement } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { ConversationThread } from '../../../../apps/web/src/components/pm-session/conversation-thread.js';
-import type { SessionConversationItem } from '../../../../apps/web/src/lib/session-conversation.js';
+import { buildPreviewSelectionPrompt } from '../../../../apps/web/src/lib/preview-selection-prompt.js';
+import {
+  buildSessionConversation,
+  type SessionConversationItem,
+} from '../../../../apps/web/src/lib/session-conversation.js';
 
 const LONG_PATH_ITEM: SessionConversationItem = {
   id: 'message:1',
@@ -13,6 +17,51 @@ const LONG_PATH_ITEM: SessionConversationItem = {
   tone: 'default',
   createdAt: '2026-07-26T12:00:00.000Z',
 };
+
+test('multipart selection context renders as numbered disclosures without printing the raw prompt payload', async () => {
+  const selection = {
+    tagName: 'button',
+    selector: '#start-trial',
+    text: 'Commencer <img src=x onerror=alert(1)>',
+    html: '<button id="start-trial">Commencer</button>',
+    url: 'https://preview.example.test/',
+    rect: { x: 10, y: 20, width: 100, height: 40 },
+    viewport: { width: 1280, height: 900 },
+  };
+  const form = new FormData();
+  form.set(
+    'content',
+    buildPreviewSelectionPrompt('Rends ce bouton visible.', [selection, { ...selection, selector: '#secondary' }]),
+  );
+  const request = new Request('http://api.example.test/prompts', { method: 'POST', body: form });
+  const content = (await request.formData()).get('content');
+  assert.equal(typeof content, 'string');
+  if (typeof content !== 'string') throw new Error('Missing prompt text');
+  const items = buildSessionConversation(
+    [
+      {
+        id: '22222222-2222-4222-8222-222222222222',
+        sessionId: '11111111-1111-4111-8111-111111111111',
+        userId: null,
+        role: 'pm',
+        content,
+        attachments: [],
+        createdAt: '2026-07-18T10:00:00.000Z',
+      },
+    ],
+    [],
+  );
+  const html = renderToStaticMarkup(createElement(ConversationThread, { isTyping: false, items }));
+
+  assert.match(html, /Rends ce bouton visible\./);
+  assert.match(html, /Sélection 1/);
+  assert.match(html, /Sélection 2/);
+  assert.equal(html.match(/<details[ >]/g)?.length, 2);
+  assert.doesNotMatch(html, /<details[^>]*\sopen[ =>]/);
+  assert.doesNotMatch(html, /instantané non fiable|```json|&quot;viewport&quot;/);
+  assert.doesNotMatch(html, /<img\s/);
+  assert.match(html, /Commencer &lt;img/);
+});
 
 test('conversation messages wrap long paths inside their bubble', () => {
   const html = renderToStaticMarkup(
