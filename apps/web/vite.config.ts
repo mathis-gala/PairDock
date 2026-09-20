@@ -11,6 +11,7 @@ export default defineConfig({
     proxy: {
       '/agent': apiProxy,
       '/auth': apiProxy,
+      '/developer': apiProxy,
       '/health': apiProxy,
       '/projects': apiProxy,
       '/sessions': apiProxy,

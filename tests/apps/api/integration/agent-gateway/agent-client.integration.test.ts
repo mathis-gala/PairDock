@@ -9,6 +9,7 @@ import { DatabaseClient } from '../../../../../apps/api/src/persistence/client.j
 import { AgentClient } from '../../../../../packages/local-agent/src/websocket/agent-client.js';
 
 const prisma = new DatabaseClient();
+const AGENT_TOKEN = 'integration-agent-token-with-at-least-32-bytes';
 
 let app: INestApplication;
 let baseUrl: string;
@@ -58,6 +59,9 @@ async function waitFor<T>(producer: () => Promise<T | null>, errorMessage: strin
 }
 
 test.before(async () => {
+  process.env.AGENT_AUTH_CREDENTIALS_JSON = JSON.stringify({
+    'agent-local-1': { token: AGENT_TOKEN, projectKeys: ['pairdock'] },
+  });
   await prisma.$connect();
   await startApplication();
 });
@@ -65,6 +69,7 @@ test.before(async () => {
 test.after(async () => {
   await app.close();
   await prisma.$disconnect();
+  delete process.env.AGENT_AUTH_CREDENTIALS_JSON;
 });
 
 test.beforeEach(async () => {
@@ -76,7 +81,7 @@ test('BT-012: a started local agent is visible from the backend after it announc
   const client = new AgentClient(
     {
       agentId: 'agent-local-1',
-      authToken: 'secret-token',
+      authToken: AGENT_TOKEN,
       backendUrl: baseUrl,
       capabilities: ['session.prepare', 'agent.prompt'],
       models: [{ id: 'agent/gpt-5', label: 'GPT-5', provider: 'local-agent' }],

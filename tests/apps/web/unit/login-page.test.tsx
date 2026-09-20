@@ -4,13 +4,13 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { LoginPage } from '../../../../apps/web/src/views/login-page.js';
 
-function renderLoginPage(developmentPmAuthEnabled: boolean): string {
+function renderLoginPage(developmentPmAuthEnabled: boolean, isAgentSetup = false): string {
   const queryClient = new QueryClient();
   queryClient.setQueryData(['auth', 'providers'], { developmentPmAuthEnabled });
 
   return renderToStaticMarkup(
     <QueryClientProvider client={queryClient}>
-      <LoginPage onAuthenticated={() => undefined} />
+      <LoginPage isAgentSetup={isAgentSetup} onAuthenticated={() => undefined} />
     </QueryClientProvider>,
   );
 }
@@ -25,6 +25,14 @@ test('BT-034: production login renders GitHub for developers and Slack for PMs',
   assert.doesNotMatch(html, /Entrer comme PM local/);
   assert.match(html, /viewBox="0 0 24 24"/);
   assert.doesNotMatch(html, /Codex/);
+});
+
+test('device enrollment requires GitHub and explains explicit approval after login', () => {
+  const html = renderLoginPage(true, true);
+
+  assert.match(html, /Continuer avec GitHub App/);
+  assert.match(html, /nom et son code avant de l’autoriser/);
+  assert.doesNotMatch(html, /Espace produit|Entrer comme PM local|Continuer avec Slack App/);
 });
 
 test('local login keeps GitHub mandatory for developers and skips Slack only for PMs', () => {

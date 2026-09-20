@@ -2,6 +2,24 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import { ReadinessRunner } from '../../../../packages/local-agent/src/readiness/readiness-runner.js';
 
+test('ReadinessRunner checks a bundled Codex executable whose application path contains spaces', async () => {
+  const executable = '/Applications/PairDock Agent.app/Contents/Resources/codex';
+  const seen: Array<{ command: string; args: string[] }> = [];
+  const runner = new ReadinessRunner(
+    {
+      projectPaths: {},
+      agentHarnessConfigs: { project: { command: executable } },
+    },
+    async (command, args) => {
+      seen.push({ command, args });
+      return { ok: true, output: command === executable ? 'codex-cli 0.155.1' : 'ok' };
+    },
+  );
+  const result = await runner.run({ projectKey: 'project' });
+  assert.equal(result.checks.find((check) => check.key === 'agent-harness')?.status, 'passed');
+  assert.ok(seen.some((call) => call.command === executable && call.args[0] === '--version'));
+});
+
 test('BT-044: ReadinessRunner reports every developer-side readiness check with remediation', async () => {
   const runner = new ReadinessRunner({
     authToken: 'test-token',

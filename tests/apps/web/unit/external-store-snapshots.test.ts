@@ -1,7 +1,11 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import { getAppRouteSnapshot } from '../../../../apps/web/src/hooks/use-app-route.js';
-import { getAuthSessionSnapshot, setAuthSession } from '../../../../apps/web/src/hooks/use-auth-session.js';
+import {
+  getAuthSessionSnapshot,
+  rememberDeveloperAgentReturn,
+  setAuthSession,
+} from '../../../../apps/web/src/hooks/use-auth-session.js';
 
 const authStorageKey = 'pairdock.auth.session';
 
@@ -47,6 +51,15 @@ test('developer session hashes resolve to the read-only session route', () => {
       kind: 'developer-session',
       sessionId: '123e4567-e89b-12d3-a456-426614174000',
     });
+  });
+});
+
+test('agent verification links preserve the pairing code for explicit developer approval', () => {
+  withWindow({ location: { hash: '#/developer/agents?code=abcd-2345' } }, () => {
+    assert.deepEqual(getAppRouteSnapshot(), { kind: 'developer-agents', userCode: 'ABCD2345' });
+  });
+  withWindow({ location: { hash: '#/developer/agents?code=https%3A%2F%2Fexample.com' } }, () => {
+    assert.deepEqual(getAppRouteSnapshot(), { kind: 'developer-agents', userCode: null });
   });
 });
 
@@ -151,5 +164,64 @@ test('useAuthSession lets independent browsers persist developer and PM authenti
   });
   withWindow({ localStorage: pmBrowserStorage }, () => {
     assert.equal(getAuthSessionSnapshot()?.accessToken, 'pm-token');
+  });
+});
+
+test('GitHub callback returns to pending device approval once and never redirects a PM', () => {
+  const session = {
+    accessToken: 'pairing-developer-token',
+    provider: 'github',
+    user: {
+      id: '123e4567-e89b-12d3-a456-426614174003',
+      email: 'device-owner@example.com',
+      displayName: 'Device owner',
+      kind: 'developer',
+    },
+  };
+  const values = new Map<string, string>();
+  const storage = {
+    getItem: (key: string) => values.get(key) ?? null,
+    setItem: (key: string, value: string) => values.set(key, value),
+    removeItem: (key: string) => values.delete(key),
+  };
+  const location = { hash: '#/developer/agents?code=ABCD-2345', pathname: '/', search: '' };
+  let callbackUrl = '';
+  const history = {
+    replaceState: (_state: null, _title: string, url: string) => {
+      callbackUrl = url;
+      location.hash = url.includes('#') ? url.slice(url.indexOf('#')) : '';
+    },
+  };
+
+  withWindow({ location, history, localStorage: storage, sessionStorage: storage }, () => {
+    rememberDeveloperAgentReturn();
+    location.hash = `#pairdock_auth=${encodeURIComponent(JSON.stringify(session))}`;
+    assert.equal(getAuthSessionSnapshot()?.user.kind, 'developer');
+    assert.equal(callbackUrl, '/#/developer/agents?code=ABCD2345');
+    assert.deepEqual(getAppRouteSnapshot(), { kind: 'developer-agents', userCode: 'ABCD2345' });
+
+    location.hash = `#pairdock_auth=${encodeURIComponent(JSON.stringify(session))}`;
+    getAuthSessionSnapshot();
+    assert.equal(callbackUrl, '/');
+
+    location.hash = '#/developer/agents?code=ABCD-2345';
+    rememberDeveloperAgentReturn();
+    const pmSession = { ...session, provider: 'slack', user: { ...session.user, kind: 'pm' } };
+    location.hash = `#pairdock_auth=${encodeURIComponent(JSON.stringify(pmSession))}`;
+    assert.equal(getAuthSessionSnapshot()?.user.kind, 'pm');
+    assert.equal(callbackUrl, '/');
+
+    location.hash = '#/developer/agents?code=ABCD-2345';
+    rememberDeveloperAgentReturn();
+    location.hash = '#/login';
+    rememberDeveloperAgentReturn();
+    location.hash = `#pairdock_auth=${encodeURIComponent(JSON.stringify(session))}`;
+    getAuthSessionSnapshot();
+    assert.equal(callbackUrl, '/', 'a normal login must clear an abandoned pairing target');
+
+    values.set('pairdock.auth.agent-return', 'https://example.com/');
+    location.hash = `#pairdock_auth=${encodeURIComponent(JSON.stringify(session))}`;
+    getAuthSessionSnapshot();
+    assert.equal(callbackUrl, '/', 'tampered return values must never become redirect URLs');
   });
 });

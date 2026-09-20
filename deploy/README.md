@@ -24,25 +24,35 @@ The public configuration is environment-driven:
 - `PAIRDOCK_WEB_URL` and `PAIRDOCK_API_URL`: complete HTTPS origins used by API CORS and the browser.
 - `GITHUB_REDIRECT_URI` and `SLACK_REDIRECT_URI`: exact OAuth callback URLs configured with the providers.
 - `GITHUB_WEBHOOK_SECRET`: secret shared only by GitHub and the API for signed webhook delivery.
+- `PAIRDOCK_TRUSTED_PROXY_IPS`: optional comma-separated numeric IPs of the immediate trusted proxies, normally Caddy's address on `pairdock_proxy`; configure it for per-client pairing rate limits behind Caddy.
 - `R2_PRIVATE_BUCKET`: private Cloudflare R2 bucket used for authenticated chat screenshots.
 - `R2_PUBLIC_BUCKET` and `R2_PUBLIC_BASE_URL`: public R2 bucket and its custom HTTPS domain used for durable GitHub PR screenshots.
 - `IMAGE_TAG`: optional release tag; defaults to `latest` when omitted.
 
 `PAIRDOCK_API_URL` is injected into `/config.js` when the web container starts. The same published web image can therefore be deployed under any domain without rebuilding it.
 
-Generate `POSTGRES_PASSWORD`, `AUTH_TOKEN_SECRET`, `AUTH_STATE_SECRET`, `GITHUB_WEBHOOK_SECRET`, and one token per local agent independently:
+Generate `POSTGRES_PASSWORD`, `AUTH_TOKEN_SECRET`, `AUTH_STATE_SECRET` and `GITHUB_WEBHOOK_SECRET` independently:
 
 ```bash
 openssl rand -hex 32
 ```
 
-Put the agent tokens in `AGENT_AUTH_CREDENTIALS_JSON`, keyed by the exact agent id. Each token must be unique and contain at least 32 bytes:
+Desktop devices enroll through an expiring code approved by their developer in the
+browser. The API stores their ownership and credential hashes in PostgreSQL; operators
+do not provision one static token per desktop user. `AGENT_AUTH_CREDENTIALS_JSON` is
+optional, and Compose defaults it to `{}`. Omitted, empty and `{}` values are accepted
+when no legacy CLI agents need static credentials. Remove any unfilled example value
+from a server environment file before using this default.
+
+For existing administratively provisioned CLI agents only, generate an independent
+token per agent and put the map in `AGENT_AUTH_CREDENTIALS_JSON`. Each token must be
+unique and contain at least 32 bytes:
 
 ```env
 AGENT_AUTH_CREDENTIALS_JSON='{"agent-local-1":{"token":"<first-generated-token>","projectKeys":["project-a"]},"agent-local-2":{"token":"<second-generated-token>","projectKeys":["project-b","project-c"]}}'
 ```
 
-Every project key published by a workstation must be present in that agent's `projectKeys`, and a key may appear under only one credential. Keep credentials stable across normal updates. Give each workstation only its own token; never share the full JSON map with agent operators. In particular, changing `POSTGRES_PASSWORD` does not update the password already stored by PostgreSQL. `DEV_PM_AUTH_ENABLED` is hard-disabled by Compose.
+Every project key published by a static CLI agent must be present in that agent's `projectKeys`, and a key may appear under only one credential. Keep those credentials stable across normal updates. Give each workstation only its own token; never share the full JSON map with agent operators. Static agents remain administratively managed; they are not listed as self-service paired devices. In particular, changing `POSTGRES_PASSWORD` does not update the password already stored by PostgreSQL. `DEV_PM_AUTH_ENABLED` is hard-disabled by Compose.
 
 Create separate private and public R2 buckets. Generate an R2 API token with object read/write/delete access to both, expose only the public bucket through the `R2_PUBLIC_BASE_URL` custom domain, and fill all six `R2_*` variables from `pairdock.env.example`. Production API startup fails when this durable storage configuration is incomplete.
 
@@ -57,7 +67,7 @@ Create separate private and public R2 buckets. Generate an R2 API token with obj
 - Keep GitHub App repository permissions at the documented minimum and install it only on repositories intended for PairDock.
 - Keep `/webhooks/github` publicly reachable through Cloudflare without an Access login or interactive challenge. PairDock authenticates deliveries with GitHub's HMAC signature; rate-limit the route, but do not cache it.
 
-PairDock limits WebSocket frames, prompt sizes, captured output, and validation logs. It also runs Codex without inherited workstation secrets or network access, runs checks in disposable networkless containers, and binds preview ports to loopback. These controls reduce impact; they do not make arbitrary PM-requested code safe to run directly on a developer host.
+PairDock limits WebSocket frames, prompt sizes, captured output, and validation logs. It also runs Codex without inherited workstation secrets or network access, runs project checks on the host with a filtered environment, and binds preview ports to loopback. These controls reduce impact; they do not make arbitrary PM-requested code safe to run directly on a developer host.
 
 ## One-time server setup
 
@@ -99,6 +109,40 @@ docker compose --env-file /opt/pairdock/pairdock.env exec caddy caddy reload --c
 ```
 
 In the Cloudflare Tunnel, add the values of `PAIRDOCK_WEB_DOMAIN` and `PAIRDOCK_API_DOMAIN` as public hostnames. Reuse the HTTP service target that already reaches Caddy, commonly `http://caddy:80` for a containerized tunnel or `http://localhost:80` for a system service.
+
+### Client addresses for pairing rate limits
+
+The API uses the direct socket peer for pairing rate limits unless that peer is
+explicitly listed in `PAIRDOCK_TRUSTED_PROXY_IPS`. For a listed peer only, it accepts a
+single numeric `X-Real-IP` value. It never trusts `X-Forwarded-For`, CIDR ranges or a
+blanket proxy setting. An empty allowlist is safe for direct API access, but all requests
+through Caddy then share Caddy's rate-limit bucket and can throttle unrelated developers.
+
+Inspect Caddy's actual address on the shared network:
+
+```bash
+docker inspect --format '{{(index .NetworkSettings.Networks "pairdock_proxy").IPAddress}}' <caddy-container>
+```
+
+Put that exact IP in the server-only environment file:
+
+```env
+PAIRDOCK_TRUSTED_PROXY_IPS=<actual-caddy-proxy-network-ip>
+```
+
+For multiple immediate proxies, separate their exact numeric IPs with commas. Prefer
+assigning Caddy a stable IP within the existing proxy network's configured subnet. If
+Caddy's address changes when its container is recreated, update this value and recreate
+the API service. This setting is not a list of public client IPs or Cloudflare edge ranges.
+
+The provided Caddyfile overwrites `X-Real-IP` with Cloudflare's `CF-Connecting-IP` value.
+Its API listener must therefore accept traffic only from the trusted Cloudflare Tunnel
+path. Enforce that restriction with the host/network configuration; do not expose this
+listener directly to arbitrary clients or untrusted containers that could forge
+`CF-Connecting-IP`. Trusting Caddy's socket address alone does not establish the upstream
+header's authenticity. If your deployment does not use this Cloudflare-to-Caddy path,
+configure Caddy to overwrite `X-Real-IP` from your own verified client-address source
+before adding it to the API allowlist.
 
 Configure the external providers with these exact environment-derived URLs:
 
@@ -152,7 +196,36 @@ docker compose --env-file pairdock.env logs --tail=200 migrate api web database
 
 ## Local developer agent and previews
 
-The agent stays on the developer workstation because it needs the source repository, Codex CLI, Git credentials, and Docker. It connects outbound to the public API with the token mapped to its exact agent id in `AGENT_AUTH_CREDENTIALS_JSON`:
+The macOS desktop companion is the primary V1 setup path. Give developers the public
+API address and an actual macOS build. They select **Continuer dans le navigateur**,
+sign in with GitHub, compare the device code and approve the association themselves.
+The application receives and securely stores its credential without token copying.
+Developers then select their repositories and scripts in the GUI and start the agent.
+See the [desktop guide](../docs/agent-desktop.md) for the complete flow and distribution
+requirements. Windows and Linux desktop installers are not part of this V1.
+
+Apply the agent-enrollment migration before starting the new API. Keep `FRONTEND_URL`
+(supplied by `PAIRDOCK_WEB_URL` in Compose) on the same public origin as the web app:
+it controls verification links, OAuth return navigation and API CORS. Make pairing
+endpoints reachable by the app and browser; the API itself enforces code expiry,
+single-use claim, developer approval, ownership and rate limits.
+
+The developer's web **Agents** page lists their paired devices and supports confirmed
+revocation. Revocation disconnects the device and blocks its credential; no Compose
+restart is needed. Back up the database to retain paired device ownership across
+upgrades. Keep the desktop profile on the workstation, never in the server environment
+or a repository.
+
+The agent stays on the developer workstation because it needs the source repository,
+Git credentials, project tools and Docker for shared preview tunnels. The desktop app
+bundles Codex and provides a browser sign-in action. Production signing, notarization
+and publication of desktop installers must be configured separately from server image
+publication; do not advertise a download before that artifact exists.
+
+### Advanced CLI compatibility
+
+An existing CLI agent can still connect outbound to the public API with the token
+mapped to its exact agent id in the optional `AGENT_AUTH_CREDENTIALS_JSON`:
 
 ```bash
 PAIRDOCK_AGENT_CONFIG_PATH="$HOME/.pairdock/agent-<agent-id>.json" \

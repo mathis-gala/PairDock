@@ -308,6 +308,7 @@ export class ProjectsService {
 
     const accessibleRepositories = new Set(repositories.map((repository) => repository.fullName));
     const agents = this.connectedAgentsRegistry.listSnapshots().flatMap((agent) => {
+      if (agent.ownerUserId && agent.ownerUserId !== user.id) return [];
       const projects = agent.projects
         .filter((project) => accessibleRepositories.has(project.repoFullName))
         .map((project) => ({
@@ -519,6 +520,10 @@ export class ProjectsService {
 
     if (!agent || !agentProject) {
       throw new BadRequestException('Selected local agent project is offline or not published.');
+    }
+
+    if (agent.ownerUserId && agent.ownerUserId !== user.id) {
+      throw new ForbiddenException('Selected local agent belongs to another developer.');
     }
 
     if (agentProject.repoFullName !== input.repoFullName) {

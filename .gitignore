@@ -3,8 +3,10 @@ node_modules/
 apps/api/src/generated/prisma/
 npm-debug.log*
 dist/
+/apps/agent-desktop/release/
 coverage/
 docs/*
+!docs/agent-desktop.md
 !docs/architecture/
 !docs/architecture/**
 !docs/prototypes/

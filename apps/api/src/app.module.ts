@@ -1,5 +1,6 @@
 import { Module } from '@nestjs/common';
 import { AgentGatewayModule } from './agent-gateway/agent-gateway.module.js';
+import { AgentOnboardingModule } from './agent-onboarding/agent-onboarding.module.js';
 import { AuthModule } from './auth/auth.module.js';
 import { GithubWebhooksModule } from './github-webhooks/github-webhooks.module.js';
 import { HealthController } from './health.controller.js';
@@ -14,6 +15,7 @@ import { UsersModule } from './users/users.module.js';
 
 @Module({
   imports: [
+    AgentOnboardingModule,
     PersistenceModule,
     SourceControlModule,
     UsersModule,

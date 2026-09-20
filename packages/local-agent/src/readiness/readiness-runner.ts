@@ -146,7 +146,7 @@ export class ReadinessRunner {
 
   private async checkAgentHarness(projectKey: string): Promise<ToolReadinessCheck> {
     const command = this.config.agentHarnessConfigs?.[projectKey]?.command ?? 'codex';
-    const executable = command.trim().split(/\s+/)[0];
+    const executable = command.trim();
     const result = await this.runDeveloperCommand('sh', ['-c', `command -v ${shellQuote(executable)}`]);
 
     if (!result.ok) {

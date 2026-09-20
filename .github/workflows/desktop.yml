@@ -1,0 +1,88 @@
+name: Desktop macOS installer
+
+on:
+  pull_request:
+    branches: [main]
+    paths: ['apps/agent-desktop/**', 'packages/local-agent/**', 'packages/shared-contracts/**', 'tests/apps/agent-desktop/**', 'bun.lock', '.github/workflows/desktop.yml']
+  push:
+    branches: [main]
+    paths: ['apps/agent-desktop/**', 'packages/local-agent/**', 'packages/shared-contracts/**', 'tests/apps/agent-desktop/**', 'bun.lock', '.github/workflows/desktop.yml']
+  workflow_dispatch:
+    inputs:
+      sign_and_notarize:
+        description: 'Sign and notarize using configured Apple secrets (uploads CI artifacts only)'
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+concurrency:
+  group: desktop-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  macos:
+    name: macOS ${{ matrix.arch }}
+    # Native labels: https://docs.github.com/en/actions/reference/runners/github-hosted-runners
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - runner: macos-15
+            arch: arm64
+          - runner: macos-15-intel
+            arch: x64
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Set up Bun
+        uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2
+        with:
+          bun-version: 1.3.13
+
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
+
+      - name: Verify native architecture
+        env:
+          EXPECTED_ARCH: ${{ matrix.arch }}
+        run: node -e 'if (process.arch !== process.env.EXPECTED_ARCH) process.exit(1)'
+
+      - name: Test desktop agent
+        run: bun run --filter @pairdock/agent-desktop test
+
+      - name: Typecheck desktop agent
+        run: bun run --filter @pairdock/agent-desktop typecheck
+
+      - name: Build desktop agent
+        run: bun run --filter @pairdock/agent-desktop build
+
+      - name: Package unsigned installer
+        if: ${{ github.event_name != 'workflow_dispatch' || !inputs.sign_and_notarize }}
+        run: node apps/agent-desktop/scripts/package.mjs
+
+      # These optional conventional electron-builder secrets must be configured before opting in.
+      # Missing credentials fail packaging. Nothing is uploaded to a GitHub Release.
+      - name: Package signed and notarized installer
+        if: ${{ github.event_name == 'workflow_dispatch' && inputs.sign_and_notarize }}
+        env:
+          CSC_LINK: ${{ secrets.CSC_LINK }}
+          CSC_KEY_PASSWORD: ${{ secrets.CSC_KEY_PASSWORD }}
+          APPLE_ID: ${{ secrets.APPLE_ID }}
+          APPLE_APP_SPECIFIC_PASSWORD: ${{ secrets.APPLE_APP_SPECIFIC_PASSWORD }}
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+        run: node apps/agent-desktop/scripts/package.mjs --signed
+
+      - name: Upload installer artifact
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: PairDock-Agent-macos-${{ matrix.arch }}-${{ inputs.sign_and_notarize && 'notarized' || 'unsigned' }}
+          path: apps/agent-desktop/release/*.dmg
+          if-no-files-found: error
+          retention-days: 14

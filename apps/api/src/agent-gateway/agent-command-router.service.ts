@@ -36,13 +36,15 @@ export class AgentCommandRouterService {
       throw new NotFoundException(`Project ${session.projectId} was not found.`);
     }
 
-    if (command.type !== 'session.close') {
+    if (command.type === 'session.close') {
+      this.agentProjectBinding.assertOwnershipIfConnected(project);
+    } else {
       this.agentProjectBinding.assertConnected(project);
     }
 
     const delivered = options.waitForCompletion
       ? await this.agentGateway.emitToAgentAndWait(project.agentProjectKey, command)
-      : this.agentGateway.emitToAgent(project.agentProjectKey, command);
+      : await this.agentGateway.emitToAgent(project.agentProjectKey, command);
 
     if (!delivered) {
       throw new ServiceUnavailableException(`Agent ${project.agentProjectKey} is not connected.`);

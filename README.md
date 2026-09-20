@@ -1,6 +1,38 @@
 # PairDock
 
-PairDock MVP monorepo described in `docs/architecture/pairdock-mvp/`.
+PairDock connects a developer's local repositories and agent to a shared PM workspace.
+
+## Connect a developer's Mac
+
+The V1 desktop app is for macOS. Developers associate their own devices through the
+interface; an administrator does not need to create a token for each workstation.
+
+1. Install the macOS PairDock application supplied by your instance operator. A public,
+   signed installer is not published by these instructions; see [desktop setup and
+   distribution](docs/agent-desktop.md).
+2. Open PairDock, enter your instance's **API address** and a recognizable device name,
+   then choose **Continuer dans le navigateur**.
+3. Sign in with GitHub. Compare the device name and code shown in the browser with the
+   desktop app, then choose **Autoriser cet appareil**. PairDock returns to the pending
+   verification after GitHub sign-in; signing in alone does not authorize the device.
+4. Back in the desktop app, check Git and Docker, and choose **Connecter Codex** when
+   needed. The app includes Codex; your repository's runtime and package manager still
+   need to be installed locally.
+5. Choose **Ajouter un projet**, select an existing local Git repository and review the
+   detected scripts. Complete any missing preview, build, test and lint settings in the
+   form, then save. No agent token, terminal login command or hand-written YAML is needed.
+6. Choose **Démarrer l’agent**, then **Ouvrir mes projets**. In the web **Projets** page,
+   select the GitHub repository, branch, local project, model and reasoning level. Create
+   the project, check readiness and invite the PMs who may use it.
+
+The web **Agents** page shows your paired devices and their actual connection state.
+Use **Révoquer l’accès**, then confirm, to disconnect a device and reject future use of
+its credential. Keep the Mac awake and the app running while the team uses its projects.
+
+Read [the desktop guide](docs/agent-desktop.md) for prerequisites, local storage,
+recovery and the distinction between desktop setup and the advanced CLI.
+
+Technical architecture is documented in `docs/architecture/pairdock-mvp/`.
 
 Production release, Raspberry Pi, Caddy, and Cloudflare Tunnel instructions: [`deploy/README.md`](deploy/README.md).
 
@@ -8,11 +40,12 @@ Production release, Raspberry Pi, Caddy, and Cloudflare Tunnel instructions: [`d
 
 - `apps/web`: React application for the PM/developer UI.
 - `apps/api`: NestJS orchestration API.
-- `packages/local-agent`: Node.js/TypeScript CLI for the local agent.
+- `apps/agent-desktop`: macOS Electron companion for pairing, local project setup and agent controls.
+- `packages/local-agent`: shared Node.js/TypeScript agent runtime, desktop manager and advanced CLI.
 - `packages/shared-contracts`: shared Zod/TypeScript contracts for backend, UI, and agent.
 - `packages/domain`: business types and internal ports before provider adapters.
 
-## Commands
+## Contributor commands
 
 ```bash
 bun install
@@ -30,9 +63,11 @@ bun run dev:api
 bun run dev:agent
 ```
 
-## V1 developer setup
+## Server and local contributor setup
 
-PairDock V1 creates projects from real GitHub App repositories and real connected local agents.
+These steps configure the PairDock service and its providers. A developer joining an
+existing instance can use the desktop flow above without editing server configuration.
+PairDock creates projects from real GitHub App repositories and connected local agents.
 
 ### 1. GitHub App
 
@@ -65,11 +100,10 @@ GITHUB_APP_PRIVATE_KEY="<pem contents or escaped pem>"
 GITHUB_WEBHOOK_SECRET=<different-random-secret>
 AUTH_STATE_SECRET=<random-secret-of-at-least-32-bytes>
 AUTH_TOKEN_SECRET=<different-random-secret-of-at-least-32-bytes>
-AGENT_AUTH_CREDENTIALS_JSON={"agent-local-1":{"token":"<different-random-secret-of-at-least-32-bytes>","projectKeys":["tcg-collection"]}}
 DEV_PM_AUTH_ENABLED=false
 ```
 
-Generate all authentication secrets independently, for example with `openssl rand -base64 48`. Keep them stable between API restarts and never commit them. `AGENT_AUTH_CREDENTIALS_JSON` maps each local agent id to its unique token and exact project-key allowlist; one project key cannot be assigned to multiple credentials. Pass only that agent's token to its CLI.
+Generate all authentication secrets independently, for example with `openssl rand -base64 48`. Keep them stable between API restarts and never commit them. Desktop pairing stores device ownership and hashed credentials in PostgreSQL; `AGENT_AUTH_CREDENTIALS_JSON` is optional and is needed only for administratively provisioned legacy CLI agents. It may be omitted, empty or `{}` when every device uses self-service pairing.
 
 GitHub cannot deliver real webhooks to `127.0.0.1`. For local end-to-end testing, expose the API through a temporary HTTPS tunnel and use `<tunnel-url>/webhooks/github`, or use GitHub App webhook redelivery against the production API. PairDock verifies `X-Hub-Signature-256` before parsing the event. Refresh the PM history page to load the latest pull-request states.
 
@@ -155,14 +189,21 @@ Apply the attachment metadata migration before starting the updated API:
 bun run db:migrate:dev
 ```
 
-### 5. Cloudflare Tunnel
+## Advanced local-agent configuration
+
+The desktop app keeps its project settings in its encrypted local profile. It can read
+an existing `pairdock.yml` to prefill settings without requiring or rewriting that file.
+The following manifest and CLI instructions remain available for custom deployment,
+existing agent profiles and the nested self-preview workflow.
+
+### Cloudflare Tunnel
 
 PairDock previews are meant to be public HTTPS URLs for PM browsers. The local agent starts the project preview, waits for the local healthcheck, then opens a Cloudflare Tunnel.
 
 Cloudflare runs through Docker by default. You do not need to install `cloudflared` locally. Add `preview.tunnel: cloudflare` to `pairdock.yml`; the local agent starts `cloudflare/cloudflared` in Docker and publishes the generated HTTPS URL.
 When an agent connects to a non-loopback PairDock backend, PairDock also replaces any loopback-only `preview.tunnel.publicUrl` with a Cloudflare Quick Tunnel. This keeps fast `127.0.0.1` previews for local development without publishing an unusable local URL to remote PM browsers.
 
-### 6. Add `pairdock.yml`
+### Repository manifest for CLI agents
 
 Add `pairdock.yml` at each repository root:
 
@@ -220,7 +261,20 @@ preview:
     publicUrl: "https://pairdock-preview.example.com"
 ```
 
-### 7. Configure the local agent
+### Configure an administratively provisioned CLI agent
+
+This advanced path uses a token provisioned by the instance operator, rather than the
+desktop pairing flow. The operator adds a unique token of at least 32 bytes and the
+agent's exact project-key allowlist to `AGENT_AUTH_CREDENTIALS_JSON`, for example:
+
+```env
+AGENT_AUTH_CREDENTIALS_JSON={"local-agent-1":{"token":"<independently-generated-agent-token>","projectKeys":["pairdock"]}}
+```
+
+One project key cannot be assigned to multiple static credentials. Give an operator
+only the credential for their agent; never distribute the complete map. Static CLI
+credentials are managed through server configuration, not through the web list of
+self-service paired devices.
 
 Declare the local project path. The MVP Codex adapter discovers the visible models and their supported reasoning levels from the authenticated local Codex CLI cache:
 
@@ -303,7 +357,7 @@ Explicit `--model <id>=<label>=<provider>` options remain supported for non-Code
 
 Agent console logs prefix execution failures with the PairDock session ID. Agent outputs and final validation results are persisted as session events. Codex works normally inside the host worktree and may install dependencies or run project checks. PairDock independently runs the configured build, test, and lint commands on the host after each turn. When one fails, PairDock returns bounded, redacted diagnostics to the same Codex thread and reruns validation after at most two automatic repair attempts. Explicit backend rejection stops the workflow before further local work. PM users receive the final concise failed-check summary and recovery instruction in the conversation; final redacted check logs remain available in persisted events for diagnosis. Docker preview and tunnel containers are labeled by agent and session. On startup, the agent removes all of its own labeled containers, then rebuilds previews for valid persisted worktrees.
 
-### 8. Create a PairDock project
+### Create a PairDock project
 
 In the developer UI:
 
@@ -312,8 +366,8 @@ In the developer UI:
 3. Select the base branch.
 4. Select the online local agent project.
 5. Select the project agent's model and one of its supported reasoning levels. This developer-owned configuration applies to every new session.
-6. Run readiness checks.
-7. Create/start a session.
+6. Create the project and run readiness checks.
+7. Invite the PMs who may use it, then start a session when readiness passes.
 
 PM users can start sessions only after required readiness checks are green.
 

@@ -34,6 +34,8 @@ import {
 
 const execFileAsync = promisify(execFile);
 const prisma = new DatabaseClient();
+const TEST_AGENT_PROJECT_KEY = `agent-${randomUUID()}`;
+const TEST_AGENT_TOKEN = 'mvp-end-to-end-agent-token-with-at-least-32-bytes';
 const EXAMPLE_REPOSITORY_FIXTURE = resolve(__dirname, '../../../fixtures/mvp-e2e/example-repository');
 const reviewRequestResponseSchema = z.object({ reviewRequestUrl: z.string(), status: z.literal('open') }).passthrough();
 
@@ -266,6 +268,9 @@ async function startPreviewServer() {
 }
 
 test.before(async () => {
+  process.env.AGENT_AUTH_CREDENTIALS_JSON = JSON.stringify({
+    [TEST_AGENT_PROJECT_KEY]: { token: TEST_AGENT_TOKEN, projectKeys: [TEST_AGENT_PROJECT_KEY] },
+  });
   await prisma.$connect();
   await startApplication();
 });
@@ -273,6 +278,7 @@ test.before(async () => {
 test.after(async () => {
   await app.close();
   await prisma.$disconnect();
+  delete process.env.AGENT_AUTH_CREDENTIALS_JSON;
 });
 
 test.beforeEach(async () => {
@@ -282,7 +288,7 @@ test.beforeEach(async () => {
 test('BT-033: full MVP flow starts a session, runs a PM prompt, creates an open review request, and closes with local cleanup', async () => {
   const developerLogin = await authenticateDeveloper();
   const pmEmail = `pm-${randomUUID()}@pairdock.test`;
-  const agentProjectKey = `agent-${randomUUID()}`;
+  const agentProjectKey = TEST_AGENT_PROJECT_KEY;
   const project = await createDeveloperProject(developerLogin.accessToken, agentProjectKey);
   app.get(ConnectedAgentsRegistry).unregister(`setup-${agentProjectKey}`);
   await shareProjectWithPm(developerLogin.accessToken, project.id, pmEmail);
@@ -295,7 +301,7 @@ test('BT-033: full MVP flow starts a session, runs a PM prompt, creates an open 
   const agentClient = new AgentClient(
     {
       agentId: project.agentProjectKey,
-      authToken: 'test-agent-token',
+      authToken: TEST_AGENT_TOKEN,
       backendUrl: baseUrl,
       capabilities: ['session.prepare', 'session.close', 'agent.prompt', 'git.pushBranch'],
       models: [{ id: project.defaultModelId, label: 'GPT-5.4', provider: 'local-agent' }],

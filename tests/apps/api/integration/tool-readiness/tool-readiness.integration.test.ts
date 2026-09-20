@@ -145,7 +145,7 @@ async function announceAgent(
     socket.once('connect_error', reject);
     socket.connect();
   });
-  socket.emit(agentProtocolMessageEventName, {
+  const acknowledgement = await socket.timeout(2_000).emitWithAck(agentProtocolMessageEventName, {
     protocolVersion: AGENT_PROTOCOL_VERSION,
     messageId: randomUUID(),
     type: 'agent.connected',
@@ -165,6 +165,7 @@ async function announceAgent(
     },
     sentAt: new Date().toISOString(),
   });
+  assert.deepEqual(acknowledgement, { accepted: true });
 }
 
 test.before(async () => {

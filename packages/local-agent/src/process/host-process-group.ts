@@ -9,7 +9,7 @@ export async function terminateHostProcessGroup(pid: number): Promise<void> {
   signalProcessGroup(pid, 'SIGKILL');
 }
 
-function signalProcessGroup(pid: number, signal: NodeJS.Signals): boolean {
+export function signalProcessGroup(pid: number, signal: NodeJS.Signals): boolean {
   try {
     process.kill(-pid, signal);
     return true;

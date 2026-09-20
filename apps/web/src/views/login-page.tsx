@@ -7,10 +7,11 @@ import { Button } from '../components/button.js';
 import type { AuthSession } from '../schemas/auth.js';
 
 interface LoginPageProps {
+  isAgentSetup?: boolean;
   onAuthenticated: (session: AuthSession) => void;
 }
 
-export function LoginPage({ onAuthenticated }: LoginPageProps) {
+export function LoginPage({ isAgentSetup = false, onAuthenticated }: LoginPageProps) {
   const providersQuery = useQuery({
     queryKey: ['auth', 'providers'],
     queryFn: authApi.providers,
@@ -50,16 +51,24 @@ export function LoginPage({ onAuthenticated }: LoginPageProps) {
         </div>
       </div>
       <p className="mb-7 max-w-[460px] text-center text-[14.5px] leading-6 text-[#8b92a1] sm:mb-9">
-        Prête l'agent IA d'un développeur à ton équipe produit. Un volet pour prompter, un volet pour voir le rendu en
-        direct.
+        {isAgentSetup
+          ? 'Connecte-toi avec ton compte développeur GitHub pour associer ton appareil. Tu vérifieras son nom et son code avant de l’autoriser.'
+          : "Prête l'agent IA d'un développeur à ton équipe produit. Un volet pour prompter, un volet pour voir le rendu en direct."}
       </p>
-      <div className="grid w-full max-w-[760px] gap-[18px] md:grid-cols-2">
+      <div className={isAgentSetup ? 'w-full max-w-[380px]' : 'grid w-full max-w-[760px] gap-[18px] md:grid-cols-2'}>
         <DeveloperLoginCard />
-        <PmLoginCard
-          developmentAuthEnabled={providersQuery.data.developmentPmAuthEnabled}
-          onAuthenticated={onAuthenticated}
-        />
+        {!isAgentSetup ? (
+          <PmLoginCard
+            developmentAuthEnabled={providersQuery.data.developmentPmAuthEnabled}
+            onAuthenticated={onAuthenticated}
+          />
+        ) : null}
       </div>
+      {isAgentSetup ? (
+        <a className="mt-5 text-sm text-[#aeb5c3] underline underline-offset-4" href="#/login">
+          Retour à la connexion
+        </a>
+      ) : null}
       <p className="mt-8 font-mono text-xs text-[#565d6b]">SSO · worktrees isolés · une PR par correctif</p>
     </div>
   );

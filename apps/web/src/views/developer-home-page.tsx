@@ -11,6 +11,11 @@ interface DeveloperHomePageProps {
   session: AuthSession;
 }
 
+const navItems = [
+  { active: true, href: '#/developer', label: 'Projets' },
+  { active: false, href: '#/developer/agents', label: 'Agents' },
+];
+
 export function DeveloperHomePage({ onSignOut, session }: DeveloperHomePageProps) {
   const {
     closeSessionMutation,
@@ -33,12 +38,7 @@ export function DeveloperHomePage({ onSignOut, session }: DeveloperHomePageProps
   const updateProjectError = updateProjectMutation.error instanceof Error ? updateProjectMutation.error.message : null;
 
   return (
-    <ProductShell
-      navItems={[{ active: true, href: '#/developer', label: 'Projets' }]}
-      onSignOut={onSignOut}
-      user={session.user}
-      viewLabel="Projets"
-    >
+    <ProductShell navItems={navItems} onSignOut={onSignOut} user={session.user} viewLabel="Projets">
       <div className="flex min-h-screen min-w-0">
         <div className="min-w-0 flex-1 overflow-auto px-6 py-8 lg:px-9">
           <div className="mb-5 flex flex-wrap items-end justify-between gap-4">
@@ -51,7 +51,6 @@ export function DeveloperHomePage({ onSignOut, session }: DeveloperHomePageProps
           </div>
 
           <DeveloperProjectForm
-            developerSeed={session.user.email}
             isSetupLoading={setupQuery.isLoading}
             isSubmitting={createProjectMutation.isPending}
             onSubmit={async (input) => {

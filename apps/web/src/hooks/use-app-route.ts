@@ -1,3 +1,4 @@
+import { agentPairingUserCodeSchema } from '@pairdock/shared-contracts';
 import { useSyncExternalStore } from 'react';
 import type { AppRoute } from '../routing/route-types.js';
 
@@ -15,6 +16,14 @@ export function openLogin(): void {
 
 export function openDeveloperHome(): void {
   setHash('/developer');
+}
+
+export function developerAgentsHash(userCode: string | null = null): string {
+  return userCode ? `#/developer/agents?code=${encodeURIComponent(userCode)}` : '#/developer/agents';
+}
+
+export function openDeveloperAgents(userCode: string | null = null): void {
+  setHash(developerAgentsHash(userCode));
 }
 
 export function openPmDashboard(): void {
@@ -59,6 +68,12 @@ export function getAppRouteSnapshot(): AppRoute {
 
 function parseHash(hashValue: string): AppRoute {
   const normalizedHash = hashValue.replace(/^#/, '').replace(/\/$/, '');
+
+  const [pathname, search = ''] = normalizedHash.split('?');
+  if (pathname === '/developer/agents') {
+    const code = agentPairingUserCodeSchema.safeParse(new URLSearchParams(search).get('code'));
+    return { kind: 'developer-agents', userCode: code.success ? code.data : null };
+  }
 
   if (normalizedHash === '/developer') {
     return { kind: 'developer-home' };

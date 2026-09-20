@@ -20,6 +20,7 @@ import { AgentClient } from '../../../../../packages/local-agent/src/websocket/a
 
 const execFileAsync = promisify(execFile);
 const prisma = new DatabaseClient();
+const AGENT_TOKEN = 'integration-routing-token-with-at-least-32-bytes';
 
 let app: INestApplication;
 let baseUrl: string;
@@ -81,6 +82,9 @@ async function waitFor<T>(producer: () => Promise<T | null>, errorMessage: strin
 }
 
 test.before(async () => {
+  process.env.AGENT_AUTH_CREDENTIALS_JSON = JSON.stringify({
+    'agent-local-1': { token: AGENT_TOKEN, projectKeys: ['pairdock'] },
+  });
   await prisma.$connect();
   await startApplication();
 });
@@ -88,6 +92,7 @@ test.before(async () => {
 test.after(async () => {
   await app.close();
   await prisma.$disconnect();
+  delete process.env.AGENT_AUTH_CREDENTIALS_JSON;
 });
 
 test.beforeEach(async () => {
@@ -143,7 +148,7 @@ test('Task 8: backend command routing persists preview progress, preview URL, an
   const client = new AgentClient(
     {
       agentId: 'agent-local-1',
-      authToken: 'secret-token',
+      authToken: AGENT_TOKEN,
       backendUrl: baseUrl,
       capabilities: ['session.prepare', 'session.close'],
       projects: [

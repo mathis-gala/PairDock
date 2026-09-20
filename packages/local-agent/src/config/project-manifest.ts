@@ -80,10 +80,15 @@ const pairdockManifestSchema = z
     }
   });
 
-interface ProjectManifestLoadResult {
+export interface ProjectManifestLoadResult {
   descriptor: AgentProjectDescriptor;
   previewConfig: ProjectPreviewConfig;
   checksConfig: ProjectChecksConfig;
+}
+
+export interface ProjectRepositoryMetadata {
+  repoFullName: string;
+  defaultBranch: string;
 }
 
 interface CommandResult {
@@ -170,12 +175,16 @@ export async function enrichConfigWithProjectManifests(config: AgentConfig): Pro
   };
 }
 
-async function loadProjectManifest(projectKey: string, projectPath: string): Promise<ProjectManifestLoadResult> {
+export async function loadProjectManifest(
+  projectKey: string,
+  projectPath: string,
+  repository?: ProjectRepositoryMetadata,
+): Promise<ProjectManifestLoadResult> {
   const manifestPath = join(projectPath, manifestFileName);
   const rawManifest = await readFile(manifestPath, 'utf8');
   const manifest = pairdockManifestSchema.parse(parse(rawManifest));
-  const repoFullName = manifest.repoFullName ?? (await readRepoFullName(projectPath));
-  const defaultBranch = manifest.defaultBranch ?? (await readDefaultBranch(projectPath));
+  const repoFullName = manifest.repoFullName ?? repository?.repoFullName ?? (await readRepoFullName(projectPath));
+  const defaultBranch = manifest.defaultBranch ?? repository?.defaultBranch ?? (await readDefaultBranch(projectPath));
   const checksConfig = {
     build: manifest.checks.build,
     test: manifest.checks.test,
@@ -268,7 +277,7 @@ async function readDefaultBranch(projectPath: string): Promise<string | undefine
   return result.ok && result.output ? result.output : undefined;
 }
 
-function normalizeGithubRemote(remoteUrl: string): string | null {
+export function normalizeGithubRemote(remoteUrl: string): string | null {
   const trimmed = remoteUrl.trim().replace(/\.git$/, '');
   const sshMatch = /^git@github\.com:([^/]+\/[^/]+)$/.exec(trimmed);
 

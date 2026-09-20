@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import type { AgentConnectedEventEnvelope } from '@pairdock/shared-contracts';
 
-export type ConnectedAgentSnapshot = AgentConnectedEventEnvelope['payload'];
+export type ConnectedAgentSnapshot = AgentConnectedEventEnvelope['payload'] & { ownerUserId?: string };
 
 @Injectable()
 export class ConnectedAgentsRegistry {
@@ -40,6 +40,7 @@ export class ConnectedAgentsRegistry {
     this.socketIdByAgentId.set(agentId, socketId);
     this.snapshotByAgentId.set(agentId, {
       agentId,
+      ...(snapshot.ownerUserId ? { ownerUserId: snapshot.ownerUserId } : {}),
       capabilities: [...snapshot.capabilities],
       models: snapshot.models.map((model) => ({ ...model })),
       projects: snapshot.projects.map((project) => ({
@@ -99,6 +100,7 @@ export class ConnectedAgentsRegistry {
 function cloneSnapshot(snapshot: ConnectedAgentSnapshot): ConnectedAgentSnapshot {
   return {
     agentId: snapshot.agentId,
+    ...(snapshot.ownerUserId ? { ownerUserId: snapshot.ownerUserId } : {}),
     capabilities: [...snapshot.capabilities],
     models: snapshot.models.map((model) => ({ ...model })),
     projects: snapshot.projects.map((project) => ({

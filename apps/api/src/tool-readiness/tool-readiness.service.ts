@@ -47,7 +47,7 @@ export class ToolReadinessService {
       sentAt: new Date().toISOString(),
     };
 
-    const delivered = this.agentGateway.emitToAgent(project.agentProjectKey, command);
+    const delivered = await this.agentGateway.emitToAgent(project.agentProjectKey, command);
 
     if (!delivered) {
       throw new ServiceUnavailableException(`Agent ${project.agentProjectKey} is not connected.`);

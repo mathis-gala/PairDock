@@ -7,6 +7,7 @@ import {
   agentProtocolMessageEventName,
 } from '@pairdock/shared-contracts';
 import { Server } from 'socket.io';
+import { ReadinessRunner } from '../../../../packages/local-agent/src/readiness/readiness-runner.js';
 import { SessionRunner } from '../../../../packages/local-agent/src/session/session-runner.js';
 import { AgentClient } from '../../../../packages/local-agent/src/websocket/agent-client.js';
 
@@ -110,6 +111,93 @@ test('AgentClient does not restore previews before websocket authentication succ
     await assert.rejects(() => client.start(), /Unauthorized agent/);
     assert.equal(sessionRunner.restoreCalls, 0);
   } finally {
+    await client.stop();
+    await new Promise<void>((resolve) => io.close(() => resolve()));
+    await new Promise<void>((resolve) => httpServer.close(() => resolve()));
+  }
+});
+
+test('desktop lifecycle observes connection state and refuses to stop an in-flight command', async () => {
+  const { io, httpServer, backendUrl } = await createAgentServer();
+  const statuses: Array<{ status: string; busy: boolean }> = [];
+  let completeReadiness!: () => void;
+  const readinessPending = new Promise<void>((resolve) => {
+    completeReadiness = resolve;
+  });
+  class DelayedReadiness extends ReadinessRunner {
+    override async run(input: { projectKey: string }) {
+      await readinessPending;
+      return { projectKey: input.projectKey, ok: true, checks: [] };
+    }
+  }
+  const connected = new Promise<import('socket.io').Socket>((resolve) => {
+    io.of('/agent').on('connection', (socket) => {
+      socket.on(agentProtocolMessageEventName, (_event, acknowledge) => acknowledge?.({ accepted: true }));
+      resolve(socket);
+    });
+  });
+  const client = new AgentClient(
+    { agentId: 'desktop', backendUrl, capabilities: ['readiness.check'], projectPaths: {} },
+    { error() {}, info() {}, warn() {} },
+    {
+      readinessRunner: new DelayedReadiness({ projectPaths: {} }),
+      onStatus: (state) => {
+        statuses.push(state);
+      },
+      preventStopWhileBusy: true,
+    },
+  );
+  try {
+    await client.start();
+    assert.deepEqual(statuses.at(-1), { status: 'online', busy: false });
+    const socket = await connected;
+    socket.emit(agentProtocolMessageEventName, {
+      protocolVersion: AGENT_PROTOCOL_VERSION,
+      messageId: '11111111-1111-4111-8111-111111111111',
+      sentAt: new Date().toISOString(),
+      type: 'readiness.check',
+      payload: { projectKey: 'project' },
+    });
+    await waitFor(() => statuses.at(-1)?.busy === true);
+    await assert.rejects(client.stop(), /work is still running/);
+    assert.equal(socket.connected, true);
+    completeReadiness();
+    await waitFor(() => statuses.at(-1)?.busy === false);
+    await client.stop();
+    assert.deepEqual(statuses.at(-1), { status: 'stopped', busy: false });
+  } finally {
+    completeReadiness();
+    await client.stop();
+    await new Promise<void>((resolve) => io.close(() => resolve()));
+    await new Promise<void>((resolve) => httpServer.close(() => resolve()));
+  }
+});
+
+test('desktop shutdown also guards registration work before the agent becomes online', async () => {
+  const { io, httpServer, backendUrl } = await createAgentServer();
+  let approveRegistration!: () => void;
+  const pendingRegistration = new Promise<void>((resolve) => {
+    io.of('/agent').on('connection', (socket) => {
+      socket.on(agentProtocolMessageEventName, (_event, acknowledge) => {
+        approveRegistration = () => acknowledge?.({ accepted: true });
+        resolve();
+      });
+    });
+  });
+  const client = new AgentClient(
+    { agentId: 'desktop', backendUrl, capabilities: [], projectPaths: {} },
+    { error() {}, info() {}, warn() {} },
+    { preventStopWhileBusy: true },
+  );
+  const starting = client.start();
+  try {
+    await pendingRegistration;
+    await assert.rejects(client.stop(), /work is still running/);
+    approveRegistration();
+    await starting;
+  } finally {
+    approveRegistration?.();
+    await starting;
     await client.stop();
     await new Promise<void>((resolve) => io.close(() => resolve()));
     await new Promise<void>((resolve) => httpServer.close(() => resolve()));
