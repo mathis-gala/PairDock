@@ -446,6 +446,7 @@ test('Task 8: CloudflarePreviewTunnelAdapter uses Docker cloudflared for the loc
   const worktreePath = await createTempWorkspace();
   const spawnCalls: Array<{ command: string; args: string[]; shell?: boolean }> = [];
   const adapter = new CloudflarePreviewTunnelAdapter({
+    platform: 'darwin',
     spawn(command, args, options) {
       spawnCalls.push({ command, args, shell: options.shell });
       const process = Object.assign(new EventEmitter(), {
@@ -544,6 +545,36 @@ test('CloudflarePreviewTunnelAdapter does not publish a tunnel URL before it is 
   releaseReadiness();
   const tunnelRef = await openPromise;
   assert.equal(tunnelRef.publicUrl, 'https://pairdock-ready.trycloudflare.com');
+});
+
+test('Cloudflare Linux tunnels reach loopback instrumentation through the host network', async () => {
+  for (const localUrl of ['http://127.0.0.1:4310', 'http://localhost:4310/app', 'http://192.0.2.1:4310']) {
+    let dockerArgs: string[] = [];
+    const adapter = new CloudflarePreviewTunnelAdapter({
+      platform: 'linux',
+      spawn(_command, args) {
+        dockerArgs = args;
+        return Object.assign(new EventEmitter(), {
+          killed: false,
+          exitCode: null,
+          stdout: null,
+          stderr: null,
+          kill: () => true,
+        });
+      },
+      waitForPublicUrl: async () => 'https://preview.trycloudflare.com',
+      waitUntilPublicUrlReady: async () => undefined,
+    });
+    await adapter.open({
+      localUrl,
+      sessionId: 'linux-session',
+      projectKey: 'preview',
+      worktreePath: '/tmp',
+    });
+    assert.equal(dockerArgs[dockerArgs.indexOf('--network') + 1], 'host');
+    assert.equal(dockerArgs[dockerArgs.indexOf('--url') + 1], localUrl);
+    assert.ok(!dockerArgs.includes('--add-host'));
+  }
 });
 
 test('CloudflarePreviewTunnelAdapter stops a restored tunnel container', async () => {

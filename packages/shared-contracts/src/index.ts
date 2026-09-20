@@ -1,3 +1,4 @@
+export * from './preview-selection.js';
 export * from './protocol/commands.js';
 export * from './protocol/common.js';
 export * from './protocol/constants.js';

@@ -1,12 +1,18 @@
-import { type CreateReviewRequestInput, isPromptableSessionStatus } from '@pairdock/shared-contracts';
-import { useState } from 'react';
+import {
+  type CreateReviewRequestInput,
+  isPromptableSessionStatus,
+  PREVIEW_SELECTION_LIMITS,
+  type PreviewElementSelection,
+} from '@pairdock/shared-contracts';
+import { useCallback, useState } from 'react';
 import { Button } from '../components/button.js';
 import { ConversationThread } from '../components/pm-session/conversation-thread.js';
 import { PreviewFrame } from '../components/pm-session/preview-frame.js';
-import { PreviewToolbar } from '../components/pm-session/preview-toolbar.js';
+import { type PreviewSelectionControls, PreviewToolbar } from '../components/pm-session/preview-toolbar.js';
 import { PromptComposer } from '../components/pm-session/prompt-composer.js';
 import { ReviewRequestDialog } from '../components/pm-session/review-request-dialog.js';
 import { SectionCard } from '../components/section-card.js';
+import { usePreviewSelection } from '../hooks/use-preview-selection.js';
 import { useSessionData } from '../hooks/use-session-data.js';
 import { useSessionEventFeed } from '../hooks/use-session-event-feed.js';
 import type { PreviewPresetId } from '../lib/preview-presets.js';
@@ -19,9 +25,31 @@ interface PmSessionPageProps {
   sessionId: string;
 }
 
-export function PmSessionPage({ accessToken, isReadOnly = false, onBack, sessionId }: PmSessionPageProps) {
+export function PmSessionPage(props: PmSessionPageProps) {
+  return <PmSessionWorkspace key={`${props.sessionId}:${props.isReadOnly ?? false}`} {...props} />;
+}
+
+function PmSessionWorkspace({ accessToken, isReadOnly = false, onBack, sessionId }: PmSessionPageProps) {
   const [presetId, setPresetId] = useState<PreviewPresetId>('desktop');
   const [isReviewDialogOpen, setIsReviewDialogOpen] = useState(false);
+  const [mobilePanel, setMobilePanel] = useState<'discussion' | 'preview'>('discussion');
+  const [selections, setSelections] = useState<PreviewElementSelection[]>([]);
+  const handleSelectElement = useCallback((selection: PreviewElementSelection) => {
+    setSelections((current) => {
+      const existingIndex = current.findIndex(
+        (item) => item.url === selection.url && item.selector === selection.selector,
+      );
+      if (existingIndex !== -1) {
+        return current.map((item, index) => (index === existingIndex ? selection : item));
+      }
+      if (current.length >= PREVIEW_SELECTION_LIMITS.selections) {
+        return current;
+      }
+      return [...current, selection];
+    });
+    setMobilePanel('discussion');
+    requestAnimationFrame(() => document.getElementById('pm-session-prompt')?.focus());
+  }, []);
   useSessionEventFeed(accessToken, sessionId);
   const {
     sessionQuery,
@@ -31,6 +59,13 @@ export function PmSessionPage({ accessToken, isReadOnly = false, onBack, session
     cancelPromptMutation,
     createReviewRequestMutation,
   } = useSessionData(accessToken, sessionId);
+  const hasSelectionLimit = selections.length >= PREVIEW_SELECTION_LIMITS.selections;
+  const canSelectElements = !isReadOnly && !sendPromptMutation.isPending && !hasSelectionLimit;
+  const previewSelection = usePreviewSelection(
+    sessionQuery.data?.previewUrl ?? null,
+    canSelectElements,
+    handleSelectElement,
+  );
 
   if (sessionQuery.isLoading || messagesQuery.isLoading || eventsQuery.isLoading) {
     return (
@@ -84,6 +119,31 @@ export function PmSessionPage({ accessToken, isReadOnly = false, onBack, session
   const reviewRequestError =
     createReviewRequestMutation.error instanceof Error ? createReviewRequestMutation.error.message : null;
   const conversation = buildSessionConversation(messagesQuery.data ?? [], eventsQuery.data ?? []);
+  let selectionDisabledReason: string | null = null;
+  if (hasSelectionLimit) {
+    selectionDisabledReason = `Limite de ${PREVIEW_SELECTION_LIMITS.selections} éléments atteinte. Retire une sélection pour en ajouter une autre.`;
+  } else if (sendPromptMutation.isPending) {
+    selectionDisabledReason = 'Envoi du message en cours…';
+  }
+  let selectionControls: PreviewSelectionControls | undefined;
+  if (!isReadOnly) {
+    selectionControls = {
+      state: previewSelection.snapshot,
+      disabledReason: selectionDisabledReason,
+      onToggle: previewSelection.toggleSelection,
+      onRetry: previewSelection.retryConnection,
+    };
+  }
+  const discussionClassName = `${mobilePanel === 'discussion' ? 'flex' : 'hidden'} min-h-0 w-full flex-none flex-col border-r border-white/10 bg-[#15171c] lg:flex lg:w-[42%] lg:max-w-[560px]`;
+  const previewClassName = `${mobilePanel === 'preview' ? 'flex' : 'hidden'} min-w-0 flex-1 flex-col bg-[#0f1115] lg:flex`;
+
+  function handleShowDiscussion() {
+    setMobilePanel('discussion');
+  }
+
+  function handleShowPreview() {
+    setMobilePanel('preview');
+  }
 
   async function handleCancelPrompt() {
     await cancelPromptMutation.mutateAsync();
@@ -168,8 +228,32 @@ export function PmSessionPage({ accessToken, isReadOnly = false, onBack, session
         </div>
       </header>
 
+      <nav
+        aria-label="Vue de la session"
+        className="flex flex-none gap-2 border-b border-white/10 bg-[#15171c] px-4 py-2 lg:hidden"
+      >
+        <Button
+          aria-controls="pm-session-discussion"
+          aria-pressed={mobilePanel === 'discussion'}
+          className="min-h-11 flex-1 text-xs"
+          onClick={handleShowDiscussion}
+          variant={mobilePanel === 'discussion' ? 'primary' : 'secondary'}
+        >
+          Discussion{selections.length > 0 ? ` · ${selections.length}` : ''}
+        </Button>
+        <Button
+          aria-controls="pm-session-preview"
+          aria-pressed={mobilePanel === 'preview'}
+          className="min-h-11 flex-1 text-xs"
+          onClick={handleShowPreview}
+          variant={mobilePanel === 'preview' ? 'primary' : 'secondary'}
+        >
+          Preview
+        </Button>
+      </nav>
+
       <div className="flex min-h-0 flex-1">
-        <section className="flex w-full flex-none flex-col border-r border-white/10 bg-[#15171c] lg:w-[42%] lg:max-w-[560px]">
+        <section className={discussionClassName} id="pm-session-discussion">
           <div className="border-b border-white/10 px-5 py-4">
             <h1 className="font-['Space_Grotesk'] text-sm font-semibold">Discussion</h1>
             <p className="mt-1 text-xs leading-5 text-[#7d8493]">
@@ -204,23 +288,25 @@ export function PmSessionPage({ accessToken, isReadOnly = false, onBack, session
                 isCancelling={cancelPromptMutation.isPending}
                 isSubmitting={sendPromptMutation.isPending}
                 onCancel={handleCancelPrompt}
+                onSelectionsChange={setSelections}
                 onSubmit={handleSendPrompt}
+                selections={selections}
               />
             </div>
           )}
         </section>
 
-        <section className="hidden min-w-0 flex-1 flex-col bg-[#0f1115] lg:flex">
+        <section className={previewClassName} id="pm-session-preview">
           <div className="flex h-[46px] flex-none items-center gap-3 border-b border-white/10 bg-[#1a1d24] px-3.5">
             <div className="flex gap-1.5">
               <span className="size-[11px] rounded-full bg-[#ec6a5e]" />
               <span className="size-[11px] rounded-full bg-[#f4bf4f]" />
               <span className="size-[11px] rounded-full bg-[#61c554]" />
             </div>
-            <div className="flex h-7 max-w-[520px] flex-1 items-center gap-2 rounded-[8px] border border-white/10 bg-[#0f1115] px-3 font-mono text-[11.5px] text-[#8b92a1]">
+            <div className="flex h-7 min-w-0 max-w-[520px] flex-1 items-center gap-2 rounded-[8px] border border-white/10 bg-[#0f1115] px-3 font-mono text-[11.5px] text-[#8b92a1]">
               <span className="text-[#5fdf9b]">⌁</span>
-              {session.previewUrl ?? 'preview non publiée'}
-              <span className="ml-auto text-[#565d6b]">worktree</span>
+              <span className="truncate">{session.previewUrl ?? 'preview non publiée'}</span>
+              <span className="ml-auto hidden text-[#565d6b] sm:inline">worktree</span>
             </div>
             <span className="flex items-center gap-1.5 font-mono text-[11px] text-[#7d8493]">
               <span className="size-1.5 rounded-full bg-[#5fdf9b]" />
@@ -228,9 +314,18 @@ export function PmSessionPage({ accessToken, isReadOnly = false, onBack, session
             </span>
           </div>
           <div className="min-h-0 flex-1 overflow-hidden">
-            <PreviewFrame presetId={presetId} previewUrl={session.previewUrl} />
+            <PreviewFrame
+              onFrameRef={previewSelection.attachFrame}
+              presetId={presetId}
+              previewUrl={session.previewUrl}
+            />
           </div>
-          <PreviewToolbar onPresetChange={setPresetId} presetId={presetId} previewUrl={session.previewUrl} />
+          <PreviewToolbar
+            onPresetChange={setPresetId}
+            presetId={presetId}
+            previewUrl={session.previewUrl}
+            selectionControls={selectionControls}
+          />
           <div className="flex min-h-[62px] flex-none items-center justify-between gap-4 border-t border-white/10 bg-[#16181e] px-5 py-3">
             <div aria-live="polite" className="min-w-0 font-mono text-[12.5px]" role={hasFailed ? 'alert' : 'status'}>
               <div

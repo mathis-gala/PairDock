@@ -317,6 +317,29 @@ In the developer UI:
 
 PM users can start sessions only after required readiness checks are green.
 
+## Select preview elements
+
+In a PM session, choose **Sélectionner** in the preview toolbar, hover an element,
+then click it. The selection is added to the message draft; write the requested
+change and send it when ready. Up to five selections can accompany a message, and
+each can be removed before sending. **Escape** exits selection mode. On smaller
+screens, use the **Preview** tab to select, then return to **Discussion**.
+
+The agent receives the page URL (without query or fragment), a DOM selector,
+bounded text and a sanitized HTML excerpt, plus element and viewport dimensions.
+Form values and editable content are excluded. The excerpt identifies the rendered
+element; it does not automatically locate a React component or source file.
+Selections are saved as context in the sent message, not as persistent page comments.
+
+Managed preview tunnels insert the picker through a local proxy without editing the
+previewed repository. Restart the local agent to load this feature; restored sessions
+rebuild their preview tunnels. A manually configured `preview.tunnel.publicUrl`
+bypasses this proxy. Restrictive Content Security Policies can also block the script;
+PairDock then shows selection as unavailable while keeping the preview usable.
+HTML responses over 2 MiB, streams that do not finish within two seconds, downloads,
+and responses that prohibit transformation are passed through without instrumentation.
+Nested cross-origin frames and closed shadow roots are outside this first version.
+
 ## Notes
 
 Persistence uses Prisma from the backend workspace. Use `DATABASE_URL` for application migrations and `TEST_DATABASE_URL` for automated tests. Use `bun run db:migrate:dev -- --name <migration-name>` while developing, `bun run db:migrate` for applying existing application migrations, and `bun run db:migrate:test` only for the isolated test target.

@@ -490,18 +490,18 @@
     "semantic_hash": "ed4c9d5daba1dfcae686d52c872d932f"
   },
   "apps/web/src/components/pm-session/preview-frame.tsx": {
-    "mtime": 1784804848.1816316,
-    "ast_hash": "d0ab1c520d52b4c0d463872ebdc71f8f",
+    "mtime": 1789908801.852904,
+    "ast_hash": "4a8609a81d6fc5b94f0cfd2f6c606377",
     "semantic_hash": ""
   },
   "apps/web/src/components/pm-session/preview-toolbar.tsx": {
-    "mtime": 1784473133.8142982,
-    "ast_hash": "bee9d8078c1deb849e5dedd8b65a2bc5",
+    "mtime": 1789908968.522195,
+    "ast_hash": "29f7c8c8a63b94bc435f7960473d49d8",
     "semantic_hash": ""
   },
   "apps/web/src/components/pm-session/prompt-composer.tsx": {
-    "mtime": 1785090356.5876334,
-    "ast_hash": "26022fd9553c662c0fa0aa1012a48278",
+    "mtime": 1789909470.8222945,
+    "ast_hash": "bbb372e199b639ff1f24de84ad722289",
     "semantic_hash": ""
   },
   "apps/web/src/components/pm-session/shared-project-card.tsx": {
@@ -645,8 +645,8 @@
     "semantic_hash": ""
   },
   "apps/web/src/views/pm-session-page.tsx": {
-    "mtime": 1785155228.5597553,
-    "ast_hash": "f1619fc3f1d0a12b1bed8ea200706e49",
+    "mtime": 1789908968.5269413,
+    "ast_hash": "44fbc61ef8cb6f26dff6f9eecc304ecb",
     "semantic_hash": ""
   },
   "apps/web/src/vite-env.d.ts": {
@@ -690,8 +690,8 @@
     "semantic_hash": "496fe73f21a2d846d086114e3d1ab94f"
   },
   "packages/local-agent/package.json": {
-    "mtime": 1785093043.1264403,
-    "ast_hash": "6c8a846f54800db2fedf55d0976c1a1d",
+    "mtime": 1789908834.7293274,
+    "ast_hash": "1e164ddc0b150b8c6eadb5cd98831137",
     "semantic_hash": ""
   },
   "packages/local-agent/src/checks/checks-runner.ts": {
@@ -705,7 +705,7 @@
     "semantic_hash": ""
   },
   "packages/local-agent/src/config/project-manifest.ts": {
-    "mtime": 1785159450.5316966,
+    "mtime": 1785160137.4122972,
     "ast_hash": "1389f310f0ac848b6e536beccb327020",
     "semantic_hash": ""
   },
@@ -775,13 +775,13 @@
     "semantic_hash": ""
   },
   "packages/local-agent/src/session/session-runner.ts": {
-    "mtime": 1785145492.1347888,
-    "ast_hash": "8ee163aa62d5868f618ca3e263908919",
+    "mtime": 1789909144.8987162,
+    "ast_hash": "52ebfd4d9f30861763840175a5bac4f4",
     "semantic_hash": ""
   },
   "packages/local-agent/src/tunnel/cloudflare-preview-tunnel.adapter.ts": {
-    "mtime": 1785090356.6361725,
-    "ast_hash": "23411bd4d2db05e90577d6ae035eac97",
+    "mtime": 1789909162.4363797,
+    "ast_hash": "090518e2d62966134f221f439923313b",
     "semantic_hash": ""
   },
   "packages/local-agent/src/tunnel/preview-tunnel.port.ts": {
@@ -810,9 +810,9 @@
     "semantic_hash": "48c0d1ac268271bccdcfb2320a86e7d1"
   },
   "packages/shared-contracts/src/index.ts": {
-    "mtime": 1783206153.2270167,
-    "ast_hash": "b7d08aab2083215898243989976b1aa2",
-    "semantic_hash": "b7d08aab2083215898243989976b1aa2"
+    "mtime": 1789908549.69701,
+    "ast_hash": "56af6c8b8adb9e270c48ec197340720b",
+    "semantic_hash": ""
   },
   "packages/shared-contracts/src/protocol/commands.ts": {
     "mtime": 1785090356.6368403,
@@ -1080,12 +1080,12 @@
     "semantic_hash": ""
   },
   "tests/packages/local-agent/integration/preview-adapters.integration.test.ts": {
-    "mtime": 1785090356.6456673,
-    "ast_hash": "457427e2158c5316515eac2f47a4e958",
+    "mtime": 1789909127.8700697,
+    "ast_hash": "e22e271189f65d2436b5556c8322ff32",
     "semantic_hash": ""
   },
   "tests/packages/local-agent/integration/project-manifest.integration.test.ts": {
-    "mtime": 1785159474.6916773,
+    "mtime": 1785160137.414315,
     "ast_hash": "f51dc397afb6499ef62ff6234856483f",
     "semantic_hash": ""
   },
@@ -1095,8 +1095,8 @@
     "semantic_hash": ""
   },
   "tests/packages/local-agent/integration/session-runner.integration.test.ts": {
-    "mtime": 1785145492.1392393,
-    "ast_hash": "1725dd4a890ce905ee51766a74ff6394",
+    "mtime": 1789909461.2345226,
+    "ast_hash": "3a53b3646af4c27c76748ba34840c6fc",
     "semantic_hash": ""
   },
   "tests/repository/ci-gates.test.ts": {
@@ -1115,8 +1115,8 @@
     "semantic_hash": ""
   },
   "README.md": {
-    "mtime": 1785159503.1581976,
-    "ast_hash": "ad91cbff89b3e43b9e1270177406c19a",
+    "mtime": 1789909666.1779954,
+    "ast_hash": "f47e0460023d9532f83f16c8dbaa4117",
     "semantic_hash": ""
   },
   "apps/web/index.html": {
@@ -1535,8 +1535,8 @@
     "semantic_hash": ""
   },
   "tests/apps/web/unit/prompt-composer.test.tsx": {
-    "mtime": 1785090356.641512,
-    "ast_hash": "c62189f779f5e450270ace9fa4fe6d42",
+    "mtime": 1789908842.3420799,
+    "ast_hash": "1626b589e07667a073a41ba04d095234",
     "semantic_hash": ""
   },
   "packages/local-agent/src/checks/validation-log.ts": {
@@ -1800,7 +1800,7 @@
     "semantic_hash": ""
   },
   "packages/local-agent/src/preview/preview-companion-manager.ts": {
-    "mtime": 1785159450.6501338,
+    "mtime": 1785160137.4135897,
     "ast_hash": "04c89cc340c81f46aabd375b6dad005e",
     "semantic_hash": ""
   },
@@ -1825,8 +1825,63 @@
     "semantic_hash": ""
   },
   "packages/local-agent/src/preview/public-preview-policy.ts": {
-    "mtime": 1785159450.4172056,
+    "mtime": 1785160137.4140496,
     "ast_hash": "173d2be54eb8a3cdcf99e80785fed1ec",
+    "semantic_hash": ""
+  },
+  "apps/web/src/hooks/use-preview-selection.ts": {
+    "mtime": 1789908801.7853582,
+    "ast_hash": "de4684df717a344dff7e381dbc8cd4f9",
+    "semantic_hash": ""
+  },
+  "apps/web/src/lib/preview-selection-bridge.ts": {
+    "mtime": 1789908968.5228302,
+    "ast_hash": "a65faae187f02cca5ab60499f4da3244",
+    "semantic_hash": ""
+  },
+  "apps/web/src/lib/preview-selection-prompt.ts": {
+    "mtime": 1789909080.8626127,
+    "ast_hash": "f3e1a59921df8f310b8a8d8791222927",
+    "semantic_hash": ""
+  },
+  "packages/local-agent/src/preview/preview-picker-proxy.ts": {
+    "mtime": 1789909815.8037968,
+    "ast_hash": "5306f20c37a7d6df4be744faef7de4aa",
+    "semantic_hash": ""
+  },
+  "packages/local-agent/src/preview/preview-picker-script.ts": {
+    "mtime": 1789909173.5024385,
+    "ast_hash": "8e68eef3684debb5b43a3b7606837700",
+    "semantic_hash": ""
+  },
+  "packages/local-agent/src/tunnel/instrumented-preview-tunnel.adapter.ts": {
+    "mtime": 1789909461.3074615,
+    "ast_hash": "a1538a99d1b44ca77eb6be8d993fc196",
+    "semantic_hash": ""
+  },
+  "packages/shared-contracts/src/preview-selection.ts": {
+    "mtime": 1789909130.9157593,
+    "ast_hash": "8bb2e20e4aaf35ea2170496fa5dfabd1",
+    "semantic_hash": ""
+  },
+  "tests/apps/web/unit/preview-selection-bridge.test.ts": {
+    "mtime": 1789909146.0467427,
+    "ast_hash": "b3e973fd3f8acb43e7bbf00c276763b0",
+    "semantic_hash": ""
+  },
+  "tests/apps/web/unit/preview-selection-prompt.test.ts": {
+    "mtime": 1789909080.8626308,
+    "ast_hash": "0abce19acf5139951bea2c4c7409453d",
+    "semantic_hash": ""
+  },
+  "tests/packages/local-agent/integration/preview-picker-proxy.integration.test.ts": {
+    "mtime": 1789909815.9787173,
+    "ast_hash": "85dddb359db6f0b6530ba7edc23a591f",
+    "semantic_hash": ""
+  },
+  "tests/packages/local-agent/integration/preview-picker-script.integration.test.ts": {
+    "mtime": 1789909156.0474455,
+    "ast_hash": "6bd0b0ace37168afc56ea4b4d018141a",
     "semantic_hash": ""
   }
 }

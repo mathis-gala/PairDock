@@ -2,6 +2,7 @@ import { useCallback, useRef, useState } from 'react';
 import { getFittedPreviewScale, getPreviewFrameStyle, type PreviewPresetId } from '../../lib/preview-presets.js';
 
 interface PreviewFrameProps {
+  onFrameRef?: (frame: HTMLIFrameElement | null) => void;
   presetId: PreviewPresetId;
   previewUrl: string | null;
 }
@@ -11,7 +12,7 @@ interface PreviewAreaSize {
   width: number;
 }
 
-export function PreviewFrame({ presetId, previewUrl }: PreviewFrameProps) {
+export function PreviewFrame({ onFrameRef, presetId, previewUrl }: PreviewFrameProps) {
   const frameStyle = getPreviewFrameStyle(presetId);
   const observerRef = useRef<ResizeObserver | null>(null);
   const [areaSize, setAreaSize] = useState<PreviewAreaSize>({ height: 0, width: 0 });
@@ -52,6 +53,8 @@ export function PreviewFrame({ presetId, previewUrl }: PreviewFrameProps) {
           >
             <iframe
               className="origin-top-left border-0"
+              key={previewUrl}
+              ref={onFrameRef}
               referrerPolicy="no-referrer"
               sandbox="allow-forms allow-modals allow-same-origin allow-scripts"
               src={previewUrl}

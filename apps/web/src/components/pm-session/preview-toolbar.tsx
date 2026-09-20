@@ -1,14 +1,23 @@
 import type { MouseEvent } from 'react';
 import { isPreviewPresetId, type PreviewPresetId, previewPresets } from '../../lib/preview-presets.js';
+import type { PreviewSelectionSnapshot } from '../../lib/preview-selection-bridge.js';
 import { Button } from '../button.js';
 
 interface PreviewToolbarProps {
   onPresetChange: (presetId: PreviewPresetId) => void;
   presetId: PreviewPresetId;
   previewUrl: string | null;
+  selectionControls?: PreviewSelectionControls;
 }
 
-export function PreviewToolbar({ onPresetChange, presetId, previewUrl }: PreviewToolbarProps) {
+export interface PreviewSelectionControls {
+  state: PreviewSelectionSnapshot;
+  disabledReason: string | null;
+  onToggle: () => void;
+  onRetry: () => void;
+}
+
+export function PreviewToolbar({ onPresetChange, presetId, previewUrl, selectionControls }: PreviewToolbarProps) {
   function handlePresetClick(event: MouseEvent<HTMLButtonElement>) {
     const nextPresetId = event.currentTarget.dataset.presetId;
 
@@ -23,8 +32,22 @@ export function PreviewToolbar({ onPresetChange, presetId, previewUrl }: Preview
     }
   }
 
+  let selectionMessage = 'Sélectionne un élément, puis décris la modification dans la discussion.';
+  if (selectionControls?.disabledReason) {
+    selectionMessage = selectionControls.disabledReason;
+  } else if (!previewUrl) {
+    selectionMessage = 'La sélection sera disponible quand la preview sera prête.';
+  } else if (selectionControls?.state.status === 'connecting') {
+    selectionMessage = 'Connexion à la sélection d’éléments…';
+  } else if (selectionControls?.state.status === 'unsupported') {
+    selectionMessage = 'Sélection indisponible sur cette page. Recharge la preview ou réessaie.';
+  } else if (selectionControls?.state.isSelecting) {
+    selectionMessage = 'Clique sur un élément à annoter. Échap pour annuler.';
+  }
+  const isSelectionDisabled = !!selectionControls?.disabledReason || selectionControls?.state.status !== 'ready';
+
   return (
-    <div className="flex flex-none flex-wrap items-center justify-center gap-2 border-t border-white/10 bg-[#15171c] px-3 py-2">
+    <div className="flex flex-none flex-col items-center gap-2 border-t border-white/10 bg-[#15171c] px-3 py-2">
       <div className="flex flex-wrap items-center justify-center gap-2 text-[12px] text-[#cdd2dc]">
         <fieldset className="flex flex-wrap items-center justify-center gap-1">
           <legend className="sr-only">Format de preview</legend>
@@ -59,7 +82,38 @@ export function PreviewToolbar({ onPresetChange, presetId, previewUrl }: Preview
             Ouvrir
           </Button>
         ) : null}
+        {selectionControls ? (
+          <Button
+            aria-describedby="preview-selection-status"
+            aria-pressed={selectionControls.state.isSelecting}
+            className="min-h-11 px-3 text-xs focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#5fdf9b]/60"
+            disabled={isSelectionDisabled}
+            onClick={selectionControls.onToggle}
+            variant={selectionControls.state.isSelecting ? 'primary' : 'secondary'}
+          >
+            <svg aria-hidden="true" className="size-4" fill="none" viewBox="0 0 24 24">
+              <path d="m5 3 14 9-7 1-3 7-4-17Z" stroke="currentColor" strokeLinejoin="round" strokeWidth="1.7" />
+            </svg>
+            {selectionControls.state.isSelecting ? 'Annuler' : 'Sélectionner'}
+          </Button>
+        ) : null}
       </div>
+      {selectionControls ? (
+        <div className="flex flex-wrap items-center justify-center gap-x-3 gap-y-1 text-center text-xs leading-5 text-[#a3aab8]">
+          <p aria-live="polite" id="preview-selection-status" role="status">
+            {selectionMessage}
+          </p>
+          {selectionControls.state.status === 'unsupported' && !selectionControls.disabledReason ? (
+            <button
+              className="min-h-9 rounded px-1 text-[#a9efc9] underline underline-offset-4 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#5fdf9b]/60"
+              onClick={selectionControls.onRetry}
+              type="button"
+            >
+              Réessayer
+            </button>
+          ) : null}
+        </div>
+      ) : null}
     </div>
   );
 }

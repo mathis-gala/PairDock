@@ -12,6 +12,7 @@ import { WorktreeService } from '../git/worktree.service.js';
 import type { PreviewCompanionPort } from '../preview/preview-companion-manager.js';
 import { PreviewRuntimeRouter } from '../preview/preview-runtime-router.js';
 import { CloudflarePreviewTunnelAdapter } from '../tunnel/cloudflare-preview-tunnel.adapter.js';
+import { InstrumentedPreviewTunnelAdapter } from '../tunnel/instrumented-preview-tunnel.adapter.js';
 import { type PreviewTunnelPort, previewUsesDockerTunnel } from '../tunnel/preview-tunnel.port.js';
 import { SessionRegistry, type SessionWorkspace } from './session-registry.js';
 
@@ -79,7 +80,8 @@ export class SessionRunner {
     this.checkCommandExecutor = dependencies.checkCommandExecutor ?? new HostCheckCommandExecutor();
     this.orphanReconciler = dependencies.orphanReconciler ?? new DockerOrphanReconciler();
     this.previewCompanionPort = dependencies.previewCompanionPort;
-    this.previewTunnelPort = dependencies.previewTunnelPort ?? new CloudflarePreviewTunnelAdapter();
+    this.previewTunnelPort =
+      dependencies.previewTunnelPort ?? new InstrumentedPreviewTunnelAdapter(new CloudflarePreviewTunnelAdapter());
   }
 
   async prepare(command: SessionPrepareCommandEnvelope, hooks: SessionPrepareHooks = {}): Promise<SessionWorkspace> {

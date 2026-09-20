@@ -1,6 +1,7 @@
 import { spawn } from 'node:child_process';
 import { randomUUID } from 'node:crypto';
 import { Resolver } from 'node:dns/promises';
+import { platform as hostPlatform } from 'node:process';
 import type { Readable } from 'node:stream';
 import { setTimeout as delay } from 'node:timers/promises';
 import { PAIRDOCK_DOCKER_OWNER_LABEL, PAIRDOCK_DOCKER_SESSION_LABEL } from '../docker/docker-orphan-reconciler.js';
@@ -29,6 +30,7 @@ interface TunnelProcessLike {
 }
 
 interface CloudflarePreviewTunnelDependencies {
+  platform?: NodeJS.Platform;
   spawn?: (
     command: string,
     args: string[],
@@ -61,6 +63,7 @@ export class CloudflarePreviewTunnelAdapter implements PreviewTunnelPort {
       tunnelConfig?.image,
       input.runtimeOwnerId,
       input.sessionId,
+      this.dependencies.platform ?? hostPlatform,
     );
 
     const { process, publicUrl } = await this.openTunnelProcess({
@@ -261,6 +264,7 @@ function buildCloudflareDockerArgs(
   image = DEFAULT_CLOUDFLARED_IMAGE,
   ownerId?: string,
   sessionId?: string,
+  platform: NodeJS.Platform = hostPlatform,
 ): string[] {
   assertSafeContainerImage(image);
   return [
@@ -276,12 +280,11 @@ function buildCloudflareDockerArgs(
           `${PAIRDOCK_DOCKER_SESSION_LABEL}=${sessionId}`,
         ]
       : []),
-    '--add-host',
-    'host.docker.internal:host-gateway',
+    ...(platform === 'linux' ? ['--network', 'host'] : ['--add-host', 'host.docker.internal:host-gateway']),
     image,
     'tunnel',
     '--url',
-    toHostDockerUrl(localUrl),
+    toHostDockerUrl(localUrl, platform),
     '--http-host-header',
     'localhost',
   ];
@@ -308,14 +311,14 @@ function resolveRestoredTunnelContainerName(ref: PreviewTunnelRef): string | nul
   return expectedContainerName;
 }
 
-function toHostDockerUrl(localUrl: string): string {
+function toHostDockerUrl(localUrl: string, platform: NodeJS.Platform): string {
   const url = new URL(localUrl);
 
   if (url.protocol !== 'http:' && url.protocol !== 'https:') {
     throw new Error('Preview tunnel URL must use HTTP(S).');
   }
 
-  if (url.hostname === '127.0.0.1' || url.hostname === 'localhost') {
+  if (platform !== 'linux' && (url.hostname === '127.0.0.1' || url.hostname === 'localhost')) {
     url.hostname = 'host.docker.internal';
   }
 
