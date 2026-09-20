@@ -11,7 +11,7 @@ export class AgentProjectBindingService {
 
   isConnected(project: Project): boolean {
     const publishedProject = this.findPublishedProject(project.agentProjectKey);
-    return Boolean(publishedProject && repositoriesMatch(publishedProject.repoFullName, project.repoFullName));
+    return Boolean(publishedProject && this.matchesProject(publishedProject, project));
   }
 
   assertConnected(project: Project): void {
@@ -30,10 +30,17 @@ export class AgentProjectBindingService {
     this.assertPublishedRepositoryMatches(project);
   }
 
+  assertOwnershipIfConnected(project: Project): void {
+    const published = this.findPublishedProject(project.agentProjectKey);
+    if (published?.ownerUserId && published.ownerUserId !== project.ownerUserId) {
+      throw new ConflictException('The local agent belongs to another developer.');
+    }
+  }
+
   private assertPublishedRepositoryMatches(project: Project): void {
     const publishedProject = this.findPublishedProject(project.agentProjectKey);
 
-    if (!publishedProject || !repositoriesMatch(publishedProject.repoFullName, project.repoFullName)) {
+    if (!publishedProject || !this.matchesProject(publishedProject, project)) {
       throw new ConflictException(
         'Owning agent project is configured for a different repository. Reconnect the intended agent project before continuing.',
       );
@@ -45,11 +52,18 @@ export class AgentProjectBindingService {
       const project = snapshot.projects.find((candidate) => candidate.key === projectKey);
 
       if (project) {
-        return project;
+        return { ...project, ownerUserId: snapshot.ownerUserId };
       }
     }
 
     return null;
+  }
+
+  private matchesProject(published: { repoFullName: string; ownerUserId?: string }, project: Project): boolean {
+    return (
+      repositoriesMatch(published.repoFullName, project.repoFullName) &&
+      (!published.ownerUserId || published.ownerUserId === project.ownerUserId)
+    );
   }
 }
 

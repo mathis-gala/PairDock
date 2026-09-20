@@ -1,9 +1,9 @@
-import { execFile } from 'node:child_process';
 import { readFile } from 'node:fs/promises';
 import { homedir } from 'node:os';
 import { resolve } from 'node:path';
-import { promisify } from 'node:util';
 import { z } from 'zod';
+import { buildCodexEnvironment } from '../harness/codex-harness.adapter.js';
+import { type BoundedCommandRunner, runBoundedCommand } from '../process/bounded-command.js';
 import type { AgentConfig, AgentModelConfig } from './agent-config.js';
 
 const codexReasoningLevelSchema = z.object({
@@ -24,16 +24,24 @@ const codexModelCacheSchema = z.object({
   models: z.array(codexModelSchema),
 });
 
-const execFileAsync = promisify(execFile);
-
 interface CodexCatalogOptions {
   installedCodexVersion?: string;
   onWarning?: (message: string) => void;
 }
 
-interface CodexInstallation {
+export interface CodexInstallation {
   command: string;
   version: string;
+}
+
+export type CodexCommandRunner = BoundedCommandRunner;
+
+export const runCodexCommand: CodexCommandRunner = (command, args, timeoutMs, signal) =>
+  runBoundedCommand(command, args, timeoutMs, signal, buildCodexEnvironment(process.env));
+
+interface CodexInstallationOptions {
+  command?: string;
+  runCommand?: CodexCommandRunner;
 }
 
 export async function enrichConfigWithCodexModels(
@@ -107,17 +115,24 @@ async function readCodexModelCatalog(
   }
 }
 
-async function findBestCodexInstallation(): Promise<CodexInstallation | null> {
-  const candidates = [
-    process.env.PAIRDOCK_CODEX_COMMAND?.trim(),
-    'codex',
-    process.platform === 'darwin' ? '/Applications/ChatGPT.app/Contents/Resources/codex' : undefined,
-  ].filter((candidate): candidate is string => Boolean(candidate));
+export async function findBestCodexInstallation(
+  options: CodexInstallationOptions = {},
+): Promise<CodexInstallation | null> {
+  let candidates: string[];
+  if (options.command) {
+    candidates = [options.command];
+  } else {
+    candidates = [
+      process.env.PAIRDOCK_CODEX_COMMAND?.trim(),
+      'codex',
+      process.platform === 'darwin' ? '/Applications/ChatGPT.app/Contents/Resources/codex' : undefined,
+    ].filter((candidate): candidate is string => Boolean(candidate));
+  }
   const installations = (
     await Promise.all(
       [...new Set(candidates)].map(async (command): Promise<CodexInstallation | null> => {
         try {
-          const { stdout } = await execFileAsync(command, ['--version']);
+          const { stdout } = await (options.runCommand ?? runCodexCommand)(command, ['--version'], 5_000);
           const version = stdout.match(/\d+\.\d+\.\d+/)?.[0];
           return version ? { command, version } : null;
         } catch {
@@ -157,7 +172,7 @@ export function compareVersions(left: string, right: string): number {
   return 0;
 }
 
-function formatReasoningEffortLabel(effort: string): string {
+export function formatReasoningEffortLabel(effort: string): string {
   if (effort === 'xhigh') {
     return 'Extra high';
   }

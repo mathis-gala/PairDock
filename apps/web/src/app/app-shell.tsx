@@ -1,5 +1,6 @@
 import { openDeveloperHome, openPmDashboard, openPmSession, useAppRoute } from '../hooks/use-app-route.js';
 import { clearAuthSession, setAuthSession, useAuthSession } from '../hooks/use-auth-session.js';
+import { DeveloperAgentsPage } from '../views/developer-agents-page.js';
 import { DeveloperHomePage } from '../views/developer-home-page.js';
 import { LoginPage } from '../views/login-page.js';
 import { PmActivityPage } from '../views/pm-activity-page.js';
@@ -10,10 +11,12 @@ export function AppShell() {
   const authSession = useAuthSession();
   const route = useAppRoute();
 
-  if (!authSession) {
+  const isAgentSetup = route.kind === 'developer-agents';
+  if (!authSession || (isAgentSetup && authSession.user.kind !== 'developer')) {
     return (
       <main className="min-h-dvh text-[#eef0f4]">
         <LoginPage
+          isAgentSetup={isAgentSetup}
           onAuthenticated={(session) => {
             setAuthSession(session);
             if (session.user.kind === 'pm') {
@@ -50,6 +53,8 @@ export function AppShell() {
             onOpenSession={(sessionId) => openPmSession(sessionId)}
           />
         )
+      ) : route.kind === 'developer-agents' ? (
+        <DeveloperAgentsPage onSignOut={clearAuthSession} session={authSession} userCode={route.userCode} />
       ) : route.kind === 'developer-session' ? (
         <PmSessionPage
           accessToken={authSession.accessToken}

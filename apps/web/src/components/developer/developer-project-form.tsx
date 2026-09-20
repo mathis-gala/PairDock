@@ -11,7 +11,6 @@ import { TextArea } from '../text-area.js';
 import { TextInput } from '../text-input.js';
 
 interface DeveloperProjectFormProps {
-  developerSeed: string;
   isSetupLoading: boolean;
   isSubmitting: boolean;
   onSubmit: (input: CreateDeveloperProjectInput) => Promise<void>;
@@ -38,14 +37,7 @@ interface AgentProjectOption {
   agentModels: DeveloperSetupAgentModel[];
 }
 
-export function DeveloperProjectForm({
-  developerSeed,
-  isSetupLoading,
-  isSubmitting,
-  onSubmit,
-  setup,
-}: DeveloperProjectFormProps) {
-  const normalizedSeed = developerSeed.replace(/[^a-z0-9-]/gi, '-').toLowerCase();
+export function DeveloperProjectForm({ isSetupLoading, isSubmitting, onSubmit, setup }: DeveloperProjectFormProps) {
   const [state, setState] = useState<ProjectFormState>({
     name: 'PairDock local project',
     description: 'Local project controlled by the developer dashboard.',
@@ -290,9 +282,7 @@ export function DeveloperProjectForm({
           <Button disabled={createDisabled} type="submit">
             {isSubmitting ? 'Création...' : 'Créer le projet'}
           </Button>
-          <p className="font-mono text-[11.5px] text-[#6f7686]">
-            Seed local: {normalizedSeed || 'developer'} · GitHub App et agent local requis.
-          </p>
+          <p className="font-mono text-[11.5px] text-[#6f7686]">GitHub App et agent local requis.</p>
         </div>
       </form>
     </SectionCard>
@@ -323,22 +313,32 @@ function ProjectSetupState({
   }
 
   if (!hasAgents) {
-    return <SetupHint message="Aucun agent local en ligne. Lance: pairdock-agent start" />;
+    return (
+      <SetupHint
+        agentSetupLink
+        message="Aucun agent local en ligne. Associe ton Mac, puis ouvre l’application PairDock."
+      />
+    );
   }
 
   if (repoSelected && matchingAgentProjects === 0) {
     return (
-      <SetupHint message="Aucun projet agent publié pour ce dépôt. Ajoute pairdock.yml à la racine puis redémarre l'agent local." />
+      <SetupHint agentSetupLink message="Ajoute ce dépôt avec le sélecteur de dossiers dans l’application PairDock." />
     );
   }
 
   return <SetupHint message="Readiness verte requise avant qu'un PM puisse lancer une session." />;
 }
 
-function SetupHint({ message }: { message: string }) {
+function SetupHint({ agentSetupLink = false, message }: { agentSetupLink?: boolean; message: string }) {
   return (
     <div className="rounded-[9px] border border-white/10 bg-[#171b22] px-3 py-2 text-[12px] text-[#9aa2b3] lg:col-span-2">
       {message}
+      {agentSetupLink ? (
+        <a className="ml-2 inline-block text-[#5fdf9b] underline underline-offset-4" href="#/developer/agents">
+          Configurer mon agent
+        </a>
+      ) : null}
     </div>
   );
 }

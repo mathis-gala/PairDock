@@ -48,7 +48,6 @@ const setup: DeveloperProjectSetup = {
 test('V1: developer project form renders setup-driven repository, agent, and model selectors', () => {
   const html = renderToStaticMarkup(
     createElement(DeveloperProjectForm, {
-      developerSeed: 'dev@pairdock.test',
       isSetupLoading: false,
       isSubmitting: false,
       onSubmit: async () => undefined,
@@ -68,7 +67,6 @@ test('V1: developer project form renders setup-driven repository, agent, and mod
 test('V1: developer project form shows local agent empty state', () => {
   const html = renderToStaticMarkup(
     createElement(DeveloperProjectForm, {
-      developerSeed: 'dev@pairdock.test',
       isSetupLoading: false,
       isSubmitting: false,
       onSubmit: async () => undefined,
@@ -77,13 +75,14 @@ test('V1: developer project form shows local agent empty state', () => {
   );
 
   assert.match(html, /Aucun agent local en ligne/);
-  assert.match(html, /pairdock-agent start/);
+  assert.match(html, /href="#\/developer\/agents"/);
+  assert.match(html, /Configurer mon agent/);
+  assert.doesNotMatch(html, /pairdock-agent start|pairdock.yml|Seed local/);
 });
 
 test('V1: dependent project selectors stay explorable while explaining their prerequisite', () => {
   const html = renderToStaticMarkup(
     createElement(DeveloperProjectForm, {
-      developerSeed: 'dev@pairdock.test',
       isSetupLoading: false,
       isSubmitting: false,
       onSubmit: async () => undefined,

@@ -1,5 +1,8 @@
 import { Controller, Get, Inject, NotFoundException, Param, Req, Res, UnauthorizedException } from '@nestjs/common';
-import { AgentAuthenticationService } from '../agent-gateway/agent-authentication.service.js';
+import {
+  AgentAuthenticationService,
+  isAgentAuthorizedForProject,
+} from '../agent-gateway/agent-authentication.service.js';
 import type { AuthenticatedRequest } from '../auth/authenticated-request.js';
 import { RequireSessionAccess } from '../auth/require-session-access.decorator.js';
 import { PROJECTS_REPOSITORY, SESSIONS_REPOSITORY } from '../persistence/persistence.tokens.js';
@@ -46,14 +49,18 @@ export class AttachmentsController {
     @Req() request: AuthenticatedRequest,
     @Res() response: BinaryResponse,
   ) {
-    const principal = this.agentAuthentication.authenticate(request.headers.authorization);
+    const principal = await this.agentAuthentication.authenticate(request.headers.authorization);
     const attachment = await this.attachments.find(attachmentId);
     const session = await this.sessionsRepository.findById(attachment.sessionId);
     const project = session ? await this.projectsRepository.findById(session.projectId) : null;
 
-    if (!project || (principal && !principal.projectKeys.includes(project.agentProjectKey))) {
+    if (
+      !project ||
+      (principal && !isAgentAuthorizedForProject(principal, project.agentProjectKey, project.ownerUserId))
+    ) {
       throw new UnauthorizedException('Agent is not authorized to download this attachment.');
     }
+    if (!principal) await this.agentAuthentication.assertTestIdentityUnclaimed('', [project.agentProjectKey]);
     const object = await this.attachments.readObject(attachment);
     sendAttachment(response, object.body, object.mimeType, 'private, no-store');
   }

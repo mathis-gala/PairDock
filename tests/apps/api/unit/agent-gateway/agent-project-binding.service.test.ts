@@ -44,6 +44,22 @@ test('missing owning agent remains distinguishable from repository drift', () =>
   assert.doesNotThrow(() => service.assertCompatibleIfConnected(project));
 });
 
+test('another developer cannot bind the same repository to a paired agent', () => {
+  const registry = new ConnectedAgentsRegistry();
+  registry.register('paired-socket', {
+    agentId: 'paired-agent',
+    ownerUserId: 'another-developer',
+    capabilities: [],
+    models: [],
+    projects: [
+      { key: project.agentProjectKey, name: project.name, repoFullName: project.repoFullName, pathAlias: 'PairDock' },
+    ],
+  });
+  const service = new AgentProjectBindingService(registry);
+  assert.equal(service.isConnected(project), false);
+  assert.throws(() => service.assertConnected(project), ConflictException);
+});
+
 function createService(repoFullName: string): AgentProjectBindingService {
   const registry = new ConnectedAgentsRegistry();
   registry.register('socket-tcg', {

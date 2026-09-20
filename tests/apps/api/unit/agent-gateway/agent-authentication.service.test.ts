@@ -5,19 +5,19 @@ import { AgentAuthenticationService } from '../../../../../apps/api/src/agent-ga
 const VALID_TOKEN = 'pairdock-agent-token-with-at-least-32-bytes';
 const SECOND_VALID_TOKEN = 'second-agent-token-with-at-least-32-bytes';
 
-test('production agent authentication rejects an invalid bearer token', () => {
+test('production agent authentication rejects an invalid bearer token', async () => {
   const authentication = new AgentAuthenticationService({
     nodeEnv: 'production',
     credentials: { 'agent-local-1': { token: VALID_TOKEN, projectKeys: ['pairdock'] } },
   });
 
-  assert.throws(
+  await assert.rejects(
     () => authentication.authenticate('Bearer invalid-agent-token-with-32-bytes'),
     /Invalid agent authentication token/,
   );
 });
 
-test('agent authentication resolves the identity bound to each bearer token', () => {
+test('agent authentication resolves the identity bound to each bearer token', async () => {
   const authentication = new AgentAuthenticationService({
     nodeEnv: 'production',
     credentials: {
@@ -26,21 +26,19 @@ test('agent authentication resolves the identity bound to each bearer token', ()
     },
   });
 
-  assert.deepEqual(authentication.authenticate(`Bearer ${VALID_TOKEN}`), {
+  assert.deepEqual(await authentication.authenticate(`Bearer ${VALID_TOKEN}`), {
     agentId: 'agent-local-1',
     projectKeys: ['pairdock'],
   });
-  assert.deepEqual(authentication.authenticate(`Bearer ${SECOND_VALID_TOKEN}`), {
+  assert.deepEqual(await authentication.authenticate(`Bearer ${SECOND_VALID_TOKEN}`), {
     agentId: 'agent-local-2',
     projectKeys: ['tcg'],
   });
 });
 
-test('production API refuses to start without agent credentials', () => {
-  assert.throws(
-    () => new AgentAuthenticationService({ nodeEnv: 'production', credentials: undefined }),
-    /AGENT_AUTH_CREDENTIALS_JSON is required/,
-  );
+test('production API permits self-service enrollment without allowing unauthenticated agents', async () => {
+  const authentication = new AgentAuthenticationService({ nodeEnv: 'production', credentials: {} });
+  await assert.rejects(() => authentication.authenticate(undefined), /Missing agent authentication token/);
 });
 
 test('agent authentication rejects duplicate, short, and malformed credentials', () => {

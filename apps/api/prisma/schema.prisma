@@ -45,6 +45,7 @@ model User {
   attachments              Attachment[]
 
   agentRegistrations       AgentRegistration[]
+  agentPairings            AgentPairing[]
 
   @@unique([email, kind])
   @@map("users")
@@ -229,6 +230,10 @@ model AgentRegistration {
   agentId         String    @unique @map("agent_id")
   ownerUserId     String?   @map("owner_user_id") @db.Uuid
   displayName     String?   @map("display_name")
+  credentialHash  String?   @unique @map("credential_hash")
+  projectKeyPrefix String?  @unique @map("project_key_prefix")
+  pairedAt        DateTime? @map("paired_at") @db.Timestamptz(6)
+  revokedAt       DateTime? @map("revoked_at") @db.Timestamptz(6)
   protocolVersion String    @map("protocol_version")
   capabilities    Json      @default("[]")
   models          Json      @default("[]")
@@ -243,6 +248,22 @@ model AgentRegistration {
   @@index([ownerUserId])
   @@index([lastSeenAt])
   @@map("agent_registrations")
+}
+
+model AgentPairing {
+  id             String    @id @default(uuid()) @db.Uuid
+  deviceCodeHash String    @unique @map("device_code_hash")
+  userCode       String    @unique @map("user_code")
+  deviceName     String    @map("device_name")
+  expiresAt      DateTime  @map("expires_at") @db.Timestamptz(6)
+  createdAt      DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  ownerUserId    String?   @map("owner_user_id") @db.Uuid
+  approvedAt     DateTime? @map("approved_at") @db.Timestamptz(6)
+  claimedAt      DateTime? @map("claimed_at") @db.Timestamptz(6)
+  ownerUser      User?     @relation(fields: [ownerUserId], references: [id], onDelete: Cascade)
+
+  @@index([expiresAt])
+  @@map("agent_pairings")
 }
 
 model ValidationRun {

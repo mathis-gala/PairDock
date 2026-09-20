@@ -173,7 +173,7 @@ export class CodexHarnessAdapter implements AgentHarnessPort {
   }
 }
 
-export function buildHarnessEnvironment(source: NodeJS.ProcessEnv, input: RunPromptInput): NodeJS.ProcessEnv {
+export function buildCodexEnvironment(source: NodeJS.ProcessEnv): NodeJS.ProcessEnv {
   const environment: NodeJS.ProcessEnv = {};
 
   for (const key of SAFE_HARNESS_ENVIRONMENT_KEYS) {
@@ -182,6 +182,12 @@ export function buildHarnessEnvironment(source: NodeJS.ProcessEnv, input: RunPro
       environment[key] = value;
     }
   }
+
+  return environment;
+}
+
+export function buildHarnessEnvironment(source: NodeJS.ProcessEnv, input: RunPromptInput): NodeJS.ProcessEnv {
+  const environment = buildCodexEnvironment(source);
 
   if (environment.PATH) {
     environment.PATH = prioritizeSandboxCompatibleGit(environment.PATH);

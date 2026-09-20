@@ -4,14 +4,16 @@ import type { PreviewCompanionPort, PreviewCompanionRuntime } from '../preview/p
 import { FileSessionWorkspaceStore } from '../session/file-session-workspace.store.js';
 import { SessionRegistry } from '../session/session-registry.js';
 import { SessionRunner } from '../session/session-runner.js';
-import { AgentClient, type AgentClientLogger } from '../websocket/agent-client.js';
+import { AgentClient, type AgentClientLogger, type AgentClientStatus } from '../websocket/agent-client.js';
 
-interface StartAgentRuntimeInput {
+export interface StartAgentRuntimeInput {
   config: AgentConfig;
   logger?: AgentClientLogger;
   previewCompanionPort?: PreviewCompanionPort;
   runtimeOwnerId?: string;
   statePath?: string;
+  onStatus?: (state: AgentClientStatus) => void;
+  preventStopWhileBusy?: boolean;
 }
 
 export async function startAgentRuntime(input: StartAgentRuntimeInput): Promise<PreviewCompanionRuntime> {
@@ -35,7 +37,11 @@ export async function startAgentRuntime(input: StartAgentRuntimeInput): Promise<
       sessionRegistry: new SessionRegistry(new FileSessionWorkspaceStore(input.statePath)),
     },
   );
-  const client = new AgentClient(config, logger, { sessionRunner });
+  const client = new AgentClient(config, logger, {
+    sessionRunner,
+    onStatus: input.onStatus,
+    preventStopWhileBusy: input.preventStopWhileBusy,
+  });
 
   await client.start();
 

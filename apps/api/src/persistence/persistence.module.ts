@@ -1,4 +1,5 @@
 import { Module } from '@nestjs/common';
+import { AgentEnrollmentRepositoryAdapter } from './adapters/agent-enrollment.repository.js';
 import { AgentEventsRepositoryAdapter } from './adapters/agent-events.repository.js';
 import { AgentRegistrationsRepositoryAdapter } from './adapters/agent-registrations.repository.js';
 import { AttachmentsRepositoryAdapter } from './adapters/attachments.repository.js';
@@ -16,6 +17,7 @@ import { UsersRepositoryAdapter } from './adapters/users.repository.js';
 import { ValidationRunsRepositoryAdapter } from './adapters/validation-runs.repository.js';
 import { DatabaseClient } from './client.js';
 import {
+  AGENT_ENROLLMENT_REPOSITORY,
   AGENT_EVENTS_REPOSITORY,
   AGENT_REGISTRATIONS_REPOSITORY,
   ATTACHMENTS_REPOSITORY,
@@ -35,6 +37,8 @@ import {
 
 @Module({
   providers: [
+    AgentEnrollmentRepositoryAdapter,
+    { provide: AGENT_ENROLLMENT_REPOSITORY, useExisting: AgentEnrollmentRepositoryAdapter },
     DatabaseClient,
     UsersRepositoryAdapter,
     ExternalIdentitiesRepositoryAdapter,
@@ -68,6 +72,7 @@ import {
     { provide: PERSISTENCE_UNIT_OF_WORK, useExisting: PersistenceUnitOfWorkAdapter },
   ],
   exports: [
+    AGENT_ENROLLMENT_REPOSITORY,
     DatabaseClient,
     USERS_REPOSITORY,
     EXTERNAL_IDENTITIES_REPOSITORY,

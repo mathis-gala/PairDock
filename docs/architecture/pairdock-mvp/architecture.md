@@ -23,12 +23,13 @@ Hexagonal rule: use-case modules never depend directly on a provider SDK, CLI, t
 
 ## Containers
 
-- React web app: two-column login screen, developer project/control dashboard, PM shared-project dashboard, chat, diff, validation, responsive preview, developer session controls, styled with Tailwind CSS and shadcn/ui components.
+- React web app: two-column login screen, developer project/control dashboard, paired-device approval and revocation, PM shared-project dashboard, chat, diff, validation, responsive preview, developer session controls, styled with Tailwind CSS and shadcn/ui components.
 - NestJS API: public REST, UI WebSocket, agent WebSocket, permissions, orchestration.
-- PostgreSQL: durable state for users, projects, sessions, events, validations, review requests.
+- PostgreSQL: durable state for users, projects, sessions, events, validations, review requests, expiring pairing requests and owned device credentials/revocation.
 - Prisma ORM: schema, migrations, generated client, and persistence adapter implementation.
-- Local Agent CLI: resident service connected to the backend. It reads local project paths and `pairdock.yml`, then publishes safe metadata only.
-- Preview runtime: project-defined command from `pairdock.yml`, executed from the session worktree on the host by default. Docker is an explicit alternative for containerized or multi-service previews; an optional `preview.prepare` command prewarms lockfile-keyed Linux dependency volumes before the local agent publishes availability.
+- Desktop companion: macOS Electron app for device pairing, native folder selection, project script configuration, tool readiness and runtime start/stop. The native main process owns filesystem/process access and encrypted credential storage; the renderer uses a narrow typed bridge.
+- Local agent runtime: resident service shared by the desktop companion and advanced CLI. It loads local paths and execution settings from the desktop profile or existing CLI configuration/`pairdock.yml`, then publishes safe metadata only.
+- Preview runtime: project-defined command from the desktop profile or `pairdock.yml`, executed from the session worktree on the host by default. Docker is an explicit alternative for containerized or multi-service previews; an optional `preview.prepare` command prewarms lockfile-keyed Linux dependency volumes before the local agent publishes availability.
 - Validation runtime: setup, build, test, and lint commands execute from the host worktree with a filtered environment; PairDock reruns them independently after each agent turn.
 - Agent harness: pluggable local CLI adapter launched inside the worktree. `CodexHarnessAdapter` is one backend/local-agent implementation, not product language.
 - Cloudflare Tunnel: temporary preview exposure.
@@ -40,7 +41,7 @@ Hexagonal rule: use-case modules never depend directly on a provider SDK, CLI, t
 
 - PostgreSQL remains the source of truth for session lifecycle, ownership, prompts, events, and validation state.
 - The local agent persists only machine-local runtime references required to reattach to prepared worktrees, host/Docker preview runtimes, and preview tunnels after a process restart.
-- Local runtime state is written atomically to `~/.pairdock/sessions.json` with owner-only permissions. Preview environment variables and secrets are never persisted in this file.
+- Local runtime state is written atomically with owner-only permissions: `~/.pairdock/sessions.json` for the default CLI profile, or a per-agent file beneath `agent/sessions/` in the desktop app's `userData` directory. Pairing again uses a fresh agent identity and cannot replay the previous identity's local sessions. Preview environment variables and secrets are never persisted in these files. The desktop credential/project profile is separate and encrypted.
 - On startup, the local agent validates the configured repository, Git worktree, branch, and preview healthcheck before exposing a recovered session to prompts.
 - Invalid recovered state remains available for explicit cleanup but is not considered prepared. The agent reports a non-retryable recovery failure to the backend.
 - Successful session cleanup removes the local runtime record. Host previews use dedicated process groups and runtime tokens. Docker and Cloudflare containers use deterministic names plus agent/session labels; startup reconciliation removes every container owned by that agent before valid persisted worktrees receive rebuilt previews.
@@ -59,6 +60,40 @@ Responsibilities:
 Ports:
 - `DeveloperIdentityPort`, implemented in MVP by `GithubDeveloperIdentityAdapter`.
 - `PmIdentityPort`, implemented in MVP by `SlackPmIdentityAdapter`.
+
+### AgentOnboardingModule
+
+The macOS companion starts an expiring device request. The browser shows only its
+display name, short user code and expiry, and requires an authenticated developer to
+approve it explicitly. The companion alone holds the private claim code and retrieves
+the permanent credential once after approval. Both claim codes and credentials are
+hashed for server persistence; credential plaintext never enters the web app.
+
+| Route | Caller and purpose |
+| --- | --- |
+| `POST /agent-pairings` | Desktop: start a ten-minute pairing request. |
+| `POST /agent-pairings/claim` | Desktop: poll using the private device code, then claim once. |
+| `GET /developer/agent-pairings/:userCode` | Authenticated developer: inspect safe approval details. |
+| `POST /developer/agent-pairings/approve` | Authenticated developer: explicitly approve the displayed code. |
+| `GET /developer/agents` | Authenticated developer: list only owned paired devices and connection state. |
+| `DELETE /developer/agents/:agentId` | Owning developer: revoke the credential and disconnect the agent. |
+
+Database transitions enforce single approval and single claim under concurrency.
+Credentials bind an agent to one developer and a generated project-key prefix; enrolled
+agents cannot publish or receive commands for another developer's projects. Legacy
+static credentials remain an optional compatibility path through
+`AGENT_AUTH_CREDENTIALS_JSON`, with their existing exact project-key allowlists.
+
+Pairing requests are bounded by rate limits. With reverse proxies, the optional
+`PAIRDOCK_TRUSTED_PROXY_IPS` allowlist accepts only exact immediate-peer IPs and enables
+the overwritten `X-Real-IP` header for those peers. Untrusted forwarded headers do not
+change rate-limit identity. Operators must secure the upstream proxy path described in
+the [deployment guide](../../../deploy/README.md#client-addresses-for-pairing-rate-limits).
+
+The desktop profile uses Keychain-backed `safeStorage` encryption in the native main
+process. It is separate from CLI configuration and from session recovery references.
+See [desktop setup](../../agent-desktop.md) for the implemented user flow and distribution
+limitations.
 
 ### UsersModule
 
@@ -208,9 +243,9 @@ Required developer-side checks for MVP:
 - Git CLI available,
 - GitHub App/repository access available through `SourceControlPort`,
 - configured agent harness available and authenticated,
-- Docker daemon available only when the project preview command requires Docker/Compose,
+- Docker daemon available when the preview requires Docker/Compose or a Docker-backed Cloudflare tunnel,
 - Cloudflare Tunnel binary/config available or marked optional by project policy,
-- project commands discoverable from `pairdock.yml`: preview start/healthcheck, build, test, lint.
+- project commands available from the desktop profile or `pairdock.yml`: preview start/healthcheck, build, test, lint.
 
 PM-side checks:
 - authenticated through the PM identity adapter,
@@ -317,7 +352,9 @@ local-agent/
       redactor.ts
 ```
 
-Planned CLI commands:
+The macOS companion owns the primary graphical setup flow in `apps/agent-desktop`,
+using `packages/local-agent/src/desktop` and the shared runtime. The advanced CLI remains
+available for existing profiles and custom automation:
 
 ```text
 pairdock-agent login
@@ -325,6 +362,10 @@ pairdock-agent start
 pairdock-agent status
 pairdock-agent stop
 ```
+
+CLI `status` prints configuration metadata, not the web device's live connection state.
+CLI `start` runs in the foreground; `stop` explains how to interrupt that process. The
+desktop app provides actual runtime start/stop controls and background window behavior.
 
 ## Repository tooling
 

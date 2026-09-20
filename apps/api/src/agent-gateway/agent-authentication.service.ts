@@ -1,5 +1,7 @@
-import { timingSafeEqual } from 'node:crypto';
+import { createHash, timingSafeEqual } from 'node:crypto';
 import { Inject, Injectable, Optional, UnauthorizedException } from '@nestjs/common';
+import { AGENT_ENROLLMENT_REPOSITORY } from '../persistence/persistence.tokens.js';
+import type { AgentEnrollmentRepository } from '../persistence/ports/agent-enrollment.repository.js';
 
 const MINIMUM_AGENT_TOKEN_LENGTH = 32;
 
@@ -17,6 +19,8 @@ export interface AgentCredentialInput {
 export interface AuthenticatedAgentPrincipal {
   agentId: string;
   projectKeys: string[];
+  ownerUserId?: string;
+  projectKeyPrefix?: string;
 }
 
 export const AGENT_AUTHENTICATION_OPTIONS = Symbol('AGENT_AUTHENTICATION_OPTIONS');
@@ -24,21 +28,22 @@ export const AGENT_AUTHENTICATION_OPTIONS = Symbol('AGENT_AUTHENTICATION_OPTIONS
 @Injectable()
 export class AgentAuthenticationService {
   private readonly credentials: Array<AuthenticatedAgentPrincipal & { token: Buffer }>;
+  private readonly allowUnconfiguredTestAgent: boolean;
 
   constructor(
     @Optional()
     @Inject(AGENT_AUTHENTICATION_OPTIONS)
     options: AgentAuthenticationOptions = {},
+    @Optional()
+    @Inject(AGENT_ENROLLMENT_REPOSITORY)
+    private readonly enrollment?: AgentEnrollmentRepository,
   ) {
     const nodeEnv = options.nodeEnv ?? process.env.NODE_ENV;
+    this.allowUnconfiguredTestAgent = nodeEnv === 'test';
     const configuredCredentials =
       options.credentials ?? parseCredentials(options.credentialsJson ?? process.env.AGENT_AUTH_CREDENTIALS_JSON);
 
     if (!configuredCredentials || Object.keys(configuredCredentials).length === 0) {
-      if (nodeEnv !== 'test') {
-        throw new Error('AGENT_AUTH_CREDENTIALS_JSON is required outside automated tests.');
-      }
-
       this.credentials = [];
       return;
     }
@@ -81,8 +86,8 @@ export class AgentAuthenticationService {
     });
   }
 
-  authenticate(authorizationHeader: string | string[] | undefined): AuthenticatedAgentPrincipal | null {
-    if (this.credentials.length === 0) {
+  async authenticate(authorizationHeader: string | string[] | undefined): Promise<AuthenticatedAgentPrincipal | null> {
+    if (this.allowUnconfiguredTestAgent && this.credentials.length === 0 && !authorizationHeader) {
       return null;
     }
 
@@ -95,8 +100,55 @@ export class AgentAuthenticationService {
       }
     }
 
+    const credential = await this.enrollment?.findCredentialByHash(hashAgentSecret(suppliedToken));
+    if (credential && !credential.revokedAt) {
+      return {
+        agentId: credential.agentId,
+        projectKeys: [],
+        ownerUserId: credential.ownerUserId,
+        projectKeyPrefix: credential.projectKeyPrefix,
+      };
+    }
+
     throw new UnauthorizedException('Invalid agent authentication token.');
   }
+
+  async assertActive(principal: AuthenticatedAgentPrincipal): Promise<void> {
+    if (!principal.ownerUserId) return;
+    const credential = await this.enrollment?.findCredentialByAgentId(principal.agentId);
+    if (!credential || credential.revokedAt || credential.ownerUserId !== principal.ownerUserId) {
+      throw new UnauthorizedException('Agent credential has been revoked.');
+    }
+  }
+
+  async assertTestIdentityUnclaimed(agentId: string, projectKeys: string[]): Promise<void> {
+    if (!this.enrollment) return;
+    const identities = [agentId, ...projectKeys.map((key) => key.slice(0, 42))];
+    for (const identity of new Set(identities)) {
+      if (await this.enrollment.findCredentialByAgentId(identity)) {
+        throw new UnauthorizedException('Paired agents require their credential, including in tests.');
+      }
+    }
+  }
+}
+
+export function hashAgentSecret(secret: string): string {
+  return createHash('sha256').update(secret).digest('hex');
+}
+
+export function isAgentAuthorizedForProject(
+  principal: AuthenticatedAgentPrincipal,
+  projectKey: string,
+  ownerUserId?: string,
+): boolean {
+  if (!principal.ownerUserId) return principal.projectKeys.includes(projectKey);
+  return Boolean(
+    principal.projectKeyPrefix &&
+      projectKey.startsWith(principal.projectKeyPrefix) &&
+      projectKey.length > principal.projectKeyPrefix.length &&
+      /^[A-Za-z0-9._-]{1,128}$/.test(projectKey) &&
+      (ownerUserId === undefined || ownerUserId === principal.ownerUserId),
+  );
 }
 
 function parseCredentials(rawCredentials: string | undefined): Record<string, AgentCredentialInput> | undefined {

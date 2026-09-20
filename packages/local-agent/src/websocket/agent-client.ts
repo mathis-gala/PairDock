@@ -52,6 +52,12 @@ export interface AgentClientConfig {
 
 export type AgentClientLogger = PromptRunnerLogger;
 
+export interface AgentClientStatus {
+  status: 'starting' | 'online' | 'reconnecting' | 'error' | 'stopped';
+  busy: boolean;
+  message?: string;
+}
+
 class BackendEventRejectedError extends Error {
   constructor(eventType: AgentEventEnvelope['type'], message: string) {
     super(`PairDock backend rejected ${eventType}: ${message}`);
@@ -65,6 +71,11 @@ export class AgentClient {
   private readonly promptRunner: PromptRunner;
   private readonly readinessRunner: ReadinessRunner;
   private readonly logRedactor: LogRedactor;
+  private readonly onStatus?: (state: AgentClientStatus) => void;
+  private readonly preventStopWhileBusy: boolean;
+  private activeCommands = 0;
+  private stopping = false;
+  private connectionStatus: AgentClientStatus['status'] = 'stopped';
 
   constructor(
     private readonly config: AgentClientConfig,
@@ -77,8 +88,12 @@ export class AgentClient {
       readinessRunner?: ReadinessRunner;
       logRedactor?: LogRedactor;
       promptAttachmentDownloader?: PromptAttachmentDownloader;
+      onStatus?: (state: AgentClientStatus) => void;
+      preventStopWhileBusy?: boolean;
     } = {},
   ) {
+    this.onStatus = dependencies.onStatus;
+    this.preventStopWhileBusy = dependencies.preventStopWhileBusy ?? false;
     this.sessionRunner =
       dependencies.sessionRunner ??
       new SessionRunner({
@@ -121,6 +136,9 @@ export class AgentClient {
       throw new Error('AgentClient is already running.');
     }
 
+    this.stopping = false;
+    this.updateStatus('starting');
+
     const socket = io(`${this.config.backendUrl}/agent`, {
       autoConnect: false,
       extraHeaders: this.config.authToken
@@ -136,6 +154,7 @@ export class AgentClient {
     let recoveryPromise: ReturnType<SessionRunner['restore']> | null = null;
     let recoveryPublished = false;
     const handleConnected = async () => {
+      if (this.stopping) return;
       const event = buildAgentConnectedEvent({
         agentId: this.config.agentId,
         capabilities: this.config.capabilities,
@@ -144,8 +163,10 @@ export class AgentClient {
       });
 
       await this.registerAgent(socket, event);
+      if (this.stopping || this.socket !== socket) return;
       recoveryPromise ??= this.sessionRunner.restore();
       const recovery = await recoveryPromise;
+      if (this.stopping || this.socket !== socket) return;
       if (recovery.recoveredSessionIds.length > 0) {
         this.logger.info(`Recovered ${recovery.recoveredSessionIds.length} prepared PairDock session(s).`);
       }
@@ -154,7 +175,10 @@ export class AgentClient {
         await this.publishRecoveryFailures(recovery.failures);
         recoveryPublished = true;
       }
-      void this.publishConfiguredProjectReadiness();
+      if (Object.keys(this.config.projectPaths).length > 0) {
+        void this.trackCommand(() => this.publishConfiguredProjectReadiness());
+      }
+      this.updateStatus('online');
       this.logger.info(
         `Connected agent ${event.payload.agentId} to ${this.config.backendUrl} with ${event.payload.capabilities.length} capabilities.`,
       );
@@ -167,7 +191,7 @@ export class AgentClient {
       rejectFirstRegistration = reject;
     });
     socket.on('connect', () => {
-      void handleConnected()
+      void this.trackCommand(handleConnected)
         .then(() => {
           if (firstRegistrationPending) {
             firstRegistrationPending = false;
@@ -176,7 +200,9 @@ export class AgentClient {
         })
         .catch((error: unknown) => {
           const normalizedError = error instanceof Error ? error : new Error(String(error));
+          if (this.stopping || this.socket !== socket) return;
           this.logger.error(`Agent registration failed: ${normalizedError.message}`);
+          this.updateStatus('error', normalizedError.message);
           if (firstRegistrationPending) {
             firstRegistrationPending = false;
             rejectFirstRegistration(normalizedError);
@@ -185,11 +211,18 @@ export class AgentClient {
     });
     socket.on('disconnect', (reason: string) => {
       this.logger.warn(`Disconnected from PairDock backend: ${reason}.`);
+      if (!this.stopping) {
+        this.updateStatus(reason === 'io server disconnect' ? 'error' : 'reconnecting');
+      }
     });
     socket.on(
       agentProtocolMessageEventName,
       (payload: unknown, acknowledge?: (response: { accepted: boolean; error?: string }) => void) => {
-        void this.handleProtocolMessage(payload)
+        if (this.stopping) {
+          acknowledge?.({ accepted: false, error: 'The local agent is stopping.' });
+          return;
+        }
+        void this.trackCommand(() => this.handleProtocolMessage(payload))
           .then(() => {
             acknowledge?.({ accepted: true });
           })
@@ -206,8 +239,14 @@ export class AgentClient {
       rejectInitialConnection = reject;
     });
     const handleInitialConnectionError = (error: Error) => {
+      this.updateStatus('error', error.message);
       rejectInitialConnection(error);
     };
+    socket.on('connect_error', (error: Error) => {
+      if (!firstRegistrationPending && !this.stopping) {
+        this.updateStatus(socket.active ? 'reconnecting' : 'error', error.message);
+      }
+    });
     socket.once('connect_error', handleInitialConnectionError);
     socket.connect();
 
@@ -223,6 +262,10 @@ export class AgentClient {
   }
 
   async stop(): Promise<void> {
+    if (this.preventStopWhileBusy && this.activeCommands > 0) {
+      throw new Error('Agent work is still running. Wait for the current operation to finish before stopping.');
+    }
+    this.stopping = true;
     if (this.socket) {
       const socket = this.socket;
       this.socket = null;
@@ -240,6 +283,23 @@ export class AgentClient {
     }
 
     await this.sessionRunner.shutdown();
+    this.updateStatus('stopped');
+  }
+
+  private async trackCommand(operation: () => Promise<void>): Promise<void> {
+    this.activeCommands += 1;
+    this.updateStatus(this.connectionStatus);
+    try {
+      await operation();
+    } finally {
+      this.activeCommands -= 1;
+      this.updateStatus(this.connectionStatus);
+    }
+  }
+
+  private updateStatus(status: AgentClientStatus['status'], message?: string): void {
+    this.connectionStatus = status;
+    this.onStatus?.({ status, busy: this.activeCommands > 0, ...(message ? { message } : {}) });
   }
 
   private async publishRecoveryFailures(failures: Array<{ sessionId: string; message: string }>): Promise<void> {

@@ -1,8 +1,12 @@
 import {
+  type AgentPairingDetails,
+  agentPairingDetailsSchema,
   type CreateDeveloperProjectInput,
   type CreateReviewRequestInput,
+  type DeveloperAgent,
   type DeveloperProjectSetup,
   type DeveloperProjectSummary,
+  developerAgentsSchema,
   developerProjectSetupSchema,
   developerProjectSummaryListSchema,
   developerProjectSummarySchema,
@@ -32,6 +36,12 @@ interface CreateSessionInput {
 }
 
 export interface ApiClient {
+  readonly agents: {
+    list(): Promise<DeveloperAgent[]>;
+    pairing(userCode: string): Promise<AgentPairingDetails>;
+    approve(userCode: string): Promise<void>;
+    revoke(agentId: string): Promise<void>;
+  };
   readonly projects: {
     create(input: CreateDeveloperProjectInput): Promise<DeveloperProjectSummary>;
     getSetup(): Promise<DeveloperProjectSetup>;
@@ -65,6 +75,32 @@ export interface ApiClient {
 
 export function createApiClient(accessToken: string): ApiClient {
   return {
+    agents: {
+      async list(): Promise<DeveloperAgent[]> {
+        const value = await requestJson('/developer/agents', { method: 'GET', headers: authHeaders(accessToken) });
+        return developerAgentsSchema.parse(value);
+      },
+      async pairing(userCode: string): Promise<AgentPairingDetails> {
+        const value = await requestJson(`/developer/agent-pairings/${encodeURIComponent(userCode)}`, {
+          method: 'GET',
+          headers: authHeaders(accessToken),
+        });
+        return agentPairingDetailsSchema.parse(value);
+      },
+      async approve(userCode: string): Promise<void> {
+        await requestJson('/developer/agent-pairings/approve', {
+          method: 'POST',
+          headers: jsonHeaders(accessToken),
+          body: JSON.stringify({ userCode }),
+        });
+      },
+      async revoke(agentId: string): Promise<void> {
+        await requestJson(`/developer/agents/${encodeURIComponent(agentId)}`, {
+          method: 'DELETE',
+          headers: authHeaders(accessToken),
+        });
+      },
+    },
     projects: {
       async create(input: CreateDeveloperProjectInput): Promise<DeveloperProjectSummary> {
         const value = await requestJson('/projects', {

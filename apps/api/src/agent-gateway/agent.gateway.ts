@@ -29,7 +29,7 @@ import type { PersistenceUnitOfWork } from '../persistence/ports/persistence-uni
 import { SessionEventsService } from '../sessions/session-events.service.js';
 import type { SessionAgentEvent } from '../sessions/session-state-machine.js';
 import { UiGateway } from '../ui-gateway/ui.gateway.js';
-import { AgentAuthenticationService } from './agent-authentication.service.js';
+import { AgentAuthenticationService, isAgentAuthorizedForProject } from './agent-authentication.service.js';
 import { AgentProjectBindingService } from './agent-project-binding.service.js';
 import { type ConnectedAgentSnapshot, ConnectedAgentsRegistry } from './connected-agents.registry.js';
 
@@ -64,9 +64,9 @@ export class AgentGateway implements OnGatewayDisconnect, OnGatewayInit {
   ) {}
 
   afterInit(server: Server): void {
-    server.use((socket, next) => {
+    server.use(async (socket, next) => {
       try {
-        socket.data.authenticatedAgent = this.agentAuthenticationService.authenticate(
+        socket.data.authenticatedAgent = await this.agentAuthenticationService.authenticate(
           socket.handshake.headers.authorization,
         );
         next();
@@ -102,7 +102,8 @@ export class AgentGateway implements OnGatewayDisconnect, OnGatewayInit {
       await this.assertEventAuthorized(client, event, sessionId);
 
       if (this.isAgentConnectedEvent(event)) {
-        this.connectedAgentsRegistry.register(client.id, event.payload);
+        const ownerUserId = client.data.authenticatedAgent?.ownerUserId;
+        this.connectedAgentsRegistry.register(client.id, { ...event.payload, ...(ownerUserId ? { ownerUserId } : {}) });
         await this.agentRegistrationsRepository.markConnected({
           agentId: event.payload.agentId,
           protocolVersion: event.protocolVersion,
@@ -136,12 +137,14 @@ export class AgentGateway implements OnGatewayDisconnect, OnGatewayInit {
     return { accepted: true };
   }
 
-  emitToAgent(agentId: string, command: AgentCommandEnvelope): boolean {
+  async emitToAgent(agentId: string, command: AgentCommandEnvelope): Promise<boolean> {
     const socketId = this.connectedAgentsRegistry.findSocketId(agentId);
 
     if (!socketId) {
       return false;
     }
+
+    await this.assertSocketAgentActive(socketId);
 
     this.server.to(socketId).emit(agentProtocolMessageEventName, command);
     return true;
@@ -153,6 +156,8 @@ export class AgentGateway implements OnGatewayDisconnect, OnGatewayInit {
     if (!socketId) {
       return false;
     }
+
+    await this.assertSocketAgentActive(socketId);
 
     const responses = (await this.server
       .to(socketId)
@@ -169,6 +174,29 @@ export class AgentGateway implements OnGatewayDisconnect, OnGatewayInit {
     }
 
     throw new Error(`Agent ${agentId} did not acknowledge command ${command.type}.`);
+  }
+
+  disconnectAgent(agentId: string): void {
+    const socketId = this.connectedAgentsRegistry.findSocketId(agentId);
+    if (!socketId) return;
+    this.connectedAgentsRegistry.unregister(socketId);
+    this.server.in(socketId).disconnectSockets(true);
+  }
+
+  private async assertSocketAgentActive(socketId: string): Promise<void> {
+    const snapshot = this.connectedAgentsRegistry.findSnapshotBySocketId(socketId);
+    if (snapshot?.ownerUserId) {
+      try {
+        await this.agentAuthenticationService.assertActive({
+          agentId: snapshot.agentId,
+          ownerUserId: snapshot.ownerUserId,
+          projectKeys: [],
+        });
+      } catch (error) {
+        this.disconnectAgent(snapshot.agentId);
+        throw error;
+      }
+    }
   }
 
   private async persistEvent(
@@ -244,6 +272,19 @@ export class AgentGateway implements OnGatewayDisconnect, OnGatewayInit {
     const authenticatedAgent = client.data.authenticatedAgent;
 
     if (authenticatedAgent === null) {
+      if (this.isAgentConnectedEvent(event)) {
+        await this.agentAuthenticationService.assertTestIdentityUnclaimed(
+          event.payload.agentId,
+          event.payload.projects.map((project) => project.key),
+        );
+      }
+      if (event.type === 'readiness.result') {
+        await this.agentAuthenticationService.assertTestIdentityUnclaimed('', [event.payload.projectKey]);
+      }
+      if (sessionId) {
+        const project = await this.findSessionProject(sessionId);
+        if (project) await this.agentAuthenticationService.assertTestIdentityUnclaimed('', [project.agentProjectKey]);
+      }
       return;
     }
 
@@ -255,13 +296,15 @@ export class AgentGateway implements OnGatewayDisconnect, OnGatewayInit {
       throw new Error('Socket has no authenticated agent identity.');
     }
 
+    await this.agentAuthenticationService.assertActive(authenticatedAgent);
+
     if (this.isAgentConnectedEvent(event)) {
       if (event.payload.agentId !== authenticatedAgent.agentId) {
         throw new Error('Authenticated agent identity does not match the announced identity.');
       }
 
       const unauthorizedProject = event.payload.projects.find(
-        (project) => !authenticatedAgent.projectKeys.includes(project.key),
+        (project) => !isAgentAuthorizedForProject(authenticatedAgent, project.key),
       );
       if (unauthorizedProject) {
         throw new Error(`Agent credential is not authorized for project ${unauthorizedProject.key}.`);
@@ -277,7 +320,7 @@ export class AgentGateway implements OnGatewayDisconnect, OnGatewayInit {
     }
 
     if (event.type === 'readiness.result') {
-      if (!authenticatedAgent.projectKeys.includes(event.payload.projectKey)) {
+      if (!isAgentAuthorizedForProject(authenticatedAgent, event.payload.projectKey)) {
         throw new Error(`Agent credential is not authorized for project ${event.payload.projectKey}.`);
       }
       this.assertProjectKeyAuthorized(snapshot, event.payload.projectKey);
@@ -287,26 +330,25 @@ export class AgentGateway implements OnGatewayDisconnect, OnGatewayInit {
       return;
     }
 
-    const project = await this.persistenceUnitOfWork.execute(async (repositories) => {
-      const session = await repositories.sessions.findById(sessionId);
-
-      if (!session) {
-        return null;
-      }
-
-      return repositories.projects.findById(session.projectId);
-    });
+    const project = await this.findSessionProject(sessionId);
 
     if (!project) {
       throw new Error(`Session ${sessionId} does not belong to an existing project.`);
     }
 
-    if (!authenticatedAgent.projectKeys.includes(project.agentProjectKey)) {
+    if (!isAgentAuthorizedForProject(authenticatedAgent, project.agentProjectKey, project.ownerUserId)) {
       throw new Error(`Agent credential is not authorized for project ${project.agentProjectKey}.`);
     }
 
     this.assertProjectKeyAuthorized(snapshot, project.agentProjectKey);
     this.agentProjectBinding.assertConnected(project);
+  }
+
+  private findSessionProject(sessionId: string) {
+    return this.persistenceUnitOfWork.execute(async (repositories) => {
+      const session = await repositories.sessions.findById(sessionId);
+      return session ? repositories.projects.findById(session.projectId) : null;
+    });
   }
 
   private assertProjectKeyAuthorized(snapshot: ConnectedAgentSnapshot, projectKey: string): void {

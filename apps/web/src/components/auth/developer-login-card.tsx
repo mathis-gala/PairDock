@@ -1,9 +1,11 @@
 import { authApi } from '../../api/client.js';
+import { rememberDeveloperAgentReturn } from '../../hooks/use-auth-session.js';
 import { GitHubIcon } from '../brand-icons.js';
 import { Button } from '../button.js';
 
 export function DeveloperLoginCard() {
   function handleGithubAppAuth() {
+    rememberDeveloperAgentReturn();
     window.location.assign(authApi.developerStartUrl());
   }
 

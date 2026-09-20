@@ -1,7 +1,10 @@
+import { agentPairingUserCodeSchema } from '@pairdock/shared-contracts';
 import { useSyncExternalStore } from 'react';
 import { type AuthSession, authSessionSchema } from '../schemas/auth.js';
+import { developerAgentsHash, getAppRouteSnapshot } from './use-app-route.js';
 
 const AUTH_STORAGE_KEY = 'pairdock.auth.session';
+const AGENT_RETURN_STORAGE_KEY = 'pairdock.auth.agent-return';
 let cachedSerializedSession: string | null | undefined;
 let cachedAuthSession: AuthSession | null = null;
 
@@ -25,6 +28,18 @@ export function clearAuthSession(): void {
 
   window.localStorage.removeItem(AUTH_STORAGE_KEY);
   window.dispatchEvent(new Event(AUTH_STORAGE_KEY));
+}
+
+export function rememberDeveloperAgentReturn(): void {
+  if (typeof window === 'undefined' || !window.sessionStorage) {
+    return;
+  }
+
+  const route = getAppRouteSnapshot();
+  window.sessionStorage.removeItem(AGENT_RETURN_STORAGE_KEY);
+  if (route.kind === 'developer-agents') {
+    window.sessionStorage.setItem(AGENT_RETURN_STORAGE_KEY, route.userCode ?? '');
+  }
 }
 
 function subscribe(listener: () => void): () => void {
@@ -54,7 +69,7 @@ export function getAuthSessionSnapshot(): AuthSession | null {
   if (callbackSession) {
     window.localStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(callbackSession));
     cachedSerializedSession = undefined;
-    cleanCallbackHash();
+    cleanCallbackHash(callbackSession);
   }
 
   const serializedSession = window.localStorage.getItem(AUTH_STORAGE_KEY);
@@ -100,10 +115,20 @@ function readCallbackSession(): AuthSession | null {
   }
 }
 
-function cleanCallbackHash(): void {
+function cleanCallbackHash(session: AuthSession): void {
   if (!window.location || !window.history) {
     return;
   }
 
-  window.history.replaceState(null, '', `${window.location.pathname}${window.location.search}`);
+  const savedCode = window.sessionStorage?.getItem(AGENT_RETURN_STORAGE_KEY);
+  window.sessionStorage?.removeItem(AGENT_RETURN_STORAGE_KEY);
+  let returnHash = '';
+  if (session.user.kind === 'developer' && session.provider === 'github' && savedCode != null) {
+    const code = agentPairingUserCodeSchema.safeParse(savedCode);
+    if (savedCode === '' || code.success) {
+      returnHash = developerAgentsHash(code.success ? code.data : null);
+    }
+  }
+
+  window.history.replaceState(null, '', `${window.location.pathname}${window.location.search}${returnHash}`);
 }

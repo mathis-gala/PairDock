@@ -5,6 +5,7 @@
       "**",
       "!**/node_modules",
       "!**/dist",
+      "!apps/agent-desktop/release",
       "!**/coverage",
       "!apps/api/src/generated",
       "!apps/api/prisma/migrations",

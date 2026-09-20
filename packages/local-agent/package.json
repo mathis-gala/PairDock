@@ -3,6 +3,10 @@
   "private": true,
   "version": "0.1.0",
   "type": "module",
+  "exports": {
+    "./desktop": "./src/desktop/desktop-agent-manager.ts",
+    "./desktop-contracts": "./src/desktop/desktop-contracts.ts"
+  },
   "bin": {
     "pairdock-agent": "./src/main.ts"
   },

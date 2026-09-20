@@ -1,0 +1,34 @@
+{
+  "name": "@pairdock/agent-desktop",
+  "private": true,
+  "version": "0.1.0",
+  "description": "Configure and run a PairDock agent from your desktop.",
+  "type": "module",
+  "main": "dist/main/main.cjs",
+  "scripts": {
+    "dev": "bun run build && electron .",
+    "build": "node scripts/build.mjs",
+    "typecheck": "tsc --noEmit -p tsconfig.json",
+    "test": "node --import tsx --test ../../tests/apps/agent-desktop/**/*.test.ts",
+    "package:mac": "bun run build && node scripts/package.mjs"
+  },
+  "dependencies": {
+    "@pairdock/local-agent": "0.1.0",
+    "@pairdock/shared-contracts": "0.1.0",
+    "@tanstack/react-form": "^1.23.6",
+    "@tanstack/react-query": "^5.85.3",
+    "react": "^19.1.1",
+    "react-dom": "^19.1.1",
+    "zod": "^4.1.5"
+  },
+  "devDependencies": {
+    "@openai/codex": "0.155.1",
+    "@types/react": "^19.1.10",
+    "@types/react-dom": "^19.1.7",
+    "@vitejs/plugin-react": "^6.0.3",
+    "electron": "44.4.3",
+    "electron-builder": "26.15.3",
+    "esbuild": "0.28.2",
+    "vite": "^8.1.4"
+  }
+}
