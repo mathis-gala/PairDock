@@ -17,6 +17,44 @@ export interface SessionConversationItem {
   selections?: PreviewElementSelection[];
 }
 
+interface ConversationProgressGroup {
+  id: string;
+  kind: 'progress-group';
+  items: SessionConversationItem[];
+}
+
+export function groupConversationProgress(
+  items: SessionConversationItem[],
+  isWorking: boolean,
+): Array<SessionConversationItem | ConversationProgressGroup> {
+  const rows: Array<SessionConversationItem | ConversationProgressGroup> = [];
+  let pending: SessionConversationItem[] = [];
+
+  function flushProgress() {
+    const first = pending[0];
+    if (first) {
+      rows.push({ id: `progress:${first.id}`, kind: 'progress-group', items: pending });
+      pending = [];
+    }
+  }
+
+  for (const item of items) {
+    if (item.role === 'assistant' && item.kind === 'progress' && item.tone !== 'error') {
+      pending.push(item);
+    } else {
+      flushProgress();
+      rows.push(item);
+    }
+  }
+
+  const current = isWorking ? pending.pop() : undefined;
+  flushProgress();
+  if (current) {
+    rows.push(current);
+  }
+  return rows;
+}
+
 export function buildSessionConversation(
   messages: SessionMessageView[],
   events: SessionEventRecordView[],

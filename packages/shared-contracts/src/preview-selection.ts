@@ -11,7 +11,7 @@ export const PREVIEW_SELECTION_LIMITS = {
   selections: 5,
 } as const;
 
-const previewPageUrlSchema = z
+export const previewPageUrlSchema = z
   .string()
   .max(PREVIEW_SELECTION_LIMITS.url)
   .url()

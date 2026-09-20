@@ -6,6 +6,7 @@ import {
   type KeyboardEvent,
   useCallback,
   useId,
+  useRef,
   useState,
 } from 'react';
 import { Button } from '../button.js';
@@ -18,22 +19,55 @@ import {
 } from '../screenshot-picker.js';
 
 interface ReviewRequestDialogProps {
+  blockedReason?: string | null;
   error: string | null;
+  initialScreenshots?: File[];
+  initialValues?: CreateReviewRequestInput;
   isSubmitting: boolean;
   onClose: () => void;
   onSubmit: (input: CreateReviewRequestInput, screenshots: File[]) => Promise<void>;
 }
 
-export function ReviewRequestDialog({ error, isSubmitting, onClose, onSubmit }: ReviewRequestDialogProps) {
+export function ReviewRequestDialog({
+  blockedReason,
+  error,
+  initialScreenshots,
+  initialValues,
+  isSubmitting,
+  onClose,
+  onSubmit,
+}: ReviewRequestDialogProps) {
   const titleId = useId();
   const descriptionId = useId();
   const errorId = useId();
-  const [type, setType] = useState<CreateReviewRequestInput['type']>('feat');
-  const [title, setTitle] = useState('');
-  const [description, setDescription] = useState('');
+  const [type, setType] = useState<CreateReviewRequestInput['type']>(initialValues?.type ?? 'feat');
+  const [title, setTitle] = useState(initialValues?.title ?? '');
+  const [description, setDescription] = useState(initialValues?.description ?? '');
   const [screenshots, setScreenshots] = useState<SelectedScreenshot[]>([]);
+  const [initialFiles] = useState(initialScreenshots ?? []);
+  const screenshotsRef = useRef<SelectedScreenshot[]>([]);
   const [validationError, setValidationError] = useState<string | null>(null);
   const displayedError = validationError ?? error;
+
+  const handleDialogRef = useCallback(
+    (element: HTMLDivElement | null) => {
+      if (!element) return;
+      appendScreenshotFiles({
+        files: initialFiles,
+        screenshots: [],
+        onChange: (nextScreenshots) => {
+          screenshotsRef.current = nextScreenshots;
+          setScreenshots(nextScreenshots);
+        },
+        onError: setValidationError,
+      });
+      return () => {
+        releaseScreenshotPreviews(screenshotsRef.current);
+        screenshotsRef.current = [];
+      };
+    },
+    [initialFiles],
+  );
 
   function handleTypeChange(event: ChangeEvent<HTMLInputElement>) {
     if (event.target.value === 'feat' || event.target.value === 'fix' || event.target.value === 'style') {
@@ -52,6 +86,7 @@ export function ReviewRequestDialog({ error, isSubmitting, onClose, onSubmit }: 
   }
 
   function handleScreenshotsChange(nextScreenshots: SelectedScreenshot[]) {
+    screenshotsRef.current = nextScreenshots;
     setScreenshots(nextScreenshots);
     setValidationError(null);
   }
@@ -72,6 +107,7 @@ export function ReviewRequestDialog({ error, isSubmitting, onClose, onSubmit }: 
   function handleClose() {
     if (!isSubmitting) {
       releaseScreenshotPreviews(screenshots);
+      screenshotsRef.current = [];
       onClose();
     }
   }
@@ -105,6 +141,7 @@ export function ReviewRequestDialog({ error, isSubmitting, onClose, onSubmit }: 
 
   function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    if (isSubmitting || blockedReason) return;
     const normalizedTitle = title.trim();
     const normalizedDescription = description.trim();
 
@@ -120,6 +157,7 @@ export function ReviewRequestDialog({ error, isSubmitting, onClose, onSubmit }: 
     )
       .then(() => {
         releaseScreenshotPreviews(screenshots);
+        screenshotsRef.current = [];
         setScreenshots([]);
       })
       .catch(() => undefined);
@@ -140,6 +178,7 @@ export function ReviewRequestDialog({ error, isSubmitting, onClose, onSubmit }: 
         aria-modal="true"
         className="relative w-full max-w-2xl rounded-[16px] border border-white/10 bg-[#191c23] p-5 shadow-[0_24px_80px_rgba(0,0,0,0.55)] sm:p-6"
         onKeyDown={handleDialogKeyDown}
+        ref={handleDialogRef}
         role="dialog"
       >
         <div className="flex items-start justify-between gap-4">
@@ -148,7 +187,7 @@ export function ReviewRequestDialog({ error, isSubmitting, onClose, onSubmit }: 
               Soumettre une PR
             </h2>
             <p className="mt-1 text-sm leading-6 text-[#8b92a1]">
-              Ces informations seront visibles par le développeur sur GitHub.
+              Vérifie et complète ce brouillon avant envoi. Il sera visible par le développeur sur GitHub.
             </p>
           </div>
           <button
@@ -165,7 +204,7 @@ export function ReviewRequestDialog({ error, isSubmitting, onClose, onSubmit }: 
         </div>
 
         <form className="mt-6 space-y-5" onSubmit={handleSubmit}>
-          <fieldset>
+          <fieldset disabled={isSubmitting}>
             <legend className="mb-2 text-xs font-semibold uppercase tracking-[0.14em] text-[#6f7686]">
               Type de changement
             </legend>
@@ -180,7 +219,7 @@ export function ReviewRequestDialog({ error, isSubmitting, onClose, onSubmit }: 
                   value="feat"
                 />
                 <span className="flex min-h-11 items-center justify-center gap-2 rounded-[10px] border border-white/10 bg-[#15171c] px-3 text-sm text-[#8b92a1] transition peer-checked:border-[#5fdf9b]/50 peer-checked:bg-[#5fdf9b]/10 peer-checked:text-[#eafff3] peer-focus-visible:ring-2 peer-focus-visible:ring-[#5fdf9b]/40">
-                  Feature
+                  Fonctionnalité
                 </span>
               </label>
               <label className="cursor-pointer">
@@ -193,7 +232,7 @@ export function ReviewRequestDialog({ error, isSubmitting, onClose, onSubmit }: 
                   value="fix"
                 />
                 <span className="flex min-h-11 items-center justify-center gap-2 rounded-[10px] border border-white/10 bg-[#15171c] px-3 text-sm text-[#8b92a1] transition peer-checked:border-[#5fdf9b]/50 peer-checked:bg-[#5fdf9b]/10 peer-checked:text-[#eafff3] peer-focus-visible:ring-2 peer-focus-visible:ring-[#5fdf9b]/40">
-                  Fix
+                  Correction
                 </span>
               </label>
               <label className="cursor-pointer">
@@ -227,7 +266,7 @@ export function ReviewRequestDialog({ error, isSubmitting, onClose, onSubmit }: 
               value={title}
             />
             <span className="mt-1.5 block text-xs leading-5 text-[#6f7686]">
-              Le commit utilisera le préfixe <code>{type}:</code> et un titre normalisé en minuscules.
+              Le titre et la description restent modifiables avant la création.
             </span>
           </label>
 
@@ -259,6 +298,12 @@ export function ReviewRequestDialog({ error, isSubmitting, onClose, onSubmit }: 
             />
           </label>
 
+          {blockedReason ? (
+            <p className="text-sm leading-6 text-amber-200" role="status">
+              {blockedReason}
+            </p>
+          ) : null}
+
           {displayedError ? (
             <p
               className="rounded-[10px] border border-rose-400/30 bg-rose-400/10 px-3 py-2 text-sm text-rose-200"
@@ -273,7 +318,7 @@ export function ReviewRequestDialog({ error, isSubmitting, onClose, onSubmit }: 
             <Button disabled={isSubmitting} onClick={handleClose} variant="ghost">
               Annuler
             </Button>
-            <Button disabled={isSubmitting} type="submit">
+            <Button disabled={isSubmitting || Boolean(blockedReason)} type="submit">
               {isSubmitting ? (
                 <svg
                   aria-hidden="true"

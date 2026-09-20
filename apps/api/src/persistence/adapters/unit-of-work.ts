@@ -38,7 +38,15 @@ function createPersistenceRepositories(prisma: DatabaseExecutor): PersistenceRep
 export class PersistenceUnitOfWorkAdapter implements PersistenceUnitOfWork {
   constructor(@Inject(DatabaseClient) private readonly prisma: DatabaseClient) {}
 
-  async execute<T>(work: (repositories: PersistenceRepositories) => Promise<T>): Promise<T> {
-    return this.prisma.$transaction(async (transaction) => work(createPersistenceRepositories(transaction)));
+  async execute<T>(
+    work: (repositories: PersistenceRepositories) => Promise<T>,
+    options?: { lockSessionId: string },
+  ): Promise<T> {
+    return this.prisma.$transaction(async (transaction) => {
+      if (options) {
+        await transaction.$queryRaw`SELECT id FROM sessions WHERE id = ${options.lockSessionId}::uuid FOR UPDATE`;
+      }
+      return work(createPersistenceRepositories(transaction));
+    });
   }
 }

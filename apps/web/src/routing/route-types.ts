@@ -1,6 +1,6 @@
 export type AppRoute =
   | { kind: 'login' }
-  | { kind: 'developer-home' }
+  | { kind: 'developer-home'; agentProjectKey?: string }
   | { kind: 'developer-agents'; userCode: string | null }
   | { kind: 'developer-session'; sessionId: string }
   | { kind: 'pm-dashboard' }

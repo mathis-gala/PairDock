@@ -10,6 +10,9 @@ import {
   developerProjectSetupSchema,
   developerProjectSummaryListSchema,
   developerProjectSummarySchema,
+  type PreviewComparison,
+  type PreviewComparisonInput,
+  previewComparisonSchema,
   type ShareDeveloperProjectInput,
   type SharedProjectSummary,
   type SharedSessionHistoryItem,
@@ -21,6 +24,7 @@ import {
 import { z } from 'zod';
 import { getBackendUrl } from '../lib/backend-url.js';
 import { type AuthSession, authResponseSchema } from '../schemas/auth.js';
+import { type ProjectReadinessSnapshot, projectReadinessSnapshotSchema } from '../schemas/project-readiness.js';
 import {
   type SessionEventRecordView,
   type SessionMessageView,
@@ -48,7 +52,8 @@ export interface ApiClient {
     listDeveloper(): Promise<DeveloperProjectSummary[]>;
     listShared(): Promise<SharedProjectSummary[]>;
     listSharedSessionHistory(): Promise<SharedSessionHistoryItem[]>;
-    requestReadinessCheck(projectId: string): Promise<void>;
+    getReadiness(projectId: string, signal?: AbortSignal): Promise<ProjectReadinessSnapshot | null>;
+    requestReadinessCheck(projectId: string, signal?: AbortSignal): Promise<void>;
     share(projectId: string, input: ShareDeveloperProjectInput): Promise<DeveloperProjectSummary>;
     update(projectId: string, input: UpdateDeveloperProjectInput): Promise<DeveloperProjectSummary>;
     updateExecutionDefaults(
@@ -63,6 +68,12 @@ export interface ApiClient {
     listEvents(sessionId: string): Promise<SessionEventRecordView[]>;
     sendPrompt(sessionId: string, input: { content: string; screenshots: File[] }): Promise<SessionMessageView>;
     readAttachment(sessionId: string, attachmentId: string): Promise<string>;
+    listPreviewComparisons(sessionId: string): Promise<PreviewComparison[]>;
+    importPreviewCapture(
+      sessionId: string,
+      metadata: PreviewComparisonInput,
+      screenshot: File,
+    ): Promise<PreviewComparison>;
     cancelPrompt(sessionId: string): Promise<void>;
     createReviewRequest(
       sessionId: string,
@@ -138,10 +149,19 @@ export function createApiClient(accessToken: string): ApiClient {
         });
         return sharedSessionHistoryListSchema.parse(value);
       },
-      async requestReadinessCheck(projectId: string): Promise<void> {
+      async getReadiness(projectId: string, signal?: AbortSignal): Promise<ProjectReadinessSnapshot | null> {
+        const value = await requestJson(`/tool-readiness/projects/${projectId}`, {
+          method: 'GET',
+          headers: authHeaders(accessToken),
+          signal,
+        });
+        return projectReadinessSnapshotSchema.nullable().parse(value);
+      },
+      async requestReadinessCheck(projectId: string, signal?: AbortSignal): Promise<void> {
         await requestJson(`/tool-readiness/projects/${projectId}/check`, {
           method: 'POST',
           headers: authHeaders(accessToken),
+          signal,
         });
       },
       async share(projectId: string, input: ShareDeveloperProjectInput): Promise<DeveloperProjectSummary> {
@@ -173,6 +193,24 @@ export function createApiClient(accessToken: string): ApiClient {
       },
     },
     sessions: {
+      async listPreviewComparisons(sessionId) {
+        const value = await requestJson(`/sessions/${sessionId}/preview-comparisons`, {
+          method: 'GET',
+          headers: authHeaders(accessToken),
+        });
+        return previewComparisonSchema.array().parse(value);
+      },
+      async importPreviewCapture(sessionId, metadata, screenshot) {
+        const body = new FormData();
+        body.set('metadata', JSON.stringify(metadata));
+        body.set('screenshot', screenshot, screenshot.name);
+        const value = await requestJson(`/sessions/${sessionId}/preview-comparisons`, {
+          method: 'POST',
+          headers: authHeaders(accessToken),
+          body,
+        });
+        return previewComparisonSchema.parse(value);
+      },
       async create(input: CreateSessionInput): Promise<SessionView> {
         const value = await requestJson('/sessions', {
           method: 'POST',
@@ -330,6 +368,7 @@ interface RequestOptions {
   method: string;
   headers: Record<string, string>;
   body?: BodyInit;
+  signal?: AbortSignal;
 }
 
 async function requestJson(path: string, options: RequestOptions): Promise<unknown> {

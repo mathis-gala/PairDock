@@ -88,7 +88,11 @@ export function DeveloperProjectCard({
           onSubmit={handleUpdateProject}
         />
       ) : null}
-      <div className="grid gap-4 text-sm text-slate-300 lg:grid-cols-[1fr_0.85fr]">
+      <div
+        className="grid scroll-mt-5 gap-4 text-sm text-slate-300 outline-none lg:grid-cols-[1fr_0.85fr]"
+        id={`developer-project-${project.id}`}
+        tabIndex={-1}
+      >
         <div className="space-y-4">
           <dl className="grid gap-3 rounded-xl border border-slate-800 bg-slate-950/70 p-3 sm:grid-cols-2">
             <ProjectFact label="Repository" value={project.repoFullName} />
@@ -120,13 +124,19 @@ export function DeveloperProjectCard({
               startLabel="Enregistrer la configuration"
             />
           </div>
-          <ToolReadinessPanel
-            agentAvailability={project.agentAvailability}
-            isRequesting={readinessPending}
-            onRequestReadiness={async () => onRequestReadiness(project.id)}
-            readiness={project.readiness}
-          />
-          <div className="rounded-xl border border-slate-800 bg-slate-950/70 p-3">
+          <div className="scroll-mt-5 outline-none" id={`developer-project-${project.id}-readiness`} tabIndex={-1}>
+            <ToolReadinessPanel
+              agentAvailability={project.agentAvailability}
+              isRequesting={readinessPending}
+              onRequestReadiness={async () => onRequestReadiness(project.id)}
+              readiness={project.readiness}
+            />
+          </div>
+          <div
+            className="scroll-mt-5 rounded-xl border border-slate-800 bg-slate-950/70 p-3 outline-none"
+            id={`developer-project-${project.id}-invite`}
+            tabIndex={-1}
+          >
             <div className="mb-3 flex items-center justify-between gap-3">
               <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">PM invités</p>
               <span className="font-mono text-xs text-slate-500">{project.pmMembers.length}</span>

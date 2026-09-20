@@ -16,7 +16,7 @@ export interface CreateSessionInput {
 export interface SessionsRepository {
   create(input: CreateSessionInput): Promise<Session>;
   findById(id: string): Promise<Session | null>;
-  listByProjectIds(projectIds: string[], createdByUserId?: string): Promise<Session[]>;
+  listByProjectIds(projectIds: string[], createdByUserId?: string): Promise<ListedSession[]>;
   updateStatus(input: {
     id: string;
     status: SessionStatus;
@@ -24,4 +24,8 @@ export interface SessionsRepository {
     previewUrl?: string | null;
     closedAt?: Date | null;
   }): Promise<Session>;
+}
+
+export interface ListedSession extends Session {
+  firstPrompt: string | null;
 }

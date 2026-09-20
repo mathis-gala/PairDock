@@ -1,7 +1,7 @@
 import { Inject, Injectable } from '@nestjs/common';
 import type { Session } from '@pairdock/domain';
 import { DatabaseClient, type DatabaseExecutor } from '../client.js';
-import type { CreateSessionInput, SessionsRepository } from '../ports/sessions.repository.js';
+import type { CreateSessionInput, ListedSession, SessionsRepository } from '../ports/sessions.repository.js';
 import { mapSession } from './mappers.js';
 
 @Injectable()
@@ -32,7 +32,7 @@ export class SessionsRepositoryAdapter implements SessionsRepository {
     return record ? mapSession(record) : null;
   }
 
-  async listByProjectIds(projectIds: string[], createdByUserId?: string): Promise<Session[]> {
+  async listByProjectIds(projectIds: string[], createdByUserId?: string): Promise<ListedSession[]> {
     if (projectIds.length === 0) {
       return [];
     }
@@ -45,9 +45,17 @@ export class SessionsRepositoryAdapter implements SessionsRepository {
         ...(createdByUserId ? { createdByUserId } : {}),
       },
       orderBy: { createdAt: 'desc' },
+      include: {
+        messages: {
+          where: { role: { in: ['pm', 'developer', 'user'] } },
+          orderBy: [{ createdAt: 'asc' }, { id: 'asc' }],
+          take: 1,
+          select: { content: true },
+        },
+      },
     });
 
-    return records.map(mapSession);
+    return records.map((record) => ({ ...mapSession(record), firstPrompt: record.messages[0]?.content ?? null }));
   }
 
   async updateStatus(input: {

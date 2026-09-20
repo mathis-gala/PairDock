@@ -130,5 +130,5 @@ test('BT-044: developer project card shows readiness remediation for failed requ
   assert.match(html, /Docker unavailable\./);
   assert.match(html, /Start Docker Desktop and rerun readiness checks\./);
   assert.match(html, /Preview tunnel is optional for this project\./);
-  assert.match(html, /Optional/);
+  assert.match(html, /Facultatif/);
 });

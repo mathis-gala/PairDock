@@ -118,11 +118,16 @@ function registerHandlers() {
     if (!pairing) throw new Error('Start pairing first.');
     await shell.openExternal(validateExternalUrl(pairing.verificationUrl));
   });
-  handle('agent:open-projects', async () => {
-    const connection = manager.getSnapshot().connection;
+  handle('agent:open-projects', async (input) => {
+    const snapshot = manager.getSnapshot();
+    const connection = snapshot.connection;
     if (!connection) throw new Error('Pair this computer first.');
+    const projectKey = keySchema.optional().parse(input);
+    if (projectKey && !snapshot.projects.some((project) => project.key === projectKey)) {
+      throw new Error('Ce projet n’est plus configuré sur ce Mac.');
+    }
     const url = new URL(connection.frontendUrl);
-    url.hash = '/developer';
+    url.hash = projectKey ? `/developer?agentProjectKey=${encodeURIComponent(projectKey)}` : '/developer';
     await shell.openExternal(validateExternalUrl(url.toString()));
   });
   handle('agent:open-tool-help', async (input) => {

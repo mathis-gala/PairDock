@@ -4,17 +4,26 @@ import {
   PREVIEW_SELECTION_LIMITS,
   type PreviewElementSelection,
 } from '@pairdock/shared-contracts';
+import { useQueryClient } from '@tanstack/react-query';
 import { useCallback, useState } from 'react';
 import { Button } from '../components/button.js';
 import { ConversationThread } from '../components/pm-session/conversation-thread.js';
+import { PreviewComparisonPanel } from '../components/pm-session/preview-comparison-panel.js';
 import { PreviewFrame } from '../components/pm-session/preview-frame.js';
 import { type PreviewSelectionControls, PreviewToolbar } from '../components/pm-session/preview-toolbar.js';
 import { PromptComposer } from '../components/pm-session/prompt-composer.js';
 import { ReviewRequestDialog } from '../components/pm-session/review-request-dialog.js';
+import { SessionValidationSummary } from '../components/pm-session/session-validation-summary.js';
 import { SectionCard } from '../components/section-card.js';
 import { usePreviewSelection } from '../hooks/use-preview-selection.js';
 import { useSessionData } from '../hooks/use-session-data.js';
 import type { PreviewPresetId } from '../lib/preview-presets.js';
+import { buildSessionConversation, type SessionConversationItem } from '../lib/session-conversation.js';
+import { formatSessionStatus } from '../lib/session-labels.js';
+import { sessionQueryKeys } from '../lib/session-query-keys.js';
+import { buildSessionReviewDraft } from '../lib/session-review-draft.js';
+import { getReviewRequestBlockedReason } from '../lib/session-validation.js';
+import type { SessionEventRecordView, SessionMessageView, SessionView } from '../schemas/session.js';
 
 interface PmSessionPageProps {
   accessToken: string;
@@ -24,13 +33,18 @@ interface PmSessionPageProps {
 }
 
 export function PmSessionPage(props: PmSessionPageProps) {
-  return <PmSessionWorkspace key={`${props.sessionId}:${props.isReadOnly ?? false}`} {...props} />;
+  return <PmSessionWorkspace key={`${props.accessToken}:${props.sessionId}:${props.isReadOnly ?? false}`} {...props} />;
 }
 
 function PmSessionWorkspace({ accessToken, isReadOnly = false, onBack, sessionId }: PmSessionPageProps) {
+  const queryClient = useQueryClient();
   const [presetId, setPresetId] = useState<PreviewPresetId>('desktop');
   const [isReviewDialogOpen, setIsReviewDialogOpen] = useState(false);
+  const [reviewDraft, setReviewDraft] = useState<CreateReviewRequestInput | undefined>();
+  const [reviewScreenshots, setReviewScreenshots] = useState<File[]>([]);
   const [mobilePanel, setMobilePanel] = useState<'discussion' | 'preview'>('discussion');
+  const [previewMode, setPreviewMode] = useState<'live' | 'comparison'>('live');
+  const [hasOpenedComparison, setHasOpenedComparison] = useState(false);
   const [selections, setSelections] = useState<PreviewElementSelection[]>([]);
   const handleSelectElement = useCallback((selection: PreviewElementSelection) => {
     setSelections((current) => {
@@ -60,12 +74,12 @@ function PmSessionWorkspace({ accessToken, isReadOnly = false, onBack, sessionId
     resetReviewRequest,
   } = useSessionData(accessToken, sessionId);
   const hasSelectionLimit = selections.length >= PREVIEW_SELECTION_LIMITS.selections;
-  const canSelectElements = !isReadOnly && !isSending && !hasSelectionLimit;
-  const previewSelection = usePreviewSelection(
-    snapshot.status === 'ready' ? snapshot.session.previewUrl : null,
-    canSelectElements,
-    handleSelectElement,
-  );
+  const isSessionClosed =
+    snapshot.status === 'ready' && (snapshot.session.status === 'CLOSED' || snapshot.session.status === 'CLOSING');
+  const previewUrl = snapshot.status === 'ready' && !isSessionClosed ? snapshot.session.previewUrl : null;
+  const canSelectElements =
+    !isReadOnly && !isSending && !hasSelectionLimit && !isSessionClosed && previewMode === 'live';
+  const previewSelection = usePreviewSelection(previewUrl, canSelectElements, handleSelectElement);
 
   if (snapshot.status === 'loading') {
     return (
@@ -81,10 +95,10 @@ function PmSessionWorkspace({ accessToken, isReadOnly = false, onBack, sessionId
         <SectionCard
           actions={
             <Button onClick={onBack} variant="secondary">
-              Back to dashboard
+              Retour au tableau de bord
             </Button>
           }
-          title="Could not load PM session"
+          title="Impossible de charger la session"
           description={snapshot.error.message}
         />
       </div>
@@ -103,13 +117,22 @@ function PmSessionWorkspace({ accessToken, isReadOnly = false, onBack, sessionId
   const canSubmitPrompt = !isReadOnly && isOnline && isPromptableSessionStatus(session.status);
   const promptBlockedReason = getPromptBlockedReason(session.status, isOnline);
   const hasFailed = session.status === 'FAILED';
-  const failureRecoveryMessage = session.previewUrl
-    ? 'Tu peux envoyer un nouveau message pour réessayer.'
-    : 'La session n’a pas pu être préparée. Ferme-la puis crée une nouvelle session après correction.';
-  const canCreateReviewRequest =
-    !isReadOnly && session.status === 'AWAITING_PM_VALIDATION' && !session.reviewRequest?.url;
+  let failureRecoveryMessage =
+    'La session n’a pas pu être préparée. Ferme-la puis crée une nouvelle session après correction.';
+  if (!isOnline) failureRecoveryMessage = 'Le développeur doit reconnecter son agent avant de réessayer.';
+  else if (session.previewUrl) failureRecoveryMessage = 'Tu peux envoyer un nouveau message pour réessayer.';
+  const reviewBlockedReason = getReviewRequestBlockedReason(session, isReadOnly);
+  const canCreateReviewRequest = reviewBlockedReason === null;
+  const isStatusWarning = !isOnline || session.status === 'CLOSED' || session.status === 'CLOSING';
+  let statusColor = 'text-[#a3aab8]';
+  if (hasFailed) statusColor = 'text-rose-300';
+  else if (isStatusWarning) statusColor = 'text-amber-200';
+  else if (session.status === 'AWAITING_PM_VALIDATION' || session.status === 'REVIEW_REQUEST_CREATED')
+    statusColor = 'text-[#a9efc9]';
   let selectionDisabledReason: string | null = null;
-  if (hasSelectionLimit) {
+  if (isSessionClosed) {
+    selectionDisabledReason = 'La sélection n’est plus disponible dans une session fermée.';
+  } else if (hasSelectionLimit) {
     selectionDisabledReason = `Limite de ${PREVIEW_SELECTION_LIMITS.selections} éléments atteinte. Retire une sélection pour en ajouter une autre.`;
   } else if (isSending) {
     selectionDisabledReason = 'Envoi du message en cours…';
@@ -134,6 +157,15 @@ function PmSessionWorkspace({ accessToken, isReadOnly = false, onBack, sessionId
     setMobilePanel('preview');
   }
 
+  function handleShowLivePreview() {
+    setPreviewMode('live');
+  }
+
+  function handleShowComparison() {
+    setHasOpenedComparison(true);
+    setPreviewMode('comparison');
+  }
+
   async function handleCancelPrompt() {
     await cancelPrompt();
   }
@@ -143,17 +175,50 @@ function PmSessionWorkspace({ accessToken, isReadOnly = false, onBack, sessionId
   }
 
   function handleOpenReviewDialog() {
+    if (!canCreateReviewRequest) return;
+    openReviewDialog([], session, conversation);
+  }
+
+  function handleUseComparisonInReview(files: File[]) {
+    const currentSession = queryClient.getQueryData<SessionView>(sessionQueryKeys.detail(accessToken, sessionId));
+    if (!currentSession) throw new Error('La session est indisponible. Recharge-la avant de préparer la PR.');
+    const blockedReason = getReviewRequestBlockedReason(currentSession, isReadOnly);
+    if (blockedReason) throw new Error(blockedReason);
+    const messages =
+      queryClient.getQueryData<SessionMessageView[]>(sessionQueryKeys.messages(accessToken, sessionId)) ?? [];
+    const events =
+      queryClient.getQueryData<SessionEventRecordView[]>(sessionQueryKeys.events(accessToken, sessionId)) ?? [];
+    openReviewDialog(files, currentSession, buildSessionConversation(messages, events));
+  }
+
+  function openReviewDialog(
+    files: File[],
+    currentSession: SessionView,
+    currentConversation: SessionConversationItem[],
+  ) {
     resetReviewRequest();
+    setReviewScreenshots(files);
+    setReviewDraft(
+      buildSessionReviewDraft({
+        projectName: currentSession.project.name,
+        conversation: currentConversation,
+        changedFiles: currentSession.latestDiff?.changedFiles ?? null,
+        sessionStatus: currentSession.status,
+        validation: currentSession.latestValidation,
+      }),
+    );
     setIsReviewDialogOpen(true);
   }
 
   function handleCloseReviewDialog() {
     if (!isCreatingReviewRequest) {
       setIsReviewDialogOpen(false);
+      setReviewScreenshots([]);
     }
   }
 
   async function handleCreateReviewRequest(input: CreateReviewRequestInput, screenshots: File[]) {
+    if (reviewBlockedReason) throw new Error(reviewBlockedReason);
     resetReviewRequest();
     await createReviewRequest({ input, screenshots });
     setIsReviewDialogOpen(false);
@@ -210,8 +275,12 @@ function PmSessionWorkspace({ accessToken, isReadOnly = false, onBack, sessionId
             </span>
             agent de {session.project.ownerDisplayName}
           </div>
-          <span className="flex items-center gap-1.5 font-mono text-xs text-[#5fdf9b]">
-            <span className="size-[7px] rounded-full bg-[#5fdf9b] [animation:pd-pulse_2s_infinite]" />
+          <span
+            aria-live="polite"
+            className={`flex shrink-0 items-center gap-1.5 whitespace-nowrap font-mono text-xs ${isOnline ? 'text-[#a9efc9]' : 'text-amber-200'}`}
+            role="status"
+          >
+            <span aria-hidden="true" className="size-[7px] rounded-full bg-current" />
             {isOnline ? 'en ligne' : 'hors ligne'}
           </span>
         </div>
@@ -219,7 +288,7 @@ function PmSessionWorkspace({ accessToken, isReadOnly = false, onBack, sessionId
 
       <nav
         aria-label="Vue de la session"
-        className="flex flex-none gap-2 border-b border-white/10 bg-[#15171c] px-4 py-2 lg:hidden"
+        className="flex flex-none gap-2 border-b border-white/10 bg-[#15171c] px-4 py-1 lg:hidden"
       >
         <Button
           aria-controls="pm-session-discussion"
@@ -237,7 +306,7 @@ function PmSessionWorkspace({ accessToken, isReadOnly = false, onBack, sessionId
           onClick={handleShowPreview}
           variant={mobilePanel === 'preview' ? 'primary' : 'secondary'}
         >
-          Preview
+          Aperçu
         </Button>
       </nav>
 
@@ -286,7 +355,7 @@ function PmSessionWorkspace({ accessToken, isReadOnly = false, onBack, sessionId
         </section>
 
         <section className={previewClassName} id="pm-session-preview">
-          <div className="flex h-[46px] flex-none items-center gap-3 border-b border-white/10 bg-[#1a1d24] px-3.5">
+          <div className="hidden h-[46px] flex-none items-center gap-3 border-b border-white/10 bg-[#1a1d24] px-3.5 sm:flex">
             <div className="flex gap-1.5">
               <span className="size-[11px] rounded-full bg-[#ec6a5e]" />
               <span className="size-[11px] rounded-full bg-[#f4bf4f]" />
@@ -294,37 +363,79 @@ function PmSessionWorkspace({ accessToken, isReadOnly = false, onBack, sessionId
             </div>
             <div className="flex h-7 min-w-0 max-w-[520px] flex-1 items-center gap-2 rounded-[8px] border border-white/10 bg-[#0f1115] px-3 font-mono text-[11.5px] text-[#8b92a1]">
               <span className="text-[#5fdf9b]">⌁</span>
-              <span className="truncate">{session.previewUrl ?? 'preview non publiée'}</span>
-              <span className="ml-auto hidden text-[#565d6b] sm:inline">worktree</span>
+              <span className="truncate">{previewUrl ?? 'Aucun aperçu disponible'}</span>
+              <span className="ml-auto hidden text-[#8b92a1] sm:inline">session isolée</span>
             </div>
-            <span className="flex items-center gap-1.5 font-mono text-[11px] text-[#7d8493]">
-              <span className="size-1.5 rounded-full bg-[#5fdf9b]" />
-              responsive
-            </span>
+            <span className="flex items-center gap-1.5 font-mono text-[11px] text-[#7d8493]">formats</span>
           </div>
-          <div className="min-h-0 flex-1 overflow-hidden">
+          <fieldset className="flex flex-none gap-2 border-b border-white/10 bg-[#15171c] px-3 py-1">
+            <legend className="sr-only">Mode de l’aperçu</legend>
+            <Button
+              aria-controls="pm-live-preview"
+              aria-pressed={previewMode === 'live'}
+              className="min-h-11 text-xs"
+              onClick={handleShowLivePreview}
+              variant={previewMode === 'live' ? 'primary' : 'ghost'}
+            >
+              Aperçu
+            </Button>
+            <Button
+              aria-controls="pm-preview-comparison"
+              aria-pressed={previewMode === 'comparison'}
+              className="min-h-11 text-xs"
+              onClick={handleShowComparison}
+              variant={previewMode === 'comparison' ? 'primary' : 'ghost'}
+            >
+              Avant / après
+            </Button>
+          </fieldset>
+          <div
+            className={`${previewMode === 'live' ? 'block' : 'hidden'} min-h-0 flex-1 overflow-hidden`}
+            id="pm-live-preview"
+          >
             <PreviewFrame
+              agentAvailability={session.project.agentAvailability}
               onFrameRef={previewSelection.attachFrame}
               presetId={presetId}
-              previewUrl={session.previewUrl}
+              previewUrl={previewUrl}
+              sessionStatus={session.status}
             />
           </div>
-          <PreviewToolbar
-            onPresetChange={setPresetId}
-            presetId={presetId}
-            previewUrl={session.previewUrl}
-            selectionControls={selectionControls}
-          />
-          <div className="flex min-h-[62px] flex-none items-center justify-between gap-4 border-t border-white/10 bg-[#16181e] px-5 py-3">
+          {hasOpenedComparison ? (
+            <div
+              className={`${previewMode === 'comparison' ? 'block' : 'hidden'} min-h-0 flex-1 overflow-auto`}
+              id="pm-preview-comparison"
+            >
+              <PreviewComparisonPanel
+                accessToken={accessToken}
+                sessionId={sessionId}
+                previewUrl={previewUrl}
+                presetId={presetId}
+                readOnly={isReadOnly}
+                sessionStatus={session.status}
+                onUseInReview={canCreateReviewRequest ? handleUseComparisonInReview : undefined}
+              />
+            </div>
+          ) : null}
+          {previewMode === 'live' ? (
+            <PreviewToolbar
+              onPresetChange={setPresetId}
+              presetId={presetId}
+              previewUrl={previewUrl}
+              selectionControls={selectionControls}
+            />
+          ) : null}
+          <div className="max-h-[32vh] flex-none overflow-auto">
+            <SessionValidationSummary
+              changedFiles={session.latestDiff?.changedFiles ?? null}
+              sessionStatus={isSending ? 'AGENT_RUNNING' : session.status}
+              validation={session.latestValidation}
+            />
+          </div>
+          <div className="flex min-h-[62px] flex-none items-center justify-between gap-3 border-t border-white/10 bg-[#16181e] px-3 py-2 sm:gap-4 sm:px-5 sm:py-3">
             <div aria-live="polite" className="min-w-0 font-mono text-[12.5px]" role={hasFailed ? 'alert' : 'status'}>
-              <div
-                className={
-                  hasFailed ? 'flex items-center gap-2 text-rose-300' : 'flex items-center gap-2 text-[#5fdf9b]'
-                }
-              >
-                <span
-                  className={hasFailed ? 'size-[7px] rounded-full bg-rose-300' : 'size-[7px] rounded-full bg-[#5fdf9b]'}
-                />
+              <div className={`flex items-center gap-2 ${statusColor}`}>
+                <span aria-hidden="true" className="size-[7px] rounded-full bg-current" />
                 {formatSessionStatus(session.status)}
               </div>
               {hasFailed && session.lastError ? (
@@ -333,6 +444,9 @@ function PmSessionWorkspace({ accessToken, isReadOnly = false, onBack, sessionId
                 </p>
               ) : null}
               {reviewRequestError ? <div className="mt-1 truncate text-rose-300">{reviewRequestError}</div> : null}
+              {!isReadOnly && !session.reviewRequest?.url && reviewBlockedReason ? (
+                <p className="mt-1 max-w-[70ch] font-sans text-xs leading-5 text-[#a3aab8]">{reviewBlockedReason}</p>
+              ) : null}
             </div>
             {session.reviewRequest?.url ? (
               <a
@@ -348,7 +462,11 @@ function PmSessionWorkspace({ accessToken, isReadOnly = false, onBack, sessionId
                 Observation uniquement
               </span>
             ) : (
-              <Button disabled={!canCreateReviewRequest || isCreatingReviewRequest} onClick={handleOpenReviewDialog}>
+              <Button
+                className="shrink-0 whitespace-nowrap max-sm:px-3 max-sm:text-xs"
+                disabled={!canCreateReviewRequest || isCreatingReviewRequest}
+                onClick={handleOpenReviewDialog}
+              >
                 Soumettre la PR
               </Button>
             )}
@@ -357,7 +475,10 @@ function PmSessionWorkspace({ accessToken, isReadOnly = false, onBack, sessionId
       </div>
       {isReviewDialogOpen && !isReadOnly ? (
         <ReviewRequestDialog
+          blockedReason={reviewBlockedReason}
           error={reviewRequestError}
+          initialValues={reviewDraft}
+          initialScreenshots={reviewScreenshots}
           isSubmitting={isCreatingReviewRequest}
           onClose={handleCloseReviewDialog}
           onSubmit={handleCreateReviewRequest}
@@ -367,28 +488,8 @@ function PmSessionWorkspace({ accessToken, isReadOnly = false, onBack, sessionId
   );
 }
 
-function formatSessionStatus(status: string): string {
-  const labels: Record<string, string> = {
-    CREATED: 'Préparation de la session',
-    AGENT_CONNECTING: 'Connexion à l’agent',
-    WORKTREE_CREATING: 'Création de l’espace de travail',
-    DOCKER_STARTING: 'Démarrage de la preview',
-    PREVIEW_STARTING: 'Démarrage de la preview',
-    READY: 'Prêt pour ta demande',
-    AGENT_RUNNING: 'L’agent travaille',
-    CHECKS_RUNNING: 'Vérification du travail',
-    AWAITING_PM_VALIDATION: 'Prêt à être validé',
-    REVIEW_REQUEST_CREATING: 'Création de la pull request',
-    REVIEW_REQUEST_CREATED: 'Pull request créée',
-    CLOSING: 'Fermeture de la session',
-    FAILED: 'La demande a rencontré une erreur',
-    CLOSED: 'Session terminée',
-  };
-
-  return labels[status] ?? status;
-}
-
 function getPromptBlockedReason(status: string, isOnline: boolean): string | null {
+  if (status === 'CLOSED' || status === 'CLOSING') return 'Cette session est terminée ou en cours de fermeture.';
   if (!isOnline) {
     return 'L’agent local est hors ligne. Le développeur doit le redémarrer avant le prochain message.';
   }
@@ -397,14 +498,12 @@ function getPromptBlockedReason(status: string, isOnline: boolean): string | nul
     CREATED: 'La session se prépare avant le premier message.',
     AGENT_CONNECTING: 'Connexion à l’agent en cours.',
     WORKTREE_CREATING: 'Création de l’espace de travail en cours.',
-    DOCKER_STARTING: 'Démarrage de la preview en cours.',
-    PREVIEW_STARTING: 'La preview démarre avant le premier message.',
+    DOCKER_STARTING: 'Démarrage de l’aperçu en cours.',
+    PREVIEW_STARTING: 'L’aperçu démarre avant le premier message.',
     AGENT_RUNNING: 'L’agent traite ton message. Tu peux préparer la suite, puis l’envoyer dès qu’il a terminé.',
     CHECKS_RUNNING: 'L’agent vérifie les modifications. Tu pourras envoyer la suite dès la fin des contrôles.',
     REVIEW_REQUEST_CREATING: 'La pull request est en cours de création.',
     REVIEW_REQUEST_CREATED: 'La pull request a été créée pour cette session.',
-    CLOSING: 'Cette session est en cours de fermeture.',
-    CLOSED: 'Cette session est terminée.',
   };
 
   return reasons[status] ?? null;

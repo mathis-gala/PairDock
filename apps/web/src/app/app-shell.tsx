@@ -23,6 +23,7 @@ export function AppShell() {
               openPmDashboard();
               return;
             }
+            if (route.kind === 'developer-home' && route.agentProjectKey) return;
             openDeveloperHome();
           }}
         />
@@ -63,7 +64,11 @@ export function AppShell() {
           sessionId={route.sessionId}
         />
       ) : (
-        <DeveloperHomePage onSignOut={clearAuthSession} session={authSession} />
+        <DeveloperHomePage
+          agentProjectKey={route.kind === 'developer-home' ? route.agentProjectKey : undefined}
+          onSignOut={clearAuthSession}
+          session={authSession}
+        />
       )}
     </main>
   );

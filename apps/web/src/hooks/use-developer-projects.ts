@@ -4,8 +4,9 @@ import type {
   UpdateDeveloperProjectInput,
   UpdateProjectExecutionDefaultsInput,
 } from '@pairdock/shared-contracts';
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { skipToken, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { createApiClient } from '../api/client.js';
+import { requestProjectReadiness } from '../lib/project-readiness.js';
 
 interface UpdateExecutionDefaultsInput extends UpdateProjectExecutionDefaultsInput {
   projectId: string;
@@ -20,10 +21,31 @@ interface ShareDeveloperProjectInput {
   pmEmail: string;
 }
 
+interface ProjectReadinessRequestState {
+  isPending: boolean;
+  error: string | null;
+}
+
+const emptyReadinessRequests: Record<string, ProjectReadinessRequestState> = {};
+
 export function useDeveloperProjects(accessToken: string) {
   const api = createApiClient(accessToken);
   const queryClient = useQueryClient();
   const queryKey = ['developer-projects', accessToken];
+  const readinessRequestKey = ['developer-project-readiness', accessToken];
+  // Observed while this page is mounted; normal query GC releases an inactive identity's status.
+  const readinessRequests = useQuery({
+    queryKey: readinessRequestKey,
+    queryFn: skipToken,
+    initialData: emptyReadinessRequests,
+  });
+
+  function setReadinessRequest(projectId: string, state: ProjectReadinessRequestState) {
+    queryClient.setQueryData<Record<string, ProjectReadinessRequestState>>(readinessRequestKey, (current = {}) => ({
+      ...current,
+      [projectId]: state,
+    }));
+  }
 
   const projectsQuery = useQuery({
     queryKey,
@@ -53,9 +75,21 @@ export function useDeveloperProjects(accessToken: string) {
   });
 
   const requestReadinessMutation = useMutation({
-    mutationFn: (projectId: string) => api.projects.requestReadinessCheck(projectId),
-    onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey });
+    mutationKey: readinessRequestKey,
+    onMutate: (projectId: string) => {
+      setReadinessRequest(projectId, { isPending: true, error: null });
+    },
+    mutationFn: (projectId: string) => requestProjectReadiness(api.projects, projectId),
+    onSuccess: async (readiness, projectId) => {
+      // An older list request must not overwrite the result we just waited for.
+      await queryClient.cancelQueries({ queryKey });
+      queryClient.setQueryData<DeveloperProjectSummary[]>(queryKey, (currentProjects) =>
+        currentProjects?.map((project) => (project.id === projectId ? { ...project, readiness } : project)),
+      );
+      setReadinessRequest(projectId, { isPending: false, error: null });
+    },
+    onError: (error, projectId) => {
+      setReadinessRequest(projectId, { isPending: false, error: error.message });
     },
   });
 
@@ -89,6 +123,7 @@ export function useDeveloperProjects(accessToken: string) {
     closeSessionMutation,
     createProjectMutation,
     projectsQuery,
+    readinessByProject: readinessRequests.data ?? emptyReadinessRequests,
     requestReadinessMutation,
     shareProjectMutation,
     setupQuery,

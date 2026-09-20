@@ -370,7 +370,16 @@ main {
   margin: 0 auto;
 }
 .connection-summary {
-  padding: 0 0 34px;
+  padding: 0 0 26px;
+}
+.connection-heading {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 16px;
+}
+.connection-summary .actions {
+  margin-top: 20px;
 }
 .connection-summary h1 {
   max-width: 28ch;
@@ -379,7 +388,6 @@ main {
   margin-top: 12px;
 }
 .status-label {
-  float: right;
   display: inline-flex;
   align-items: center;
   gap: 7px;
@@ -390,8 +398,26 @@ main {
 .tools-section,
 .projects-section {
   border-top: 1px solid var(--border);
-  padding-top: 20px;
-  margin-bottom: 32px;
+  padding-top: 14px;
+  margin-bottom: 24px;
+}
+.tools-attention {
+  margin-bottom: 18px;
+}
+.tools-disclosure > summary,
+.machine-settings > summary {
+  padding: 10px 0;
+  color: var(--secondary);
+  font-size: 13px;
+}
+.tools-disclosure[open] > summary {
+  margin-bottom: 8px;
+}
+.machine-settings {
+  border-top: 1px solid var(--border);
+}
+.machine-settings > summary {
+  margin-bottom: 8px;
 }
 .section-heading {
   display: flex;
@@ -410,7 +436,7 @@ main {
   display: flex;
   align-items: center;
   gap: 12px;
-  min-height: 76px;
+  min-height: 66px;
   border-bottom: 1px solid oklch(0.29 0.011 260);
   padding: 12px 0;
 }
@@ -452,7 +478,7 @@ main {
   gap: 8px;
 }
 .project-item {
-  padding: 18px 0;
+  padding: 12px 0 20px;
 }
 .project-item + .project-item {
   border-top: 1px solid oklch(0.29 0.011 260);
@@ -479,8 +505,85 @@ main {
   color: var(--mint);
   border-color: oklch(0.81 0.125 158 / 25%);
 }
+.project-readiness.failed {
+  color: var(--error);
+  border-color: oklch(0.79 0.12 20 / 30%);
+}
+.project-readiness.checking {
+  color: var(--warning);
+  border-color: oklch(0.85 0.115 82 / 30%);
+}
+.project-next-step {
+  font-size: 12px;
+  line-height: 1.6;
+  color: var(--secondary);
+  margin-top: 12px;
+}
 .project-item .inline-actions {
-  margin-top: 16px;
+  margin-top: 12px;
+}
+.readiness-issues,
+.readiness-details > ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+.readiness-issues {
+  margin-top: 18px;
+  border: 1px solid oklch(0.85 0.115 82 / 25%);
+  border-radius: 8px;
+  padding: 0 14px;
+}
+.readiness-check {
+  padding: 12px 0;
+}
+.readiness-check + .readiness-check {
+  border-top: 1px solid oklch(0.29 0.011 260);
+}
+.readiness-check-heading {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 16px;
+}
+.readiness-check-heading strong {
+  font-size: 12px;
+  font-weight: 600;
+}
+.readiness-check > p {
+  color: var(--secondary);
+  font-size: 12px;
+  line-height: 1.65;
+  margin-top: 7px;
+}
+.readiness-remediation {
+  margin-top: 10px;
+}
+.readiness-remediation .inline-actions {
+  margin-top: 0;
+}
+.readiness-details > summary,
+.project-settings > summary,
+.check-diagnostic > summary {
+  font-size: 12px;
+  color: var(--muted);
+  padding: 9px 0;
+}
+.check-diagnostic p {
+  font-size: 11px;
+  line-height: 1.6;
+  color: var(--muted);
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+.check-diagnostic p + p {
+  margin-top: 6px;
+}
+.project-settings .folder-path {
+  margin-top: 0;
+}
+.project-settings > .text-button {
+  margin-left: -8px;
 }
 .preference {
   display: flex;
@@ -519,6 +622,13 @@ main {
 .notice ul {
   margin: 0;
   padding-left: 17px;
+}
+.project-item > .notice {
+  margin-top: 14px;
+  margin-bottom: 0;
+}
+.project-item > .notice p + p {
+  margin-top: 6px;
 }
 .operation-status {
   color: var(--secondary);
@@ -592,8 +702,26 @@ main {
     margin-left: 32px;
   }
   .status-label {
-    float: none;
-    margin: 0 0 14px;
+    margin: 0;
+  }
+  .connection-heading {
+    align-items: start;
+  }
+  .project-item-heading {
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+  .project-readiness {
+    white-space: nowrap;
+  }
+  .readiness-check-heading {
+    flex-wrap: wrap;
+    gap: 4px 12px;
+  }
+  .readiness-details > summary,
+  .project-settings > summary,
+  .check-diagnostic > summary {
+    padding: 12px 0;
   }
   .app-footer {
     margin: 0 24px;

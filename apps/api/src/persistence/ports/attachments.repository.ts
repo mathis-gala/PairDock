@@ -17,6 +17,7 @@ export interface AttachmentsRepository {
   create(input: CreateAttachmentInput): Promise<SessionAttachment>;
   deleteByIds(ids: string[]): Promise<void>;
   findById(id: string): Promise<SessionAttachment | null>;
+  findByIds(ids: string[]): Promise<SessionAttachment[]>;
   listByMessageIds(messageIds: string[]): Promise<SessionAttachment[]>;
   updateMessageId(ids: string[], messageId: string): Promise<void>;
 }

@@ -94,3 +94,39 @@ test('conversation shows an accessible typing indicator only while the agent wri
   assert.equal(workingHtml.match(/pd-typing-dot/g)?.length, 3);
   assert.doesNotMatch(idleHtml, /role="status"/);
 });
+
+test('completed progress is collapsed without hiding the answer or errors', () => {
+  const html = renderToStaticMarkup(
+    createElement(ConversationThread, {
+      isTyping: false,
+      items: [
+        { ...LONG_PATH_ITEM, id: 'step:1', kind: 'progress', text: 'Lecture des fichiers.' },
+        { ...LONG_PATH_ITEM, id: 'step:2', kind: 'progress', text: 'Mise à jour du bouton.' },
+        { ...LONG_PATH_ITEM, id: 'answer', text: 'Le bouton est maintenant plus visible.' },
+        { ...LONG_PATH_ITEM, id: 'error', tone: 'error', text: 'La validation a échoué.' },
+      ],
+    }),
+  );
+
+  assert.match(html, /<summary[^>]*>.*2 étapes de travail/s);
+  assert.doesNotMatch(html, /<details[^>]*\sopen[ =>]/);
+  const afterProgress = html.slice(html.indexOf('</details>') + '</details>'.length);
+  assert.match(afterProgress, /Le bouton est maintenant plus visible\./);
+  assert.match(afterProgress, /La validation a échoué\./);
+});
+
+test('the latest work remains visible while previous steps are collapsed', () => {
+  const html = renderToStaticMarkup(
+    createElement(ConversationThread, {
+      isTyping: true,
+      items: [
+        { ...LONG_PATH_ITEM, id: 'step:1', kind: 'progress', text: 'Lecture des fichiers.' },
+        { ...LONG_PATH_ITEM, id: 'step:2', kind: 'progress', text: 'Vérification du bouton.' },
+      ],
+    }),
+  );
+  assert.match(html, /1 étape de travail/);
+  const afterProgress = html.slice(html.indexOf('</details>') + '</details>'.length);
+  assert.match(afterProgress, /En cours/);
+  assert.match(afterProgress, /Vérification du bouton\./);
+});

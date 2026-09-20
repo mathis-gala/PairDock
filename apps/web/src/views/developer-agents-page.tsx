@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { Button } from '../components/button.js';
 import { AgentPairingPanel } from '../components/developer/agent-pairing-panel.js';
 import { DeveloperAgentRow } from '../components/developer/developer-agent-row.js';
@@ -18,8 +19,19 @@ const navItems = [
 ];
 
 export function DeveloperAgentsPage({ onSignOut, session, userCode }: DeveloperAgentsPageProps) {
+  const [isAddingDevice, setIsAddingDevice] = useState(false);
   const { agentsQuery, revokeMutation } = useDeveloperAgents(session.accessToken);
   const agents = agentsQuery.data ?? [];
+  const hasConnectedAgent = agents.some((agent) => agent.connected && !agent.revokedAt);
+  const showPairing = Boolean(userCode) || isAddingDevice || (agentsQuery.isSuccess && agents.length === 0);
+
+  function handleAddDevice() {
+    setIsAddingDevice(true);
+  }
+
+  function handleCancelAddDevice() {
+    setIsAddingDevice(false);
+  }
 
   function handleRetry() {
     void agentsQuery.refetch();
@@ -38,7 +50,34 @@ export function DeveloperAgentsPage({ onSignOut, session, userCode }: DeveloperA
             Associe l’application PairDock à ton compte pour utiliser tes dépôts locaux dans tes projets.
           </p>
         </header>
-        <AgentPairingPanel accessToken={session.accessToken} key={userCode ?? 'new'} userCode={userCode} />
+        {hasConnectedAgent && !userCode ? (
+          <div className="mb-7 flex flex-wrap items-center justify-between gap-4 border-y border-white/10 py-5">
+            <div className="max-w-prose text-sm leading-6 text-[#aeb5c3]">
+              <p className="font-semibold text-[#eef0f4]">Ton appareil est connecté.</p>
+              <p>Ajoute un dépôt dans l’application PairDock, puis choisis son modèle dans Projets.</p>
+            </div>
+            <a
+              className="inline-flex min-h-11 items-center rounded-[10px] bg-[#5fdf9b] px-4 text-sm font-semibold text-[#0c2014] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#5fdf9b]/50"
+              href="#/developer"
+            >
+              Continuer vers mes projets
+            </a>
+          </div>
+        ) : null}
+        {showPairing ? (
+          <div>
+            <AgentPairingPanel accessToken={session.accessToken} key={userCode ?? 'new'} userCode={userCode} />
+            {isAddingDevice && !userCode ? (
+              <Button className="mt-3" onClick={handleCancelAddDevice} variant="ghost">
+                Annuler
+              </Button>
+            ) : null}
+          </div>
+        ) : (
+          <Button onClick={handleAddDevice} variant="secondary">
+            Associer un appareil
+          </Button>
+        )}
         <section aria-labelledby="developer-agents-title" className="mt-9">
           <h2 className="font-['Space_Grotesk'] text-lg font-semibold" id="developer-agents-title">
             Mes appareils

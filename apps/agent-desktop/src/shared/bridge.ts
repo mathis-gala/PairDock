@@ -25,7 +25,7 @@ export interface DesktopBridge {
   start(): Promise<DesktopAgentSnapshot>;
   stop(): Promise<DesktopAgentSnapshot>;
   openPairing(): Promise<void>;
-  openProjects(): Promise<void>;
+  openProjects(agentProjectKey?: string): Promise<void>;
   openToolHelp(tool: 'git' | 'docker' | 'codex'): Promise<void>;
   openDocker(): Promise<void>;
   getPreferences(): Promise<DesktopPreferences>;

@@ -26,9 +26,15 @@ export function DesktopApp({ bridge }: DesktopAppProps) {
   if (snapshot?.connection) currentStep = 1;
   if (snapshot?.projects.length && !draft) currentStep = 2;
   if (showConnection) currentStep = 0;
-  const showSteps = Boolean(snapshot?.initialized) && snapshot?.status !== 'online';
+  const showSteps = Boolean(snapshot?.initialized) && (showConnection || snapshot?.projects.length === 0);
+  const actionError = agent.readinessOperation ? null : agent.action.error?.message;
+  const readinessError = formatDesktopError(agent.readinessOperation?.error);
+  const snapshotError = formatDesktopError(snapshot?.error);
   const error = formatDesktopError(
-    agent.action.error?.message ?? agent.snapshot.error?.message ?? agent.preferences.error?.message ?? snapshot?.error,
+    actionError ??
+      agent.snapshot.error?.message ??
+      agent.preferences.error?.message ??
+      (snapshotError === readinessError ? null : snapshotError),
   );
 
   function handleChooseFolder() {
@@ -175,6 +181,7 @@ export function DesktopApp({ bridge }: DesktopAppProps) {
         onChooseFolder={handleChooseFolder}
         onEditProject={handleEditProject}
         onReconnect={handleReconnect}
+        readinessOperations={agent.readinessOperations}
         run={agent.run}
         snapshot={snapshot}
       />
@@ -219,7 +226,7 @@ export function DesktopApp({ bridge }: DesktopAppProps) {
             {error}
           </div>
         )}
-        {busy && (
+        {busy && !agent.readinessOperation && (
           <p className="operation-status" role="status">
             {agent.action.variables?.label}…
           </p>

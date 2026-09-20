@@ -3,6 +3,7 @@ import { randomUUID } from 'node:crypto';
 import test from 'node:test';
 import type { INestApplication } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
+import { buildPreviewSelectionPrompt } from '@pairdock/shared-contracts';
 import { AppModule } from '../../../../../apps/api/src/app.module.js';
 import { AuthTokenService } from '../../../../../apps/api/src/auth/auth-token.service.js';
 import { DatabaseClient } from '../../../../../apps/api/src/persistence/client.js';
@@ -165,6 +166,40 @@ test('PM browses only their sessions while the developer sees every session in o
       status: 'draft',
     },
   });
+  await prisma.message.createMany({
+    data: [
+      {
+        sessionId: sharedSession.id,
+        role: 'assistant',
+        content: 'Bienvenue dans cette session.',
+        createdAt: new Date('2026-09-20T10:00:00Z'),
+      },
+      {
+        sessionId: sharedSession.id,
+        userId: pm.user.id,
+        role: 'pm',
+        content: buildPreviewSelectionPrompt('Rends le bouton de commande plus visible.', [
+          {
+            tagName: 'button',
+            selector: '#buy',
+            text: 'Commander',
+            html: '<button>Commander</button>',
+            url: 'https://preview.example.test/',
+            rect: { x: 0, y: 0, width: 60, height: 40 },
+            viewport: { width: 1280, height: 900 },
+          },
+        ]),
+        createdAt: new Date('2026-09-20T10:01:00Z'),
+      },
+      {
+        sessionId: sharedSession.id,
+        userId: pm.user.id,
+        role: 'pm',
+        content: 'Change aussi la couleur.',
+        createdAt: new Date('2026-09-20T10:02:00Z'),
+      },
+    ],
+  });
 
   const response = await fetch(`${baseUrl}/projects/shared/sessions`, {
     headers: { authorization: `Bearer ${pm.accessToken}` },
@@ -177,6 +212,7 @@ test('PM browses only their sessions while the developer sees every session in o
       id: sharedSession.id,
       projectId: sharedProject.id,
       projectName: 'Shared TCG',
+      title: 'Rends le bouton de commande plus visible.',
       repoFullName: 'mathis/tcg-collection',
       status: 'REVIEW_REQUEST_CREATED',
       reviewRequest: {
@@ -191,6 +227,13 @@ test('PM browses only their sessions while the developer sees every session in o
   assert.ok(!history.some((session) => session.id === privateSession.id));
   assert.ok(!history.some((session) => session.id === otherPmSession.id));
   assert.ok(!history.some((session) => session.id === developerSession.id));
+
+  await prisma.message.deleteMany({ where: { sessionId: sharedSession.id } });
+  const emptyHistoryResponse = await fetch(`${baseUrl}/projects/shared/sessions`, {
+    headers: { authorization: `Bearer ${pm.accessToken}` },
+  });
+  const emptyHistory = await parseJsonResponse(emptyHistoryResponse, sharedSessionHistoryResponseSchema);
+  assert.equal(emptyHistory[0]?.title, null);
 
   const authTokenService = app.get(AuthTokenService);
   const developerToken = authTokenService.issue({

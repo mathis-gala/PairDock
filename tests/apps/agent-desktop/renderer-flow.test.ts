@@ -5,8 +5,11 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { createElement } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { DesktopApp } from '../../../apps/agent-desktop/src/renderer/app.js';
+import { DesktopProjectItem } from '../../../apps/agent-desktop/src/renderer/desktop-project-item.js';
 import { ProjectForm } from '../../../apps/agent-desktop/src/renderer/project-form.js';
 import {
+  checkDesktopProject,
+  type DesktopReadinessOperation,
   initializeDesktopProfile,
   readDesktopSnapshot,
 } from '../../../apps/agent-desktop/src/renderer/use-desktop-agent.js';
@@ -103,6 +106,144 @@ function renderApp(state: DesktopAgentSnapshot): string {
     client.clear();
   }
 }
+
+function renderProject(state: DesktopAgentSnapshot, operation: DesktopReadinessOperation | null = null): string {
+  return renderToStaticMarkup(
+    createElement(DesktopProjectItem, {
+      project,
+      snapshot: state,
+      bridge: bridgeFor(state),
+      busy: operation?.status === 'checking',
+      configurationDisabled: state.running || state.busy,
+      readinessOperation: operation,
+      run: () => {},
+      onEditProject: () => {},
+      onReconnect: () => {},
+    }),
+  );
+}
+
+test('healthy tools are collapsed while unhealthy tools retain visible recovery controls', () => {
+  const healthy = renderApp(snapshot());
+  const details = healthy.match(/<details([^>]*)><summary><span>Outils prêts/);
+  assert.ok(details, 'Healthy prerequisites have an accessible details disclosure.');
+  assert.doesNotMatch(details[1], /\bopen\b/);
+  assert.doesNotMatch(healthy, /Outils à préparer/);
+  const unhealthy = renderApp(
+    snapshot({ tools: { ...tools, codex: { ...tools.codex, authenticated: false } }, models: [] }),
+  );
+  assert.match(unhealthy, /Outils à préparer/);
+  assert.ok(unhealthy.indexOf('Connecter Codex') < unhealthy.indexOf('Autres outils'));
+});
+
+test('project checks distinguish missing, pending and failed attempts without retaining stale success', () => {
+  assert.match(renderProject(snapshot()), /Non vérifié/);
+  const ready = snapshot({
+    status: 'online',
+    running: true,
+    readiness: { [project.key]: { projectKey: project.key, ok: true, checks: [] } },
+  });
+  const success = renderProject(ready);
+  assert.match(success, />Prêt</);
+  assert.match(success, /Configurer le partage/);
+  const pending = renderProject(ready, { projectKey: project.key, status: 'checking', error: null });
+  assert.match(pending, /Vérification en cours/);
+  assert.doesNotMatch(pending, />Prêt<|Configurer le partage/);
+  const failed = renderProject(ready, {
+    projectKey: project.key,
+    status: 'failed',
+    error: 'Repository path cannot be read.',
+  });
+  assert.match(failed, /Vérification échouée/);
+  assert.match(failed, /Repository path cannot be read/);
+  assert.doesNotMatch(failed, />Prêt<|Configurer le partage/);
+});
+
+test('a project-specific check does not label another project as checking', () => {
+  const html = renderProject(snapshot(), { projectKey: 'another-project', status: 'checking', error: null });
+  assert.match(html, /Non vérifié/);
+  assert.doesNotMatch(html, /Vérification en cours/);
+});
+
+test('required failures expose recovery actions and preserve the diagnostic', () => {
+  const state = snapshot({
+    status: 'online',
+    running: true,
+    readiness: {
+      [project.key]: {
+        projectKey: project.key,
+        ok: false,
+        checks: [
+          {
+            key: 'docker',
+            status: 'failed',
+            required: true,
+            message: 'Docker daemon unavailable',
+            remediation: 'Start Docker Desktop.',
+          },
+          {
+            key: 'project-commands',
+            status: 'failed',
+            required: true,
+            message: 'Required project tools are unavailable: pnpm.',
+          },
+        ],
+      },
+    },
+  });
+  const html = renderProject(state);
+  assert.match(html, /Ouvre Docker Desktop et attends son démarrage/);
+  assert.match(html, />Ouvrir Docker</);
+  assert.match(html, /Diagnostic détaillé/);
+  assert.match(html, /Required project tools are unavailable: pnpm/);
+  assert.match(html, /<button[^>]*disabled=""[^>]*>Configurer les scripts<\/button>/);
+  assert.doesNotMatch(html, /Configurer le partage/);
+});
+
+test('optional readiness warnings preserve sharing once the project is online and ready', () => {
+  const state = snapshot({
+    status: 'online',
+    running: true,
+    readiness: {
+      [project.key]: {
+        projectKey: project.key,
+        ok: true,
+        checks: [
+          { key: 'preview-tunnel', status: 'warning', required: false, message: 'Preview sharing is optional.' },
+        ],
+      },
+    },
+  });
+  const html = renderProject(state);
+  assert.match(html, />Prêt</);
+  assert.match(html, /Configurer le partage/);
+  assert.match(html, /Résultats et points facultatifs/);
+  assert.match(html, /Facultatif/);
+  assert.doesNotMatch(html, />À corriger</);
+});
+
+test('project recovery refreshes tool discovery before running project readiness', async () => {
+  const calls: string[] = [];
+  const state = snapshot();
+  const bridge = bridgeFor(state, {
+    checkTools: async () => {
+      calls.push('tools');
+      return state;
+    },
+    runReadiness: async (key) => {
+      calls.push(`readiness:${key}`);
+      return state;
+    },
+  });
+  await checkDesktopProject(bridge, project.key);
+  assert.deepEqual(calls, ['tools', `readiness:${project.key}`]);
+  calls.length = 0;
+  bridge.checkTools = async () => {
+    throw new Error('Tool discovery failed');
+  };
+  await assert.rejects(checkDesktopProject(bridge, project.key), /Tool discovery failed/);
+  assert.deepEqual(calls, []);
+});
 
 test('a paired Mac resumes its configured projects without restarting enrollment', () => {
   const html = renderApp(snapshot());
