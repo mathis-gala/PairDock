@@ -5,6 +5,7 @@ import { classNames } from '../../lib/class-names.js';
 import type { SessionConversationItem } from '../../lib/session-conversation.js';
 import { sessionQueryKeys } from '../../lib/session-query-keys.js';
 import { ImageLightbox } from '../image-lightbox.js';
+import { ConversationSelections } from './conversation-selections.js';
 
 interface ConversationThreadProps {
   accessToken?: string;
@@ -68,6 +69,9 @@ export function ConversationThread({ accessToken, isTyping, items, sessionId }: 
                 </div>
               ) : item.text ? (
                 <div>{item.text}</div>
+              ) : null}
+              {item.role === 'user' && item.selections?.length ? (
+                <ConversationSelections selections={item.selections} />
               ) : null}
               {item.attachments?.length && accessToken && sessionId ? (
                 <div className={classNames('grid gap-2', item.attachments.length > 1 ? 'grid-cols-2' : 'grid-cols-1')}>

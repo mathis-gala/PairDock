@@ -1115,8 +1115,8 @@
     "semantic_hash": ""
   },
   "README.md": {
-    "mtime": 1789909666.1779954,
-    "ast_hash": "f47e0460023d9532f83f16c8dbaa4117",
+    "mtime": 1789912965.1892707,
+    "ast_hash": "32b146fe4dcf66e30110bcf765a4de12",
     "semantic_hash": ""
   },
   "apps/web/index.html": {
@@ -1365,18 +1365,18 @@
     "semantic_hash": ""
   },
   "apps/web/src/components/pm-session/conversation-thread.tsx": {
-    "mtime": 1785090356.5874324,
-    "ast_hash": "3a3d807d754ace8ffe5abd0e5aad021b",
+    "mtime": 1789912965.1264877,
+    "ast_hash": "60e2b37778e3afcb1a57ef2fecde6101",
     "semantic_hash": ""
   },
   "apps/web/src/lib/session-conversation.ts": {
-    "mtime": 1785090356.589678,
-    "ast_hash": "44882cbeb41dd7df3611ef6630f8f222",
+    "mtime": 1789912999.8980742,
+    "ast_hash": "b03a829b145084812c3f8f608528e463",
     "semantic_hash": ""
   },
   "tests/apps/web/unit/session-conversation.test.ts": {
-    "mtime": 1785090356.6421487,
-    "ast_hash": "8fd3a9c6e66c3190ccb30c018112dc04",
+    "mtime": 1789912999.8978372,
+    "ast_hash": "cdef4d390cc11e0996ceb6b993fed35d",
     "semantic_hash": ""
   },
   "apps/web/src/components/pm-session/review-request-dialog.tsx": {
@@ -1630,8 +1630,8 @@
     "semantic_hash": ""
   },
   "tests/apps/web/unit/conversation-thread.test.tsx": {
-    "mtime": 1785090356.640598,
-    "ast_hash": "babd95d87c74d1130b383fb162102beb",
+    "mtime": 1789913568.1165524,
+    "ast_hash": "d9f2f1e7040d4ad92d107a35e5623f48",
     "semantic_hash": ""
   },
   "apps/api/prisma/migrations/20260726170000_add_attachments/migration.sql": {
@@ -1840,8 +1840,8 @@
     "semantic_hash": ""
   },
   "apps/web/src/lib/preview-selection-prompt.ts": {
-    "mtime": 1789909080.8626127,
-    "ast_hash": "f3e1a59921df8f310b8a8d8791222927",
+    "mtime": 1789913322.8298266,
+    "ast_hash": "f8c84befb11c5be1a0d5438c4bbf05a7",
     "semantic_hash": ""
   },
   "packages/local-agent/src/preview/preview-picker-proxy.ts": {
@@ -1870,8 +1870,8 @@
     "semantic_hash": ""
   },
   "tests/apps/web/unit/preview-selection-prompt.test.ts": {
-    "mtime": 1789909080.8626308,
-    "ast_hash": "0abce19acf5139951bea2c4c7409453d",
+    "mtime": 1789913350.6999836,
+    "ast_hash": "116cf7fea8f610eab0875421fe2062e8",
     "semantic_hash": ""
   },
   "tests/packages/local-agent/integration/preview-picker-proxy.integration.test.ts": {
@@ -1882,6 +1882,11 @@
   "tests/packages/local-agent/integration/preview-picker-script.integration.test.ts": {
     "mtime": 1789909156.0474455,
     "ast_hash": "6bd0b0ace37168afc56ea4b4d018141a",
+    "semantic_hash": ""
+  },
+  "apps/web/src/components/pm-session/conversation-selections.tsx": {
+    "mtime": 1789913111.050947,
+    "ast_hash": "b7fbd37d82ff009ff4a42c9938de9690",
     "semantic_hash": ""
   }
 }

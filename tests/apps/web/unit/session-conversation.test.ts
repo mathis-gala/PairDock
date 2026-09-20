@@ -1,8 +1,37 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
+import { buildPreviewSelectionPrompt } from '../../../../apps/web/src/lib/preview-selection-prompt.js';
 import { buildSessionConversation } from '../../../../apps/web/src/lib/session-conversation.js';
 
 const sessionId = '11111111-1111-4111-8111-111111111111';
+
+const selection = {
+  tagName: 'button',
+  selector: '#start-trial',
+  text: 'Commencer',
+  html: '<button id="start-trial">Commencer</button>',
+  url: 'https://preview.example.test/',
+  rect: { x: 10, y: 20, width: 100, height: 40 },
+  viewport: { width: 1280, height: 900 },
+};
+
+test('sent preview selections become attachments in the conversation while the stored prompt stays intact', () => {
+  const content = buildPreviewSelectionPrompt('Rends ce bouton plus visible.', [selection]);
+  const message = {
+    id: '22222222-2222-4222-8222-222222222222',
+    sessionId,
+    userId: '33333333-3333-4333-8333-333333333333',
+    role: 'pm',
+    content,
+    attachments: [],
+    createdAt: '2026-07-18T10:00:00.000Z',
+  };
+  const [item] = buildSessionConversation([message], []);
+
+  assert.equal(item?.text, 'Rends ce bouton plus visible.');
+  assert.deepEqual(item?.selections, [selection]);
+  assert.equal(message.content, content);
+});
 
 test('PM conversation contains human messages and agent replies, not technical events', () => {
   const items = buildSessionConversation(
@@ -226,4 +255,24 @@ test('failed validation becomes an actionable PM-facing conversation message', (
   assert.match(items[0]?.text ?? '', /validation.*tests/i);
   assert.match(items[0]?.text ?? '', /Cannot find module '.prisma\/client\/default'/);
   assert.match(items[0]?.text ?? '', /renvoyer un message/i);
+});
+
+test('selection-only messages remain visible while agent replies keep their complete text', () => {
+  const content = buildPreviewSelectionPrompt('', [selection]).trim();
+  const messages = ['pm', 'assistant'].map((role, index) => ({
+    id: `selection-message-${role}`,
+    sessionId,
+    userId: null,
+    role,
+    content,
+    attachments: [],
+    createdAt: `2026-07-18T10:00:0${index}.000Z`,
+  }));
+  const items = buildSessionConversation(messages, []);
+
+  assert.equal(items.length, 2);
+  assert.equal(items[0]?.text, '');
+  assert.deepEqual(items[0]?.selections, [selection]);
+  assert.equal(items[1]?.text, content);
+  assert.equal(items[1]?.selections, undefined);
 });

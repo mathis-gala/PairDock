@@ -330,6 +330,9 @@ bounded text and a sanitized HTML excerpt, plus element and viewport dimensions.
 Form values and editable content are excluded. The excerpt identifies the rendered
 element; it does not automatically locate a React component or source file.
 Selections are saved as context in the sent message, not as persistent page comments.
+In the conversation, this context appears as numbered selection badges beside the
+request. Expand a badge to inspect its text, page and selector; the complete context
+is still sent to the agent. Previously sent selections use the same compact display.
 
 Managed preview tunnels insert the picker through a local proxy without editing the
 previewed repository. Restart the local agent to load this feature; restored sessions
