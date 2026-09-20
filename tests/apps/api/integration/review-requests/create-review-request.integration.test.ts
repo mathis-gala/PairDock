@@ -324,7 +324,7 @@ class InMemoryRepositories {
     this.sessions = {
       create: async () => session,
       findById: async (id: string) => (id === session.id ? this.currentSession : null),
-      listByProjectIds: async () => [this.currentSession],
+      listByProjectIds: async () => [{ ...this.currentSession, firstPrompt: null }],
       updateStatus: async (input) => {
         this.callOrder.push('persist-session-status');
         this.currentSession = {

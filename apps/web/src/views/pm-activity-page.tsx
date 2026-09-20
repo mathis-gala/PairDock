@@ -9,6 +9,7 @@ import { StatusBadge } from '../components/status-badge.js';
 import { useAuthSession } from '../hooks/use-auth-session.js';
 import { useSharedSessionHistory } from '../hooks/use-shared-session-history.js';
 import { filterSharedSessionHistory, type SessionHistoryStatusFilter } from '../lib/session-history-filters.js';
+import { formatSessionCreatedAt, formatSessionStatus } from '../lib/session-labels.js';
 
 interface PmActivityPageProps {
   accessToken: string;
@@ -161,10 +162,18 @@ function SessionHistoryRow({
     <article className="grid gap-4 border-b border-white/10 p-4 last:border-b-0 lg:grid-cols-[1fr_auto] lg:items-center">
       <div className="min-w-0">
         <div className="flex flex-wrap items-center gap-2">
-          <h2 className="truncate text-sm font-semibold text-[#eef0f4]">{session.projectName}</h2>
-          <StatusBadge tone={session.status === 'FAILED' ? 'danger' : 'neutral'}>{session.status}</StatusBadge>
+          <h2 className="min-w-0 text-sm font-semibold text-[#eef0f4] [overflow-wrap:anywhere]">
+            {session.title || 'Session sans titre'}
+          </h2>
+          <StatusBadge tone={session.status === 'FAILED' ? 'danger' : 'neutral'}>
+            {formatSessionStatus(session.status)}
+          </StatusBadge>
         </div>
-        <p className="mt-1 truncate font-mono text-xs text-[#7d8493]">{session.repoFullName}</p>
+        <p className="mt-1 flex flex-wrap gap-x-2 gap-y-1 text-xs text-[#8b92a1]">
+          <span>{session.projectName}</span>
+          <span aria-hidden="true">·</span>
+          <time dateTime={session.createdAt}>{formatSessionCreatedAt(session.createdAt)}</time>
+        </p>
       </div>
       <div className="flex flex-wrap gap-2 lg:justify-end">
         <Button onClick={handleOpenSession} variant="secondary">

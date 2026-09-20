@@ -45,7 +45,7 @@ const setup: DeveloperProjectSetup = {
   ],
 };
 
-test('V1: developer project form renders setup-driven repository, agent, and model selectors', () => {
+test('a single configured local project is proposed with real values and an editable model', () => {
   const html = renderToStaticMarkup(
     createElement(DeveloperProjectForm, {
       isSetupLoading: false,
@@ -55,13 +55,17 @@ test('V1: developer project form renders setup-driven repository, agent, and mod
     }),
   );
 
-  assert.match(html, /Sélectionner un dépôt/);
+  assert.match(html, /value="PairDock"/);
+  assert.match(html, /value="mathis-gala\/PairDock" selected=""/);
+  assert.match(html, /value="pairdock" selected=""/);
+  assert.match(html, /value="agent\/gpt-5" selected=""/);
   assert.match(html, /mathis-gala\/PairDock/);
   assert.match(html, /id="developer-project-agent-project"/);
   assert.match(html, /id="developer-project-model"/);
   assert.match(html, /id="developer-project-reasoning"/);
   assert.doesNotMatch(html, /codex-cli/);
   assert.doesNotMatch(html, /Codex/);
+  assert.doesNotMatch(html, /PairDock local project|Local project controlled/);
 });
 
 test('V1: developer project form shows local agent empty state', () => {
@@ -80,13 +84,24 @@ test('V1: developer project form shows local agent empty state', () => {
   assert.doesNotMatch(html, /pairdock-agent start|pairdock.yml|Seed local/);
 });
 
-test('V1: dependent project selectors stay explorable while explaining their prerequisite', () => {
+test('ambiguous repositories remain an explicit choice with prerequisite guidance', () => {
   const html = renderToStaticMarkup(
     createElement(DeveloperProjectForm, {
       isSetupLoading: false,
       isSubmitting: false,
       onSubmit: async () => undefined,
-      setup,
+      setup: {
+        repositories: [...setup.repositories, { ...setup.repositories[0], fullName: 'team/another', name: 'Another' }],
+        agents: [
+          {
+            ...setup.agents[0],
+            projects: [
+              ...setup.agents[0].projects,
+              { ...setup.agents[0].projects[0], key: 'another', repoFullName: 'team/another' },
+            ],
+          },
+        ],
+      },
     }),
   );
   const branchSelect = html.match(/<select[^>]*id="developer-project-branch"[^>]*>/)?.[0] ?? '';
@@ -97,5 +112,28 @@ test('V1: dependent project selectors stay explorable while explaining their pre
   assert.doesNotMatch(agentSelect, /\sdisabled(?:=|\s|>)/);
   assert.doesNotMatch(modelSelect, /\sdisabled(?:=|\s|>)/);
   assert.match(html, /Choisis d’abord un dépôt/);
-  assert.match(html, /Choisis d’abord un projet agent/);
+  assert.match(html, /Choisis d’abord un dossier local/);
+});
+
+test('device names distinguish local folders without exposing agent identifiers', () => {
+  const html = renderToStaticMarkup(
+    createElement(DeveloperProjectForm, {
+      devices: [
+        {
+          agentId: 'local-agent-1',
+          deviceName: 'Mac de Camille',
+          connected: true,
+          pairedAt: '2026-09-20',
+          lastSeenAt: '2026-09-20',
+          revokedAt: null,
+        },
+      ],
+      isSetupLoading: false,
+      isSubmitting: false,
+      onSubmit: async () => undefined,
+      setup,
+    }),
+  );
+  assert.match(html, /PairDock · Mac de Camille/);
+  assert.doesNotMatch(html, /local-agent-1/);
 });

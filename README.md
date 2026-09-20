@@ -163,6 +163,8 @@ bun run dev:web
 
 PairDock accepts up to four PNG, JPEG, or WebP screenshots per chat message or draft PR, with a 5 MB limit per file. PostgreSQL stores metadata only.
 
+The PM session’s **Avant / après** view keeps private, manually imported PNG comparisons with the session. Add a baseline, then an after image of the same page, viewport, zoom and scroll position. PairDock validates PNG content and equal pixel dimensions (up to 4096 × 4096 and 5 MB per capture); page and viewport are declared by the uploader. A baseline cannot be replaced; updating the after image preserves the previous capture. Each session supports 20 comparisons and 80 captures. Read-only observers can view them; imports require an authorized participant and a promptable session. Choosing **Préparer la PR avec ces captures** adds both images to the editable PR form, where they can be removed before publication. Captures are not taken automatically.
+
 Local development needs no cloud configuration. Files default to `~/.pairdock/attachments`. Override this path with `PAIRDOCK_ATTACHMENT_STORAGE_PATH`; set `PAIRDOCK_PUBLIC_API_URL` when the API's externally reachable base URL is not `http://localhost:3000`. Production fails to start without complete R2 configuration so durable PR images cannot silently fall back to an ephemeral container filesystem.
 
 For deployment, create two Cloudflare R2 buckets:

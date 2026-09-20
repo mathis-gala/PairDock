@@ -75,6 +75,7 @@ export const sharedProjectListResponseSchema = z.array(
 export const sharedSessionHistoryResponseSchema = z.array(
   z.object({
     id: z.string(),
+    title: z.string().nullable().optional(),
     projectId: z.string(),
     projectName: z.string(),
     repoFullName: z.string(),

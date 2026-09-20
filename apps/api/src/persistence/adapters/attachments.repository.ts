@@ -40,6 +40,15 @@ export class AttachmentsRepositoryAdapter implements AttachmentsRepository {
     return record ? mapAttachment(record) : null;
   }
 
+  async findByIds(ids: string[]): Promise<SessionAttachment[]> {
+    if (ids.length === 0) {
+      return [];
+    }
+
+    const records = await this.prisma.attachment.findMany({ where: { id: { in: ids } } });
+    return records.map(mapAttachment);
+  }
+
   async listByMessageIds(messageIds: string[]): Promise<SessionAttachment[]> {
     if (messageIds.length === 0) {
       return [];

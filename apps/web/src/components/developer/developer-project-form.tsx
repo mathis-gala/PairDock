@@ -1,9 +1,8 @@
-import type {
-  CreateDeveloperProjectInput,
-  DeveloperProjectSetup,
-  DeveloperSetupAgentModel,
-} from '@pairdock/shared-contracts';
+import type { CreateDeveloperProjectInput, DeveloperAgent, DeveloperProjectSetup } from '@pairdock/shared-contracts';
 import { type ChangeEvent, type FormEvent, useState } from 'react';
+import { authApi } from '../../api/client.js';
+import { rememberDeveloperAgentReturn } from '../../hooks/use-auth-session.js';
+import { type AgentProjectOption, resolveProjectCreation } from '../../lib/project-creation.js';
 import { Button } from '../button.js';
 import { SectionCard } from '../section-card.js';
 import { SelectInput } from '../select-input.js';
@@ -11,183 +10,146 @@ import { TextArea } from '../text-area.js';
 import { TextInput } from '../text-input.js';
 
 interface DeveloperProjectFormProps {
+  devices?: DeveloperAgent[];
   isSetupLoading: boolean;
   isSubmitting: boolean;
+  preferredAgentProjectKey?: string;
   onSubmit: (input: CreateDeveloperProjectInput) => Promise<void>;
   setup: DeveloperProjectSetup | null;
 }
 
-interface ProjectFormState {
-  name: string;
-  description: string;
-  repoFullName: string;
-  defaultBranch: string;
-  agentProjectKey: string;
-  defaultModelId: string;
-  defaultReasoningEffort: string;
-  pmCanStartSessions: boolean;
-}
-
-interface AgentProjectOption {
-  agentId: string;
-  key: string;
-  name: string;
-  repoFullName: string;
-  models?: string[];
-  agentModels: DeveloperSetupAgentModel[];
-}
-
-export function DeveloperProjectForm({ isSetupLoading, isSubmitting, onSubmit, setup }: DeveloperProjectFormProps) {
-  const [state, setState] = useState<ProjectFormState>({
-    name: 'PairDock local project',
-    description: 'Local project controlled by the developer dashboard.',
-    repoFullName: '',
-    defaultBranch: '',
-    agentProjectKey: '',
-    defaultModelId: '',
-    defaultReasoningEffort: '',
-    pmCanStartSessions: true,
-  });
-  const repositories = setup?.repositories ?? [];
-  const selectedRepository = repositories.find((repository) => repository.fullName === state.repoFullName) ?? null;
-  const allAgentProjects = (setup?.agents ?? []).flatMap((agent) =>
-    agent.projects.map((project) => ({
-      agentId: agent.agentId,
-      key: project.key,
-      name: project.name,
-      repoFullName: project.repoFullName,
-      models: project.models,
-      agentModels: agent.models,
-    })),
-  );
-  const matchingAgentProjects = allAgentProjects.filter((project) => project.repoFullName === state.repoFullName);
-  const selectedAgentProject = matchingAgentProjects.find((project) => project.key === state.agentProjectKey) ?? null;
-  const modelOptions = selectedAgentProject ? resolveModelOptions(selectedAgentProject) : [];
-  const selectedModel = modelOptions.find((model) => model.id === state.defaultModelId) ?? null;
-  const reasoningOptions = selectedModel?.reasoningEfforts?.length
-    ? selectedModel.reasoningEfforts
-    : [{ id: 'medium', label: 'Medium' }];
+export function DeveloperProjectForm({
+  devices = [],
+  isSetupLoading,
+  isSubmitting,
+  onSubmit,
+  preferredAgentProjectKey,
+  setup,
+}: DeveloperProjectFormProps) {
+  const [edits, setEdits] = useState<Partial<CreateDeveloperProjectInput>>({});
+  const [submitError, setSubmitError] = useState<string | null>(null);
+  const {
+    values: state,
+    repositories,
+    selectedRepository,
+    selectedAgentProject,
+    matchingAgentProjects,
+    modelOptions,
+    reasoningOptions,
+    canCreate,
+    handoffUnavailable,
+  } = resolveProjectCreation(setup, edits, preferredAgentProjectKey);
   const branchPlaceholder = selectedRepository ? 'Sélectionner une branche' : 'Choisis d’abord un dépôt';
-  const agentProjectPlaceholder = !selectedRepository
-    ? 'Choisis d’abord un dépôt'
-    : matchingAgentProjects.length === 0
-      ? 'Aucun projet agent disponible pour ce dépôt'
-      : 'Sélectionner un projet agent';
-  const modelPlaceholder = !selectedAgentProject
-    ? 'Choisis d’abord un projet agent'
-    : modelOptions.length === 0
-      ? 'Aucun modèle disponible pour ce projet'
-      : 'Sélectionner un modèle';
-  const createDisabled =
-    isSetupLoading ||
-    isSubmitting ||
-    !state.name.trim() ||
-    !selectedRepository ||
-    !state.defaultBranch ||
-    !selectedAgentProject ||
-    !state.defaultModelId ||
-    !state.defaultReasoningEffort;
+  let agentProjectPlaceholder = 'Sélectionner un dossier local';
+  if (!selectedRepository) agentProjectPlaceholder = 'Choisis d’abord un dépôt';
+  else if (matchingAgentProjects.length === 0) agentProjectPlaceholder = 'Ajoute ce dépôt dans l’application PairDock';
+  let modelPlaceholder = 'Sélectionner un modèle';
+  if (!selectedAgentProject) modelPlaceholder = 'Choisis d’abord un dossier local';
+  else if (modelOptions.length === 0) modelPlaceholder = 'Aucun modèle disponible sur cet appareil';
+  const createDisabled = isSetupLoading || isSubmitting || !canCreate;
 
   function handleNameChange(event: ChangeEvent<HTMLInputElement>) {
-    setState((current) => ({ ...current, name: event.target.value }));
+    setEdits((current) => ({ ...current, name: event.target.value }));
   }
 
   function handleDescriptionChange(event: ChangeEvent<HTMLTextAreaElement>) {
-    setState((current) => ({ ...current, description: event.target.value }));
+    setEdits((current) => ({ ...current, description: event.target.value }));
   }
 
   function handleRepositoryChange(event: ChangeEvent<HTMLSelectElement>) {
     const repoFullName = event.target.value;
-    const repository = repositories.find((candidate) => candidate.fullName === repoFullName);
-    setState((current) => ({
-      ...current,
-      repoFullName,
-      defaultBranch: repository?.defaultBranch ?? repository?.branches[0] ?? '',
-      agentProjectKey: '',
-      defaultModelId: '',
-      defaultReasoningEffort: '',
-    }));
+    setEdits(({ name, description, pmCanStartSessions }) => ({ name, description, pmCanStartSessions, repoFullName }));
   }
 
   function handleBranchChange(event: ChangeEvent<HTMLSelectElement>) {
-    setState((current) => ({ ...current, defaultBranch: event.target.value }));
+    setEdits((current) => ({ ...current, defaultBranch: event.target.value }));
   }
 
   function handleAgentProjectChange(event: ChangeEvent<HTMLSelectElement>) {
     const agentProjectKey = event.target.value;
-    const agentProject = matchingAgentProjects.find((project) => project.key === agentProjectKey) ?? null;
-    const firstModel = agentProject ? resolveModelOptions(agentProject)[0] : null;
-    setState((current) => ({
+    setEdits((current) => ({
       ...current,
+      repoFullName: state.repoFullName,
       agentProjectKey,
-      defaultModelId: firstModel?.id ?? '',
-      defaultReasoningEffort:
-        firstModel?.defaultReasoningEffort ?? firstModel?.reasoningEfforts?.[0]?.id ?? (firstModel ? 'medium' : ''),
+      defaultModelId: undefined,
+      defaultReasoningEffort: undefined,
     }));
   }
 
   function handleModelChange(event: ChangeEvent<HTMLSelectElement>) {
     const defaultModelId = event.target.value;
-    const model = modelOptions.find((candidate) => candidate.id === defaultModelId);
-    setState((current) => ({
-      ...current,
-      defaultModelId,
-      defaultReasoningEffort: model?.defaultReasoningEffort ?? model?.reasoningEfforts?.[0]?.id ?? 'medium',
-    }));
+    setEdits((current) => ({ ...current, defaultModelId, defaultReasoningEffort: undefined }));
   }
 
   function handleReasoningChange(event: ChangeEvent<HTMLSelectElement>) {
-    setState((current) => ({ ...current, defaultReasoningEffort: event.target.value }));
+    setEdits((current) => ({ ...current, defaultReasoningEffort: event.target.value }));
   }
 
   function handlePmCanStartSessionsChange(event: ChangeEvent<HTMLInputElement>) {
-    setState((current) => ({ ...current, pmCanStartSessions: event.target.checked }));
+    setEdits((current) => ({ ...current, pmCanStartSessions: event.target.checked }));
   }
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-
-    if (createDisabled) {
-      return;
+    if (createDisabled) return;
+    setSubmitError(null);
+    try {
+      await onSubmit({ ...state, name: state.name.trim(), description: state.description?.trim() });
+    } catch (error) {
+      setSubmitError(error instanceof Error ? error.message : 'Le projet n’a pas pu être créé. Réessaie.');
     }
+  }
 
-    await onSubmit({
-      name: state.name.trim(),
-      description: state.description.trim(),
-      repoFullName: state.repoFullName,
-      defaultBranch: state.defaultBranch,
-      defaultModelId: state.defaultModelId,
-      defaultReasoningEffort: state.defaultReasoningEffort,
-      agentProjectKey: state.agentProjectKey,
-      pmCanStartSessions: state.pmCanStartSessions,
-    });
-    setState({
-      name: 'PairDock local project',
-      description: 'Local project controlled by the developer dashboard.',
-      repoFullName: '',
-      defaultBranch: '',
-      agentProjectKey: '',
-      defaultModelId: '',
-      defaultReasoningEffort: '',
-      pmCanStartSessions: true,
-    });
+  function formatAgentProject(project: AgentProjectOption) {
+    const device = devices.find((candidate) => candidate.agentId === project.agentId && !candidate.revokedAt);
+    return `${project.name} · ${device?.deviceName ?? project.pathAlias}`;
+  }
+
+  if (isSetupLoading) {
+    return (
+      <SectionCard title="Préparation du projet" description="Chargement des dépôts GitHub et des dossiers locaux…" />
+    );
+  }
+
+  if (!repositories.length || !setup?.agents.length) {
+    return (
+      <SectionCard title="Préparer ton premier projet" description="Connecte ton dépôt et ton appareil pour continuer.">
+        <ProjectSetupState
+          hasAgents={(setup?.agents.length ?? 0) > 0}
+          hasRepositories={repositories.length > 0}
+          matchingAgentProjects={0}
+          repoSelected={false}
+        />
+      </SectionCard>
+    );
   }
 
   return (
     <SectionCard
-      eyebrow="Project creation"
-      title="Configurer une instance"
-      description="Sélectionne un dépôt GitHub installé, une branche, un projet agent local et un modèle publié par cet agent."
+      title="Créer un projet"
+      description="Vérifie le dépôt proposé et choisis le modèle qui traitera les demandes de ton équipe."
     >
-      <form className="grid gap-4 lg:grid-cols-[1fr_1fr]" onSubmit={handleSubmit}>
+      <form className="grid gap-4 lg:grid-cols-2" onSubmit={handleSubmit}>
+        {handoffUnavailable ? (
+          <p className="text-sm leading-6 text-amber-200 lg:col-span-2" role="status">
+            Le dossier transmis par l’application n’est pas disponible. Vérifie que PairDock est connecté et que le
+            dépôt est autorisé sur GitHub, puis actualise.
+          </p>
+        ) : null}
         <label className="space-y-2 text-sm text-slate-300" htmlFor="developer-project-name">
           <span className="block">Nom du projet</span>
-          <TextInput id="developer-project-name" onChange={handleNameChange} required value={state.name} />
+          <TextInput
+            disabled={isSubmitting}
+            id="developer-project-name"
+            onChange={handleNameChange}
+            required
+            value={state.name}
+          />
         </label>
         <label className="space-y-2 text-sm text-slate-300" htmlFor="developer-project-repository">
           <span className="block">Dépôt GitHub</span>
           <SelectInput
-            disabled={isSetupLoading || repositories.length === 0}
+            disabled={isSubmitting}
             id="developer-project-repository"
             onChange={handleRepositoryChange}
             required
@@ -203,7 +165,13 @@ export function DeveloperProjectForm({ isSetupLoading, isSubmitting, onSubmit, s
         </label>
         <label className="space-y-2 text-sm text-slate-300" htmlFor="developer-project-branch">
           <span className="block">Branche de base</span>
-          <SelectInput id="developer-project-branch" onChange={handleBranchChange} required value={state.defaultBranch}>
+          <SelectInput
+            disabled={isSubmitting}
+            id="developer-project-branch"
+            onChange={handleBranchChange}
+            required
+            value={state.defaultBranch}
+          >
             <option disabled value="">
               {branchPlaceholder}
             </option>
@@ -215,8 +183,9 @@ export function DeveloperProjectForm({ isSetupLoading, isSubmitting, onSubmit, s
           </SelectInput>
         </label>
         <label className="space-y-2 text-sm text-slate-300" htmlFor="developer-project-agent-project">
-          <span className="block">Projet agent local</span>
+          <span className="block">Dossier et appareil</span>
           <SelectInput
+            disabled={isSubmitting}
             id="developer-project-agent-project"
             onChange={handleAgentProjectChange}
             required
@@ -227,14 +196,20 @@ export function DeveloperProjectForm({ isSetupLoading, isSubmitting, onSubmit, s
             </option>
             {matchingAgentProjects.map((project) => (
               <option key={`${project.agentId}:${project.key}`} value={project.key}>
-                {project.name} ({project.agentId})
+                {formatAgentProject(project)}
               </option>
             ))}
           </SelectInput>
         </label>
         <label className="space-y-2 text-sm text-slate-300" htmlFor="developer-project-model">
-          <span className="block">Modèle agent</span>
-          <SelectInput id="developer-project-model" onChange={handleModelChange} required value={state.defaultModelId}>
+          <span className="block">Modèle</span>
+          <SelectInput
+            disabled={isSubmitting}
+            id="developer-project-model"
+            onChange={handleModelChange}
+            required
+            value={state.defaultModelId}
+          >
             <option disabled value="">
               {modelPlaceholder}
             </option>
@@ -248,6 +223,7 @@ export function DeveloperProjectForm({ isSetupLoading, isSubmitting, onSubmit, s
         <label className="space-y-2 text-sm text-slate-300" htmlFor="developer-project-reasoning">
           <span className="block">Niveau de raisonnement</span>
           <SelectInput
+            disabled={isSubmitting}
             id="developer-project-reasoning"
             onChange={handleReasoningChange}
             required
@@ -264,25 +240,41 @@ export function DeveloperProjectForm({ isSetupLoading, isSubmitting, onSubmit, s
           </SelectInput>
         </label>
         <label className="flex min-h-10 items-center gap-2 self-end rounded-[9px] border border-white/10 bg-[#1f232b] px-3 py-2 text-sm text-slate-300">
-          <input checked={state.pmCanStartSessions} onChange={handlePmCanStartSessionsChange} type="checkbox" />
-          Sessions PM autorisées
+          <input
+            disabled={isSubmitting}
+            checked={state.pmCanStartSessions ?? true}
+            onChange={handlePmCanStartSessionsChange}
+            type="checkbox"
+          />
+          Autoriser les PM invités à démarrer des sessions
         </label>
         <label className="space-y-2 text-sm text-slate-300 lg:col-span-2" htmlFor="developer-project-description">
-          <span className="block">Description</span>
-          <TextArea id="developer-project-description" onChange={handleDescriptionChange} value={state.description} />
+          <span className="block">Description (facultative)</span>
+          <TextArea
+            disabled={isSubmitting}
+            id="developer-project-description"
+            onChange={handleDescriptionChange}
+            value={state.description ?? ''}
+          />
         </label>
         <ProjectSetupState
           hasAgents={(setup?.agents.length ?? 0) > 0}
           hasRepositories={repositories.length > 0}
-          isSetupLoading={isSetupLoading}
           matchingAgentProjects={matchingAgentProjects.length}
           repoSelected={Boolean(selectedRepository)}
         />
+        {submitError ? (
+          <p className="text-sm text-rose-300 lg:col-span-2" role="alert">
+            {submitError}
+          </p>
+        ) : null}
         <div className="flex flex-wrap items-center gap-3 lg:col-span-2">
           <Button disabled={createDisabled} type="submit">
-            {isSubmitting ? 'Création...' : 'Créer le projet'}
+            {isSubmitting ? 'Création…' : 'Créer le projet'}
           </Button>
-          <p className="font-mono text-[11.5px] text-[#6f7686]">GitHub App et agent local requis.</p>
+          <p className="font-mono text-[11.5px] text-[#6f7686]">
+            Tu pourras ensuite vérifier le projet et inviter un PM.
+          </p>
         </div>
       </form>
     </SectionCard>
@@ -292,7 +284,6 @@ export function DeveloperProjectForm({ isSetupLoading, isSubmitting, onSubmit, s
 interface ProjectSetupStateProps {
   hasAgents: boolean;
   hasRepositories: boolean;
-  isSetupLoading: boolean;
   matchingAgentProjects: number;
   repoSelected: boolean;
 }
@@ -300,16 +291,24 @@ interface ProjectSetupStateProps {
 function ProjectSetupState({
   hasAgents,
   hasRepositories,
-  isSetupLoading,
   matchingAgentProjects,
   repoSelected,
 }: ProjectSetupStateProps) {
-  if (isSetupLoading) {
-    return <SetupHint message="Chargement des dépôts GitHub et agents locaux." />;
+  function handleReconnectGithub() {
+    rememberDeveloperAgentReturn();
+    window.location.assign(authApi.developerStartUrl());
   }
 
   if (!hasRepositories) {
-    return <SetupHint message="Aucun dépôt GitHub disponible. Installe la GitHub App sur au moins un dépôt." />;
+    return (
+      <div className="space-y-3 text-sm leading-6 text-[#aeb5c3]">
+        <p>
+          Aucun dépôt GitHub disponible. Vérifie que l’application GitHub de ton équipe a accès au dépôt, puis
+          reconnecte GitHub.
+        </p>
+        <Button onClick={handleReconnectGithub}>Reconnecter GitHub</Button>
+      </div>
+    );
   }
 
   if (!hasAgents) {
@@ -327,7 +326,7 @@ function ProjectSetupState({
     );
   }
 
-  return <SetupHint message="Readiness verte requise avant qu'un PM puisse lancer une session." />;
+  return <SetupHint message="Après la création, lance les vérifications du projet avant de le partager." />;
 }
 
 function SetupHint({ agentSetupLink = false, message }: { agentSetupLink?: boolean; message: string }) {
@@ -341,9 +340,4 @@ function SetupHint({ agentSetupLink = false, message }: { agentSetupLink?: boole
       ) : null}
     </div>
   );
-}
-
-function resolveModelOptions(project: AgentProjectOption): DeveloperSetupAgentModel[] {
-  const allowedModelIds = project.models?.length ? new Set(project.models) : null;
-  return project.agentModels.filter((model) => !allowedModelIds || allowedModelIds.has(model.id));
 }

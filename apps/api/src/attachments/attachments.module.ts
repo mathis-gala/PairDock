@@ -7,14 +7,17 @@ import { PersistenceModule } from '../persistence/persistence.module.js';
 import { createAttachmentStorage } from './attachment-storage.factory.js';
 import { ATTACHMENT_STORAGE } from './attachment-storage.port.js';
 import { AttachmentsController } from './attachments.controller.js';
+import { PreviewComparisonsController } from './preview-comparisons.controller.js';
+import { PreviewComparisonsService } from './preview-comparisons.service.js';
 import { SessionAttachmentsService } from './session-attachments.service.js';
 
 @Module({
   imports: [AgentGatewayModule, AuthModule, InvitationsModule, PersistenceModule],
-  controllers: [AttachmentsController],
+  controllers: [AttachmentsController, PreviewComparisonsController],
   providers: [
     SessionAccessGuard,
     SessionAttachmentsService,
+    PreviewComparisonsService,
     {
       provide: ATTACHMENT_STORAGE,
       useFactory: createAttachmentStorage,

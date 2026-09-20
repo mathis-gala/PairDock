@@ -225,3 +225,43 @@ test('GitHub callback returns to pending device approval once and never redirect
     assert.equal(callbackUrl, '/', 'tampered return values must never become redirect URLs');
   });
 });
+
+test('desktop project handoff survives GitHub login and cannot redirect a PM', () => {
+  const key = 'agent-local-design-system';
+  const session = {
+    accessToken: 'handoff-test-token',
+    provider: 'github',
+    user: {
+      id: '123e4567-e89b-12d3-a456-426614174008',
+      email: 'dev@example.test',
+      displayName: 'Dev',
+      kind: 'developer',
+    },
+  };
+  const values = new Map<string, string>();
+  const storage = {
+    getItem: (key: string) => values.get(key) ?? null,
+    setItem: (key: string, value: string) => values.set(key, value),
+    removeItem: (key: string) => values.delete(key),
+  };
+  const location = { hash: `#/developer?agentProjectKey=${key}`, pathname: '/', search: '' };
+  let cleaned = '';
+  const history = {
+    replaceState: (_state: null, _title: string, url: string) => {
+      cleaned = url;
+      location.hash = url.includes('#') ? url.slice(url.indexOf('#')) : '';
+    },
+  };
+  withWindow({ location, history, localStorage: storage, sessionStorage: storage }, () => {
+    assert.deepEqual(getAppRouteSnapshot(), { kind: 'developer-home', agentProjectKey: key });
+    rememberDeveloperAgentReturn();
+    location.hash = `#pairdock_auth=${encodeURIComponent(JSON.stringify(session))}`;
+    getAuthSessionSnapshot();
+    assert.equal(cleaned, `/#/developer?agentProjectKey=${key}`);
+    location.hash = `#/developer?agentProjectKey=${key}`;
+    rememberDeveloperAgentReturn();
+    location.hash = `#pairdock_auth=${encodeURIComponent(JSON.stringify({ ...session, provider: 'slack', user: { ...session.user, kind: 'pm' } }))}`;
+    getAuthSessionSnapshot();
+    assert.equal(cleaned, '/');
+  });
+});

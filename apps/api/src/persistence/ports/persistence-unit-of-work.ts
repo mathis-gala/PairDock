@@ -29,5 +29,8 @@ export interface PersistenceRepositories {
 }
 
 export interface PersistenceUnitOfWork {
-  execute<T>(work: (repositories: PersistenceRepositories) => Promise<T>): Promise<T>;
+  execute<T>(
+    work: (repositories: PersistenceRepositories) => Promise<T>,
+    options?: { lockSessionId: string },
+  ): Promise<T>;
 }

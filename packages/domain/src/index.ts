@@ -128,7 +128,7 @@ export interface SessionMessage {
   createdAt: Date;
 }
 
-export type AttachmentPurpose = 'prompt' | 'review_request';
+export type AttachmentPurpose = 'prompt' | 'review_request' | 'preview_comparison';
 export type AttachmentVisibility = 'private' | 'public';
 
 export interface SessionAttachment {

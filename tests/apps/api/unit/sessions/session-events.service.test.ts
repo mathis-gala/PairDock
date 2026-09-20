@@ -174,7 +174,7 @@ function createFixture(status: Session['status'], validationStatus: 'passed' | '
             throw new Error('Unexpected session creation');
           },
           async listByProjectIds() {
-            return [transaction.session];
+            return [{ ...transaction.session, firstPrompt: null }];
           },
           async findById() {
             return transaction.session;

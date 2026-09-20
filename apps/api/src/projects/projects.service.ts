@@ -40,6 +40,7 @@ import type { ReviewRequestsRepository } from '../persistence/ports/review-reque
 import type { SessionsRepository } from '../persistence/ports/sessions.repository.js';
 import type { SourceControlConnectionsRepository } from '../persistence/ports/source-control-connections.repository.js';
 import type { UsersRepository } from '../persistence/ports/users.repository.js';
+import { buildSessionTitle } from '../sessions/session-title.js';
 import type { SourceControlPort } from '../source-control/source-control.port.js';
 import { SOURCE_CONTROL_PORT } from '../source-control/source-control.tokens.js';
 
@@ -200,6 +201,7 @@ export class ProjectsService {
           id: session.id,
           projectId: project.id,
           projectName: project.name,
+          title: buildSessionTitle(session.firstPrompt),
           repoFullName: project.repoFullName,
           status: session.status,
           reviewRequest: reviewRequest

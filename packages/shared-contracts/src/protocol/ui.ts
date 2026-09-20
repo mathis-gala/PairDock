@@ -37,6 +37,7 @@ export const sharedProjectSummaryListSchema = z.array(sharedProjectSummarySchema
 
 export const sharedSessionHistoryItemSchema = z.object({
   id: uuidSchema,
+  title: z.string().max(120).nullable().optional(),
   projectId: uuidSchema,
   projectName: z.string().min(1),
   repoFullName: z.string().min(1),

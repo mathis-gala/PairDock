@@ -1,10 +1,11 @@
 import { agentPairingUserCodeSchema } from '@pairdock/shared-contracts';
 import { useSyncExternalStore } from 'react';
 import { type AuthSession, authSessionSchema } from '../schemas/auth.js';
-import { developerAgentsHash, getAppRouteSnapshot } from './use-app-route.js';
+import { developerAgentsHash, developerProjectSetupHash, getAppRouteSnapshot } from './use-app-route.js';
 
 const AUTH_STORAGE_KEY = 'pairdock.auth.session';
 const AGENT_RETURN_STORAGE_KEY = 'pairdock.auth.agent-return';
+const PROJECT_RETURN_STORAGE_KEY = 'pairdock.auth.project-return';
 let cachedSerializedSession: string | null | undefined;
 let cachedAuthSession: AuthSession | null = null;
 
@@ -37,8 +38,11 @@ export function rememberDeveloperAgentReturn(): void {
 
   const route = getAppRouteSnapshot();
   window.sessionStorage.removeItem(AGENT_RETURN_STORAGE_KEY);
+  window.sessionStorage.removeItem(PROJECT_RETURN_STORAGE_KEY);
   if (route.kind === 'developer-agents') {
     window.sessionStorage.setItem(AGENT_RETURN_STORAGE_KEY, route.userCode ?? '');
+  } else if (route.kind === 'developer-home' && route.agentProjectKey) {
+    window.sessionStorage.setItem(PROJECT_RETURN_STORAGE_KEY, route.agentProjectKey);
   }
 }
 
@@ -121,13 +125,22 @@ function cleanCallbackHash(session: AuthSession): void {
   }
 
   const savedCode = window.sessionStorage?.getItem(AGENT_RETURN_STORAGE_KEY);
+  const savedProject = window.sessionStorage?.getItem(PROJECT_RETURN_STORAGE_KEY);
   window.sessionStorage?.removeItem(AGENT_RETURN_STORAGE_KEY);
+  window.sessionStorage?.removeItem(PROJECT_RETURN_STORAGE_KEY);
   let returnHash = '';
   if (session.user.kind === 'developer' && session.provider === 'github' && savedCode != null) {
     const code = agentPairingUserCodeSchema.safeParse(savedCode);
     if (savedCode === '' || code.success) {
       returnHash = developerAgentsHash(code.success ? code.data : null);
     }
+  } else if (
+    session.user.kind === 'developer' &&
+    session.provider === 'github' &&
+    savedProject?.trim() &&
+    savedProject.length <= 128
+  ) {
+    returnHash = developerProjectSetupHash(savedProject.trim());
   }
 
   window.history.replaceState(null, '', `${window.location.pathname}${window.location.search}${returnHash}`);

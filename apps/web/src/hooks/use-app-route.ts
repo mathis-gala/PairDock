@@ -18,6 +18,10 @@ export function openDeveloperHome(): void {
   setHash('/developer');
 }
 
+export function developerProjectSetupHash(agentProjectKey: string): string {
+  return `#/developer?agentProjectKey=${encodeURIComponent(agentProjectKey)}`;
+}
+
 export function developerAgentsHash(userCode: string | null = null): string {
   return userCode ? `#/developer/agents?code=${encodeURIComponent(userCode)}` : '#/developer/agents';
 }
@@ -75,7 +79,11 @@ function parseHash(hashValue: string): AppRoute {
     return { kind: 'developer-agents', userCode: code.success ? code.data : null };
   }
 
-  if (normalizedHash === '/developer') {
+  if (pathname === '/developer') {
+    const agentProjectKey = new URLSearchParams(search).get('agentProjectKey')?.trim();
+    if (agentProjectKey && agentProjectKey.length <= 128) {
+      return { kind: 'developer-home', agentProjectKey };
+    }
     return { kind: 'developer-home' };
   }
 

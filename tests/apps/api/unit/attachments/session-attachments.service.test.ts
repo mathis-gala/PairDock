@@ -12,6 +12,7 @@ test('attachment creation removes an uploaded object when metadata persistence f
     },
     deleteByIds: async () => undefined,
     findById: async () => null,
+    findByIds: async () => [],
     listByMessageIds: async () => [],
     updateMessageId: async () => undefined,
   };
@@ -59,6 +60,7 @@ test('attachment cleanup keeps metadata when object deletion fails', async () =>
       deletedMetadataIds.push(ids);
     },
     findById: async () => null,
+    findByIds: async () => [],
     listByMessageIds: async () => [],
     updateMessageId: async () => undefined,
   };

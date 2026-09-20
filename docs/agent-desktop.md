@@ -71,6 +71,12 @@ to disconnect it, or **Quitter PairDock Agent** from the app menu to quit. In th
 build, **Ouvrir PairDock à la connexion au Mac** starts the app at login and resumes the
 configured agent when its prerequisites are available.
 
+## Continue setup in the web app
+
+Choose **Configurer le partage** on a local project to open the developer workspace with that project selected. The selection survives GitHub login. PairDock uses the agent’s repository, branch and supported models to suggest unambiguous defaults; typed values remain intact during discovery refreshes. The workspace guides the first project through connection, creation, a fresh readiness check and the PM invitation. Existing projects remain the primary view, with creation behind **Nouveau projet**.
+
+In the desktop app, project readiness stays explicit: not checked, checking, ready or needs correction. Required failures remain visible with recovery actions; healthy tools and machine settings are collapsed. A failed or pending check does not reuse a previous success.
+
 ## Device state and revocation
 
 In the web developer navigation, **Agents** lists only devices paired to the signed-in

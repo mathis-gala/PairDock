@@ -1,4 +1,5 @@
 import type { DesktopTools } from '@pairdock/local-agent/desktop-contracts';
+import type { ReactNode } from 'react';
 import type { DesktopBridge } from '../shared/bridge.js';
 import type { DesktopActionRunner } from './use-desktop-agent.js';
 
@@ -8,10 +9,19 @@ interface ToolsPanelProps {
   modelsAvailable: boolean;
   bridge: DesktopBridge;
   busy: boolean;
+  configurationDisabled: boolean;
   run: DesktopActionRunner;
 }
 
-export function ToolsPanel({ tools, dockerRequired, modelsAvailable, bridge, busy, run }: ToolsPanelProps) {
+export function ToolsPanel({
+  tools,
+  dockerRequired,
+  modelsAvailable,
+  bridge,
+  busy,
+  configurationDisabled,
+  run,
+}: ToolsPanelProps) {
   function handleRefresh() {
     run('Vérification des outils', () => bridge.checkTools());
   }
@@ -40,86 +50,137 @@ export function ToolsPanel({ tools, dockerRequired, modelsAvailable, bridge, bus
     );
   }
 
+  const codexReady = tools.codex.available && tools.codex.authenticated && modelsAvailable;
+  const dockerReady = tools.docker.available || !dockerRequired;
   let codexLabel = 'Non détecté';
-  if (tools?.codex.authenticated) codexLabel = 'Connecté';
-  else if (tools?.codex.available) codexLabel = 'Connexion nécessaire';
-  if (tools?.codex.authenticated && !modelsAvailable) codexLabel = 'Modèles indisponibles';
+  if (tools.codex.authenticated) codexLabel = 'Connecté';
+  else if (tools.codex.available) codexLabel = 'Connexion nécessaire';
+  if (tools.codex.authenticated && !modelsAvailable) codexLabel = 'Modèles indisponibles';
+  let dockerLabel = 'À démarrer';
+  if (tools.docker.available) dockerLabel = 'Disponible';
+  else if (!dockerRequired) dockerLabel = 'Non requis';
+
+  const gitRow = (
+    <ToolRow
+      key="git"
+      name="Git"
+      ready={tools.git.available}
+      description="Accès aux dépôts et aux branches"
+      status={tools.git.available ? 'Disponible' : 'Non détecté'}
+    >
+      {!tools.git.available && (
+        <button className="secondary compact" disabled={busy} onClick={handleGitHelp} type="button">
+          Installer Git
+        </button>
+      )}
+    </ToolRow>
+  );
+  const codexRow = (
+    <ToolRow
+      key="codex"
+      name="Codex"
+      ready={codexReady}
+      description="Réalisation des modifications"
+      status={codexLabel}
+    >
+      {tools.codex.available && !tools.codex.authenticated && (
+        <button className="secondary compact" disabled={configurationDisabled} onClick={handleCodexLogin} type="button">
+          Connecter Codex
+        </button>
+      )}
+      {!tools.codex.available && (
+        <button className="secondary compact" disabled={busy} onClick={handleCodexHelp} type="button">
+          Aide Codex
+        </button>
+      )}
+    </ToolRow>
+  );
+  const dockerRow = (
+    <ToolRow
+      key="docker"
+      name="Docker"
+      ready={dockerReady}
+      description={dockerRequired ? 'Partage des aperçus des sessions' : 'Facultatif pour ces projets'}
+      status={dockerLabel}
+    >
+      {!dockerReady && (
+        <div className="inline-actions">
+          <button className="secondary compact" disabled={busy} onClick={handleDockerOpen} type="button">
+            Ouvrir Docker
+          </button>
+          <button className="text-button" disabled={busy} onClick={handleDockerHelp} type="button">
+            Installer
+          </button>
+        </div>
+      )}
+    </ToolRow>
+  );
+  const attentionRows: ReactNode[] = [];
+  const readyRows: ReactNode[] = [];
+  if (tools.git.available) readyRows.push(gitRow);
+  else attentionRows.push(gitRow);
+  if (codexReady) readyRows.push(codexRow);
+  else attentionRows.push(codexRow);
+  if (dockerReady) readyRows.push(dockerRow);
+  else attentionRows.push(dockerRow);
 
   return (
-    <section className="tools-section" aria-labelledby="tools-title">
-      <div className="section-heading">
-        <h2 id="tools-title">Outils de cette machine</h2>
-        <button className="text-button" disabled={busy} onClick={handleRefresh} type="button">
-          Vérifier à nouveau
-        </button>
-      </div>
-      <ul className="tool-list">
-        <li>
-          <span className={`check-icon ${tools?.git.available ? 'passed' : ''}`} aria-hidden="true">
-            {tools?.git.available ? '✓' : '·'}
-          </span>
-          <div className="tool-copy">
-            <strong>Git</strong>
-            <span>Accès aux dépôts et aux branches</span>
-          </div>
-          <span className="tool-state">{tools?.git.available ? 'Disponible' : 'Non détecté'}</span>
-          {!tools?.git.available && (
-            <button className="secondary compact" disabled={busy} onClick={handleGitHelp} type="button">
-              Installer Git
+    <section className="tools-section" aria-label="Outils de cette machine">
+      {attentionRows.length > 0 && (
+        <div className="tools-attention">
+          <div className="section-heading">
+            <h2>Outils à préparer</h2>
+            <button className="text-button" disabled={busy} onClick={handleRefresh} type="button">
+              Vérifier à nouveau
             </button>
-          )}
-        </li>
-        <li>
-          <span className={`check-icon ${tools?.codex.authenticated ? 'passed' : ''}`} aria-hidden="true">
-            {tools?.codex.authenticated ? '✓' : '·'}
-          </span>
-          <div className="tool-copy">
-            <strong>Codex</strong>
-            <span>L’agent qui réalise les modifications</span>
           </div>
-          <span className="tool-state">{codexLabel}</span>
-          {tools?.codex.available && !tools.codex.authenticated && (
-            <button className="secondary compact" disabled={busy} onClick={handleCodexLogin} type="button">
-              Connecter Codex
-            </button>
+          <ul className="tool-list">{attentionRows}</ul>
+          {tools.codex.authenticated && !modelsAvailable && (
+            <p className="notice warning" role="alert">
+              {tools.codex.message}
+            </p>
           )}
-          {!tools?.codex.available && (
-            <button className="secondary compact" disabled={busy} onClick={handleCodexHelp} type="button">
-              Configurer Codex
-            </button>
+          {tools.codex.available && !tools.codex.authenticated && configurationDisabled && !busy && (
+            <p className="hint">Arrête l’agent avant de connecter Codex.</p>
           )}
-        </li>
-        <li>
-          <span className={`check-icon ${tools?.docker.available ? 'passed' : ''}`} aria-hidden="true">
-            {tools?.docker.available ? '✓' : '·'}
-          </span>
-          <div className="tool-copy">
-            <strong>Docker</strong>
-            <span>
-              {dockerRequired
-                ? 'Requis pour partager les aperçus des sessions'
-                : 'Facultatif pour les projets sur ce Mac'}
-            </span>
-          </div>
-          <span className="tool-state">{tools?.docker.available ? 'Disponible' : 'Inactif'}</span>
-          {!tools?.docker.available && (
-            <div className="inline-actions">
-              <button className="secondary compact" disabled={busy} onClick={handleDockerOpen} type="button">
-                Ouvrir
-              </button>
-              <button className="text-button" disabled={busy} onClick={handleDockerHelp} type="button">
-                Installer
-              </button>
-            </div>
-          )}
-        </li>
-      </ul>
-      {tools?.codex.authenticated && !modelsAvailable && (
-        <p className="notice warning" role="alert">
-          {tools.codex.message}
-        </p>
+          <p className="hint">Après une installation ou une connexion, vérifie à nouveau les outils.</p>
+        </div>
       )}
-      <p className="hint">Après une installation ou une connexion, vérifie à nouveau les outils.</p>
+      {readyRows.length > 0 && (
+        <details className="tools-disclosure">
+          <summary>
+            <span>{attentionRows.length === 0 ? 'Outils prêts' : 'Autres outils'}</span>
+          </summary>
+          <ul className="tool-list">{readyRows}</ul>
+          <button className="text-button" disabled={busy} onClick={handleRefresh} type="button">
+            Vérifier les outils
+          </button>
+        </details>
+      )}
     </section>
+  );
+}
+
+interface ToolRowProps {
+  name: string;
+  description: string;
+  status: string;
+  ready: boolean;
+  children?: ReactNode;
+}
+
+function ToolRow({ name, description, status, ready, children }: ToolRowProps) {
+  return (
+    <li>
+      <span className={`check-icon ${ready ? 'passed' : ''}`} aria-hidden="true">
+        {ready ? '✓' : '·'}
+      </span>
+      <div className="tool-copy">
+        <strong>{name}</strong>
+        <span>{description}</span>
+      </div>
+      <span className="tool-state">{status}</span>
+      {children}
+    </li>
   );
 }

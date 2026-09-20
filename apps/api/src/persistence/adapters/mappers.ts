@@ -204,7 +204,7 @@ function parseExternalIdentityProvider(value: string): ExternalIdentityProvider 
 }
 
 function parseAttachmentPurpose(value: string): AttachmentPurpose {
-  if (value === 'prompt' || value === 'review_request') {
+  if (value === 'prompt' || value === 'review_request' || value === 'preview_comparison') {
     return value;
   }
 

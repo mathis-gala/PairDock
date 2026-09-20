@@ -2,7 +2,7 @@ import { useQuery } from '@tanstack/react-query';
 import { useState } from 'react';
 import { createApiClient } from '../../api/client.js';
 import { classNames } from '../../lib/class-names.js';
-import type { SessionConversationItem } from '../../lib/session-conversation.js';
+import { groupConversationProgress, type SessionConversationItem } from '../../lib/session-conversation.js';
 import { sessionQueryKeys } from '../../lib/session-query-keys.js';
 import { ImageLightbox } from '../image-lightbox.js';
 import { ConversationSelections } from './conversation-selections.js';
@@ -16,6 +16,7 @@ interface ConversationThreadProps {
 
 export function ConversationThread({ accessToken, isTyping, items, sessionId }: ConversationThreadProps) {
   const [expandedImage, setExpandedImage] = useState<{ alt: string; src: string } | null>(null);
+  const rows = groupConversationProgress(items, isTyping);
 
   function handleCloseLightbox() {
     setExpandedImage(null);
@@ -40,55 +41,88 @@ export function ConversationThread({ accessToken, isTyping, items, sessionId }: 
   return (
     <>
       <ol aria-label="Conversation" className="flex min-h-full min-w-0 flex-col justify-end gap-3 px-4 py-5">
-        {items.map((item) => (
-          <li
-            className={classNames('flex min-w-0', item.role === 'user' ? 'justify-end' : 'justify-start')}
-            key={item.id}
-          >
-            <div
-              className={classNames(
-                'min-w-0 max-w-[86%] space-y-2.5 whitespace-pre-wrap [overflow-wrap:anywhere] rounded-2xl text-[13.5px] leading-5',
-                item.role === 'user'
-                  ? 'rounded-br-md bg-[#5fdf9b] px-3.5 py-2.5 text-[#0c2014] shadow-sm'
-                  : item.kind === 'progress'
-                    ? 'rounded-bl-md border border-white/8 bg-[#1b1e25] px-3 py-2 text-[#a3aab8]'
-                    : item.tone === 'error'
-                      ? 'rounded-bl-md border border-rose-400/25 bg-rose-400/10 px-3.5 py-2.5 text-rose-100 shadow-sm'
-                      : 'rounded-bl-md border border-white/10 bg-[#242832] px-3.5 py-2.5 text-[#e5e8ee] shadow-sm',
-              )}
-            >
-              {item.kind === 'progress' ? (
-                <div className="grid grid-cols-[auto_1fr] gap-2">
-                  <span aria-hidden="true" className="mt-[7px] size-1.5 rounded-full bg-[#5fdf9b]" />
-                  <div>
-                    <div className="mb-0.5 font-mono text-[10px] uppercase tracking-[0.08em] text-[#6f7686]">
-                      Progression
-                    </div>
-                    {item.text}
-                  </div>
-                </div>
-              ) : item.text ? (
-                <div>{item.text}</div>
-              ) : null}
-              {item.role === 'user' && item.selections?.length ? (
-                <ConversationSelections selections={item.selections} />
-              ) : null}
-              {item.attachments?.length && accessToken && sessionId ? (
-                <div className={classNames('grid gap-2', item.attachments.length > 1 ? 'grid-cols-2' : 'grid-cols-1')}>
-                  {item.attachments.map((attachment) => (
-                    <ConversationScreenshot
-                      accessToken={accessToken}
-                      attachment={attachment}
-                      key={attachment.id}
-                      onOpen={setExpandedImage}
-                      sessionId={sessionId}
+        {rows.map((item) =>
+          item.kind === 'progress-group' ? (
+            <li className="min-w-0" key={item.id}>
+              <details className="group min-w-0 max-w-[92%] text-xs text-[#a3aab8]">
+                <summary className="flex min-h-11 cursor-pointer list-none items-center gap-2 rounded-lg px-2 hover:bg-white/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#5fdf9b]/60 [&::-webkit-details-marker]:hidden">
+                  <svg
+                    aria-hidden="true"
+                    className="size-3.5 shrink-0 transition-transform group-open:rotate-90 motion-reduce:transition-none"
+                    fill="none"
+                    viewBox="0 0 16 16"
+                  >
+                    <path
+                      d="m6 4 4 4-4 4"
+                      stroke="currentColor"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth="1.5"
                     />
+                  </svg>
+                  {item.items.length} étape{item.items.length === 1 ? '' : 's'} de travail
+                </summary>
+                <ol className="space-y-2 pb-2 pl-7 pr-2">
+                  {item.items.map((step) => (
+                    <li className="whitespace-pre-wrap leading-5 [overflow-wrap:anywhere]" key={step.id}>
+                      {step.text}
+                    </li>
                   ))}
-                </div>
-              ) : null}
-            </div>
-          </li>
-        ))}
+                </ol>
+              </details>
+            </li>
+          ) : (
+            <li
+              className={classNames('flex min-w-0', item.role === 'user' ? 'justify-end' : 'justify-start')}
+              key={item.id}
+            >
+              <div
+                className={classNames(
+                  'min-w-0 max-w-[86%] space-y-2.5 whitespace-pre-wrap [overflow-wrap:anywhere] rounded-2xl text-[13.5px] leading-5',
+                  item.role === 'user'
+                    ? 'rounded-br-md bg-[#5fdf9b] px-3.5 py-2.5 text-[#0c2014] shadow-sm'
+                    : item.kind === 'progress'
+                      ? 'rounded-bl-md border border-white/8 bg-[#1b1e25] px-3 py-2 text-[#a3aab8]'
+                      : item.tone === 'error'
+                        ? 'rounded-bl-md border border-rose-400/25 bg-rose-400/10 px-3.5 py-2.5 text-rose-100 shadow-sm'
+                        : 'rounded-bl-md border border-white/10 bg-[#242832] px-3.5 py-2.5 text-[#e5e8ee] shadow-sm',
+                )}
+              >
+                {item.kind === 'progress' ? (
+                  <div className="grid grid-cols-[auto_1fr] gap-2">
+                    <span aria-hidden="true" className="mt-[7px] size-1.5 rounded-full bg-[#5fdf9b]" />
+                    <div>
+                      <div className="mb-0.5 font-mono text-[10px] uppercase tracking-[0.08em] text-[#6f7686]">
+                        {isTyping ? 'En cours' : 'Progression'}
+                      </div>
+                      {item.text}
+                    </div>
+                  </div>
+                ) : item.text ? (
+                  <div>{item.text}</div>
+                ) : null}
+                {item.role === 'user' && item.selections?.length ? (
+                  <ConversationSelections selections={item.selections} />
+                ) : null}
+                {item.attachments?.length && accessToken && sessionId ? (
+                  <div
+                    className={classNames('grid gap-2', item.attachments.length > 1 ? 'grid-cols-2' : 'grid-cols-1')}
+                  >
+                    {item.attachments.map((attachment) => (
+                      <ConversationScreenshot
+                        accessToken={accessToken}
+                        attachment={attachment}
+                        key={attachment.id}
+                        onOpen={setExpandedImage}
+                        sessionId={sessionId}
+                      />
+                    ))}
+                  </div>
+                ) : null}
+              </div>
+            </li>
+          ),
+        )}
         {isTyping ? <TypingIndicator /> : null}
       </ol>
       {expandedImage ? (
