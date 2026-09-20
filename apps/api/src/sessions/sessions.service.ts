@@ -38,8 +38,9 @@ import type { SessionsRepository } from '../persistence/ports/sessions.repositor
 import type { UsersRepository } from '../persistence/ports/users.repository.js';
 import { ValidationService } from '../validation/validation.service.js';
 import { SessionCloseService } from './session-close.service.js';
+import { SessionEventsService } from './session-events.service.js';
 import { SessionStartPolicy, type SessionStartSource } from './session-start-policy.js';
-import { InvalidSessionTransitionError, type SessionAgentEvent, SessionStateMachine } from './session-state-machine.js';
+import { InvalidSessionTransitionError, type SessionAgentEvent } from './session-state-machine.js';
 
 export interface CreateSessionInput {
   projectId: string;
@@ -53,8 +54,6 @@ export interface CreateSessionRequest {
 
 @Injectable()
 export class SessionsService {
-  private readonly stateMachine = new SessionStateMachine();
-
   constructor(
     @Inject(PROJECTS_REPOSITORY)
     private readonly projectsRepository: ProjectsRepository,
@@ -90,6 +89,8 @@ export class SessionsService {
     private readonly sessionCloseService: SessionCloseService,
     @Inject(SessionStartPolicy)
     private readonly sessionStartPolicy: SessionStartPolicy,
+    @Inject(SessionEventsService)
+    private readonly sessionEvents: SessionEventsService,
   ) {}
 
   async getSession(sessionId: string): Promise<Session> {
@@ -192,29 +193,11 @@ export class SessionsService {
     await this.assertOwnerAccess(session, user);
 
     try {
-      return await this.persistenceUnitOfWork.execute(async (repositories) => {
-        const currentSession = await repositories.sessions.findById(sessionId);
-
-        if (!currentSession) {
-          throw new NotFoundException(`Session ${sessionId} was not found.`);
-        }
-
-        const nextSession = this.stateMachine.applyAgentEvent(currentSession, event);
-
-        await repositories.agentEvents.create({
-          sessionId,
-          type: event.type,
-          payload: event.payload,
-        });
-
-        return repositories.sessions.updateStatus({
-          id: sessionId,
-          status: nextSession.status,
-          lastError: nextSession.lastError,
-          previewUrl: nextSession.previewUrl,
-          closedAt: nextSession.closedAt,
-        });
-      });
+      const nextSession = await this.sessionEvents.apply(sessionId, event);
+      if (!nextSession) {
+        throw new NotFoundException(`Session ${sessionId} was not found.`);
+      }
+      return nextSession;
     } catch (error) {
       if (error instanceof InvalidSessionTransitionError) {
         throw new ConflictException(error.message);

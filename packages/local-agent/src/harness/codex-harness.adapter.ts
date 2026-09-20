@@ -2,6 +2,7 @@ import { type ChildProcess, spawn } from 'node:child_process';
 import { mkdirSync, readdirSync, readFileSync, realpathSync, rmSync, statSync, writeFileSync } from 'node:fs';
 import { basename, delimiter, dirname, isAbsolute, join, relative, resolve, sep } from 'node:path';
 import { setTimeout as delay } from 'node:timers/promises';
+import { resolveSessionTempDirectory } from '../session/session-temp-directory.js';
 import type {
   AgentHarnessEvent,
   AgentHarnessPort,
@@ -319,6 +320,7 @@ function buildCodexPrompt(userPrompt: string): string {
 }
 
 function buildCodexSecurityArgs(input: RunPromptInput, harnessEnvironment?: NodeJS.ProcessEnv): string[] {
+  const sessionTempDirectory = resolveSessionTempDirectory(input.sessionId);
   const harnessTempDirectory = resolveHarnessTempDirectory(input.sessionId);
   const cacheDirectory = join(harnessTempDirectory, 'cache');
   const configDirectory = join(harnessTempDirectory, 'config');
@@ -339,7 +341,7 @@ function buildCodexSecurityArgs(input: RunPromptInput, harnessEnvironment?: Node
     '--config',
     'default_permissions="pairdock-restricted"',
     '--config',
-    `permissions.pairdock-restricted.filesystem={":minimal"="read",${JSON.stringify(harnessTempDirectory)}="write","/System/Library/OpenSSL"="read","~/.agents/skills"="read","~/.codex/skills"="read",${filesystemPermissions}":workspace_roots"={"."="write","**/.env"="deny","**/.env.local"="deny","**/.env.*.local"="deny","**/.npmrc"="deny","**/.netrc"="deny","**/.pypirc"="deny","**/*.pem"="deny","**/*.key"="deny","**/*.p12"="deny","**/*.pfx"="deny"}}`,
+    `permissions.pairdock-restricted.filesystem={":minimal"="read",${JSON.stringify(sessionTempDirectory)}="write","/System/Library/OpenSSL"="read","~/.agents/skills"="read","~/.codex/skills"="read",${filesystemPermissions}":workspace_roots"={"."="write","**/.env"="deny","**/.env.local"="deny","**/.env.*.local"="deny","**/.npmrc"="deny","**/.netrc"="deny","**/.pypirc"="deny","**/*.pem"="deny","**/*.key"="deny","**/*.p12"="deny","**/*.pfx"="deny"}}`,
     '--config',
     'permissions.pairdock-restricted.network.enabled=false',
     '--config',
@@ -484,7 +486,7 @@ function resolveLinkedWorktreeGitPermissions(worktreePath: string): FilesystemPe
 }
 
 export function resolveHarnessTempDirectory(sessionId: string): string {
-  return join('/tmp', 'pairdock', sessionId);
+  return join(resolveSessionTempDirectory(sessionId), 'harness');
 }
 
 export type ParsedCodexJsonLine =

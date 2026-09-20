@@ -1,7 +1,7 @@
 import { mkdir, rm, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import type { AgentPromptCommandEnvelope } from '@pairdock/shared-contracts';
-import { resolveHarnessTempDirectory } from '../harness/codex-harness.adapter.js';
+import { resolveSessionTempDirectory } from '../session/session-temp-directory.js';
 
 type PromptAttachment = NonNullable<AgentPromptCommandEnvelope['payload']['attachments']>[number];
 
@@ -13,7 +13,7 @@ export class PromptAttachmentDownloader {
   ) {}
 
   async download(sessionId: string, attachments: PromptAttachment[] | undefined): Promise<string[]> {
-    const directory = join(resolveHarnessTempDirectory(sessionId), 'attachments');
+    const directory = join(resolveSessionTempDirectory(sessionId), 'attachments');
     await this.cleanup(sessionId);
 
     if (!attachments?.length) {
@@ -53,7 +53,7 @@ export class PromptAttachmentDownloader {
   }
 
   async cleanup(sessionId: string): Promise<void> {
-    await rm(join(resolveHarnessTempDirectory(sessionId), 'attachments'), { recursive: true, force: true });
+    await rm(join(resolveSessionTempDirectory(sessionId), 'attachments'), { recursive: true, force: true });
   }
 }
 

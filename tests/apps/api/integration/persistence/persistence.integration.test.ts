@@ -10,6 +10,8 @@ import { SourceControlConnectionsRepositoryAdapter } from '../../../../../apps/a
 import { PersistenceUnitOfWorkAdapter } from '../../../../../apps/api/src/persistence/adapters/unit-of-work.js';
 import { UsersRepositoryAdapter } from '../../../../../apps/api/src/persistence/adapters/users.repository.js';
 import { DatabaseClient } from '../../../../../apps/api/src/persistence/client.js';
+import type { PersistenceUnitOfWork } from '../../../../../apps/api/src/persistence/ports/persistence-unit-of-work.js';
+import { SessionEventsService } from '../../../../../apps/api/src/sessions/session-events.service.js';
 
 const prisma = new DatabaseClient();
 
@@ -187,6 +189,48 @@ test('BT-038: persistence unit of work commits session status updates and agent 
 
   assert.equal(rolledBackSession?.status, 'AGENT_CONNECTING');
   assert.equal(rolledBackEvents.length, 1);
+});
+
+test('session event application rolls back its event and validation when the session write fails', async () => {
+  const { session } = await seedSessionFixture();
+  const failingUnitOfWork: PersistenceUnitOfWork = {
+    execute(work) {
+      return unitOfWork.execute((repositories) =>
+        work({
+          ...repositories,
+          sessions: {
+            create: repositories.sessions.create.bind(repositories.sessions),
+            findById: repositories.sessions.findById.bind(repositories.sessions),
+            listByProjectIds: repositories.sessions.listByProjectIds.bind(repositories.sessions),
+            async updateStatus() {
+              throw new Error('Session write failed');
+            },
+          },
+        }),
+      );
+    },
+  };
+  const service = new SessionEventsService(failingUnitOfWork);
+
+  await assert.rejects(
+    () =>
+      service.apply(session.id, {
+        type: 'checks.result',
+        payload: {
+          sessionId: session.id,
+          ok: true,
+          build: { status: 'passed' },
+          tests: { status: 'passed' },
+          lint: { status: 'passed' },
+          preview: { status: 'passed' },
+        },
+      }),
+    /Session write failed/,
+  );
+
+  assert.equal((await sessions.findById(session.id))?.status, 'CREATED');
+  assert.equal((await agentEvents.listBySessionId(session.id)).length, 0);
+  assert.equal(await prisma.validationRun.count({ where: { sessionId: session.id } }), 0);
 });
 
 test('BT-040: SourceControlConnectionsRepository exposes a provider-neutral connection contract', async () => {
