@@ -11,6 +11,7 @@ import { AGENT_EVENTS_REPOSITORY } from '../persistence/persistence.tokens.js';
 import { ReviewRequestsModule } from '../review-requests/review-requests.module.js';
 import { ValidationModule } from '../validation/validation.module.js';
 import { SessionCloseService } from './session-close.service.js';
+import { SessionEventsModule } from './session-events.module.js';
 import { SessionPromptService } from './session-prompt.service.js';
 import { SessionStartPolicy } from './session-start-policy.js';
 import { SessionsController } from './sessions.controller.js';
@@ -25,6 +26,7 @@ import { SessionsService } from './sessions.service.js';
     AgentGatewayModule,
     ValidationModule,
     ReviewRequestsModule,
+    SessionEventsModule,
   ],
   controllers: [SessionsController],
   providers: [

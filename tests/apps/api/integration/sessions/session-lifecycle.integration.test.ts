@@ -173,6 +173,52 @@ test('Task 4: backend applies valid agent prepare events in order and reaches RE
   assert.equal(persistedSession?.previewUrl, 'https://preview.pairdock.test');
 });
 
+test('REST lifecycle events preserve the latest validation after a prompt without changes', async () => {
+  const developerLogin = await authenticateDeveloper();
+  const project = await createOwnedProject(developerLogin.body.user.id);
+
+  for (const validationStatus of ['passed', 'failed'] as const) {
+    const session = await prisma.session.create({
+      data: {
+        projectId: project.id,
+        createdByUserId: developerLogin.body.user.id,
+        status: 'AGENT_RUNNING',
+        modelId: 'codex-cli/gpt-5.4',
+        previewUrl: 'https://preview.pairdock.test',
+      },
+    });
+    await prisma.validationRun.create({
+      data: {
+        sessionId: session.id,
+        status: validationStatus,
+        buildStatus: 'passed',
+        testStatus: 'passed',
+        lintStatus: validationStatus,
+        previewStatus: 'passed',
+      },
+    });
+    const event = { type: 'agent.done', payload: { exitCode: 0, changesDetected: false } };
+
+    const response = await fetch(`${baseUrl}/sessions/${session.id}/events`, {
+      method: 'POST',
+      headers: {
+        authorization: `Bearer ${developerLogin.body.accessToken}`,
+        'content-type': 'application/json',
+      },
+      body: JSON.stringify(event),
+    });
+
+    assert.equal(response.status, 201);
+    const body = await parseJsonResponse(response, sessionStateResponseSchema);
+    assert.equal(body.status, validationStatus === 'passed' ? 'AWAITING_PM_VALIDATION' : 'FAILED');
+    assert.equal(body.previewUrl, session.previewUrl);
+    assert.equal(await prisma.validationRun.count({ where: { sessionId: session.id } }), 1);
+    const events = await prisma.agentEvent.findMany({ where: { sessionId: session.id } });
+    assert.equal(events.length, 1);
+    assert.deepEqual(events[0]?.payload, event.payload);
+  }
+});
+
 test('Task 4: backend rejects invalid transitions and close is idempotent', async () => {
   const developerLogin = await authenticateDeveloper();
   const project = await createOwnedProject(developerLogin.body.user.id);

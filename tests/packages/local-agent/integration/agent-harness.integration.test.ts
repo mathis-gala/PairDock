@@ -107,7 +107,7 @@ test('default Codex harness starts and resumes one Codex thread per PairDock ses
     '--config',
     'permissions.pairdock-restricted.network.enabled=false',
     '--config',
-    'shell_environment_policy.set={GIT_CONFIG_GLOBAL="/dev/null",GIT_CONFIG_NOSYSTEM="1",TMPDIR="/tmp/pairdock/11111111-1111-4111-8111-111111111111",XDG_CACHE_HOME="/tmp/pairdock/11111111-1111-4111-8111-111111111111/cache",XDG_CONFIG_HOME="/tmp/pairdock/11111111-1111-4111-8111-111111111111/config",XDG_DATA_HOME="/tmp/pairdock/11111111-1111-4111-8111-111111111111/data",ZDOTDIR="/tmp/pairdock/11111111-1111-4111-8111-111111111111/shell"}',
+    'shell_environment_policy.set={GIT_CONFIG_GLOBAL="/dev/null",GIT_CONFIG_NOSYSTEM="1",TMPDIR="/tmp/pairdock/11111111-1111-4111-8111-111111111111/harness",XDG_CACHE_HOME="/tmp/pairdock/11111111-1111-4111-8111-111111111111/harness/cache",XDG_CONFIG_HOME="/tmp/pairdock/11111111-1111-4111-8111-111111111111/harness/config",XDG_DATA_HOME="/tmp/pairdock/11111111-1111-4111-8111-111111111111/harness/data",ZDOTDIR="/tmp/pairdock/11111111-1111-4111-8111-111111111111/harness/shell"}',
     '--json',
     '--model',
     'gpt-5.6-luna',
@@ -128,7 +128,7 @@ test('default Codex harness starts and resumes one Codex thread per PairDock ses
     '--config',
     'permissions.pairdock-restricted.network.enabled=false',
     '--config',
-    'shell_environment_policy.set={GIT_CONFIG_GLOBAL="/dev/null",GIT_CONFIG_NOSYSTEM="1",TMPDIR="/tmp/pairdock/11111111-1111-4111-8111-111111111111",XDG_CACHE_HOME="/tmp/pairdock/11111111-1111-4111-8111-111111111111/cache",XDG_CONFIG_HOME="/tmp/pairdock/11111111-1111-4111-8111-111111111111/config",XDG_DATA_HOME="/tmp/pairdock/11111111-1111-4111-8111-111111111111/data",ZDOTDIR="/tmp/pairdock/11111111-1111-4111-8111-111111111111/shell"}',
+    'shell_environment_policy.set={GIT_CONFIG_GLOBAL="/dev/null",GIT_CONFIG_NOSYSTEM="1",TMPDIR="/tmp/pairdock/11111111-1111-4111-8111-111111111111/harness",XDG_CACHE_HOME="/tmp/pairdock/11111111-1111-4111-8111-111111111111/harness/cache",XDG_CONFIG_HOME="/tmp/pairdock/11111111-1111-4111-8111-111111111111/harness/config",XDG_DATA_HOME="/tmp/pairdock/11111111-1111-4111-8111-111111111111/harness/data",ZDOTDIR="/tmp/pairdock/11111111-1111-4111-8111-111111111111/harness/shell"}',
     '--json',
     '--model',
     'gpt-5.6-luna',
@@ -389,7 +389,7 @@ test('Codex harness does not expose unrelated developer secrets to the agent pro
     environment.PATH,
     process.platform === 'darwin' ? '/Library/Developer/CommandLineTools/usr/bin:/usr/bin' : '/usr/bin',
   );
-  assert.equal(environment.TMPDIR, '/tmp/pairdock/11111111-1111-4111-8111-111111111111');
+  assert.equal(environment.TMPDIR, '/tmp/pairdock/11111111-1111-4111-8111-111111111111/harness');
   assert.equal(environment.XDG_CACHE_HOME, `${environment.TMPDIR}/cache`);
   assert.equal(environment.XDG_CONFIG_HOME, `${environment.TMPDIR}/config`);
   assert.equal(environment.XDG_DATA_HOME, `${environment.TMPDIR}/data`);

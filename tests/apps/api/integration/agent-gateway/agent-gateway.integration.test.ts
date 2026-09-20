@@ -262,7 +262,7 @@ test('BT-011: AgentGateway streams valid agent.output events to an authorized PM
   }
 });
 
-test('AgentGateway persists a recovered preview URL without erasing the previous stable status', async () => {
+test('AgentGateway preserves recovery status and complete lifecycle event payloads', async () => {
   const developerLogin = await authenticateDeveloper();
   const project = await createOwnedProject(developerLogin.body.user.id);
   const session = await createSession(project.id, developerLogin.body.accessToken);
@@ -313,6 +313,40 @@ test('AgentGateway persists a recovered preview URL without erasing the previous
     assert.equal(recoveredSession.status, 'FAILED');
     assert.equal(recoveredSession.lastError, 'Validation failed.');
     assert.equal(recoveredSession.previewUrl, 'https://recovered-preview.pairdock.test');
+
+    const lifecycleEvents = [
+      {
+        type: 'session.progress',
+        payload: { sessionId: session.id, status: 'AGENT_RUNNING', message: 'Retrying the prompt.' },
+      },
+      {
+        type: 'error',
+        payload: { sessionId: session.id, code: 'AGENT_FAILED', message: 'Retry failed.', retryable: true },
+      },
+    ] as const;
+    for (const event of lifecycleEvents) {
+      const acknowledgement = await agentSocket.timeout(2_000).emitWithAck(agentProtocolMessageEventName, {
+        protocolVersion: AGENT_PROTOCOL_VERSION,
+        messageId: randomUUID(),
+        sessionId: session.id,
+        sentAt: new Date().toISOString(),
+        ...event,
+      } satisfies AgentEventEnvelope);
+      assert.deepEqual(acknowledgement, { accepted: true });
+    }
+
+    const persistedEvents = await prisma.agentEvent.findMany({
+      where: { sessionId: session.id },
+      orderBy: { createdAt: 'asc' },
+    });
+    assert.deepEqual(
+      persistedEvents.map((event) => event.payload),
+      [
+        { sessionId: session.id, previewUrl: 'https://recovered-preview.pairdock.test' },
+        ...lifecycleEvents.map((event) => event.payload),
+      ],
+    );
+    assert.ok(persistedEvents.every((event) => event.agentId === 'agent-local-1'));
   } finally {
     agentSocket.close();
   }

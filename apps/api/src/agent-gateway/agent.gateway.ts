@@ -26,9 +26,9 @@ import {
 import type { AgentEventsRepository } from '../persistence/ports/agent-events.repository.js';
 import type { AgentRegistrationsRepository } from '../persistence/ports/agent-registrations.repository.js';
 import type { PersistenceUnitOfWork } from '../persistence/ports/persistence-unit-of-work.js';
-import { type SessionAgentEvent, SessionStateMachine } from '../sessions/session-state-machine.js';
+import { SessionEventsService } from '../sessions/session-events.service.js';
+import type { SessionAgentEvent } from '../sessions/session-state-machine.js';
 import { UiGateway } from '../ui-gateway/ui.gateway.js';
-import { ValidationService } from '../validation/validation.service.js';
 import { AgentAuthenticationService } from './agent-authentication.service.js';
 import { AgentProjectBindingService } from './agent-project-binding.service.js';
 import { type ConnectedAgentSnapshot, ConnectedAgentsRegistry } from './connected-agents.registry.js';
@@ -43,7 +43,6 @@ export class AgentGateway implements OnGatewayDisconnect, OnGatewayInit {
   private readonly logger = new Logger(AgentGateway.name);
   @WebSocketServer()
   private server!: Server;
-  private readonly stateMachine = new SessionStateMachine();
 
   constructor(
     @Inject(AGENT_EVENTS_REPOSITORY)
@@ -56,8 +55,8 @@ export class AgentGateway implements OnGatewayDisconnect, OnGatewayInit {
     private readonly uiGateway: UiGateway,
     @Inject(ConnectedAgentsRegistry)
     private readonly connectedAgentsRegistry: ConnectedAgentsRegistry,
-    @Inject(ValidationService)
-    private readonly validationService: ValidationService,
+    @Inject(SessionEventsService)
+    private readonly sessionEvents: SessionEventsService,
     @Inject(AgentAuthenticationService)
     private readonly agentAuthenticationService: AgentAuthenticationService,
     @Inject(AgentProjectBindingService)
@@ -210,31 +209,7 @@ export class AgentGateway implements OnGatewayDisconnect, OnGatewayInit {
     }
 
     if (sessionId && event.type === 'checks.result') {
-      await this.persistenceUnitOfWork.execute(async (repositories) => {
-        const currentSession = await repositories.sessions.findById(sessionId);
-
-        await repositories.agentEvents.create({
-          sessionId,
-          agentId,
-          type: event.type,
-          payload: event.payload,
-        });
-
-        if (!currentSession) {
-          return;
-        }
-
-        await repositories.validationRuns.create(this.validationService.toValidationRunInput(sessionId, event.payload));
-
-        const sessionUpdate = this.validationService.toSessionUpdate(event.payload);
-        await repositories.sessions.updateStatus({
-          id: sessionId,
-          status: sessionUpdate.status,
-          lastError: sessionUpdate.lastError,
-          previewUrl: currentSession.previewUrl,
-          closedAt: currentSession.closedAt,
-        });
-      });
+      await this.sessionEvents.apply(sessionId, event, agentId);
       return;
     }
 
@@ -250,58 +225,7 @@ export class AgentGateway implements OnGatewayDisconnect, OnGatewayInit {
       return;
     }
 
-    await this.persistenceUnitOfWork.execute(async (repositories) => {
-      const currentSession = await repositories.sessions.findById(sessionId);
-
-      if (!currentSession) {
-        await repositories.agentEvents.create({
-          sessionId,
-          agentId,
-          type: event.type,
-          payload: event.payload,
-        });
-        return;
-      }
-
-      let resolvedSessionEvent = sessionEvent;
-
-      if (
-        sessionEvent.type === 'agent.done' &&
-        sessionEvent.payload.exitCode === 0 &&
-        sessionEvent.payload.changesDetected === false
-      ) {
-        const latestValidation = await repositories.validationRuns.findLatestBySessionId(sessionId);
-        resolvedSessionEvent = {
-          ...sessionEvent,
-          payload: {
-            ...sessionEvent.payload,
-            resumeStatus:
-              latestValidation?.status === 'passed'
-                ? 'AWAITING_PM_VALIDATION'
-                : latestValidation?.status === 'failed'
-                  ? 'FAILED'
-                  : 'READY',
-          },
-        };
-      }
-
-      const nextSession = this.stateMachine.applyAgentEvent(currentSession, resolvedSessionEvent);
-
-      await repositories.agentEvents.create({
-        sessionId,
-        agentId,
-        type: event.type,
-        payload: event.payload,
-      });
-
-      await repositories.sessions.updateStatus({
-        id: sessionId,
-        status: nextSession.status,
-        lastError: nextSession.lastError,
-        previewUrl: nextSession.previewUrl,
-        closedAt: nextSession.closedAt,
-      });
-    });
+    await this.sessionEvents.apply(sessionId, sessionEvent, agentId);
   }
 
   private resolveAgentId(client: Socket, event: AgentEventEnvelope): string | null {
@@ -422,47 +346,16 @@ function toSessionAgentEvent(event: AgentEventEnvelope): SessionAgentEvent | nul
       return {
         type: event.type,
         payload: {
+          ...event.payload,
           status: event.payload.status,
-          ...(event.payload.message ? { message: event.payload.message } : {}),
         },
       };
     case 'session.ready':
-      return {
-        type: event.type,
-        payload: {
-          previewUrl: event.payload.previewUrl,
-        },
-      };
     case 'session.recovered':
-      return {
-        type: event.type,
-        payload: {
-          previewUrl: event.payload.previewUrl,
-        },
-      };
     case 'agent.done':
-      return {
-        type: event.type,
-        payload: {
-          exitCode: event.payload.exitCode,
-          ...(event.payload.changesDetected !== undefined ? { changesDetected: event.payload.changesDetected } : {}),
-        },
-      };
     case 'session.closed':
-      return {
-        type: event.type,
-        payload: {
-          cleaned: event.payload.cleaned,
-        },
-      };
     case 'error':
-      return {
-        type: event.type,
-        payload: {
-          message: event.payload.message,
-          retryable: event.payload.retryable,
-        },
-      };
+      return event;
     case 'agent.connected':
     case 'agent.output':
     case 'checks.result':

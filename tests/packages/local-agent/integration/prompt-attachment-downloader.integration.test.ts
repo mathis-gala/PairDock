@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import { readFile, rm } from 'node:fs/promises';
 import test from 'node:test';
 import { PromptAttachmentDownloader } from '../../../../packages/local-agent/src/attachments/prompt-attachment-downloader.js';
-import { resolveHarnessTempDirectory } from '../../../../packages/local-agent/src/harness/codex-harness.adapter.js';
+import { resolveSessionTempDirectory } from '../../../../packages/local-agent/src/session/session-temp-directory.js';
 
 test('prompt attachment downloader authenticates, verifies, and writes a private screenshot', async () => {
   const sessionId = '29292929-2929-4929-8929-292929292929';
@@ -32,7 +32,7 @@ test('prompt attachment downloader authenticates, verifies, and writes a private
     assert.equal(paths.length, 1);
     assert.deepEqual(await readFile(paths[0]), body);
   } finally {
-    await rm(resolveHarnessTempDirectory(sessionId), { recursive: true, force: true });
+    await rm(resolveSessionTempDirectory(sessionId), { recursive: true, force: true });
   }
 });
 
@@ -53,7 +53,7 @@ test('prompt attachment downloader removes partial files when integrity verifica
     ]),
     /unexpected size/,
   );
-  await assert.rejects(readFile(`${resolveHarnessTempDirectory(sessionId)}/attachments/${attachmentId}.png`));
+  await assert.rejects(readFile(`${resolveSessionTempDirectory(sessionId)}/attachments/${attachmentId}.png`));
 });
 
 test('prompt attachment downloader removes private screenshots after the harness no longer needs them', async () => {

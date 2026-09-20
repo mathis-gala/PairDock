@@ -14,9 +14,7 @@ import { ReviewRequestDialog } from '../components/pm-session/review-request-dia
 import { SectionCard } from '../components/section-card.js';
 import { usePreviewSelection } from '../hooks/use-preview-selection.js';
 import { useSessionData } from '../hooks/use-session-data.js';
-import { useSessionEventFeed } from '../hooks/use-session-event-feed.js';
 import type { PreviewPresetId } from '../lib/preview-presets.js';
-import { buildSessionConversation } from '../lib/session-conversation.js';
 
 interface PmSessionPageProps {
   accessToken: string;
@@ -50,24 +48,26 @@ function PmSessionWorkspace({ accessToken, isReadOnly = false, onBack, sessionId
     setMobilePanel('discussion');
     requestAnimationFrame(() => document.getElementById('pm-session-prompt')?.focus());
   }, []);
-  useSessionEventFeed(accessToken, sessionId);
   const {
-    sessionQuery,
-    messagesQuery,
-    eventsQuery,
-    sendPromptMutation,
-    cancelPromptMutation,
-    createReviewRequestMutation,
+    snapshot,
+    isSending,
+    isCancelling,
+    isCreatingReviewRequest,
+    reviewRequestError,
+    sendPrompt,
+    cancelPrompt,
+    createReviewRequest,
+    resetReviewRequest,
   } = useSessionData(accessToken, sessionId);
   const hasSelectionLimit = selections.length >= PREVIEW_SELECTION_LIMITS.selections;
-  const canSelectElements = !isReadOnly && !sendPromptMutation.isPending && !hasSelectionLimit;
+  const canSelectElements = !isReadOnly && !isSending && !hasSelectionLimit;
   const previewSelection = usePreviewSelection(
-    sessionQuery.data?.previewUrl ?? null,
+    snapshot.status === 'ready' ? snapshot.session.previewUrl : null,
     canSelectElements,
     handleSelectElement,
   );
 
-  if (sessionQuery.isLoading || messagesQuery.isLoading || eventsQuery.isLoading) {
+  if (snapshot.status === 'loading') {
     return (
       <div className="p-8">
         <SectionCard title="Chargement de la session" description="Récupération de la conversation et de l’aperçu." />
@@ -75,7 +75,7 @@ function PmSessionWorkspace({ accessToken, isReadOnly = false, onBack, sessionId
     );
   }
 
-  if (sessionQuery.isError || messagesQuery.isError || eventsQuery.isError || !sessionQuery.data) {
+  if (snapshot.status === 'error') {
     return (
       <div className="mx-auto max-w-3xl px-6 py-8">
         <SectionCard
@@ -85,23 +85,15 @@ function PmSessionWorkspace({ accessToken, isReadOnly = false, onBack, sessionId
             </Button>
           }
           title="Could not load PM session"
-          description={
-            sessionQuery.error instanceof Error
-              ? sessionQuery.error.message
-              : messagesQuery.error instanceof Error
-                ? messagesQuery.error.message
-                : eventsQuery.error instanceof Error
-                  ? eventsQuery.error.message
-                  : 'Request failed.'
-          }
+          description={snapshot.error.message}
         />
       </div>
     );
   }
 
-  const session = sessionQuery.data;
+  const { session, conversation } = snapshot;
   const canCancel = !isReadOnly && session.status === 'AGENT_RUNNING';
-  const isAgentWriting = sendPromptMutation.isPending || session.status === 'AGENT_RUNNING';
+  const isAgentWriting = isSending || session.status === 'AGENT_RUNNING';
   const branchLabel = session.branchName ?? session.project.defaultBranch;
   const participantAvatars = session.participants.slice(0, 2).map((participant) => ({
     initial: participant.displayName.slice(0, 1),
@@ -116,13 +108,10 @@ function PmSessionWorkspace({ accessToken, isReadOnly = false, onBack, sessionId
     : 'La session n’a pas pu être préparée. Ferme-la puis crée une nouvelle session après correction.';
   const canCreateReviewRequest =
     !isReadOnly && session.status === 'AWAITING_PM_VALIDATION' && !session.reviewRequest?.url;
-  const reviewRequestError =
-    createReviewRequestMutation.error instanceof Error ? createReviewRequestMutation.error.message : null;
-  const conversation = buildSessionConversation(messagesQuery.data ?? [], eventsQuery.data ?? []);
   let selectionDisabledReason: string | null = null;
   if (hasSelectionLimit) {
     selectionDisabledReason = `Limite de ${PREVIEW_SELECTION_LIMITS.selections} éléments atteinte. Retire une sélection pour en ajouter une autre.`;
-  } else if (sendPromptMutation.isPending) {
+  } else if (isSending) {
     selectionDisabledReason = 'Envoi du message en cours…';
   }
   let selectionControls: PreviewSelectionControls | undefined;
@@ -146,27 +135,27 @@ function PmSessionWorkspace({ accessToken, isReadOnly = false, onBack, sessionId
   }
 
   async function handleCancelPrompt() {
-    await cancelPromptMutation.mutateAsync();
+    await cancelPrompt();
   }
 
   async function handleSendPrompt(content: string, screenshots: File[]) {
-    await sendPromptMutation.mutateAsync({ content, screenshots });
+    await sendPrompt({ content, screenshots });
   }
 
   function handleOpenReviewDialog() {
-    createReviewRequestMutation.reset();
+    resetReviewRequest();
     setIsReviewDialogOpen(true);
   }
 
   function handleCloseReviewDialog() {
-    if (!createReviewRequestMutation.isPending) {
+    if (!isCreatingReviewRequest) {
       setIsReviewDialogOpen(false);
     }
   }
 
   async function handleCreateReviewRequest(input: CreateReviewRequestInput, screenshots: File[]) {
-    createReviewRequestMutation.reset();
-    await createReviewRequestMutation.mutateAsync({ input, screenshots });
+    resetReviewRequest();
+    await createReviewRequest({ input, screenshots });
     setIsReviewDialogOpen(false);
   }
 
@@ -285,8 +274,8 @@ function PmSessionWorkspace({ accessToken, isReadOnly = false, onBack, sessionId
                 blockedReason={promptBlockedReason}
                 canCancel={canCancel}
                 canSubmit={canSubmitPrompt}
-                isCancelling={cancelPromptMutation.isPending}
-                isSubmitting={sendPromptMutation.isPending}
+                isCancelling={isCancelling}
+                isSubmitting={isSending}
                 onCancel={handleCancelPrompt}
                 onSelectionsChange={setSelections}
                 onSubmit={handleSendPrompt}
@@ -359,10 +348,7 @@ function PmSessionWorkspace({ accessToken, isReadOnly = false, onBack, sessionId
                 Observation uniquement
               </span>
             ) : (
-              <Button
-                disabled={!canCreateReviewRequest || createReviewRequestMutation.isPending}
-                onClick={handleOpenReviewDialog}
-              >
+              <Button disabled={!canCreateReviewRequest || isCreatingReviewRequest} onClick={handleOpenReviewDialog}>
                 Soumettre la PR
               </Button>
             )}
@@ -372,7 +358,7 @@ function PmSessionWorkspace({ accessToken, isReadOnly = false, onBack, sessionId
       {isReviewDialogOpen && !isReadOnly ? (
         <ReviewRequestDialog
           error={reviewRequestError}
-          isSubmitting={createReviewRequestMutation.isPending}
+          isSubmitting={isCreatingReviewRequest}
           onClose={handleCloseReviewDialog}
           onSubmit={handleCreateReviewRequest}
         />

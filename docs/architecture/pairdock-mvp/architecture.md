@@ -164,6 +164,17 @@ Responsibilities:
 - Reject prompts if the session is not ready or already running.
 - Send `agent.prompt` to the local agent.
 
+### Session event application
+
+Lifecycle event application owns the transition and its persistence together. REST
+and WebSocket entry points keep their identity checks and decoding, then delegate
+the shared event/Validation/Session transaction to this module. A successful prompt
+without file changes resolves its resume state from the latest Validation inside
+the same transaction. The event is stored as received, without derived resume data.
+
+The pure session state machine remains an internal rule owner. Readiness events
+remain outside this lifecycle operation; notifications are published after commit.
+
 ### DiffModule
 
 Responsibilities:
@@ -251,7 +262,22 @@ Responsibilities:
 - Right pane contains browser-like preview chrome, preview iframe, responsive preset toolbar, status bar, and review-request action.
 - The review-request action remains disabled until validation policy allows it.
 
+Session synchronization owns the browser's reads, live subscription and mutation
+reconciliation. The page consumes one loading/error/ready projection instead of
+assembling three query results and a separate feed. Cache identity includes the
+authenticated user token and Session. Re-subscription catches up from durable
+state, and message responses reconcile by identifier regardless of arrival order.
+The last subscriber releases live resources; drafts and preview interactions stay
+owned by the workspace UI.
+
 ## Local agent structure
+
+Prompt execution owns the complete prompt/diff/checks/repair turn. The WebSocket
+client remains the protocol adapter: it decodes commands, creates event envelopes
+and preserves required acknowledgements. The prompt module coordinates existing
+harness, diff, checks and capture adapters without depending on Socket.IO. Its
+policy tests exercise the complete turn directly; protocol integration tests retain
+coverage of rejected output, cancellation and completion delivery.
 
 ```text
 local-agent/
